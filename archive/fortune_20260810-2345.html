@@ -3191,14 +3191,6 @@ var COMPAT_DRAFT = null;
 var HIST_TAB='fortune';
 var COMPAT_SUB = null; /* null=요약, 'saju'=사주궁합 상세, 'mbti'=MBTI궁합 상세, 'visual'=시각화 */
 var PENDING_INVITE = decodeInviteFromHash(location.hash);
-/* ★ 초대 링크에도 남의 생년월일시·출생지가 들어 있다. 예전에는 "확인하고 궁합 입력하기"를
-   누른 뒤에야 주소에서 지웠는데, 그때까지는 주소창·방문 기록에 그대로 남아 있었다.
-   위에서 이미 메모리로 읽어 두었으므로(location.hash를 다시 읽는 곳은 이 파일에 없다)
-   여기서 바로 지워도 흐름에 영향이 없다. 읽기에 실패한 링크도 함께 지운다 —
-   파싱이 안 됐다고 주소에서 사라지는 게 아니기 때문이다. (모임 링크와 같은 규칙) */
-if(/[#&]invite=/.test(location.hash||'')){
-  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
-}
 var INVITE_CONSUMED = false;
 /* 모임 링크(#meet=)로 받은 명단. 여기서 바로 읽지 않고 맨 아래 부팅 절에서 채운다 —
    decodeMeetFromHash()는 INVITE_FIELDS 표를 읽는데, 그 표가 이 줄보다 아래에서 만들어지기 때문이다.
@@ -3800,18 +3792,12 @@ function openPaywall(product){
        - 체험 모드(trial): 이용권이 실제로 이 브라우저 저장소에 있으므로 그대로 말한다. */
   var benefitGate = paywallGate();
   var benefits;
-  /* ★ 결제 버튼이 살아 있지 않은 상태(trial/partial/legal)에서 "결제 후 바로 열람"이라고
-     적으면, 지금 살 수 없는 화면이 살 수 있는 것처럼 약속하는 말이 된다.
-     결제가 실제로 열려 있을 때만 약속하고, 아니면 지금 무엇을 할 수 있는지만 적는다.
-     (표시광고 문제이기도 하다 — 못 파는 상태에서 구매 혜택을 내걸면 안 된다.) */
-  var openLine = benefitGate.live ? '결제 후 바로 열람'
-                                  : '지금은 결제를 열지 않았어요 — 아래 무료 구간은 그대로 보실 수 있어요';
   if(localEntitlementMode()){
-    benefits = [openLine,
+    benefits = ['결제 후 바로 열람',
                 '이 브라우저에만 저장 — 저장소를 지우거나 기기를 바꾸면 사라집니다',
                 '무료 구간은 결제 없이 계속 이용 가능'];
   } else {
-    benefits = [openLine,
+    benefits = ['결제 후 바로 열람',
                 '같은 브라우저에서 계속 열람 (로그인 없이 쿠키로 식별)'];
     /* 복원 약속은 restoreAvailability()가 실제로 가능하다고 할 때만 한다.
        영수증 검증 주소가 없는 상태(partial)에서도 이 줄을 그대로 띄우면,
@@ -5179,13 +5165,6 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
   if(paidNeeded) loadPaidBody();
 
   if(!Interpreter.isApiReady()) return;
-  /* ★ 잠긴 사람에게는 AI 해석을 부르지 않는다.
-     이 경로는 응답을 받아 state.sections를 통째로 갈아끼우는데, 거기에는 유료 13섹션이 전부 들어 있다.
-     지금은 AI 해석이 기본으로 꺼져 있어 사고가 나지 않았을 뿐, 켜는 순간 미결제자 화면으로
-     유료 본문이 그대로 내려간다. "잠긴 것은 만들지도 않는다"는 이 앱의 원칙은
-     로컬 문구뱅크든 서버 응답이든 똑같이 적용돼야 한다.
-     (요청 자체를 안 보내므로 남의 서버로 사주 데이터가 나가는 것도 함께 막힌다.) */
-  if(!hasAccess(product.id)){ return; }
   if(!payload){ state.loading=false; state.error='해석에 넘길 데이터를 만들지 못했습니다.'; paint(); return; }
 
   Interpreter.generate(payload).then(function(sections){
@@ -11840,19 +11819,7 @@ primeEntitlements();
 /* 초기 렌더: 초대 링크로 진입했고 이미 프로필이 있으면 봉인 해제 화면부터 보여준다.
    모임 링크(#meet=)면 모임 화면부터 보여준다. 둘 다 "내 프로필이 하나는 있어야" 열린다 —
    프로필이 없으면 앱이 설정 마법사부터 띄우기 때문이다(초대 링크도 원래 같은 조건이다). */
-var MEET_HASH_PRESENT = /[#&]meet=/.test(location.hash||'');
 PENDING_MEET = decodeMeetFromHash(location.hash);
-/* ★ 읽기에 실패한(깨진·옛 형식) 링크도 지운다. 파싱이 안 됐다고 개인정보가 사라지는 게 아니다 —
-   주소창에는 그대로 남아 있다. 그래서 "읽었는가"가 아니라 "해시에 meet가 있었는가"로 판단한다. */
-if(MEET_HASH_PRESENT){
-  /* ★ 주소창과 방문 기록에서 해시를 지운다.
-     모임 링크에는 남의 개인정보가 최대 30명분(이름·MBTI·생년월일·태어난 시각·출생지) 들어 있다.
-     화면은 "받은 명단을 이 기기에 저장하지 않아요"라고 말하는데, 주소를 그대로 두면
-     주소창·방문 기록·나중에 이 페이지를 다시 열 때까지 그 정보가 남는다 — 말과 실제가 어긋난다.
-     1:1 초대 링크(#invite=)는 이미 같은 처리를 하고 있었고, 모임 경로에만 빠져 있었다.
-     이미 읽어서 PENDING_MEET에 담은 뒤이므로 화면 동작에는 영향이 없다. */
-  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
-}
 if(PENDING_MEET && STATE.profiles.length>0){
   GC_SOURCE='link'; ROUTE='groupCompat';
 } else if(PENDING_INVITE && !INVITE_CONSUMED && STATE.profiles.length>0){

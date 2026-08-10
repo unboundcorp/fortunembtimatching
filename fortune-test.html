@@ -9,38 +9,55 @@
 /* ===================== 리셋 & 베이스 ===================== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  /* 이 앱은 어두운 화면 하나로만 만든다. 이 선언이 없으면 브라우저가 OS 설정을 따라
-     <select>·<input>·스크롤바를 라이트 모드로 그려서, 우리 밝은 글자색과 겹쳐 안 보인다. */
-  color-scheme: dark;
-  /* ===== v4-A: Insight Timer풍 다크/골드 미니멀 리스킨 (변수명 유지, 값만 교체) ===== */
-  --void:#0A0A0A;
-  --base:#0d0d0f;
-  --panel:rgba(255,255,255,.045);
-  --panel-2:#1e1e20;
-  --ink:#F2ECDD;
-  /* 2026-08-10 대표님 지시 — "배경이 진하니 설명 글자를 더 밝게".
-     AA(4.5:1)는 최소선이지 읽기 편한 선이 아니다. 실제로 5.86:1이던 이 색이
-     어두운 배경에서 씻긴 것처럼 보였다. 본문 AAA 기준(7:1)을 넉넉히 넘겨 잡는다.
-     #c6c0b6 — 페이지 배경 대비 10.74:1, 카드 배경 대비 10.00:1. */
-  --ink-dim:#c6c0b6;
-  /* 결제·보안 고지문에 쓰이는 색. 처음 #6f6b66은 4.07:1로 AA 미달이라 가장 중요한 고지가
-     가장 안 읽혔고, #8a857e로 올려 AA는 넘겼지만 여전히 어두웠다(5.07:1).
-     2026-08-10 대표님 지시로 다시 올린다 — #b0aaa0, 페이지 대비 8.42:1 / 카드 대비 7.83:1.
-     --ink(15배대) > --ink-dim(10배대) > --ink-faint(8배대) 순서는 유지해 위계는 남긴다. */
-  --ink-faint:#b0aaa0;
-  --gold:#D4AF37;
-  --gold-2:#F1C94A;
-  --gold-gradient:linear-gradient(135deg,var(--gold),var(--gold-2));
-  --gold-soft:rgba(212,175,55,.16);
-  --gold-line:rgba(212,175,55,.28);
-  --red:#7a2a20;
-  --red-hi:#e94f37;
-  --ok:#7a9a6a;
-  --shadow:0 14px 34px rgba(0,0,0,.6);
-  --shadow-sm:0 4px 14px rgba(0,0,0,.5);
+  /* R29 (2026-08-10 대표님 지시) — 화면 전체를 밝은 톤으로 뒤집었다.
+     이 앱은 이제 "밝은 화면 하나"로만 만든다. color-scheme을 light로 고정해야
+     <select>의 펼침 목록·스크롤바·기본 컨트롤이 OS가 다크 모드여도 밝게 그려진다.
+     (dark로 두면 OS 다크 모드에서 흰 입력칸 위에 흰 글씨가 되던 그 사고가 반대로 재현된다.) */
+  color-scheme: light;
+  /* ===== R29 밝은 톤 팔레트 =====
+     ① 바탕은 순백이 아니라 아주 옅은 웜그레이(한지). ② 글자는 순검정이 아니라 짙은 먹.
+     ③ 금색은 밝은 바탕에서 읽히도록 톤을 낮춘 청동빛 골드. ④ 색 수를 줄이고 채도를 낮췄다.
+     대비는 전부 다시 계산했다(본문 7:1 이상). 옆 주석의 숫자는 실제로 잰 값이다. */
+  --void:#FBF8F1;          /* 어두운 면(먹·골드) 위에 얹는 밝은 글자 — 역할이 뒤집혔다 */
+  --base:#F3F0E9;          /* 페이지 바탕: 아주 옅은 웜그레이 */
+  --panel:#FCFAF6;         /* 카드: 바탕보다 반 톤 밝은 웜 오프화이트 */
+  --panel-2:#FFFFFF;       /* 모달·입력칸처럼 "떠 있는" 면 */
+  --panel-3:#F1EEE6;       /* 카드 안에 한 단 눌러 앉히는 면(예전 rgba(0,0,0,.15) 자리) */
+  --track:#E5E1D6;         /* 막대·게이지의 빈 홈 */
+  --ink:#231F18;           /* 본문 먹색 — 바탕 14.41:1 / 카드 15.73:1 */
+  /* 설명 글자. 밝은 바탕으로 뒤집으면서 "밝게"가 아니라 "어둡게" 가야 한다 —
+     방향만 바뀌었지 기준은 그대로 본문 AAA(7:1)다. 바탕 8.70:1 / 카드 9.50:1. */
+  --ink-dim:#494334;
+  /* 결제·보안 고지문. 위계(--ink > --ink-dim > --ink-faint)는 유지하되
+     가장 흐린 이 색도 7:1을 넘긴다 — 바탕 7.30:1 / 카드 7.97:1.
+     밝은 바탕에서는 세 단계 간격이 어두울 때보다 좁아 보인다(그건 아래 SELF_CHECK에 적었다). */
+  --ink-faint:#544E40;
+  /* 금박. 밝은 바탕에 밝은 금색을 그대로 쓰면 사라지므로 채도·명도를 낮춘 청동빛으로 내렸다.
+     글자로도 쓰이는 색이라 7:1을 넘겨야 한다.
+     ★ 처음 잡은 값(#5F4A1C)은 "카드 위"만 보고 정해서 7.4:1이었는데, 실제로 이 색이 가장 많이
+       놓이는 자리는 카드가 아니라 **옅은 금색 면(--gold-soft) 위**였다(알약 칩·보조 버튼·배지).
+       거기서 재니 6.37~6.49:1로 미달이라 한 단 더 내렸다 — 실측으로 잡은 자리다.
+     지금 값: 페이지 8.28:1 / 카드 9.04:1 / --gold-soft 면 위 7.21:1. */
+  --gold:#584416;
+  --gold-2:#68501E;
+  /* 그라데이션은 "거의 단색 + 미세한 광택"으로 좁혔다. 넓게 잡으면 밝은 쪽 끝에서
+     그 위에 얹은 흰 글자가 7:1 아래로 떨어진다(실제로 재서 좁혔다 — 밝은 끝 7.13:1). */
+  --gold-gradient:linear-gradient(135deg,#57431A,#68501E);
+  --gold-soft:rgba(88,68,22,.07);   /* 알파 .09에서 한 번 더 낮췄다 — 이 면 위의 금색 글자를 7:1 위로 올리기 위한 실측 조정 */
+  --gold-line:rgba(88,68,22,.20);
+  /* 입력칸 테두리만 따로 둔다. 장식 헤어라인(--gold-line)은 1.4:1이라 "이게 입력칸이구나"를
+     알려주지 못한다. 폼 컨트롤 경계는 3:1이 필요하므로 웜그레이 실선으로 분리했다(3.46:1). */
+  --field-line:#8F8676;
+  --red:rgba(143,36,19,.38);
+  --red-hi:#8F2413;        /* 인주(印朱) 빛 — 바탕 7.63:1 / 카드 8.33:1 */
+  --ok:#3F6B45;
+  /* 그림자는 테두리를 대신해 카드를 띄우는 수단이다. 밝은 바탕에서는 검정 알파를
+     10% 안팎까지 낮춰야 얼룩이 아니라 "떠 있는 느낌"이 된다. */
+  --shadow:0 18px 44px rgba(58,50,34,.16),0 2px 6px rgba(58,50,34,.06);
+  --shadow-sm:0 4px 14px rgba(58,50,34,.11);
   /* R22 — 카드에만 쓰는 부드러운 그림자. 기존 --shadow-sm보다 넓고 옅어서 "떠 있는 느낌"만 준다.
      새 색을 만든 게 아니다: 검정 알파값만 조정한 것이라 팔레트는 그대로다. */
-  --shadow-soft:0 6px 22px rgba(0,0,0,.34);
+  --shadow-soft:0 6px 20px rgba(58,50,34,.085),0 1px 2px rgba(58,50,34,.05);
   /* R22 — 여백 단계. 값을 손으로 흩어 적지 않고 여기 한 곳에서 키운다. */
   --gap-card:18px;
   --pad-card:24px;
@@ -48,49 +65,66 @@
   --r-md:14px;   /* 타일·입력칸·작은 상자 */
   --r-pill:999px;
   --serif:'Nanum Myeongjo','AppleMyungjo','Batang','Songti SC',serif;
-  --sans:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',sans-serif;
-  --pA:#D4AF37; /* 프로필A 라인색 */
-  --pB:#e94f37; /* 프로필B 라인색 */
-  --em-wood:#7a9a6a; --em-fire:#e2624a; --em-earth:#c9a15a; --em-metal:#cfd3d8; --em-water:#5f8fb0;
+  /* R29 폰트 — 대표님이 고르신 방식 ⓐ: 이름만 지정하고 없으면 기기 기본 고딕으로 떨어진다.
+     @font-face도, CDN 링크도, data: URI도 쓰지 않는다(외부 요청 0건이 이 앱의 검수 항목이다).
+     순서: Pretendard → 애플 → 안드로이드 → 윈도우 → 총칭. */
+  --sans:'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',Roboto,'Malgun Gothic','Segoe UI',system-ui,sans-serif;
+  --pA:#584416; /* 프로필A 라인색 — 청동 골드 */
+  --pB:#8F2413; /* 프로필B 라인색 — 인주 */
+  /* 오행 5색. 밝은 바탕에서 사라지지 않도록 전부 어둡고 채도를 낮췄다.
+     특히 금(金)은 예전 #cfd3d8(밝은 은색)이라 밝은 바탕에서 1.3:1로 아예 안 보였다.
+     지금은 바탕 대비 4.4~5.5:1 — 그림 요소 기준(3:1)을 넉넉히 넘는다. */
+  --em-wood:#3F6B45; --em-fire:#B4442C; --em-earth:#7E5F2C; --em-metal:#646B70; --em-water:#3D6480;
 }
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;overflow-x:hidden;max-width:100%;}
 body{
   font-family:var(--sans);
-  font-weight:350;
-  letter-spacing:.02em;
+  /* R29 — 350은 Pretendard Variable에서만 의미가 있고 시스템 고딕으로 떨어지면 400으로 반올림된다.
+     기기마다 굵기가 달라 보이지 않게 400으로 고정한다. */
+  font-weight:400;
+  /* 고딕(Pretendard)은 한글 자간이 넓게 느껴진다. 양수 자간을 음수로 내려야 "고딕 느낌"이 나고,
+     동시에 줄 길이가 짧아져 320px에서의 넘침 위험도 함께 줄어든다. */
+  letter-spacing:-.005em;
   background:var(--base);
   background-image:
-    radial-gradient(ellipse at 15% -10%, rgba(212,175,55,.06), transparent 55%),
-    radial-gradient(ellipse at 100% 0%, rgba(212,175,55,.05), transparent 45%);
+    radial-gradient(ellipse at 15% -10%, rgba(88,68,22,.05), transparent 55%),
+    radial-gradient(ellipse at 100% 0%, rgba(88,68,22,.04), transparent 45%);
   color:var(--ink);
   min-height:100vh;
   /* R22 — 줄간격을 1.6에서 1.75로 넓혔다. "귀엽게"의 절반은 여백이라, 색을 건드리지 않고
      분위기를 바꿀 수 있는 가장 큰 손잡이가 줄간격·모서리·여백 세 가지다. */
   line-height:1.75;
   overflow-x:hidden;
-  -webkit-font-smoothing:antialiased;
+  /* 어두운 바탕에서는 antialiased가 글자를 또렷하게 했지만, 밝은 바탕에서는 획을 가늘게 만들어
+     대비를 깎아먹는다(같은 색인데 흐려 보인다). 밝은 화면에서는 기본 렌더링이 낫다. */
 }
 img{max-width:100%;display:block;}
-button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer;font-size:1rem;letter-spacing:.02em;}
-/* 2026-08-10 대표님 지시 — "입력란이 하얀데 글자가 진하지 않아 안 보인다.
-   다크모드든 화이트모드든 상관없이 잘 보이게."
-   원인: 여기서 색만 물려받고 배경을 안 줘서, 브라우저가 <select>를 OS 기본 모양으로 그렸다.
-   OS가 라이트 모드면 흰 바탕이 되는데 글자는 우리 밝은 --ink라 흰 위에 흰 글씨가 됐다.
-   → ① :root의 color-scheme:dark 로 브라우저 기본 컨트롤 자체를 어둡게 그리게 하고
-     ② 배경·글자색·테두리를 우리 값으로 명시해 OS 설정에 기대지 않게 한다.
-     ③ 펼쳐지는 목록(option)도 플랫폼에 따라 OS 색을 쓰므로 함께 지정한다. */
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer;font-size:1rem;letter-spacing:-.005em;}
+/* 2026-08-10 대표님 지시 — "입력란이 안 보인다. 다크모드든 화이트모드든 상관없이 잘 보이게."
+   R29에서 화면을 밝은 톤으로 뒤집으면서 같은 함정이 반대 방향으로 생긴다.
+   → ① :root의 color-scheme:light 로 브라우저 기본 컨트롤·펼침 목록·스크롤바를 밝게 고정하고
+     ② 배경·글자색·테두리를 우리 값으로 명시해 OS 설정에 기대지 않게 하고
+     ③ 테두리는 장식용 헤어라인(--gold-line, 1.4:1) 대신 --field-line(3.46:1)을 쓴다.
+        "여기가 입력칸이다"를 알리는 경계는 3:1을 넘겨야 한다. */
 select,input,textarea{
-  font-family:inherit;letter-spacing:.02em;
+  font-family:inherit;letter-spacing:-.005em;
   background:var(--panel-2);color:var(--ink);
-  border:1px solid var(--gold-line);border-radius:var(--r-md);
+  border:1px solid var(--field-line);border-radius:var(--r-md);
   padding:10px 12px;font-size:.95rem;min-height:44px;
 }
 select option{background:var(--panel-2);color:var(--ink);}
-select:focus,input:focus,textarea:focus{border-color:var(--gold);outline:2px solid transparent;outline-offset:2px;}
+select:focus,input:focus,textarea:focus{border-color:var(--gold);outline:2px solid transparent;outline-offset:2px;box-shadow:0 0 0 3px rgba(88,68,22,.26);}
 a{color:inherit;}
-h1,h2,h3,h4{font-family:var(--sans);font-weight:400;letter-spacing:.02em;}
-/* 세리프는 섹션 타이틀 · 게이지 큰 숫자 등 소수의 "포인트" 요소에만 남긴다 */
-.section-title,.gauge-num,.donut-gauge-num,.brand-name,.onboard h1,.stat-mini .v{font-family:var(--serif);}
+h1,h2,h3,h4{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;}
+/* ===== R29: 세리프(명조)를 어디에 남길 것인가 =====
+   대표님 지시는 "Pretendard로 고딕 느낌", 그러면서 "한지·인장 모티프는 남긴다"였다.
+   그래서 기준을 하나로 잡았다 — **글자 자체가 그림(인장·간지)인 자리만 명조로 남기고,
+   읽으라고 쓴 글(제목·숫자·라벨)은 전부 고딕으로 내린다.**
+   남긴 자리 6곳: 브랜드 인장 '印' / 사주 네 기둥의 간지 / 대운 간지 / 월별 간지 /
+                  봉투 봉인 '緣' / 빈 화면의 인장 글자.
+   내린 자리: 섹션 제목·게이지 숫자·브랜드명·온보딩 제목·요약 숫자·등급 라벨·MBTI 칸 등.
+   (제목까지 명조로 두면 "고딕으로 바꿨다"는 지시가 화면에서 느껴지지 않는다.) */
+.brand-seal,.empty-state .glyph,.pillar-seal .ch,.daewoon-item .gz,.month-cell .mc-gz,.envelope .seal{font-family:var(--serif);}
 .gold-text{background:var(--gold-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;}
 .hidden{display:none !important;}
 .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
@@ -105,10 +139,10 @@ h1,h2,h3,h4{font-family:var(--sans);font-weight:400;letter-spacing:.02em;}
 }
 .brand{display:flex;align-items:center;gap:10px;}
 .brand-seal{width:34px;height:34px;border-radius:50%;border:1px solid var(--gold-line);display:flex;align-items:center;justify-content:center;color:var(--gold);font-family:var(--serif);font-weight:400;font-size:.95rem;flex:none;}
-.brand-name{font-family:var(--serif);font-size:1.2rem;letter-spacing:.04em;}
+.brand-name{font-family:var(--sans);font-size:1.2rem;font-weight:700;letter-spacing:-.02em;}
 .profile-switch{display:flex;align-items:center;gap:8px;}
 .profile-switch select{
-  background:var(--panel);border:1px solid var(--gold-line);color:var(--ink);
+  background:var(--panel-2);border:1px solid var(--field-line);color:var(--ink);
   /* R22 — 터치 목표 44px 확보(11px×2 + 글자 22px ≈ 44px) + 알약 모양 */
   padding:11px 14px;border-radius:var(--r-pill);font-size:.85rem;max-width:132px;min-height:44px;
 }
@@ -133,7 +167,9 @@ h1,h2,h3,h4{font-family:var(--sans);font-weight:400;letter-spacing:.02em;}
    색은 이미 .tabgroup[aria-selected]가 쓰던 조합(--gold-soft 배경 + --gold 글자)을 그대로 쓴다 — 새 색 0개. */
 .tabbar{
   display:flex;gap:6px;padding:10px 14px;
-  overflow-x:auto;background:rgba(0,0,0,.12);
+  /* R29 — 예전엔 검정 12%로 띠를 눌렀다. 밝은 바탕에서 같은 값을 쓰면 회색 얼룩이 된다.
+     페이지 바탕과 같게 두고, 오른쪽 스크롤 그림자(::after)가 var(--base)로 자연스럽게 이어지게 한다. */
+  overflow-x:auto;background:transparent;
 }
 .tab-btn{
   /* 12px×2 + 글자 약 21px = 45px → 터치 목표 44px 이상 */
@@ -143,7 +179,7 @@ h1,h2,h3,h4{font-family:var(--sans);font-weight:400;letter-spacing:.02em;}
   transition:color .15s,background .15s,border-color .15s;
 }
 .tab-btn[aria-current="page"]{color:var(--gold);background:var(--gold-soft);border-color:var(--gold-line);font-weight:600;}
-.tab-btn:hover{color:var(--ink);background:rgba(255,255,255,.05);}
+.tab-btn:hover{color:var(--ink);background:rgba(35,31,24,.05);}
 .tab-btn:active{opacity:.6;}
 
 main{flex:1;padding:28px 20px 96px;}
@@ -172,7 +208,9 @@ main{flex:1;padding:28px 20px 96px;}
 /* ===================== 족자(scroll) 카드 → v4-A: 반투명 다크그레이 카드 + 얇은 골드 헤어라인 ===================== */
 .scroll-card{
   background:var(--panel);
-  border:1px solid var(--gold-line);
+  /* R29 — 밝은 톤에서는 테두리보다 그림자로 띄운다(대표님 지시). 테두리는 완전히 지우지 않고
+     헤어라인만 남긴다 — 겹쳐 놓인 카드끼리의 경계가 아예 사라지면 어디까지가 한 덩어리인지 모른다. */
+  border:1px solid rgba(88,68,22,.10);
   /* R22 — 모서리 16→20, 안쪽 여백 22→24, 카드 사이 14→18. 한 카드에 한 주제라는 규칙은
      이미 지켜지고 있었고, 모자랐던 건 카드끼리의 숨 쉴 자리였다. */
   border-radius:var(--r-lg);
@@ -182,7 +220,7 @@ main{flex:1;padding:28px 20px 96px;}
   margin-bottom:var(--gap-card);
 }
 .scroll-card::before,.scroll-card::after{
-  content:"";position:absolute;left:22px;right:22px;height:1px;background:var(--gold-gradient);opacity:.5;
+  content:"";position:absolute;left:22px;right:22px;height:1px;background:var(--gold-gradient);opacity:.22;
 }
 .scroll-card::before{top:0;}
 .scroll-card::after{bottom:0;}
@@ -198,15 +236,19 @@ main{flex:1;padding:28px 20px 96px;}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   /* R22 — 모서리 12→16, 최소 높이 48px 고정(터치 목표) */
-  padding:13px 22px;border-radius:16px;min-height:48px;font-weight:600;font-size:1.02rem;letter-spacing:.02em;
-  border:1px solid var(--gold-line);transition:transform .15s,background .15s,box-shadow .15s;
+  padding:13px 22px;border-radius:16px;min-height:48px;font-weight:600;font-size:1.02rem;letter-spacing:-.01em;
+  border:1px solid rgba(88,68,22,.30);transition:transform .15s,background .15s,box-shadow .15s;
 }
 .btn:hover{transform:translateY(-1px);}
 .btn:active{transform:translateY(0) scale(.98);}
-.btn-primary{background:var(--gold-gradient);color:#171410;border-color:transparent;font-weight:600;box-shadow:0 0 0 0 rgba(212,175,55,0);}
-.btn-primary:hover{box-shadow:0 6px 20px rgba(212,175,55,.3);}
-.btn-ghost{background:transparent;color:var(--gold);}
-.btn-ghost:hover{background:var(--gold-soft);}
+/* R29 — 밝은 바탕에서 주 버튼은 "밝은 금색 면"이 아니라 "짙은 청동 면 + 밝은 글자"가 맞다.
+   밝은 금색을 그대로 두면 버튼이 배경에 녹고 그 위 글자가 어디에도 안 붙는다.
+   글자 대비: 그라데이션 어두운 끝 7.98:1 / 밝은 끝 7.13:1. */
+.btn-primary{background:var(--gold-gradient);color:var(--void);border-color:transparent;font-weight:600;box-shadow:0 2px 8px rgba(58,50,34,.14);}
+.btn-primary:hover{box-shadow:0 8px 20px rgba(88,68,22,.26);}
+/* 보조 버튼은 테두리만으로는 컨트롤로 안 읽힌다(밝은 바탕에서 헤어라인이 1.4:1). 옅은 면을 깐다. */
+.btn-ghost{background:var(--gold-soft);color:var(--gold);}
+.btn-ghost:hover{background:rgba(88,68,22,.15);}
 .btn-block{width:100%;}
 /* R22 — 작은 버튼도 44px 아래로 내려가지 않게 한다(모바일 20-30대 타겟). 글자 크기는 그대로. */
 .btn-sm{padding:11px 16px;font-size:.85rem;min-height:44px;border-radius:var(--r-pill);}
@@ -214,7 +256,7 @@ main{flex:1;padding:28px 20px 96px;}
 
 /* ===================== 인장 원형 버튼 → v4-A: 가는 골드 라인 프레임으로 재조정 ===================== */
 .seal-btn{
-  width:64px;height:64px;border-radius:50%;border:1px solid var(--gold-line);
+  width:64px;height:64px;border-radius:50%;border:1px solid rgba(88,68,22,.28);background:var(--panel-3);
   color:var(--ink-dim);display:flex;align-items:center;justify-content:center;
   font-family:var(--sans);font-weight:400;font-size:.82rem;text-align:center;line-height:1.15;
   transition:border-color .15s,color .15s,transform .15s;
@@ -226,13 +268,14 @@ main{flex:1;padding:28px 20px 96px;}
 .btn-circle-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin:22px 0 6px;}
 .btn-circle{
   width:68px;height:68px;border-radius:50%;flex:none;padding:0;
+  /* 짙은 먹 원 + 밝은 아이콘. 색 역할이 뒤집혔을 뿐 관계(--ink 위에 --void)는 그대로다. */
   background:var(--ink);color:var(--void);border:none;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 8px 24px rgba(0,0,0,.45);
+  box-shadow:0 8px 22px rgba(58,50,34,.22);
   transition:transform .15s,box-shadow .15s;
 }
 .btn-circle svg{width:26px;height:26px;stroke:var(--void);fill:none;stroke-width:1.6;}
-.btn-circle:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(212,175,55,.25);}
+.btn-circle:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(58,50,34,.28);}
 .btn-circle:active{transform:translateY(0) scale(.96);}
 .btn-circle[disabled]{opacity:.35;cursor:not-allowed;box-shadow:none;}
 .btn-circle[disabled]:hover{transform:none;box-shadow:none;}
@@ -241,13 +284,13 @@ main{flex:1;padding:28px 20px 96px;}
 /* ===================== v4-A 신규: row + chevron 리스트 (설정·입력 화면 공용) ===================== */
 .settings-row{
   display:flex;justify-content:space-between;align-items:center;gap:12px;
-  padding:16px 18px;min-height:60px;background:var(--panel);border:1px solid var(--gold-line);
+  padding:16px 18px;min-height:60px;background:var(--panel);border:1px solid rgba(88,68,22,.12);
   border-radius:var(--r-lg);margin-bottom:12px;width:100%;text-align:left;
   box-shadow:var(--shadow-soft);
   transition:border-color .15s,background .15s,transform .15s;
 }
-.settings-row:hover,.settings-row:focus-visible{border-color:var(--gold);background:rgba(212,175,55,.06);}
-.settings-row:active{transform:scale(.98);background:rgba(212,175,55,.09);}
+.settings-row:hover,.settings-row:focus-visible{border-color:var(--gold);background:rgba(88,68,22,.06);}
+.settings-row:active{transform:scale(.98);background:rgba(88,68,22,.10);}
 .settings-row .sr-label{color:var(--ink-dim);font-size:.88rem;flex:none;}
 .settings-row .sr-value-wrap{display:flex;align-items:center;gap:8px;min-width:0;}
 .settings-row .sr-value{color:var(--ink);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;text-align:right;}
@@ -273,7 +316,7 @@ main{flex:1;padding:28px 20px 96px;}
    궁합 요약의 "성격으로 본 궁합 / 타고난 기운으로 본 궁합" 두 숫자에 쓴다.
    원은 ::before로 그리므로 DOM에 글자가 늘지 않고, 낭독기에도 잡히지 않는다. */
 .big-num{position:relative;display:inline-flex;align-items:center;justify-content:center;
-  font-family:var(--serif);font-size:1.95rem;line-height:1.2;color:var(--gold);font-weight:600;
+  font-family:var(--sans);font-size:1.95rem;line-height:1.2;color:var(--gold);font-weight:700;letter-spacing:-.02em;
   min-height:1.9em;padding:0 .18em;}
 .big-num::before{
   content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
@@ -284,34 +327,36 @@ main{flex:1;padding:28px 20px 96px;}
 /* ===================== MBTI 그리드 ===================== */
 .mbti-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0;}
 .mbti-cell{
-  aspect-ratio:1/1;border:1px solid var(--gold-line);border-radius:var(--r-md);
-  display:flex;align-items:center;justify-content:center;font-family:var(--serif);
-  font-weight:700;font-size:1.05rem;color:var(--ink-dim);background:rgba(0,0,0,.15);
+  aspect-ratio:1/1;border:1px solid rgba(88,68,22,.22);border-radius:var(--r-md);
+  display:flex;align-items:center;justify-content:center;font-family:var(--sans);
+  font-weight:700;font-size:1.05rem;letter-spacing:-.01em;color:var(--ink-dim);background:var(--panel-3);
   transition:all .15s;
 }
-.mbti-cell:hover{border-color:var(--gold);color:var(--ink);}
-.mbti-cell[aria-pressed="true"]{background:var(--gold-gradient);border-color:transparent;color:#171410;}
+.mbti-cell:hover{border-color:var(--gold);color:var(--ink);background:var(--gold-soft);}
+.mbti-cell[aria-pressed="true"]{background:var(--gold-gradient);border-color:transparent;color:var(--void);}
 @media (max-width:520px){.mbti-grid{grid-template-columns:repeat(4,1fr);gap:7px;}.mbti-cell{font-size:.85rem;}}
 
 /* ===================== 폼 공통 ===================== */
 .field{margin-bottom:18px;}
 .field label{display:block;font-size:.85rem;color:var(--ink-dim);margin-bottom:7px;}
 .field select,.field input[type=text],.field input[type=number]{
-  /* R22 — 입력칸도 둥글게(3px→14px). 높이는 11px×2 + 24px ≈ 46px로 터치 목표를 넘는다. */
-  width:100%;padding:12px 14px;background:var(--panel);border:1px solid var(--gold-line);
+  /* R22 — 입력칸도 둥글게(3px→14px). 높이는 11px×2 + 24px ≈ 46px로 터치 목표를 넘는다.
+     R29 — 배경을 카드색이 아니라 흰색(--panel-2)으로 올리고 테두리를 --field-line으로 바꿨다.
+     밝은 바탕에서 "카드색 위의 카드색 + 1.4:1 테두리"는 입력칸으로 안 보인다. */
+  width:100%;padding:12px 14px;background:var(--panel-2);border:1px solid var(--field-line);
   border-radius:var(--r-md);color:var(--ink);font-size:.95rem;min-height:46px;
 }
 .field select:focus,.field input:focus{border-color:var(--gold);}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .hour-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px;}
-.hour-btn{padding:11px 6px;min-height:44px;font-size:.78rem;border:1px solid var(--gold-line);border-radius:var(--r-md);color:var(--ink-dim);transition:border-color .15s,background .15s,color .15s,transform .15s;}
-.hour-btn:hover{border-color:var(--gold);color:var(--ink);}
+.hour-btn{padding:11px 6px;min-height:44px;font-size:.78rem;border:1px solid rgba(88,68,22,.26);background:var(--panel-3);border-radius:var(--r-md);color:var(--ink-dim);transition:border-color .15s,background .15s,color .15s,transform .15s;}
+.hour-btn:hover{border-color:var(--gold);color:var(--ink);background:var(--gold-soft);}
 .hour-btn:active{transform:scale(.95);}
-.hour-btn[aria-pressed="true"]{background:var(--panel-2);border-color:var(--gold);color:var(--gold);}
-.progress-track{height:6px;background:var(--panel);border-radius:var(--r-pill);overflow:hidden;margin-bottom:20px;}
+.hour-btn[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
+.progress-track{height:6px;background:var(--track);border-radius:var(--r-pill);overflow:hidden;margin-bottom:20px;}
 .progress-fill{height:100%;border-radius:var(--r-pill);background:var(--red-hi);transition:width .3s ease;}
-.seg-toggle{display:flex;border:1px solid var(--gold-line);border-radius:var(--r-pill);overflow:hidden;width:max-content;}
+.seg-toggle{display:flex;border:1px solid rgba(88,68,22,.28);background:var(--panel-3);border-radius:var(--r-pill);overflow:hidden;width:max-content;}
 .seg-toggle button{padding:12px 20px;min-height:44px;font-size:.85rem;color:var(--ink-dim);transition:background .15s,color .15s;}
 .seg-toggle button:active{opacity:.7;}
 .seg-toggle button[aria-pressed="true"]{background:var(--gold-soft);color:var(--gold);font-weight:600;}
@@ -322,57 +367,64 @@ main{flex:1;padding:28px 20px 96px;}
 
 /* 별점 */
 .stars{display:flex;gap:2px;}
-.star{width:16px;height:16px;color:var(--ink-faint);}
+/* R29 — 안 켜진 별. 별은 글자가 아니라 그림이라 기준이 다르다. 중요한 건 "켜짐 vs 꺼짐"이
+   3:1 이상으로 갈리는 것이고, 꺼진 별 자체는 배경에서 은은하게만 보이면 된다.
+   --ink-faint(7.3:1)를 그대로 쓰면 켜진 금색과 구분이 안 될 만큼 진해진다. */
+.star{width:16px;height:16px;color:#ADA492;}
 .star.on{color:var(--gold);}
 
 /* 태그/배지 — 이미 알약이었다. R22에서 여백만 조금 키운다(칩끼리 붙어 보이지 않게). */
-.badge{display:inline-block;padding:6px 13px;border:1px solid var(--gold-line);border-radius:var(--r-pill);font-size:.76rem;color:var(--gold);line-height:1.6;}
+.badge{display:inline-block;padding:6px 13px;border:1px solid rgba(88,68,22,.30);background:var(--gold-soft);border-radius:var(--r-pill);font-size:.76rem;color:var(--gold);line-height:1.6;}
 .badge-row{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0;}
-.badge-hap{border-color:rgba(122,154,106,.6);color:#9fc28c;}
-.badge-chung{border-color:rgba(233,79,55,.6);color:#f0846f;}
-.badge-hyeong{border-color:rgba(201,169,97,.6);color:var(--gold);}
-.badge-pa{border-color:rgba(95,143,176,.6);color:#8bb6d6;}
-.warn-box{border:1px dashed var(--red-hi);background:rgba(233,79,55,.08);border-radius:var(--r-md);padding:14px 16px;font-size:.85rem;color:#f0c9c0;margin:14px 0;line-height:1.75;}
+/* R29 — 네 관계색을 밝은 바탕용으로 내렸다. 전부 카드 배경 대비 7:1 이상(합 7.7 / 충 8.3 / 형 8.1 / 파 7.6). */
+.badge-hap{border-color:rgba(63,107,69,.55);background:rgba(63,107,69,.08);color:#3F6B45;}
+.badge-chung{border-color:rgba(143,36,19,.55);background:rgba(143,36,19,.07);color:var(--red-hi);}
+.badge-hyeong{border-color:rgba(88,68,22,.55);background:var(--gold-soft);color:var(--gold);}
+.badge-pa{border-color:rgba(61,100,128,.55);background:rgba(61,100,128,.08);color:#3D6480;}
+.warn-box{border:1px dashed rgba(143,36,19,.55);background:rgba(143,36,19,.06);border-radius:var(--r-md);padding:14px 16px;font-size:.85rem;color:#6E2314;margin:14px 0;line-height:1.75;}
 
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-card);}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--gap-card);}
 @media (max-width:700px){.grid2,.grid3{grid-template-columns:1fr;}}
 
 /* 요약 카드 4분할 */
-.stat-mini{background:rgba(0,0,0,.18);border:1px solid var(--gold-line);border-radius:var(--r-md);padding:14px 12px;text-align:center;}
+.stat-mini{background:var(--panel-3);border:1px solid rgba(88,68,22,.14);border-radius:var(--r-md);padding:14px 12px;text-align:center;}
 .stat-mini .k{font-size:.72rem;color:var(--ink-dim);margin-bottom:5px;}
-.stat-mini .v{font-family:var(--serif);font-size:1.15rem;color:var(--gold);}
+.stat-mini .v{font-family:var(--sans);font-weight:700;font-size:1.15rem;letter-spacing:-.02em;color:var(--gold);}
 
 /* 온보딩 */
 .onboard{min-height:calc(100vh - 0px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px;gap:22px;}
 .constellation{width:min(320px,80vw);height:min(320px,80vw);}
-.constellation line{stroke:var(--gold);stroke-width:1;opacity:.5;stroke-dasharray:60;stroke-dashoffset:60;animation:drawLine 1.8s ease forwards;}
+.constellation line{stroke:var(--gold);stroke-width:1;opacity:.55;stroke-dasharray:60;stroke-dashoffset:60;animation:drawLine 1.8s ease forwards;}
 .constellation circle{fill:var(--gold);opacity:0;animation:popDot .4s cubic-bezier(.2,1.4,.4,1) forwards;}
 @keyframes drawLine{to{stroke-dashoffset:0;}}
 @keyframes popDot{to{opacity:1;}}
-.onboard h1{font-size:1.9rem;color:var(--gold);}
+.onboard h1{font-size:1.9rem;font-weight:700;letter-spacing:-.03em;color:var(--gold);}
 .onboard p{color:var(--ink-dim);max-width:40ch;}
 
 /* 히스토리 리스트 — R22: 목록 한 줄도 "작은 카드"로 보이게 둥글리고 여백을 준다 */
-.hist-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border:1px solid var(--gold-line);border-radius:var(--r-md);margin-bottom:10px;background:rgba(0,0,0,.15);transition:border-color .15s,background .15s;}
-.hist-item:hover{border-color:var(--gold);background:rgba(212,175,55,.06);}
+.hist-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border:1px solid rgba(88,68,22,.14);border-radius:var(--r-md);margin-bottom:10px;background:var(--panel-3);transition:border-color .15s,background .15s;}
+.hist-item:hover{border-color:var(--gold);background:var(--gold-soft);}
 .hist-item .meta{font-size:.78rem;color:var(--ink-dim);line-height:1.6;}
 .hist-actions{display:flex;gap:6px;}
 .tabgroup{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
-.tabgroup button{padding:12px 16px;min-height:44px;border:1px solid var(--gold-line);border-radius:var(--r-pill);font-size:.82rem;color:var(--ink-dim);transition:background .15s,color .15s,border-color .15s;}
+.tabgroup button{padding:12px 16px;min-height:44px;border:1px solid rgba(88,68,22,.26);background:var(--panel-3);border-radius:var(--r-pill);font-size:.82rem;color:var(--ink-dim);transition:background .15s,color .15s,border-color .15s;}
 .tabgroup button:active{opacity:.7;}
 .tabgroup button[aria-selected="true"]{background:var(--gold-soft);color:var(--gold);border-color:var(--gold);font-weight:600;}
 
 /* 모달 */
-.modal-backdrop{position:fixed;inset:0;background:rgba(5,5,10,.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;animation:modalFade .2s ease both;}
-.modal-box{background:var(--panel-2);border:1px solid var(--gold-line);border-radius:var(--r-lg);max-width:480px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:var(--shadow);animation:modalIn .3s cubic-bezier(.2,1.4,.4,1) both;}
+/* R29 — 뒤 가림막. 밝은 화면이라 검정 72%는 너무 무겁다. 따뜻한 먹 42%로 낮춰
+   "뒤가 비쳐 보이되 앞이 확실히 앞"인 정도만 남긴다. */
+.modal-backdrop{position:fixed;inset:0;background:rgba(38,33,25,.42);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;animation:modalFade .2s ease both;}
+.modal-box{background:var(--panel-2);border:1px solid rgba(88,68,22,.14);border-radius:var(--r-lg);max-width:480px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:var(--shadow);animation:modalIn .3s cubic-bezier(.2,1.4,.4,1) both;}
 @keyframes modalFade{from{opacity:0;}to{opacity:1;}}
 @keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
 .modal-box h3{color:var(--gold);margin-bottom:12px;}
 .modal-close-row{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
 
 /* 토스트 */
-#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--gold);color:var(--ink);padding:11px 20px;border-radius:30px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:80;box-shadow:var(--shadow-sm);}
+/* R29 — 토스트는 짙은 먹 알약. 밝은 화면에서 흰 알약을 띄우면 배경에 묻힌다. */
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#2B261D;border:1px solid rgba(88,68,22,.5);color:var(--void);padding:11px 20px;border-radius:30px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:80;box-shadow:var(--shadow-sm);}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* 레이더차트 */
@@ -386,24 +438,29 @@ main{flex:1;padding:28px 20px 96px;}
 .knot-path{stroke-dasharray:400;stroke-dashoffset:400;animation:knotDraw 1.4s ease forwards .2s;}
 @keyframes knotDraw{to{stroke-dashoffset:0;}}
 
-.gauge-num{font-family:var(--serif);font-size:2.6rem;color:var(--gold);text-align:center;}
+.gauge-num{font-family:var(--sans);font-weight:700;letter-spacing:-.03em;font-size:2.6rem;color:var(--gold);text-align:center;}
 .gauge-label{text-align:center;color:var(--ink-dim);font-size:.85rem;margin-bottom:6px;}
 
-.disclaimer{font-size:.8rem;color:var(--ink-dim);text-align:center;margin-top:26px;line-height:1.8;border-top:1px dashed var(--gold-line);padding-top:16px;}
+.disclaimer{font-size:.8rem;color:var(--ink-dim);text-align:center;margin-top:26px;line-height:1.8;border-top:1px dashed rgba(88,68,22,.30);padding-top:16px;}
+/* R30 — 짧은 고지 + "계산 방법 자세히" 접이식 한 덩어리. 새 색·새 부품을 만들지 않았고,
+   접힌 안쪽은 이미 있는 .why-panel/.why-note를 그대로 쓴다(긴 글이라 왼쪽 정렬로만 돌려놓는다). */
+.disclaimer-wrap{margin-top:26px;}
+.disclaimer-wrap .disclaimer{margin-top:0;}
+.disclaimer-wrap .why-panel{text-align:left;}
 
 .share-preview{display:flex;justify-content:center;margin:18px 0;}
-.share-preview canvas{border:1px solid var(--gold-line);border-radius:var(--r-md);max-width:100%;height:auto;}
+.share-preview canvas{border:1px solid rgba(88,68,22,.24);border-radius:var(--r-md);max-width:100%;height:auto;box-shadow:var(--shadow-soft);}
 
 .empty-state{text-align:center;padding:48px 18px;color:var(--ink-dim);}
-.empty-state .glyph{font-family:var(--serif);font-size:2.4rem;color:var(--gold);margin-bottom:10px;}
+.empty-state .glyph{font-size:2.4rem;color:var(--gold);margin-bottom:10px;}
 /* R22 — 빈 화면의 '印' 글자 자리에 캐릭터를 세운다. 화면이 비어 있을 때야말로
    말 없이 분위기를 만들 수 있는 자리이고, 여기에는 계산 근거·고지·결제가 없다. */
 .empty-state .empty-char{display:flex;justify-content:center;margin-bottom:14px;}
-.empty-state .empty-char .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid var(--gold-line);padding:8px;}
+.empty-state .empty-char .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(88,68,22,.22);padding:8px;color:var(--ink);}
 .empty-state h3{font-size:1.12rem;color:var(--ink);margin-bottom:6px;font-weight:600;}
 .empty-state .section-sub{margin-bottom:18px;}
 
-.profile-list-item{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:1px solid var(--gold-line);border-radius:var(--r-md);margin-bottom:10px;}
+.profile-list-item{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:1px solid rgba(88,68,22,.16);border-radius:var(--r-md);margin-bottom:10px;}
 .profile-list-item.active{border-color:var(--red-hi);}
 
 /* ===================== v2: 사주팔자 인장 표 ===================== */
@@ -411,20 +468,24 @@ main{flex:1;padding:28px 20px 96px;}
 .pillar-col{display:flex;flex-direction:column;align-items:center;gap:8px;}
 .pillar-col .col-label{font-size:.72rem;color:var(--ink-dim);}
 .pillar-seal{
-  width:100%;aspect-ratio:1/1;max-width:78px;border-radius:14px;border:1px solid var(--gold-line);
+  width:100%;aspect-ratio:1/1;max-width:78px;border-radius:14px;border:1px solid rgba(88,68,22,.22);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-  background:rgba(0,0,0,.16);position:relative;
+  background:var(--panel-3);position:relative;
 }
-.pillar-seal .ch{font-family:var(--serif);font-size:1.35rem;color:var(--ink);line-height:1.1;}
-/* R22 실측 — 이 한자 라벨은 오행 색 타일 위에 얹히는데, --ink-dim(#95908a)은 그 위에서
-   4.08~4.48:1로 AA(4.5)에 못 미쳤다(토 4.08 / 목 4.48). 새 색을 만들지 않고 --ink를 72%로
-   눌러 쓴다 — 위 한글보다 여전히 흐리면서 대비는 6.5:1로 올라간다. */
-.pillar-seal .ch-h{font-size:.68rem;color:var(--ink);opacity:.72;}
-.pillar-seal.elem-0{background:rgba(122,154,106,.16);border-color:rgba(122,154,106,.55);}
-.pillar-seal.elem-1{background:rgba(226,98,74,.16);border-color:rgba(226,98,74,.55);}
-.pillar-seal.elem-2{background:rgba(201,161,90,.18);border-color:rgba(201,161,90,.6);}
-.pillar-seal.elem-3{background:rgba(207,211,216,.14);border-color:rgba(207,211,216,.55);}
-.pillar-seal.elem-4{background:rgba(95,143,176,.16);border-color:rgba(95,143,176,.55);}
+.pillar-seal .ch{font-size:1.35rem;color:var(--ink);line-height:1.1;}
+/* R29 — 실측으로 잡은 자리. 밝은 바탕에서 이 한자 라벨의 계산이 통째로 무효가 됐다.
+   opacity:.72는 어두운 바탕에서는 글자를 "어둡게" 만들지만 밝은 바탕에서는 "밝게" 만든다.
+   실제로 재 보니 5.84~5.91:1로 본문 기준(7:1) 아래였다 — 나는 9:1일 거라고 예측했고 틀렸다.
+   불투명도 장난을 걷어내고 실제 색 하나(--ink-dim)를 쓴다. 위 한글(--ink)보다 흐리다는
+   위계는 그대로 남고, 오행 타일 다섯 종 위에서 전부 7:1을 넘는다. */
+.pillar-seal .ch-h{font-size:.68rem;color:var(--ink-dim);}
+/* 오행 타일 — 밝은 바탕에서는 알파를 절반 이하로 낮춰야 "은은한 톤"이 된다.
+   예전 값(.16~.18)을 그대로 두면 밝은 종이 위에 색종이를 붙인 것처럼 튄다. */
+.pillar-seal.elem-0{background:rgba(63,107,69,.11);border-color:rgba(63,107,69,.45);}
+.pillar-seal.elem-1{background:rgba(180,68,44,.10);border-color:rgba(180,68,44,.45);}
+.pillar-seal.elem-2{background:rgba(126,95,44,.12);border-color:rgba(126,95,44,.48);}
+.pillar-seal.elem-3{background:rgba(100,107,112,.12);border-color:rgba(100,107,112,.45);}
+.pillar-seal.elem-4{background:rgba(61,100,128,.10);border-color:rgba(61,100,128,.45);}
 .pillar-sipseong{font-size:.68rem;color:var(--gold);min-height:1em;}
 .pillar-table-scroll{overflow-x:auto;padding-bottom:2px;}
 /* R27 — 궁합처럼 두 사람을 나란히 놓는 자리에서 한쪽만 시주가 없으면 기둥이 4개와 3개로 갈려
@@ -443,17 +504,20 @@ main{flex:1;padding:28px 20px 96px;}
 .elem-bars{display:flex;flex-direction:column;gap:8px;margin:12px 0;}
 .elem-bar-row{display:flex;align-items:center;gap:10px;font-size:.8rem;}
 .elem-bar-row .lbl{width:28px;color:var(--ink-dim);flex:none;}
-.elem-bar-track{flex:1;height:10px;background:rgba(0,0,0,.25);border-radius:6px;overflow:hidden;}
+.elem-bar-track{flex:1;height:10px;background:var(--track);border-radius:6px;overflow:hidden;}
 .elem-bar-fill{height:100%;border-radius:6px;transition:width .4s ease;}
 .elem-bar-row .num{width:20px;text-align:right;color:var(--ink-dim);flex:none;}
 
 /* 목차 앵커 */
-.toc-nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px;border:1px solid var(--gold-line);border-radius:var(--r-lg);background:rgba(0,0,0,.15);margin-bottom:20px;position:sticky;top:8px;z-index:5;max-height:196px;overflow-y:auto;}
+/* R29 — sticky로 떠 있는 띠라 반투명하면 밑의 글자가 비쳐 읽기 어렵다. 불투명 카드색 + 그림자로 띄운다. */
+.toc-nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px;border:1px solid rgba(88,68,22,.14);border-radius:var(--r-lg);background:var(--panel);box-shadow:var(--shadow-soft);margin-bottom:20px;position:sticky;top:8px;z-index:5;max-height:196px;overflow-y:auto;}
 /* R22 — 목차 칩도 44px 이상. 알약 모양은 예전부터 이 형태였고, 높이만 손가락 크기에 맞췄다. */
-.toc-nav a{font-size:.74rem;padding:0 14px;min-height:44px;display:inline-flex;align-items:center;gap:2px;border:1px solid var(--gold-line);border-radius:var(--r-pill);color:var(--ink-dim);white-space:nowrap;transition:color .15s,border-color .15s,background .15s;}
+.toc-nav a{font-size:.74rem;padding:0 14px;min-height:44px;display:inline-flex;align-items:center;gap:2px;border:1px solid rgba(88,68,22,.26);background:var(--panel-3);border-radius:var(--r-pill);color:var(--ink-dim);white-space:nowrap;transition:color .15s,border-color .15s,background .15s;}
 .toc-nav a:hover{color:var(--gold);border-color:var(--gold);background:var(--gold-soft);}
 .toc-nav a:active{opacity:.7;}
-.toc-nav a.toc-locked{opacity:.62;border-style:dashed;}
+/* 잠긴 항목. 밝은 바탕에서 opacity .62를 그대로 쓰면 글자가 4:1대로 떨어진다(직전 라운드에
+   대표님이 "안 보인다"고 하신 것과 같은 함정). 불투명도 대신 점선 테두리로만 구분한다. */
+.toc-nav a.toc-locked{opacity:1;border-style:dashed;color:var(--ink-faint);}
 .toc-nav a.toc-locked:hover{opacity:1;color:var(--gold);border-color:var(--gold);}
 .report-section{scroll-margin-top:80px;margin-bottom:26px;}
 .report-section h3{display:flex;align-items:center;gap:11px;color:var(--gold);font-size:1.1rem;margin-bottom:12px;line-height:1.45;font-weight:600;}
@@ -469,17 +533,17 @@ main{flex:1;padding:28px 20px 96px;}
 .icon-dot{
   display:inline-flex;align-items:center;justify-content:center;flex:none;
   width:36px;height:36px;border-radius:50%;
-  background:var(--gold-soft);border:1px solid var(--gold-line);color:var(--gold);
+  background:var(--gold-soft);border:1px solid rgba(88,68,22,.22);color:var(--gold);
 }
 
 /* 대운 타임라인 */
 .daewoon-scroll{display:flex;gap:10px;overflow-x:auto;padding:16px 4px 20px;}
-.daewoon-item{flex:none;width:92px;min-height:44px;text-align:center;border:1px solid var(--gold-line);border-radius:var(--r-md);padding:12px 7px;background:rgba(0,0,0,.15);transition:border-color .15s,background .15s,transform .15s;}
-.daewoon-item:hover{border-color:var(--gold);background:rgba(212,175,55,.06);}
+.daewoon-item{flex:none;width:92px;min-height:44px;text-align:center;border:1px solid rgba(88,68,22,.18);border-radius:var(--r-md);padding:12px 7px;background:var(--panel-3);transition:border-color .15s,background .15s,transform .15s;}
+.daewoon-item:hover{border-color:var(--gold);background:var(--gold-soft);}
 .daewoon-item:active{transform:scale(.97);}
-.daewoon-item.current{border-color:var(--red-hi);background:rgba(233,79,55,.12);}
+.daewoon-item.current{border-color:var(--red-hi);background:rgba(143,36,19,.07);}
 .daewoon-item .age{font-size:.72rem;color:var(--ink-dim);margin-bottom:6px;}
-.daewoon-item .gz{font-family:var(--serif);font-size:1.1rem;color:var(--ink);}
+.daewoon-item .gz{font-size:1.1rem;color:var(--ink);}
 .daewoon-item .ss{font-size:.68rem;color:var(--gold);margin-top:4px;}
 /* 점은 CSS로 "그린다". content에 '●' 글자를 넣으면 낭독기가 "검은 원"이라고 읽는다.
    '현재'라는 뜻은 CSS가 아니라 DOM의 실제 텍스트가 전달한다(아래 .age 안의 '현재 '). */
@@ -493,14 +557,14 @@ main{flex:1;padding:28px 20px 96px;}
 .month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 0 4px;}
 @media (min-width:480px){ .month-grid{grid-template-columns:repeat(4,1fr);} }
 .month-cell{
-  text-align:center;border:1px solid var(--gold-line);border-radius:var(--r-md);padding:12px 5px 13px;min-height:44px;
-  background:rgba(0,0,0,.15);transition:border-color .15s,background .15s,transform .15s;
+  text-align:center;border:1px solid rgba(88,68,22,.18);border-radius:var(--r-md);padding:12px 5px 13px;min-height:44px;
+  background:var(--panel-3);transition:border-color .15s,background .15s,transform .15s;
 }
-.month-cell:hover{border-color:var(--gold);background:rgba(212,175,55,.06);}
+.month-cell:hover{border-color:var(--gold);background:var(--gold-soft);}
 .month-cell:active{transform:scale(.97);}
-.month-cell.current{border-color:var(--red-hi);background:rgba(233,79,55,.12);}
+.month-cell.current{border-color:var(--red-hi);background:rgba(143,36,19,.07);}
 .month-cell .mc-top{font-size:.7rem;color:var(--ink-dim);margin-bottom:4px;line-height:1.3;}
-.month-cell .mc-gz{font-family:var(--serif);font-size:1.02rem;color:var(--ink);line-height:1.2;}
+.month-cell .mc-gz{font-size:1.02rem;color:var(--ink);line-height:1.2;}
 .month-cell .mc-st{font-size:.68rem;color:var(--gold);margin-top:3px;}
 /* 대운 타일과 같은 방식 — '현재'라는 뜻은 CSS가 아니라 DOM의 실제 글자가 전달하고, 점은 CSS로 그린다. */
 .month-cell.current .mc-top::before{content:'';display:inline-block;width:.42em;height:.42em;border-radius:50%;background:var(--red-hi);margin-right:4px;vertical-align:middle;}
@@ -514,25 +578,24 @@ main{flex:1;padding:28px 20px 96px;}
 
 /* ===================== R20: 진태양시 보정 안내표 ===================== */
 .ts-table{display:flex;flex-direction:column;gap:0;margin:8px 0 4px;}
-.ts-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.84rem;}
+.ts-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid rgba(35,31,24,.10);font-size:.84rem;}
 .ts-row:last-child{border-bottom:0;}
 .ts-row .ts-k{color:var(--ink-dim);flex:none;}
 .ts-row .ts-v{color:var(--ink);text-align:right;word-break:keep-all;}
 .ts-row.ts-strong .ts-v{color:var(--gold);font-weight:600;}
 .ts-note{font-size:.78rem;color:var(--ink-faint);line-height:1.65;margin-top:8px;}
-/* 저장하지 않은 변경이 있을 때 시트 안에 뜨는 줄.
-   --red-hi(#e94f37)는 모달 배경(--panel-2 #1e1e20)에서 4.47:1로 AA(4.5:1)에 아슬아슬하게 못 미친다.
-   이 줄은 "지금 안 누르면 사라진다"를 알리는 문장이라 가장 잘 읽혀야 하므로,
-   이미 쓰고 있는 밝은 주홍(#f0846f, 같은 배경에서 약 6.5:1)으로 올린다. */
-.unsaved-line{font-size:.8rem;color:#f0846f;margin-top:10px;line-height:1.5;}
+/* R29 — 밝은 바탕으로 뒤집으니 --red-hi(#8F2413)가 흰 모달 위에서 8.7:1이 된다.
+   예전에 별도 값(#f0846f)을 쓰던 이유(어두운 배경에서 AA 미달)가 사라져 변수로 되돌린다.
+   색 수를 늘리지 않는 쪽이 대표님이 말한 "고급스러움"에 맞다. */
+.unsaved-line{font-size:.8rem;color:var(--red-hi);margin-top:10px;line-height:1.5;}
 /* 마이그레이션 안내 — 조용히 바꾸지 않았다는 사실을 사용자 화면에 남긴다 */
-.migrate-box{border:1px solid var(--gold-line);background:var(--gold-soft);border-radius:var(--r-md);padding:14px 16px;margin:14px 0;font-size:.84rem;line-height:1.8;color:var(--ink);}
+.migrate-box{border:1px solid rgba(88,68,22,.24);background:var(--gold-soft);border-radius:var(--r-md);padding:14px 16px;margin:14px 0;font-size:.84rem;line-height:1.8;color:var(--ink);}
 .migrate-box strong{color:var(--gold);display:block;margin-bottom:4px;}
 
 /* ===================== v4: 유료 구간(페이월) ===================== */
 /* 잠긴 구간은 "가려져 있다"가 눈에 보여야 한다. 내용을 통째로 지우면
    무엇을 사는 건지 알 수 없고, 다 보여주면 잠글 이유가 없다. */
-.locked-block{position:relative;margin:20px 0;border:1px solid var(--gold-line);border-radius:var(--r-lg);overflow:hidden;background:var(--panel);box-shadow:var(--shadow-soft);}
+.locked-block{position:relative;margin:20px 0;border:1px dashed rgba(88,68,22,.34);border-radius:var(--r-lg);overflow:hidden;background:var(--panel);box-shadow:var(--shadow-soft);}
 .locked-count{padding:10px 16px 0;font-size:.78rem;color:var(--gold);letter-spacing:.02em;}
 .locked-teaser{position:relative;padding:12px 16px 0;color:var(--ink-dim);font-size:.9rem;line-height:1.7;
   max-height:76px;overflow:hidden;
@@ -550,13 +613,13 @@ main{flex:1;padding:28px 20px 96px;}
 .locked-icon .lock-icon{width:1.6rem;height:1.6rem;margin-right:0;vertical-align:middle;}
 .locked-title{font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
 .locked-desc{font-size:.84rem;color:var(--ink-dim);margin-bottom:12px;line-height:1.6;}
-.compat-upsell{margin-top:20px;padding:20px 18px;border:1px solid var(--gold-line);border-radius:var(--r-lg);background:var(--gold-soft);text-align:center;}
+.compat-upsell{margin-top:20px;padding:20px 18px;border:1px solid rgba(88,68,22,.24);border-radius:var(--r-lg);background:var(--gold-soft);text-align:center;}
 .compat-upsell p{font-size:.86rem;color:var(--ink-dim);line-height:1.7;margin-bottom:12px;}
 
 /* 결제 화면 */
-.pay-product{text-align:center;padding:6px 0 14px;border-bottom:1px solid var(--gold-line);margin-bottom:14px;}
+.pay-product{text-align:center;padding:6px 0 14px;border-bottom:1px solid rgba(88,68,22,.24);margin-bottom:14px;}
 .pay-name{font-size:1.05rem;font-weight:600;color:var(--ink);}
-.pay-price{font-size:1.5rem;font-weight:700;color:var(--gold);margin:6px 0;}
+.pay-price{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;color:var(--gold);margin:6px 0;}
 .pay-desc{font-size:.85rem;color:var(--ink-dim);line-height:1.6;}
 .pay-benefits{list-style:none;padding:0;margin:0 0 14px;}
 .pay-benefits li{position:relative;padding-left:20px;font-size:.87rem;color:var(--ink-dim);line-height:2;}
@@ -567,16 +630,15 @@ main{flex:1;padding:28px 20px 96px;}
 .pay-upsell{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
   padding:14px;border-radius:var(--r-md);background:var(--gold-soft);font-size:.82rem;color:var(--ink-dim);margin-bottom:14px;}
 /* 결제 미연동 상태를 숨기면 "결제되는 것처럼" 보인다. 눈에 띄게 알린다. */
-.pay-demo-notice{padding:14px 16px;border:1px solid var(--red);border-radius:var(--r-md);background:rgba(233,79,55,.08);margin-bottom:8px;}
+.pay-demo-notice{padding:14px 16px;border:1px solid var(--red);border-radius:var(--r-md);background:rgba(143,36,19,.06);margin-bottom:8px;}
 .pay-demo-notice strong{display:block;color:var(--red-hi);font-size:.88rem;margin-bottom:6px;}
 .pay-demo-notice p{font-size:.8rem;color:var(--ink-dim);line-height:1.65;margin:0 0 6px;}
 .pay-demo-notice p:last-child{margin-bottom:0;}
 /* 체험 모드 배지 — "실제 결제가 아니다"를 결제 관련 화면 어디서든 같은 모양으로 알린다 */
 .trial-badge{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid var(--red);
-  /* R22 실측 — --red-hi(#e94f37)는 자기 배경(rgba(233,79,55,.1)) 위에서 4.33:1로 AA에 미달했다.
-     새 색을 만들지 않고, 이미 이 파일이 같은 이유로 쓰고 있는 밝은 주홍(#f0846f — .unsaved-line,
-     .badge-chung과 같은 값)으로 올린다. 같은 배경에서 6.3:1이다. */
-  background:rgba(233,79,55,.1);color:#f0846f;font-size:.74rem;font-weight:700;letter-spacing:.02em;margin-bottom:8px;}
+  /* R29 — 밝은 바탕에서는 --red-hi가 자기 배경(rgba(143,36,19,.07)) 위에서 7.9:1이라
+     R22에서 따로 만들었던 밝은 주홍이 더 이상 필요 없다. 변수 하나로 되돌린다. */
+  background:rgba(143,36,19,.05);color:var(--red-hi);font-size:.74rem;font-weight:700;letter-spacing:0;margin-bottom:8px;}
 /* 법적 고지 모달 본문 */
 .legal-body{font-size:.85rem;color:var(--ink-dim);line-height:1.75;}
 .legal-body h4{color:var(--gold);font-size:.92rem;margin:14px 0 6px;font-weight:600;}
@@ -589,28 +651,28 @@ main{flex:1;padding:28px 20px 96px;}
 .legal-links button{font-size:.8rem;padding:7px 12px;}
 .pay-legal-line{font-size:.78rem;color:var(--ink-faint);line-height:1.6;margin-top:10px;}
 /* 영수증(복원) 번호 — 옮겨 적어야 하는 값이라 눈에 띄고 선택하기 쉬워야 한다 */
-.receipt-code{margin-top:8px;padding:14px 16px;border:1px dashed var(--gold-line);border-radius:var(--r-md);
-  background:rgba(0,0,0,.25);user-select:all;-webkit-user-select:all;}
+.receipt-code{margin-top:8px;padding:14px 16px;border:1px dashed rgba(88,68,22,.34);border-radius:var(--r-md);
+  background:rgba(88,68,22,.05);user-select:all;-webkit-user-select:all;}
 .receipt-code code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;
   color:var(--gold);word-break:break-all;letter-spacing:.03em;}
 
 /* 지금 풀이를 무엇이 만들고 있는지 알리는 띠 */
 .interp-notice{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
-  padding:12px 16px;margin:16px 0;border-radius:var(--r-md);background:var(--panel);
-  border:1px solid rgba(255,255,255,.07);font-size:.8rem;color:var(--ink-dim);line-height:1.6;}
+  padding:12px 16px;margin:16px 0;border-radius:var(--r-md);background:var(--panel-3);
+  border:1px solid rgba(35,31,24,.10);font-size:.8rem;color:var(--ink-dim);line-height:1.6;}
 .interp-notice.on{border-color:var(--gold-line);}
 .interp-notice.warn{border-color:var(--red);}
 .interp-badge{flex:0 0 auto;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px;
   background:var(--gold-soft);color:var(--gold);letter-spacing:.02em;}
-.interp-notice.on .interp-badge{background:var(--gold-gradient);color:#1a1508;}
+.interp-notice.on .interp-badge{background:var(--gold-gradient);color:var(--void);}
 .interp-err{color:var(--red-hi);}
 
 /* 설정: 구매 내역 / 연동 */
-.biz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.86rem;}
+.biz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(35,31,24,.10);font-size:.86rem;}
 .biz-row:last-child{border-bottom:0;}
 .biz-row .k{color:var(--ink-dim);}
 .biz-row .v{color:var(--ink);font-weight:600;text-align:right;}
-.biz-input{width:100%;padding:12px 14px;min-height:46px;border-radius:var(--r-md);border:1px solid rgba(255,255,255,.12);
+.biz-input{width:100%;padding:12px 14px;min-height:46px;border-radius:var(--r-md);border:1px solid var(--field-line);
   background:var(--panel-2);color:var(--ink);font-size:.85rem;margin-top:6px;}
 .biz-hint{font-size:.76rem;color:var(--ink-faint);line-height:1.65;margin-top:6px;}
 
@@ -620,7 +682,7 @@ main{flex:1;padding:28px 20px 96px;}
 .compat-side h4{text-align:center;font-size:.9rem;color:var(--ink-dim);margin-bottom:8px;}
 .compat-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;}
 @media (max-width:640px){.compat-summary-grid{grid-template-columns:1fr;}}
-.tier-label{display:inline-block;margin-top:4px;padding:5px 14px;border-radius:20px;background:var(--gold-soft);color:var(--gold);font-family:var(--serif);font-size:.95rem;}
+.tier-label{display:inline-block;margin-top:4px;padding:5px 14px;border-radius:20px;background:var(--gold-soft);border:1px solid rgba(88,68,22,.22);color:var(--gold);font-family:var(--sans);font-weight:700;font-size:.95rem;letter-spacing:-.01em;}
 
 /* ===================== R21: 궁합 항목별 지표(일상어 막대) + 접어 둔 전문 용어 =====================
    지표 자체는 새 계산이 아니다 — computeCompat/buildSajuCompat이 이미 내던 하위 점수를
@@ -628,25 +690,25 @@ main{flex:1;padding:28px 20px 96px;}
 .cm-verdict-line{text-align:center;color:var(--ink);font-size:.98rem;line-height:1.85;margin:12px 0 2px;}
 .cm-mix{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 2px;}
 /* R22 — 두 칸을 "숫자가 주인공"인 타일로. 라벨은 작은 회색, 숫자는 크고 뒤에 색 원. */
-.cm-mix-cell{padding:16px 13px 14px;border:1px solid var(--gold-line);border-radius:var(--r-md);background:rgba(0,0,0,.15);text-align:center;}
+.cm-mix-cell{padding:16px 13px 14px;border:1px solid rgba(88,68,22,.14);border-radius:var(--r-md);background:var(--panel-3);text-align:center;}
 .cm-mix-k{font-size:.74rem;font-weight:700;letter-spacing:.08em;color:var(--ink-dim);margin-bottom:6px;}
-.cm-mix-v{font-family:var(--serif);font-size:1.15rem;color:var(--gold);}
+.cm-mix-v{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;font-size:1.15rem;color:var(--gold);}
 .cm-mix-note{font-size:.78rem;color:var(--ink-faint);line-height:1.8;margin-top:11px;}
 .cm-list{display:flex;flex-direction:column;gap:15px;margin:16px 0 2px;}
 .cm-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px;}
 .cm-label{font-size:.93rem;color:var(--ink);word-break:keep-all;}
-.cm-num{font-family:var(--serif);font-size:.95rem;color:var(--gold);flex:none;}
-.cm-track{height:9px;border-radius:6px;background:rgba(255,255,255,.09);overflow:hidden;}
+.cm-num{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;font-size:.95rem;color:var(--gold);flex:none;}
+.cm-track{height:9px;border-radius:6px;background:var(--track);overflow:hidden;}
 .cm-fill{height:100%;border-radius:6px;transition:width .45s cubic-bezier(.2,1.4,.4,1);}
 .cm-foot{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:5px;font-size:.78rem;}
 .cm-verdict{color:var(--ink-dim);line-height:1.6;}
 .cm-src{color:var(--ink-faint);flex:none;}
 /* "왜 이런 결과가 나왔나요?" — 합충형파·십성·간지 같은 용어는 전부 이 안으로 옮겨 접어 둔다.
    지운 게 아니라 자리를 옮긴 것이다(아는 사람에게는 이게 근거다). */
-.why-panel{margin-top:14px;padding:16px 17px;border:1px solid var(--gold-line);border-radius:var(--r-md);background:rgba(0,0,0,.18);}
+.why-panel{margin-top:14px;padding:16px 17px;border:1px solid rgba(88,68,22,.14);border-radius:var(--r-md);background:var(--panel-3);}
 .why-panel h4{font-size:.88rem;color:var(--gold);margin:14px 0 6px;font-weight:600;}
 .why-panel h4:first-child{margin-top:0;}
-.why-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.82rem;}
+.why-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(35,31,24,.10);font-size:.82rem;}
 .why-row:last-child{border-bottom:0;}
 .why-row .why-k{color:var(--ink-dim);}
 .why-row .why-v{color:var(--ink);text-align:right;word-break:keep-all;}
@@ -659,46 +721,91 @@ main{flex:1;padding:28px 20px 96px;}
    무료 요약 지표이고, 구간별 상세 문장의 잠금 규칙은 건드리지 않는다. */
 .dw-flow{margin:10px 0 2px;}
 .dw-flow svg{width:100%;height:auto;display:block;}
-.dw-peak{border:1px solid var(--gold-line);background:var(--gold-soft);border-radius:var(--r-md);padding:16px 17px;margin:14px 0 4px;font-size:.9rem;line-height:1.9;color:var(--ink);}
+.dw-peak{border:1px solid rgba(88,68,22,.24);background:var(--gold-soft);border-radius:var(--r-md);padding:16px 17px;margin:14px 0 4px;font-size:.9rem;line-height:1.9;color:var(--ink);}
 .dw-peak strong{color:var(--gold);}
-/* --ink-dim(#95908a)은 이 상자의 배경(--gold-soft가 카드 위에 겹친 색)에서 4.17:1로 AA(4.5)에 못 미친다.
-   "지금 어느 구간을 지나는가"는 이 상자에서 가장 실질적인 문장이라 조금 더 밝은 값으로 올린다. */
-.dw-now{font-size:.82rem;color:#b7ada0;line-height:1.7;margin-top:6px;}
-.daewoon-item .dw-str{height:4px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden;margin:7px 2px 3px;}
+/* R29 — 밝은 바탕에서 --gold-soft는 아주 옅은 미색이라 --ink-dim이 그 위에서 8.4:1이다.
+   R21에 따로 만들었던 밝은 회색(#b7ada0)은 이유가 사라졌으므로 변수로 되돌린다. */
+.dw-now{font-size:.82rem;color:var(--ink-dim);line-height:1.7;margin-top:6px;}
+.daewoon-item .dw-str{height:4px;border-radius:3px;background:var(--track);overflow:hidden;margin:7px 2px 3px;}
 .daewoon-item .dw-str i{display:block;height:100%;border-radius:3px;background:var(--gold);}
 .daewoon-item .dw-strnum{font-size:.64rem;color:var(--ink-dim);}
 /* 가장 큰 구간 표시. .current(빨간 테두리)와 겹쳐도 서로 지우지 않도록 테두리가 아닌 안쪽 선으로 그린다. */
 .daewoon-item.peak{box-shadow:inset 0 0 0 1px var(--gold);}
-.dw-why-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.82rem;}
+.dw-why-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid rgba(35,31,24,.10);font-size:.82rem;}
 .dw-why-row:last-child{border-bottom:0;}
 .dw-why-row .dwy-k{color:var(--ink);}
 .dwy-parts{width:100%;font-size:.75rem;color:var(--ink-faint);line-height:1.6;}
-.dw-why-row .dwy-v{color:var(--gold);font-family:var(--serif);flex:none;}
+.dw-why-row .dwy-v{color:var(--gold);font-family:var(--sans);font-weight:700;letter-spacing:-.02em;flex:none;}
 
-/* ===================== v3: 그룹 궁합 네트워크 (기능17) ===================== */
-.gc-container{position:relative;width:100%;aspect-ratio:1/1;max-width:520px;margin:0 auto;}
+/* ===================== v3: 모임(그룹) 궁합 네트워크 (기능17) — R28에서 30명까지 =====================
+   무대(.gc-stage)는 언제나 정사각형이고 가로는 부모 폭을 넘지 않는다. 사람 자리·아바타 크기·
+   이름표 글자 크기는 전부 JS가 인원수에 맞춰 넣어주는 세 변수(--gc-av / --gc-fs / --gc-tagfs)로만
+   바뀐다. 값을 CSS 여기저기 흩어 적지 않는 이유는, 인원별 겹침 계산을 JS 한 곳(gcLayoutSpec)에서만
+   하기 위해서다 — 두 곳에 적으면 한쪽만 고쳐 놓고 안 겹친다고 착각하게 된다. */
+.gc-stage{position:relative;width:100%;aspect-ratio:1/1;max-width:var(--gc-max,520px);margin:0 auto;}
 .gc-svg{position:absolute;inset:0;width:100%;height:100%;}
 .gc-line{transition:opacity .2s ease;}
-/* R22 — 노드 지름을 clamp(36..) → clamp(44..)로 올렸다. 320px 화면에서도 44px 터치 목표를 넘긴다. */
-.gc-node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px;min-width:44px;transition:opacity .2s ease;}
-.gc-node.dim{opacity:.5;}
-.gc-avatar{width:clamp(44px,10vw,58px);height:clamp(44px,10vw,58px);border-radius:50%;border:2px solid var(--gold-line);background:rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:1.05rem;color:var(--ink);transition:border-color .15s,box-shadow .15s;}
+/* 선 위에 붙는 관계 이름표(일상어). 그림 설명은 .gc-svg의 aria-label이 대신하므로 낭독에서 뺀다. */
+.gc-tags{position:absolute;inset:0;pointer-events:none;}
+/* R29 — 이름표 바탕. 어두울 때는 검정 86%였다. 밝은 화면에서 그대로 두면 선 위에
+   검은 알약이 떠서 그림을 뚫는다. 종이색 92%로 바꾸고 글자는 등급색(전부 7:1 이상)을 쓴다. */
+.gc-tag{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
+  font-size:var(--gc-tagfs,10px);line-height:1.25;padding:2px 7px;border-radius:var(--r-pill);
+  border:1px solid currentColor;background:rgba(252,250,246,.93);font-weight:600;}
+/* R22 — 노드 지름을 clamp(36..) → clamp(44..)로 올렸다. 320px 화면에서도 44px 터치 목표를 넘긴다.
+   R28 — 인원이 20명을 넘으면 그림이 겹치지 않게 아바타 그림만 줄이고, 누르는 자리(min-width/height)는
+   44px 그대로 둔다. 그림은 작아져도 손가락 목표는 줄이지 않는다. */
+.gc-node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;min-width:44px;min-height:44px;transition:opacity .2s ease;}
+/* R29 실측으로 잡은 자리 — 여기서도 opacity의 뜻이 뒤집혔다.
+   어두운 화면에서 opacity:.3은 "어둠에 잠기게" 했지만, 밝은 화면에서는 "종이에 지워지게" 만든다.
+   실제로 재 보니 흐려진 사람의 이름이 1.66:1로 사실상 안 보였다(누른 순간 다른 사람 이름이 사라진다).
+   R28이 적어 둔 원래 의도는 "나머지 **얼굴**이 흐려진다"였으므로, 흐리게 하는 대상을 얼굴로 좁히고
+   이름은 한 단 흐린 색(--ink-faint, 7.2:1)으로만 물러나게 한다. */
+.gc-node.dim{opacity:1;}
+.gc-node.dim .gc-avatar{opacity:.34;}
+.gc-node.dim .gc-label{color:var(--ink-faint);}
+.gc-avatar{width:var(--gc-av,clamp(44px,10vw,58px));height:var(--gc-av,clamp(44px,10vw,58px));
+  border-radius:50%;border:2px solid rgba(88,68,22,.28);background:var(--panel-3);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  font-family:var(--sans);font-weight:700;font-size:1rem;color:var(--ink);
+  transition:border-color .15s,box-shadow .15s;}
+.gc-avatar .char-svg{width:100%;height:100%;}
 .gc-node:hover .gc-avatar{border-color:var(--gold);}
-.gc-node[aria-pressed="true"] .gc-avatar{border-color:var(--red-hi);box-shadow:0 0 0 3px rgba(233,79,55,.22);}
-.gc-label{font-size:clamp(10px,2.8vw,13px);color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:clamp(44px,10vw,58px);text-align:center;}
-.gc-legend{display:flex;flex-wrap:wrap;gap:10px 18px;justify-content:center;margin:18px 0 4px;font-size:.78rem;color:var(--ink-dim);}
+.gc-node:focus-visible .gc-avatar{border-color:var(--gold);box-shadow:0 0 0 3px rgba(88,68,22,.26);}
+.gc-node[aria-pressed="true"] .gc-avatar{border-color:var(--red-hi);box-shadow:0 0 0 3px rgba(143,36,19,.18);}
+.gc-label{font-size:var(--gc-fs,11px);line-height:1.25;color:var(--ink-dim);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:calc(var(--gc-av,44px) + 10px);text-align:center;}
+.gc-node[aria-pressed="true"] .gc-label{color:var(--gold);}
+.gc-hint{text-align:center;color:var(--ink-dim);font-size:.84rem;margin:16px 0 0;}
+.gc-legend{display:flex;flex-wrap:wrap;gap:9px 16px;justify-content:center;margin:14px 0 4px;font-size:.78rem;color:var(--ink-dim);}
 .gc-legend .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;}
+/* R21·R23 규칙 그대로 — 일상어를 앞에 크게, 원래 등급 이름은 뒤에 작게. */
+.gc-legend .gl-term{color:var(--ink-faint);font-size:.68rem;margin-left:4px;}
 .gc-cards{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-card);margin-top:24px;}
-.gc-pair-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px dashed var(--gold-line);font-size:.82rem;}
+.gc-pair-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px dashed rgba(88,68,22,.28);font-size:.82rem;}
+/* 모임 멤버 고르기 칩 */
+.gc-members{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 2px;}
+.gc-member{min-height:44px;padding:9px 14px;border-radius:var(--r-pill);border:1px solid rgba(88,68,22,.26);background:var(--panel-3);
+  color:var(--ink-dim);font-size:.8rem;transition:background .15s,color .15s,border-color .15s;}
+.gc-member:hover{border-color:var(--gold);color:var(--ink);}
+.gc-member[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
+/* 전체 순위 목록 */
+.gc-rank-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(35,31,24,.10);font-size:.85rem;}
+.gc-rank-row:last-child{border-bottom:0;}
+.gc-rank-row .gr-no{color:var(--ink-faint);font-size:.74rem;flex:none;min-width:1.8em;padding-top:2px;}
+.gc-rank-row .gr-who{flex:1;min-width:0;word-break:keep-all;}
+.gc-rank-row .gr-val{flex:none;text-align:right;font-family:var(--sans);font-weight:700;letter-spacing:-.02em;}
+.gc-rank-row .gr-plain{display:block;font-size:.72rem;margin-top:2px;}
 @media (max-width:480px){.gc-cards{grid-template-columns:1fr;}}
 
 /* 봉투 애니메이션 */
 .envelope-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding:30px 20px;text-align:center;}
 .envelope{width:180px;height:120px;position:relative;}
-.envelope .body{position:absolute;inset:0;background:var(--panel-2);border:2px solid var(--gold);border-radius:4px;}
-.envelope .flap{position:absolute;top:0;left:0;right:0;height:60px;background:var(--panel);border:2px solid var(--gold);border-top:none;clip-path:polygon(0 0,50% 85%,100% 0);transform-origin:top center;animation:flapOpen 1.1s ease forwards .3s;}
+.envelope .body{position:absolute;inset:0;background:var(--panel-2);border:2px solid var(--gold);border-radius:4px;box-shadow:var(--shadow-soft);}
+.envelope .flap{position:absolute;top:0;left:0;right:0;height:60px;background:var(--panel-3);border:2px solid var(--gold);border-top:none;clip-path:polygon(0 0,50% 85%,100% 0);transform-origin:top center;animation:flapOpen 1.1s ease forwards .3s;}
 @keyframes flapOpen{to{transform:rotateX(180deg);opacity:.15;}}
-.envelope .seal{position:absolute;top:38px;left:50%;transform:translateX(-50%);width:34px;height:34px;border-radius:50%;background:var(--gold-gradient);display:flex;align-items:center;justify-content:center;color:#171410;font-family:var(--serif);font-weight:400;animation:sealPop 1.1s ease forwards .3s;}
+.envelope .seal{position:absolute;top:38px;left:50%;transform:translateX(-50%);width:34px;height:34px;border-radius:50%;background:var(--gold-gradient);display:flex;align-items:center;justify-content:center;color:var(--void);font-family:var(--serif);font-weight:400;animation:sealPop 1.1s ease forwards .3s;}
 @keyframes sealPop{0%{opacity:1;}70%{opacity:1;}100%{opacity:0;transform:translateX(-50%) scale(1.4);}}
 
 /* ===================== 관리자 테스트 콘솔 (ADMIN_KEY가 채워진 사본에서만 화면에 나온다) ===================== */
@@ -706,22 +813,24 @@ main{flex:1;padding:28px 20px 96px;}
    토스트(하단 중앙)와 겹치지 않도록 왼쪽 아래에 두고, 모달(z-index 50)·토스트(80)보다 위에 올린다. */
 .admin-flag{position:fixed;left:10px;bottom:14px;z-index:90;display:flex;align-items:center;gap:8px;
   max-width:calc(100vw - 20px);padding:7px 12px;border-radius:999px;
-  border:1px solid var(--red-hi);background:rgba(52,16,12,.94);
-  color:#ffd9d1;font-size:.74rem;font-weight:700;letter-spacing:.02em;box-shadow:var(--shadow-sm);}
+  /* R29 — 이 배지만은 일부러 어둡게 남긴다. "지금 화면은 테스트다"를 알리는 유일한 표시라
+     밝은 화면에 묻히면 안 된다. 짙은 인주 알약 + 밝은 글자(11:1대). */
+  border:1px solid #6E1B0E;background:rgba(110,27,14,.96);
+  color:#FFEDE8;font-size:.74rem;font-weight:700;letter-spacing:0;box-shadow:var(--shadow-sm);}
 .admin-flag .af-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.admin-flag .af-open{flex:none;padding:3px 10px;border-radius:999px;border:1px solid var(--red-hi);
-  color:#ffd9d1;font-size:.72rem;font-weight:700;line-height:1.5;}
-.admin-flag .af-open:hover{background:rgba(233,79,55,.28);}
+.admin-flag .af-open{flex:none;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,237,232,.6);
+  color:#FFEDE8;font-size:.72rem;font-weight:700;line-height:1.5;}
+.admin-flag .af-open:hover{background:rgba(255,237,232,.22);}
 @media (max-width:420px){ .admin-flag{font-size:.68rem;padding:6px 10px;gap:6px;} }
 
-.admin-sec{border:1px solid var(--gold-line);border-radius:var(--r-md);padding:14px 16px;margin-bottom:14px;background:rgba(0,0,0,.2);}
+.admin-sec{border:1px solid rgba(88,68,22,.16);border-radius:var(--r-md);padding:14px 16px;margin-bottom:14px;background:var(--panel-3);}
 .admin-sec > h4{color:var(--gold);font-size:.9rem;margin-bottom:8px;font-weight:600;}
 .admin-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
-.admin-chip{padding:11px 15px;min-height:44px;display:inline-flex;align-items:center;border-radius:var(--r-pill);border:1px solid var(--gold-line);color:var(--ink-dim);
+.admin-chip{padding:11px 15px;min-height:44px;display:inline-flex;align-items:center;border-radius:var(--r-pill);border:1px solid rgba(88,68,22,.26);background:var(--panel);color:var(--ink-dim);
   font-size:.76rem;transition:background .15s,color .15s,border-color .15s;}
 .admin-chip:hover{border-color:var(--gold);color:var(--ink);}
 .admin-chip[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
-.admin-log{margin-top:8px;padding:10px;border-radius:8px;background:var(--panel-2);border:1px solid rgba(255,255,255,.08);
+.admin-log{margin-top:8px;padding:10px;border-radius:8px;background:var(--panel-2);border:1px solid rgba(35,31,24,.12);
   font-size:.74rem;line-height:1.7;color:var(--ink-dim);max-height:190px;overflow:auto;
   white-space:pre-wrap;word-break:break-word;}
 
@@ -731,34 +840,36 @@ main{flex:1;padding:28px 20px 96px;}
 /* R22 — 캐릭터를 "옅은 원 안에" 앉힌다. 레퍼런스의 동그란 아이콘 배경과 같은 규칙이고,
    덕분에 어두운 배경에서 캐릭터 실루엣이 훨씬 또렷하게 떠오른다. 색은 --gold-soft/--gold-line뿐. */
 .char-hero{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
-.char-hero .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid var(--gold-line);padding:6px;}
+.char-hero .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(88,68,22,.22);padding:6px;color:var(--ink);}
 .char-hero .ch-text{flex:1 1 200px;min-width:170px;}
-.char-hero .ch-name{font-family:var(--serif);font-size:1.18rem;color:var(--gold);margin-bottom:6px;font-weight:600;}
+.char-hero .ch-name{font-family:var(--sans);font-size:1.18rem;letter-spacing:-.02em;color:var(--gold);margin-bottom:6px;font-weight:700;}
 .char-hero .ch-line{font-size:.94rem;line-height:1.9;}
 .char-hero .ch-kind{font-size:.76rem;color:var(--ink-dim);margin-top:10px;line-height:1.6;}
 /* 목록 행의 작은 칩. 34→40으로 키우고 같은 원 배경을 준다(작아서 안 보이던 문제를 함께 해결). */
-.char-chip{width:40px;height:40px;border-radius:50%;background:var(--gold-soft);border:1px solid var(--gold-line);padding:2px;}
+/* R29 — 캐릭터 윤곽선은 currentColor다. 칩이 놓이는 자리마다 물려받는 글자색이 달라서
+   밝은 바탕에서 실루엣이 날아갈 수 있다. 캐릭터를 담는 자리 전부에 color:var(--ink)를 못 박는다. */
+.char-chip{width:40px;height:40px;border-radius:50%;background:var(--gold-soft);border:1px solid rgba(88,68,22,.22);padding:2px;color:var(--ink);}
 .char-pair{display:flex;justify-content:center;align-items:flex-start;gap:16px;flex-wrap:wrap;margin:4px 0 16px;}
 .char-pair .cp-side{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:160px;text-align:center;}
-.char-pair .cp-side .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid var(--gold-line);padding:6px;}
+.char-pair .cp-side .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(88,68,22,.22);padding:6px;color:var(--ink);}
 .char-pair .cp-name{font-size:.92rem;font-weight:600;}
 .char-pair .cp-sub{font-size:.74rem;color:var(--ink-dim);line-height:1.6;}
 /* 온보딩 첫 화면에 세우는 캐릭터 셋 — 이 앱이 무엇인지 말보다 먼저 알려주는 자리다. */
 .char-row{display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap;}
-.char-row .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid var(--gold-line);padding:6px;}
+.char-row .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(88,68,22,.22);padding:6px;color:var(--ink);}
 /* 최소 폭 96→88. 여백을 키운 뒤 96px로 두었더니 390px에서 2열로 접혀 도감이 두 배로 길어졌다
    (실측 스크린샷에서 잡았다). 88px면 390px에서 3열, 320px에서 2열 — R19·R21 때와 같은 접힘이다. */
 .char-dex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:12px;margin-top:14px;}
 .char-dex-item{display:flex;flex-direction:column;align-items:center;gap:7px;padding:13px 6px 14px;
-  border:1px solid var(--gold-line);border-radius:var(--r-lg);background:var(--panel);min-height:44px;
+  border:1px solid rgba(88,68,22,.14);border-radius:var(--r-lg);background:var(--panel);min-height:44px;color:var(--ink);
   box-shadow:var(--shadow-soft);
   transition:border-color .15s,background .15s,transform .15s;}
 .char-dex-item:hover{border-color:var(--gold);background:var(--gold-soft);}
 .char-dex-item:active{transform:scale(.97);}
-.char-dex-item .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid var(--gold-line);padding:4px;}
+.char-dex-item .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(88,68,22,.22);padding:4px;color:var(--ink);}
 .char-dex-item .cd-name{font-size:.8rem;line-height:1.4;font-weight:600;}
 .char-dex-item.mine{border-color:var(--gold);background:var(--gold-soft);}
-.char-dex-item .cd-mine{font-size:.68rem;color:var(--gold);border:1px solid var(--gold-line);border-radius:var(--r-pill);padding:2px 9px;}
+.char-dex-item .cd-mine{font-size:.68rem;color:var(--gold);border:1px solid rgba(88,68,22,.30);border-radius:var(--r-pill);padding:2px 9px;}
 /* 프로필 행·히스토리 행에 붙는 작은 캐릭터 칩의 자리.
    기존 .settings-row는 justify-content:space-between이라 자식을 그냥 하나 더 넣으면 라벨이 가운데로 밀린다.
    그래서 칩+라벨을 한 덩어리(.sr-label-wrap)로 묶어 왼쪽 항목 수를 그대로 유지한다. */
@@ -785,18 +896,18 @@ main{flex:1;padding:28px 20px 96px;}
 .term-chip{
   display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;
   min-height:44px;padding:7px 13px;text-align:left;cursor:pointer;
-  border:1px solid var(--gold-line);border-radius:var(--r-md);background:rgba(0,0,0,.15);
+  border:1px solid rgba(88,68,22,.22);border-radius:var(--r-md);background:var(--panel-3);
   transition:border-color .15s,background .15s;
 }
-.term-chip:hover{border-color:var(--gold);background:rgba(212,175,55,.06);}
+.term-chip:hover{border-color:var(--gold);background:var(--gold-soft);}
 .term-chip:active{opacity:.8;}
 .term-chip .tc-plain{font-size:.82rem;color:var(--ink);line-height:1.35;word-break:keep-all;}
 .term-chip .tc-term{font-size:.68rem;color:var(--ink-dim);line-height:1.3;border-bottom:1px dotted currentColor;}
 /* 관계 종류별 테두리 색은 예전 .badge-hap/.badge-chung/.badge-pa/.badge-hyeong 값을 그대로 옮겼다. */
-.term-chip.tchip-hap{border-color:rgba(122,154,106,.6);}
-.term-chip.tchip-chung{border-color:rgba(233,79,55,.6);}
-.term-chip.tchip-pa{border-color:rgba(95,143,176,.6);}
-.term-chip.tchip-hyeong{border-color:rgba(201,169,97,.6);}
+.term-chip.tchip-hap{border-color:rgba(63,107,69,.55);}
+.term-chip.tchip-chung{border-color:rgba(143,36,19,.55);}
+.term-chip.tchip-pa{border-color:rgba(61,100,128,.55);}
+.term-chip.tchip-hyeong{border-color:rgba(88,68,22,.55);}
 .term-chip-row{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0;}
 /* 좁은 칸용(사주 네 기둥 표의 칸 이름·그 위에 얹는 십성 칸). 칸이 좁아 mini(더 짧은 일상어)를 쓰고,
    테두리와 배경을 지워 표를 어지럽히지 않는다. 누를 수 있다는 표시는 점선 밑줄이 계속 맡는다. */
@@ -804,7 +915,7 @@ main{flex:1;padding:28px 20px 96px;}
   width:100%;flex:none;min-height:45px;align-items:center;text-align:center;padding:5px 3px;gap:1px;
   border-color:transparent;background:none;
 }
-.term-chip.tchip-tight:hover{border-color:var(--gold-line);background:rgba(212,175,55,.06);}
+.term-chip.tchip-tight:hover{border-color:rgba(88,68,22,.30);background:var(--gold-soft);}
 .term-chip.tchip-tight .tc-plain{font-size:.7rem;line-height:1.3;}
 .term-chip.tchip-tight .tc-term{font-size:.62rem;color:var(--gold);line-height:1.2;}
 .term-chip.tchip-static{cursor:default;}
@@ -822,12 +933,12 @@ main{flex:1;padding:28px 20px 96px;}
 /* 용어 사전 화면 */
 .gl-tools{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:6px;}
 .gl-count{font-size:.8rem;color:var(--ink-dim);}
-.gl-item{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.07);}
+.gl-item{padding:14px 0;border-bottom:1px solid rgba(35,31,24,.10);}
 .gl-item:last-child{border-bottom:0;}
 .gl-plain{font-size:1rem;color:var(--ink);font-weight:600;line-height:1.55;}
 .gl-term{font-size:.76rem;color:var(--gold);margin-top:3px;}
 .gl-long{font-size:.87rem;color:var(--ink-dim);margin-top:7px;line-height:1.8;}
-.gl-src{font-size:.74rem;color:var(--ink-dim);margin-top:6px;opacity:.9;}
+.gl-src{font-size:.74rem;color:var(--ink-faint);margin-top:6px;}
 
 /* ===================== R22: 좁은 화면에서 여백을 되돌린다 =====================
    여백을 키우면 제일 먼저 깨지는 곳이 320~390px다. 그래서 카드 안쪽 여백·카드 간격을
@@ -847,7 +958,7 @@ main{flex:1;padding:28px 20px 96px;}
   .page-head{margin-bottom:18px;}
   .scroll-card::before,.scroll-card::after{left:15px;right:15px;}
   .tabbar{gap:5px;padding:9px 11px;}
-  .tab-btn{padding:12px 12px;}
+  .tab-btn{padding:12px 11px;}
   .toc-nav{padding:12px;gap:7px;}
   .toc-nav a{padding:0 11px;}
   .char-hero .ch-text{min-width:0;}
@@ -2207,7 +2318,7 @@ var TERMS = {
 
   /* ---- 시간과 절기 ---- */
   '절기':{h:'節氣',cat:'time',src:'app',short:'계절이 바뀌는 스물넷 마디',
-    long:'사주에서 달의 경계는 달력 1일이 아니라 절기예요. 이 앱은 태양의 겉보기 황경(광행차·장동 포함)을 근사식으로 계산해 절기를 구하는데, 공개 절기 시각 80건과 맞춰 보니 최대 약 12분 차이가 났습니다. 절기가 자정에 아주 가까운 해에는 이 몇 분 때문에 날짜가 하루 달라질 수도 있어요.'},
+    long:'사주에서 달의 경계는 달력 1일이 아니라 절기예요. 이 앱은 태양의 위치를 계산해 절기 시각을 직접 구하는데, 공개된 절기 시각 80건과 맞춰 보니 최대 약 12분 차이가 났습니다. 절기가 자정에 아주 가까운 해에는 이 몇 분 때문에 날짜가 하루 달라질 수도 있어요.'},
   '입춘':{h:'立春',cat:'time',src:'app',short:'사주에서 한 해가 시작되는 날',
     long:'양력 2월 4일 무렵이에요. 이 앱은 1월 1일이 아니라 입춘을 기준으로 그 해의 글자를 정하므로, 1월이나 2월 초에 태어났으면 앞 해의 글자를 씁니다.'},
   '진태양시':{h:'眞太陽時',cat:'time',src:'app',short:'실제 해의 위치로 맞춘 시각',
@@ -3080,7 +3191,19 @@ var COMPAT_DRAFT = null;
 var HIST_TAB='fortune';
 var COMPAT_SUB = null; /* null=요약, 'saju'=사주궁합 상세, 'mbti'=MBTI궁합 상세, 'visual'=시각화 */
 var PENDING_INVITE = decodeInviteFromHash(location.hash);
+/* ★ 초대 링크에도 남의 생년월일시·출생지가 들어 있다. 예전에는 "확인하고 궁합 입력하기"를
+   누른 뒤에야 주소에서 지웠는데, 그때까지는 주소창·방문 기록에 그대로 남아 있었다.
+   위에서 이미 메모리로 읽어 두었으므로(location.hash를 다시 읽는 곳은 이 파일에 없다)
+   여기서 바로 지워도 흐름에 영향이 없다. 읽기에 실패한 링크도 함께 지운다 —
+   파싱이 안 됐다고 주소에서 사라지는 게 아니기 때문이다. (모임 링크와 같은 규칙) */
+if(/[#&]invite=/.test(location.hash||'')){
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+}
 var INVITE_CONSUMED = false;
+/* 모임 링크(#meet=)로 받은 명단. 여기서 바로 읽지 않고 맨 아래 부팅 절에서 채운다 —
+   decodeMeetFromHash()는 INVITE_FIELDS 표를 읽는데, 그 표가 이 줄보다 아래에서 만들어지기 때문이다.
+   (초대 링크는 표를 안 읽고 JSON만 풀어서 여기서 바로 읽을 수 있다.) */
+var PENDING_MEET = null;
 
 function activeProfile(){
   return STATE.profiles.find(function(p){ return p.id===STATE.activeId; }) || null;
@@ -3677,12 +3800,18 @@ function openPaywall(product){
        - 체험 모드(trial): 이용권이 실제로 이 브라우저 저장소에 있으므로 그대로 말한다. */
   var benefitGate = paywallGate();
   var benefits;
+  /* ★ 결제 버튼이 살아 있지 않은 상태(trial/partial/legal)에서 "결제 후 바로 열람"이라고
+     적으면, 지금 살 수 없는 화면이 살 수 있는 것처럼 약속하는 말이 된다.
+     결제가 실제로 열려 있을 때만 약속하고, 아니면 지금 무엇을 할 수 있는지만 적는다.
+     (표시광고 문제이기도 하다 — 못 파는 상태에서 구매 혜택을 내걸면 안 된다.) */
+  var openLine = benefitGate.live ? '결제 후 바로 열람'
+                                  : '지금은 결제를 열지 않았어요 — 아래 무료 구간은 그대로 보실 수 있어요';
   if(localEntitlementMode()){
-    benefits = ['결제 후 바로 열람',
+    benefits = [openLine,
                 '이 브라우저에만 저장 — 저장소를 지우거나 기기를 바꾸면 사라집니다',
                 '무료 구간은 결제 없이 계속 이용 가능'];
   } else {
-    benefits = ['결제 후 바로 열람',
+    benefits = [openLine,
                 '같은 브라우저에서 계속 열람 (로그인 없이 쿠키로 식별)'];
     /* 복원 약속은 restoreAvailability()가 실제로 가능하다고 할 때만 한다.
        영수증 검증 주소가 없는 상태(partial)에서도 이 줄을 그대로 띄우면,
@@ -4182,7 +4311,7 @@ function openPrivacyModal(){
     '① AI 해석 연결을 켠 경우: 설정에서 이용자가 직접 입력한 해석 서버 주소로 닉네임·성별·생년월일시·계산된 사주 데이터가 전송됩니다. 이 주소는 이용자가 지정하므로, 해당 서버의 처리 방침은 그 서버 운영자가 정합니다. 이 기능은 기본적으로 꺼져 있습니다.',
     /* ★ 이 문장의 항목 목록은 INVITE_FIELDS(초대 링크 payload 정의)에서 그대로 만들어진다.
        손으로 적지 않는다 — R20에서 손으로 적어 두었다가 코드와 어긋난 적이 있다. */
-    '② 궁합 초대 링크를 만든 경우: 링크 주소(URL) 안에 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 암호화 없이 그대로 담깁니다. 링크를 받은 사람과 그 사람의 브라우저 기록에 남으므로, 링크는 궁합을 볼 상대에게만 보내주세요.',
+    '② 궁합 초대 링크 또는 모임 링크를 만든 경우: 링크 주소(URL) 안에 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 암호화 없이 그대로 담깁니다. 초대 링크에는 링크를 만든 본인 1명분이, 모임 링크에는 그 모임에 담은 사람 수만큼(최대 '+GC_MAX+'명) 같은 항목이 들어갑니다 — 즉 모임 링크는 본인 외 다른 사람의 정보도 함께 내보냅니다. 링크를 받은 사람과 그 사람의 브라우저 기록에 남으므로, 링크는 궁합을 볼 상대에게만 보내주세요.',
     '③ 결제·이용권 확인·구매 복원: 회사가 지정한 결제 서버로 상품 ID·가격·영수증 번호와 이용권 조회 요청이 전송됩니다. 이용자가 "구매 내역 복원"에서 영수증 번호를 입력한 경우에도 그 번호가 같은 서버로 전송되어, 해당 구매를 지금 사용 중인 브라우저에 다시 연결하는 데 쓰입니다. 이때 브라우저 쿠키가 함께 전송되어 이용자를 식별하는 데 쓰입니다. 이 경로에는 사주 정보가 포함되지 않습니다.',
     '④ 유료 본문 서버를 연결한 경우: 유료 해석 문장을 만들기 위해, 회사가 지정한 서버로 성별과 계산된 사주 데이터(사주팔자 네 기둥·오행 분포·십성 분포·일간 강약) 또는 MBTI 유형이 전송됩니다. 이때도 쿠키가 함께 전송됩니다. 닉네임과 생년월일·태어난 시각 원본은 이 경로로 전송하지 않습니다. 다만 사주팔자 네 기둥은 생년월일시로부터 계산된 값이므로, 사실상 생년월일시에 준하는 정보로 보아 주시기 바랍니다.',
     '⑤ 결제창으로 이동할 때: 결제대행사(PG)의 결제 페이지로 브라우저가 이동하므로, 이동한 사실과 직전 페이지 주소가 결제대행사에 전달될 수 있습니다. 이후의 결제 정보 처리는 결제대행사와 회사의 결제 서버가 담당하며, 카드번호 등 결제수단 정보는 이 앱이 입력받지도, 보관하지도 않습니다.'
@@ -4701,7 +4830,7 @@ function adminWhyBlocked(gate){
 function adminRow(k, v, good){
   return el('div',{class:'biz-row'},[
     el('span',{class:'k'},[k]),
-    el('span',{class:'v', style: good===true ? 'color:#9fc28c;' : (good===false ? 'color:#f0846f;' : '')},[v])
+    el('span',{class:'v', style: good===true ? 'color:#3F6B45;' : (good===false ? 'color:var(--red-hi);' : '')},[v])
   ]);
 }
 function adminChip(label, pressed, onclick){
@@ -4741,7 +4870,7 @@ function openAdminConsole(){
       s.appendChild(adminRow(PRODUCTS[id].name, adminAccessLabel(id), open));
     });
     if(adminGrantsSuppressed()){
-      s.appendChild(el('p',{class:'biz-hint', style:'color:#f0846f;'},[
+      s.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[
         '서버가 거부했습니다 — 지금은 서버 권위 모드라 관리자 부여가 잠금 판정에 반영되지 않습니다. 서버가 "권한 없음"으로 답하는 동안에는 잠긴 채로 둡니다. 관리자 부여로 서버 판정을 이길 수 없습니다.'
       ]));
     }
@@ -4758,7 +4887,7 @@ function openAdminConsole(){
       '일반 이용권과 다른 저장 키(' + ADMIN_STORAGE_KEY + ')에 저장하고, 관리자 모드가 아닐 때는 읽지도 않습니다. 주소에서 ?admin= 을 빼고 새로고침하면 여기서 연 것은 전부 다시 잠깁니다.'
     ]));
     if(serverAuthoritative()){
-      s.appendChild(el('p',{class:'biz-hint', style:'color:#f0846f;'},[
+      s.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[
         '지금은 서버 권위 모드라 아래 부여가 화면 잠금에 반영되지 않습니다. 권한의 근거는 서버 응답뿐입니다.'
       ]));
     }
@@ -4816,7 +4945,7 @@ function openAdminConsole(){
       '위 3번의 시뮬레이션 주소로 나가는 요청에만 적용됩니다. 실제 서버 주소가 설정돼 있으면 그쪽 응답이 그대로 쓰입니다 — 진짜 서버의 판정을 이 설정이 덮어쓰지 않습니다. 실패는 전부 잠금 쪽으로 떨어지는 것이 정상입니다.'
     ]));
     if(!adminSimOn()){
-      s.appendChild(el('p',{class:'biz-hint', style:'color:#f0846f;'},[
+      s.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[
         '지금은 결제 상태 시뮬레이션이 꺼져 있어 아래 설정이 적용되지 않습니다. 3번에서 legal 또는 live를 먼저 고르세요.'
       ]));
     }
@@ -4910,7 +5039,7 @@ function openAdminConsole(){
   function secReset(){
     var s = el('div',{class:'admin-sec'});
     s.appendChild(el('h4',{},['7. 데이터 초기화']));
-    s.appendChild(el('p',{class:'biz-hint', style:'color:#f0846f;'},[
+    s.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[
       '되돌릴 수 없습니다. 누르면 한 번 더 확인을 받고 실행합니다.'
     ]));
     /* 비운 직후 화면이 오늘의 운세면 그 자리에서 오늘 치가 다시 저장된다(원래 설계된 자동 저장이다).
@@ -4920,7 +5049,7 @@ function openAdminConsole(){
     ]));
     function danger(label, msg, act){
       return el('button',{class:'btn btn-ghost btn-sm',
-        style:'color:#f0846f;border-color:rgba(233,79,55,.45);', onclick:function(){
+        style:'color:var(--red-hi);border-color:rgba(143,36,19,.45);', onclick:function(){
         confirmModal(msg, function(){ act(); });
       }},[label]);
     }
@@ -5050,6 +5179,13 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
   if(paidNeeded) loadPaidBody();
 
   if(!Interpreter.isApiReady()) return;
+  /* ★ 잠긴 사람에게는 AI 해석을 부르지 않는다.
+     이 경로는 응답을 받아 state.sections를 통째로 갈아끼우는데, 거기에는 유료 13섹션이 전부 들어 있다.
+     지금은 AI 해석이 기본으로 꺼져 있어 사고가 나지 않았을 뿐, 켜는 순간 미결제자 화면으로
+     유료 본문이 그대로 내려간다. "잠긴 것은 만들지도 않는다"는 이 앱의 원칙은
+     로컬 문구뱅크든 서버 응답이든 똑같이 적용돼야 한다.
+     (요청 자체를 안 보내므로 남의 서버로 사주 데이터가 나가는 것도 함께 막힌다.) */
+  if(!hasAccess(product.id)){ return; }
   if(!payload){ state.loading=false; state.error='해석에 넘길 데이터를 만들지 못했습니다.'; paint(); return; }
 
   Interpreter.generate(payload).then(function(sections){
@@ -5356,8 +5492,12 @@ var ELEMENT_TRAIT = {
   금:'벼려낸 결단의 기운 — 원칙이 뚜렷하고 맺고 끊음이 분명합니다.',
   수:'흐르며 채우는 지혜의 기운 — 유연하고 통찰이 깊습니다.'
 };
-var ELEMENT_COLOR = {목:'#7a9a6a',화:'#e2624a',토:'#c9a15a',금:'#cfd3d8',수:'#5f8fb0'};
-var ELEMENT_COLOR_ARR = ['#7a9a6a','#e2624a','#c9a15a','#cfd3d8','#5f8fb0'];
+/* R29 — 밝은 톤 전환. 오행 5색을 전부 다시 잡았다. 값은 :root의 --em-* 와 같다(출처는 여기 하나).
+   왜 바꿨나: 예전 금(金) #cfd3d8은 은색이라 어두운 배경에서만 보였고, 밝은 종이 위에서는
+   배경 대비 1.3:1로 막대도 캐릭터도 사라졌다. 다섯 색 전부 채도를 낮추고 명도를 내려
+   밝은 바탕 대비 4.4~5.5:1(그림 요소 기준 3:1 이상)로 맞췄다. */
+var ELEMENT_COLOR = {목:'#3F6B45',화:'#B4442C',토:'#7E5F2C',금:'#646B70',수:'#3D6480'};
+var ELEMENT_COLOR_ARR = ['#3F6B45','#B4442C','#7E5F2C','#646B70','#3D6480'];
 
 /* =====================================================================
    2D 캐릭터 21종 (오행 5 + MBTI 16) — R19 신규
@@ -5382,8 +5522,12 @@ var ELEMENT_COLOR_ARR = ['#7a9a6a','#e2624a','#c9a15a','#cfd3d8','#5f8fb0'];
      MBTI 16종은 4그룹으로 묶어 이미 :root에 있는 색만 쓴다(--gold / --red-hi / --em-water / --em-wood).
      새 팔레트를 만들지 않았다.
 
-   ★ 배경 독립 — 윤곽선·눈·입은 currentColor다. 어두운 배경에서는 밝은 먹빛으로,
-     밝은 배경에 얹으면 그 글자색을 따라간다. 오행/유형 색만 고정값으로 남는다.
+   ★ 배경 독립 — 윤곽선·눈·입은 currentColor다. R29에서 화면을 밝은 톤으로 뒤집었으므로
+     이제 물려받는 글자색은 짙은 먹(--ink)이고, 캐릭터는 밝은 종이 위의 검은 선그림이 된다.
+     캐릭터를 담는 자리(.char-hero / .char-chip / .char-row / .char-pair / .char-dex-item /
+     .empty-state / .gc-avatar)에는 CSS에서 color:var(--ink)를 못 박아 두었다 —
+     .empty-state처럼 조상이 --ink-dim이던 자리에서 실루엣이 흐려지는 것을 막기 위해서다.
+     오행/유형 색은 고정값이며 R29에서 전부 어두운 쪽으로 다시 잡았다.
 
    ★ 성능 — 21종을 한 번에 그리는 곳은 도감 화면 하나뿐이다. 다른 화면은 필요한 1~2종만 만든다.
      공통 부품(CH_BASE·CH_EYES·CH_MOUTH)을 재사용해 좌표 중복을 최소화했다.
@@ -5439,7 +5583,8 @@ var CH_STYLE = {
   fillInk:     {fill:'ink'},
   fillColor:   {fill:'color'}
 };
-var CH_GROUP_COLOR = { NT:'#D4AF37', NF:'#e94f37', SJ:'#5f8fb0', SP:'#7a9a6a' };
+/* R29 — 네 그룹 색도 밝은 바탕용으로 내렸다. 매핑(NT=금박 / NF=주색 / SJ=수 / SP=목)은 그대로다. */
+var CH_GROUP_COLOR = { NT:'#7E5F2C', NF:'#B4442C', SJ:'#3D6480', SP:'#3F6B45' };
 function mbtiGroupOf(t){
   if(t[1]==='N') return t[2]==='T' ? 'NT' : 'NF';
   return t[3]==='J' ? 'SJ' : 'SP';
@@ -6370,8 +6515,8 @@ function buildDaeunFlowSvg(str, curIdx, ageNow){
   /* 가로 눈금 0·50·100 */
   [0, Math.round(DAEUN_MAX_TOTAL/2), DAEUN_MAX_TOTAL].forEach(function(v){
     var y=yOf(v);
-    svg.appendChild(mk('line',{x1:padL, y1:y, x2:W-padR, y2:y, stroke:'rgba(212,175,55,.18)', 'stroke-width':1}));
-    var lab=mk('text',{x:padL-6, y:y+3.5, 'text-anchor':'end', 'font-size':9, fill:'#a79f8f'});
+    svg.appendChild(mk('line',{x1:padL, y1:y, x2:W-padR, y2:y, stroke:'rgba(35,31,24,.14)', 'stroke-width':1}));
+    var lab=mk('text',{x:padL-6, y:y+3.5, 'text-anchor':'end', 'font-size':9, fill:'#544E40'});
     lab.textContent=String(v); svg.appendChild(lab);
   });
 
@@ -6379,7 +6524,7 @@ function buildDaeunFlowSvg(str, curIdx, ageNow){
   var dArea='M '+xOf(0)+' '+yOf(arr[0].total);
   for(var i=1;i<n;i++) dArea += ' L '+xOf(i)+' '+yOf(arr[i].total);
   dArea += ' L '+xOf(n-1)+' '+yOf(0)+' L '+xOf(0)+' '+yOf(0)+' Z';
-  svg.appendChild(mk('path',{d:dArea, fill:'rgba(212,175,55,.13)', stroke:'none'}));
+  svg.appendChild(mk('path',{d:dArea, fill:'rgba(88,68,22,.10)', stroke:'none'}));
 
   /* 지금 나이 위치 — 구간 안에서의 비율만큼 보간해 세로 점선으로 표시 */
   var nowX=null;
@@ -6390,43 +6535,78 @@ function buildDaeunFlowSvg(str, curIdx, ageNow){
     frac=Math.max(0,Math.min(1,frac));
     nowX = xOf(seg) + (xOf(Math.min(seg+1,n-1))-xOf(seg))*frac;
   }
-  svg.appendChild(mk('line',{x1:nowX, y1:padT-4, x2:nowX, y2:padT+plotH, stroke:'#e94f37',
+  svg.appendChild(mk('line',{x1:nowX, y1:padT-4, x2:nowX, y2:padT+plotH, stroke:'#8F2413',
     'stroke-width':1.2, 'stroke-dasharray':'3 3', opacity:.85}));
-  var nowLab=mk('text',{x:Math.max(padL+12, Math.min(W-padR-12, nowX)), y:padT-6, 'text-anchor':'middle', 'font-size':9, fill:'#f0846f'});
+  var nowLab=mk('text',{x:Math.max(padL+12, Math.min(W-padR-12, nowX)), y:padT-6, 'text-anchor':'middle', 'font-size':9, fill:'#8F2413'});
   nowLab.textContent='지금 '+ageNow+'세'; svg.appendChild(nowLab);
 
   /* 흐름선 */
   var pts=[]; for(var j=0;j<n;j++) pts.push(xOf(j)+','+yOf(arr[j].total));
-  svg.appendChild(mk('polyline',{points:pts.join(' '), fill:'none', stroke:'#D4AF37', 'stroke-width':2,
+  svg.appendChild(mk('polyline',{points:pts.join(' '), fill:'none', stroke:'#584416', 'stroke-width':2,
     'stroke-linejoin':'round', 'stroke-linecap':'round'}));
 
   /* 점 + 나이 라벨(칸이 좁아 한 칸 걸러 적되, 가장 큰 구간과 지금 구간은 반드시 적는다) */
   for(var k=0;k<n;k++){
     var isBest=(k===str.bestIdx), isCur=(k===curIdx);
     svg.appendChild(mk('circle',{cx:xOf(k), cy:yOf(arr[k].total), r:isBest?4.6:2.8,
-      fill:isBest?'#F1C94A':'#0d0d0f', stroke:isCur?'#e94f37':'#D4AF37', 'stroke-width':isCur?2:1.4}));
+      /* R29 — 점의 안쪽 색이 뒤집힌 자리. 예전엔 '어두운 배경색으로 속을 비운' 점이었는데,
+         밝은 화면에서 #0d0d0f를 그대로 두면 검은 점이 박혀 가장 큰 구간과 구분이 안 된다. */
+      fill:isBest?'#8C7134':'#FCFAF6', stroke:isCur?'#8F2413':'#584416', 'stroke-width':isCur?2:1.4}));
     if(k%2===0 || isBest || isCur){
-      var ax=mk('text',{x:xOf(k), y:H-14, 'text-anchor':'middle', 'font-size':9, fill:'#a79f8f'});
+      var ax=mk('text',{x:xOf(k), y:H-14, 'text-anchor':'middle', 'font-size':9, fill:'#544E40'});
       ax.textContent=arr[k].startAge+'세'; svg.appendChild(ax);
     }
   }
   /* 가장 큰 구간 표시 */
   var bx=Math.max(padL+16, Math.min(W-padR-16, xOf(str.bestIdx)));
-  var bl=mk('text',{x:bx, y:Math.max(padT+9, yOf(best.total)-9), 'text-anchor':'middle', 'font-size':9.5, fill:'#F1C94A'});
+  var bl=mk('text',{x:bx, y:Math.max(padT+9, yOf(best.total)-9), 'text-anchor':'middle', 'font-size':9.5, fill:'#584416'});
   bl.textContent='가장 큼'; svg.appendChild(bl);
   /* 축 이름. 나이 라벨 줄(y=H-14) 왼쪽에 두면 첫 칸('1세')과 글자가 겹친다(실측으로 확인) —
      한 줄 아래, 오른쪽 끝에 앉힌다. */
-  var axisLab=mk('text',{x:W-padR, y:H-2, 'text-anchor':'end', 'font-size':8.5, fill:'#8a857e'});
+  var axisLab=mk('text',{x:W-padR, y:H-2, 'text-anchor':'end', 'font-size':8.5, fill:'#544E40'});
   axisLab.textContent='가로=나이 · 세로=기운 강도'; svg.appendChild(axisLab);
   return el('div',{class:'dw-flow'},[svg]);
 }
+/* =====================================================================
+   R30 — 접이식 하나짜리 부품 (buildFoldPanel)
+   ---------------------------------------------------------------------
+   같은 접이식이 이미 두 곳(대운 강도 근거 · 궁합 근거)에 글자 단위로 복사돼 있었다.
+   이번에 "계산 방법 자세히"를 접으면서 세 번째 사본을 만들지 않으려고, 그 두 곳이 쓰던
+   모양·동작을 그대로 하나로 모았다. 바뀐 것은 없다 —
+     · 버튼: .btn.btn-ghost.btn-block + aria-expanded + aria-controls + 방향 아이콘
+     · 패널: .why-panel.hidden + role='region' + aria-label
+     · 누르면 라벨이 바뀌고 아이콘이 위/아래로 뒤집힌다
+   id를 안 주면 자동으로 붙인다. 같은 접이식이 화면에 둘 이상 뜰 수 있는 자리
+   (진태양시 표는 내 사주 화면과 값 편집 시트에 동시에 존재할 수 있다)에서
+   id가 겹치면 aria-controls가 엉뚱한 패널을 가리키기 때문이다.
+===================================================================== */
+var FOLD_SEQ = 0;
+function buildFoldPanel(opts){
+  var panelId = opts.id || ('fold'+(++FOLD_SEQ));
+  var closedLabel = opts.label;
+  var openedLabel = opts.openLabel || '접기';
+  var label = el('span',{},[closedLabel]);
+  var btn = el('button',{class:'btn btn-ghost btn-block', type:'button',
+    'aria-expanded':'false','aria-controls':panelId,
+    style: opts.btnStyle || 'margin-top:14px;'},[label, dirIcon('down')]);
+  var panel = el('div',{id:panelId, class:'why-panel hidden', role:'region',
+    'aria-label': opts.regionLabel || closedLabel});
+  (opts.children||[]).forEach(function(c){ if(c) panel.appendChild(c); });
+  btn.addEventListener('click', function(){
+    var open = this.getAttribute('aria-expanded')==='true';
+    this.setAttribute('aria-expanded', open?'false':'true');
+    label.textContent = open ? closedLabel : openedLabel;
+    this.replaceChild(dirIcon(open?'down':'up'), this.lastChild);
+    panel.classList.toggle('hidden', open);
+  });
+  return { wrap: el('div',{},[btn, panel]), panel: panel, btn: btn };
+}
+
 /* 강도 근거 접이식 — 무엇을 어떤 가중치로 썼는지 화면에도 그대로 적는다(코드 주석과 같은 값). */
 function buildDaeunWhyPanel(str, curIdx){
-  var panelId='daeunWhy';
-  var label=el('span',{},['강도는 어떻게 계산했나요?']);
-  var btn=el('button',{class:'btn btn-ghost btn-block', type:'button',
-    'aria-expanded':'false','aria-controls':panelId, style:'margin-top:6px;'},[label, dirIcon('down')]);
-  var panel=el('div',{id:panelId, class:'why-panel hidden', role:'region','aria-label':'대운 강도 계산 근거'});
+  var fold = buildFoldPanel({id:'daeunWhy', label:'강도는 어떻게 계산했나요?', openLabel:'근거 접기',
+    regionLabel:'대운 강도 계산 근거', btnStyle:'margin-top:6px;'});
+  var panel = fold.panel;
   panel.appendChild(el('h4',{},['네 가지를 더해 '+DAEUN_MAX_TOTAL+'점 만점으로 봐요']));
   DAEUN_W_LABEL.forEach(function(row){
     panel.appendChild(el('div',{class:'why-row'},[
@@ -6449,14 +6629,7 @@ function buildDaeunWhyPanel(str, curIdx){
      실측: 태 구간은 전체 구간의 8.4%이고 그 구간만 1점 오른다(다른 세 항목은 한 건도 바뀌지 않았다).
      "가장 큰 구간" 표시가 옮겨간 프로필은 1,656명 표본에서 17명(1.0%)이었다. */
   panel.appendChild(el('p',{class:'why-note'},['2026-08-10에 십이운성 배점을 한 칸 손봤어요. 태(胎)가 중간 자리인데 약한 자리인 병(病)과 같은 점수라, 태만 1점 올렸습니다. 그래서 예전에 보신 강도 숫자와 최대 1점 다를 수 있고, 드물게 "가장 큰 구간"으로 표시되는 자리가 옮겨가기도 합니다.']));
-  btn.addEventListener('click', function(){
-    var open=this.getAttribute('aria-expanded')==='true';
-    this.setAttribute('aria-expanded', open?'false':'true');
-    label.textContent = open ? '강도는 어떻게 계산했나요?' : '근거 접기';
-    this.replaceChild(dirIcon(open?'down':'up'), this.lastChild);
-    panel.classList.toggle('hidden', open);
-  });
-  return el('div',{},[btn, panel]);
+  return fold.wrap;
 }
 
 /* =====================================================================
@@ -6871,7 +7044,10 @@ function buildReport13(profile, saju){
    톤앤매너는 기능6과 동일 규칙(반말 다정체, 이름 호칭, 자연물 비유, <strong> 강조,
    솔직한 약점+위로/조언, 공감형 추측 톤)을 그대로 따른다.
 ===================================================================== */
-var MBTI_SYMBOL = { /* 유형별 상징 이미지 + 고정 색 매핑 (오프닝용) */
+var MBTI_SYMBOL = { /* 유형별 상징 이미지 + 고정 색 매핑 (오프닝용)
+     ★ R29 확인 사항 — 아래 color 값 16개는 **화면에 한 번도 쓰이지 않는다**(쓰는 곳은 sym.img 하나뿐).
+       그래서 밝은 톤 전환에서 다시 계산하지 않았고, 어두운 화면 시절 값이 그대로 남아 있다.
+       나중에 이 색을 쓰려는 사람은 밝은 바탕 기준으로 다시 재고 써야 한다. */
   ISTJ:{img:'반듯하게 쌓아올린 돌담', color:'#8b8577'},
   ISFJ:{img:'뿌리 깊은 정원수', color:'#7a9a6a'},
   INFJ:{img:'안개 속에서도 길을 비추는 별', color:'#5f8fb0'},
@@ -7299,11 +7475,11 @@ function getTodayFortune(profile){
       /* R23 — 예전에는 "원국과 합이 들어오는 날입니다"처럼 용어가 문장 한가운데 그냥 서 있었다.
          뜻을 앞에 풀어 쓰고 원래 용어는 괄호로 남긴다(지우지 않는다). 판정 조건은 그대로다. */
       if(withToday.chung.length>baseRel.chung.length){
-        result.iljinComment = '오늘은 '+todayGz.text+'('+todayGz.textH+') 날이라, 타고난 여덟 글자(원국) 가운데 배우자 자리(일지)와 정면으로 부딪히는 기운(충)이 들어옵니다. 마음이 붕 뜨거나 갑자기 계획이 틀어질 수 있으니 큰 결정은 하루 미루는 편이 좋습니다.';
+        result.iljinComment = '오늘은 '+todayGz.text+'('+todayGz.textH+') 날이라, 타고난 여덟 글자 가운데 곁에 있는 사람 자리와 정면으로 부딪히는 기운이 들어옵니다. 마음이 붕 뜨거나 갑자기 계획이 틀어질 수 있으니 큰 결정은 하루 미루는 편이 좋습니다.';
       } else if(withToday.hap.length>baseRel.hap.length || withToday.samhap.length>baseRel.samhap.length){
-        result.iljinComment = '오늘은 '+todayGz.text+'('+todayGz.textH+') 날이라, 타고난 여덟 글자(원국)와 짝이 맞아 떨어지는 기운(합)이 들어옵니다. 사람이나 기회가 자연스럽게 다가올 수 있는 하루입니다.';
+        result.iljinComment = '오늘은 '+todayGz.text+'('+todayGz.textH+') 날이라, 타고난 여덟 글자와 짝이 맞아 떨어지는 기운이 들어옵니다. 사람이나 기회가 자연스럽게 다가올 수 있는 하루입니다.';
       } else {
-        result.iljinComment = '오늘은 '+todayGz.text+'('+todayGz.textH+') 날입니다. 타고난 여덟 글자(원국)와 크게 부딪히는 기운은 없어서 평소 리듬대로 움직이면 무난합니다.';
+        result.iljinComment = '오늘은 '+todayGz.text+'('+todayGz.textH+') 날입니다. 타고난 여덟 글자와 크게 부딪히는 기운은 없어서 평소 리듬대로 움직이면 무난합니다.';
       }
     }
   }catch(e){ /* 사주 계산 실패해도 기존 v1 운세는 그대로 표시 */ }
@@ -7595,7 +7771,9 @@ var COMPAT_METRICS = [
 ];
 /* 값 → 한마디. 점수를 바꾸는 게 아니라 이미 나온 점수에 말을 붙이는 것뿐이다. */
 function compatMetricWord(m, v){ return v>=75 ? m.words[0] : (v>=50 ? m.words[1] : m.words[2]); }
-function compatBarColor(v){ return v>=75 ? 'var(--gold)' : (v>=50 ? 'rgba(212,175,55,.55)' : '#f0846f'); }
+/* R29 — 세 단계 전부 불투명 색으로 바꿨다. 예전 가운데 단계는 금색 55% 투명이었는데,
+   밝은 홈(--track) 위에 얹으면 2:1대로 떨어져 막대가 있는지도 안 보인다. */
+function compatBarColor(v){ return v>=75 ? 'var(--gold)' : (v>=50 ? '#8C7134' : '#B4442C'); }
 /* 종합 점수 한 줄 — 등급(combinedTier)에서만 고른다. 새 판정이 아니다. */
 var COMPAT_TIER_LINE = {
   '천생연분형':'설명하지 않아도 통하는 대목이 많은 사이예요. 잘 맞는 만큼, 당연하게 여기지만 않으면 오래 가요.',
@@ -7635,25 +7813,25 @@ function buildCompatMetricBars(res){
    ★ 유료 상세 문장(elemDetail·branchRel·comment·연애/우정/갈등)은 여기에 넣지 않는다.
      여기 들어가는 것은 용어 이름과 이미 무료였던 한 줄 요약뿐이다. */
 function buildCompatWhyPanel(p, r){
-  var panelId = 'compatWhy';
-  var label = el('span',{},['왜 이런 결과가 나왔나요?']);
-  var btn = el('button',{class:'btn btn-ghost btn-block', type:'button',
-    'aria-expanded':'false', 'aria-controls':panelId, style:'margin-top:14px;'},[label, dirIcon('down')]);
-  var panel = el('div',{id:panelId, class:'why-panel hidden', role:'region','aria-label':'궁합 계산 근거'});
+  var fold = buildFoldPanel({id:'compatWhy', label:'왜 이런 결과가 나왔나요?', openLabel:'근거 접기',
+    regionLabel:'궁합 계산 근거'});
+  var panel = fold.panel;
 
   panel.appendChild(el('h4',{},['항목마다 무엇을 계산했나요']));
+  /* R30 — 한 줄에 용어 버튼이 넷까지 들어가 있었다("두 사람 일간(日干) 오행 — 비화(같은 오행)").
+     값은 그대로 두고 앞머리만 일상어로 바꾼다. 뒤에 붙는 용어(비화·육합 등)는 계산 결과라 남긴다. */
   var rows = [
     ['대화가 잘 통해요', r.pA.mbti+' × '+r.pB.mbti+' 유형 대조 · '+r.res.mbtiScore+'점'],
-    ['서로 부족한 걸 채워줘요', '두 사람 일간(日干) 오행 — '+(r.res.saju.elemTerm||'정보 부족')+' · '+(r.res.saju.elemScore60!=null?r.res.saju.elemScore60+'점':'—')],
-    ['하루 생활 리듬이 맞아요', '두 사람 일지(日支) — '+(r.res.saju.branchTerm||'정보 부족')+' · '+(r.res.saju.branchScore!=null?r.res.saju.branchScore+'점':'—')],
-    ['곁에 있으면 편안해요', '원국에서 가장 진한 오행 '+r.pA.element+' × '+r.pB.element+' · '+r.res.elemScore+'점'],
+    ['서로 부족한 걸 채워줘요', '태어난 날의 윗글자끼리 — '+(r.res.saju.elemTerm||'정보 부족')+' · '+(r.res.saju.elemScore60!=null?r.res.saju.elemScore60+'점':'—')],
+    ['하루 생활 리듬이 맞아요', '태어난 날의 아랫글자끼리 — '+(r.res.saju.branchTerm||'정보 부족')+' · '+(r.res.saju.branchScore!=null?r.res.saju.branchScore+'점':'—')],
+    ['곁에 있으면 편안해요', '여덟 글자 중 가장 진한 기운 '+r.pA.element+' × '+r.pB.element+' · '+r.res.elemScore+'점'],
     ['티격태격해도 금방 풀려요', '띠 '+r.pA.zodiac+' × '+r.pB.zodiac+' · '+r.res.zodScore+'점']
   ];
   rows.forEach(function(kv){
     panel.appendChild(el('div',{class:'why-row'},[
       el('span',{class:'why-k'},[kv[0]]), el('span',{class:'why-v'},[kv[1]]) ]));
   });
-  panel.appendChild(el('p',{class:'why-note'},['종합 점수는 성격(MBTI) 40% · 사주 40% · 오행 10% · 띠 10%로 합쳐요. 사주 점수는 일간 오행 60%와 일지 관계 40%를 합한 값이에요.']));
+  panel.appendChild(el('p',{class:'why-note'},['종합 점수는 성격(MBTI) 40% · 사주 40% · 다섯 기운 10% · 띠 10%로 합쳐요. 사주 점수는 태어난 날 윗글자끼리의 관계 60%와 아랫글자끼리의 관계 40%를 합한 값이에요.']));
 
   panel.appendChild(el('h4',{},['사주 용어로 보면']));
   panel.appendChild(el('p',{class:'why-note', style:'margin-top:2px;'},[r.res.saju.elemRel]));
@@ -7680,14 +7858,7 @@ function buildCompatWhyPanel(p, r){
     }
   }
 
-  btn.addEventListener('click', function(){
-    var open = this.getAttribute('aria-expanded')==='true';
-    this.setAttribute('aria-expanded', open?'false':'true');
-    label.textContent = open ? '왜 이런 결과가 나왔나요?' : '근거 접기';
-    this.replaceChild(dirIcon(open?'down':'up'), this.lastChild);
-    panel.classList.toggle('hidden', open);
-  });
-  return el('div',{},[btn, panel]);
+  return fold.wrap;
 }
 
 /* =====================================================================
@@ -7761,14 +7932,42 @@ function emptyState(title, sub, onAction, actionLabel){
   if(onAction) e.appendChild(el('button',{class:'btn btn-primary', onclick:onAction},[actionLabel||'프로필 만들기']));
   return e;
 }
+/* =====================================================================
+   R30 — 고지문을 두 겹으로 나눴다 (지우지 않았다)
+   ---------------------------------------------------------------------
+   이 문단은 두 가지 일을 한다. SPEC_v2의 최우선 원칙("계산에 자신 없는 부분을 명시적으로
+   고지한다")이고, 동시에 이용약관 본문과 짝을 이루는 고지다. 그래서 없앨 수 없다.
+   다만 대표님이 화면에서 직접 짚으셨듯 "광행차·장동·균시차·표준자오선·겉보기 황경"은
+   만든 사람이 알아야 할 말이지 보는 사람이 알아야 할 말이 아니다.
+
+     · 기본으로 보이는 것 = 두 문장(DISCLAIM_SHORT). 전문 용어 0개.
+     · "계산 방법 자세히"를 눌렀을 때만 = 예전 문단 그대로(DISCLAIM_LONG). 한 글자도 안 줄였다.
+
+   접는 방식은 새로 만들지 않고 buildFoldPanel(대운·궁합 근거가 쓰던 그 부품)을 그대로 쓴다.
+   ★ 이용약관 본문(openTermsModal 제3조)은 손대지 않았다 — 법적 고지는 그대로 둔다.
+===================================================================== */
+var DISCLAIM_SHORT = '사주 계산은 이 앱이 직접 한 것이라 실제와 몇 분 차이가 날 수 있어요. 사주는 정해진 미래가 아니라 나를 이해하는 참고 자료로 봐주세요.';
+var DISCLAIM_LONG = '이 계산은 태양의 겉보기 황경(광행차·장동 포함) 근사식과 공개 음력 데이터를 사용한 자체 만세력 로직입니다. 절기 시각은 공개 자료 80건과 대조해 최대 약 12분 차이가 났고, 절기가 자정에 아주 가까우면 날짜가 하루 달라질 수 있습니다. 시주는 출생지 경도·균시차·표준시 이력을 되돌린 진태양시로 계산하며(설정에서 끌 수 있습니다), 진태양시를 쓸지 시계 시각을 그대로 쓸지는 명리학계에서도 견해가 갈립니다. 사주는 정해진 미래를 알려주는 것이 아니라 타고난 기질과 흐름의 경향을 읽는 참고 자료입니다.';
+var DISCLAIM_SHORT_R = '사주 계산은 우리가 직접 한 거라 실제와 몇 분 차이가 날 수 있어. 사주는 정해진 미래를 알려주는 게 아니라 타고난 기질과 흐름을 읽는 참고 자료야.';
+var DISCLAIM_LONG_R = '이 계산은 태양의 겉보기 황경(광행차·장동까지 넣은 값) 근사식과 공개 음력 데이터를 쓴 자체 만세력 로직이야. 절기 시각은 공개 자료 80건과 맞춰보니 최대 12분쯤 차이가 났고, 절기가 자정에 아주 가까우면 날짜가 하루 달라질 수도 있어. 시주는 출생지 경도·균시차·표준시 이력을 되돌린 진태양시로 계산했어(설정에서 끌 수 있어). 진태양시를 쓸지 시계 시각을 그대로 쓸지는 명리학계에서도 갈리는 문제라 어느 한쪽이 정답이라고 말하진 않을게. 사주는 정해진 미래를 알려주는 게 아니라 타고난 기질과 흐름의 경향을 읽는 참고 자료야. 신살·격국·용신 풀이 역시 정통 이론의 정교한 산출식 대신 오행 균형과 고정 조회표로 근사한 결과라는 점도 참고해줘.';
+/* 짧은 고지 + "계산 방법 자세히" 접이식을 한 덩어리로 만든다.
+   short/long 두 벌을 받는 이유는 화면 성격에 따라 말투가 다르기 때문이다(정중체 / 반말 리포트체). */
+function buildDisclaimerFold(shortText, longText, foldLabel){
+  var fold = buildFoldPanel({
+    label: foldLabel, openLabel:'자세한 설명 접기', regionLabel:'사주 계산 방법과 오차에 대한 자세한 설명',
+    btnStyle:'margin-top:10px;',
+    children:[ el('p',{class:'why-note', style:'margin-top:0;'},[longText]) ]
+  });
+  return el('div',{class:'disclaimer-wrap'},[ el('p',{class:'disclaimer'},[shortText]), fold.wrap ]);
+}
 /* v4-C: 정중체 고지문(온보딩·홈·성향 리포트·내 사주 등 "UI 안내" 화면 공용) —
    반말 리포트 본문(disclaimerReport)과 톤이 섞이지 않도록 화면 성격에 따라 둘을 구분해 쓴다. */
 function disclaimer(){
-  return el('p',{class:'disclaimer'},['이 계산은 태양의 겉보기 황경(광행차·장동 포함) 근사식과 공개 음력 데이터를 사용한 자체 만세력 로직입니다. 절기 시각은 공개 자료 80건과 대조해 최대 약 12분 차이가 났고, 절기가 자정에 아주 가까우면 날짜가 하루 달라질 수 있습니다. 시주는 출생지 경도·균시차·표준시 이력을 되돌린 진태양시로 계산하며(설정에서 끌 수 있습니다), 진태양시를 쓸지 시계 시각을 그대로 쓸지는 명리학계에서도 견해가 갈립니다. 사주는 정해진 미래를 알려주는 것이 아니라 타고난 기질과 흐름의 경향을 읽는 참고 자료입니다.']);
+  return buildDisclaimerFold(DISCLAIM_SHORT, DISCLAIM_LONG, '계산 방법 자세히 보기');
 }
 /* v4-C: 반말 다정체 고지문 — 사주풀이 13섹션 리포트(기능6) 화면 전용. 리포트 본문과 같은 톤을 유지한다. */
 function disclaimerReport(){
-  return el('p',{class:'disclaimer'},['이 계산은 태양의 겉보기 황경(광행차·장동까지 넣은 값) 근사식과 공개 음력 데이터를 쓴 자체 만세력 로직이야. 절기 시각은 공개 자료 80건과 맞춰보니 최대 12분쯤 차이가 났고, 절기가 자정에 아주 가까우면 날짜가 하루 달라질 수도 있어. 시주는 출생지 경도·균시차·표준시 이력을 되돌린 진태양시로 계산했어(설정에서 끌 수 있어). 진태양시를 쓸지 시계 시각을 그대로 쓸지는 명리학계에서도 갈리는 문제라 어느 한쪽이 정답이라고 말하진 않을게. 사주는 정해진 미래를 알려주는 게 아니라 타고난 기질과 흐름의 경향을 읽는 참고 자료야. 신살·격국·용신 풀이 역시 정통 이론의 정교한 산출식 대신 오행 균형과 고정 조회표로 근사한 결과라는 점도 참고해줘.']);
+  return buildDisclaimerFold(DISCLAIM_SHORT_R, DISCLAIM_LONG_R, '계산 방법 자세히 보기');
 }
 function svgIcon(pathD, cls){
   var ns='http://www.w3.org/2000/svg';
@@ -7812,12 +8011,12 @@ function buildDonutGauge(score, size, label){
   var defs=document.createElementNS(ns,'defs');
   var grad=document.createElementNS(ns,'linearGradient'); grad.setAttribute('id',DONUT_GRAD_ID);
   grad.setAttribute('x1','0%'); grad.setAttribute('y1','0%'); grad.setAttribute('x2','100%'); grad.setAttribute('y2','100%');
-  var s1=document.createElementNS(ns,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#D4AF37');
-  var s2=document.createElementNS(ns,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#F1C94A');
+  var s1=document.createElementNS(ns,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#57431A');
+  var s2=document.createElementNS(ns,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#7A5F22');
   grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.appendChild(defs);
   var track=document.createElementNS(ns,'circle');
   track.setAttribute('cx',c); track.setAttribute('cy',c); track.setAttribute('r',r);
-  track.setAttribute('fill','none'); track.setAttribute('stroke','rgba(255,255,255,.08)'); track.setAttribute('stroke-width',stroke);
+  track.setAttribute('fill','none'); track.setAttribute('stroke','#E5E1D6'); track.setAttribute('stroke-width',stroke);
   svg.appendChild(track);
   var fg=document.createElementNS(ns,'circle');
   fg.setAttribute('cx',c); fg.setAttribute('cy',c); fg.setAttribute('r',r);
@@ -7871,6 +8070,12 @@ function openValueSheet(title, makeDraft, build, commit, opts){
   var draft = JSON.parse(base);
   function dirty(){ return JSON.stringify(draft) !== base; }
   function warn(){ showToast('저장하지 않은 변경이 있어요. [확인]으로 저장하거나 [취소]로 되돌려 주세요.'); }
+  function doCommit(){
+    MODAL_GUARD=null; closeModal(true);
+    commit(draft);
+    showToast(opts.savedToast || (title+' 저장했어요.'));
+    render();
+  }
   function redraw(){
     var body = el('div',{class:'sheet-body'});
     body.appendChild(build(draft, redraw));
@@ -7878,15 +8083,29 @@ function openValueSheet(title, makeDraft, build, commit, opts){
       body.appendChild(el('p',{class:'unsaved-line', role:'status'},
         ['저장하지 않은 변경이 있어요. [확인]을 눌러야 반영돼요.']));
     }
+    /* ★ 값이 바뀔 때마다 openModal()을 다시 부르면 모달을 통째로 헐고 다시 짓게 된다.
+       openModal()은 마지막에 첫 요소로 포커스를 옮기는데, 그 첫 요소가 바로 방금 고른
+       <select>다. 모바일 브라우저는 select가 포커스를 받으면 선택창을 다시 여는 경우가 있어,
+       "고르고 나면 닫혀야 할 창이 자꾸 다시 뜨는" 현상이 생긴다(대표님 제보, 2026-08-10).
+       그래서 이미 열려 있으면 본문과 [확인] 버튼 상태만 제자리에서 갈아끼운다.
+       포커스를 건드리지 않으므로 고른 자리에 그대로 머문다. */
+    var box = $('#activeModal') && $('#activeModal').querySelector('.modal-box');
+    var oldBody = box && box.querySelector('.sheet-body');
+    if(box && oldBody){
+      box.replaceChild(body, oldBody);
+      var btns = box.querySelectorAll('.modal-close-row .btn');
+      var confirmBtn = btns.length ? btns[btns.length-1] : null;
+      if(confirmBtn){
+        if(dirty()){ confirmBtn.removeAttribute('disabled'); confirmBtn.onclick = doCommit; }
+        else { confirmBtn.setAttribute('disabled','disabled'); confirmBtn.onclick = null; }
+      }
+      MODAL_GUARD = dirty() ? warn : null;
+      return;
+    }
     openModal(title, body, [
       {label:'취소', cls:'btn-ghost', onclick:function(){ MODAL_GUARD=null; closeModal(true); }},
       {label: opts.confirmLabel || '확인', cls:'btn-primary', disabled: !dirty(),
-       onclick:function(){
-         MODAL_GUARD=null; closeModal(true);
-         commit(draft);
-         showToast(opts.savedToast || (title+' 저장했어요.'));
-         render();
-       }}
+       onclick: doCommit}
     ]);
     /* ★ 순서가 중요하다. openModal()은 안에서 closeModal(true)로 이전 모달을 걷어내는데
        그 과정에서 MODAL_GUARD를 지운다. 그래서 잠금은 반드시 openModal "뒤에" 건다.
@@ -7945,8 +8164,9 @@ function hourPillarText(saju){
 function buildTimeAdjustTable(spec){
   var wrap = el('div',{});
   if(spec.timeUnknown){
+    /* R30 — 여기도 용어를 걷었다(시주·진태양시). 시각을 아직 모르는 사람에게는 계산 얘기가 필요 없다. */
     wrap.appendChild(el('p',{class:'ts-note'},[
-      '태어난 시각을 모른다고 선택하셨어요. 시주를 만들지 않으므로 진태양시 보정도 하지 않습니다. 나중에 시각을 알게 되면 프로필을 수정해 주세요.'
+      '태어난 시각을 모른다고 선택하셨어요. 그래서 태어난 시각 자리는 비워 두고, 해의 위치에 맞추는 계산도 하지 않습니다. 나중에 시각을 알게 되면 프로필을 수정해 주세요.'
     ]));
     return wrap;
   }
@@ -7972,7 +8192,15 @@ function buildTimeAdjustTable(spec){
   row('보정 켰을 때 진태양시', fmtHm(ta.eff)+effDateNote, spec.adjust);
   row('보정 켰을 때 시주', hourPillarText(on), spec.adjust);
   row('보정 껐을 때 시주', hourPillarText(off), !spec.adjust);
-  wrap.appendChild(tbl);
+  /* =====================================================================
+     R30 — 이 카드가 대표님이 "일반인이 보기에 어렵다"고 짚으신 자리 중 하나였다.
+     표준자오선·경도차·균시차가 표와 설명에 그대로 펼쳐져 있었고, 한 문단에 용어 버튼이 셋이었다.
+     계산은 한 줄도 바꾸지 않는다. 보이는 순서만 뒤집는다.
+       · 겉 = "몇 시로 보고 계산했는지" 한 문장(용어 0개)
+       · 안(접이식) = 예전 표와 설명 전부. 한 줄도 지우지 않았다.
+  ===================================================================== */
+  var detail = el('div',{});
+  detail.appendChild(tbl);
 
   var sameHour = on.hour && off.hour && on.hour.idx===off.hour.idx;
   var sameDay  = on.day.idx===off.day.idx;
@@ -7994,28 +8222,51 @@ function buildTimeAdjustTable(spec){
       msg += sameDay ? ' 바뀝니다.' : (', 일주도 '+onDay+josaOnlyText(onDay,'으로','로')+' 바뀝니다(자시 경계를 넘기 때문입니다).');
     }
   }
-  wrap.appendChild(el('p',{class:'ts-note', style:'color:var(--ink);'},[msg]));
-  wrap.appendChild(el('p',{class:'ts-note'},[
+  detail.appendChild(el('p',{class:'ts-note', style:'color:var(--ink);'},[msg]));
+  detail.appendChild(el('p',{class:'ts-note'},[
     '한국 표준시는 동경 135도를 기준으로 하는데 서울은 동경 약 127도예요. 그래서 서울에서 해가 가장 높이 뜨는 시각은 시계로 12시가 아니라 12시 32분쯤입니다. 진태양시 보정은 이 차이(경도차)와, 지구 궤도 때문에 생기는 하루 길이의 오차(균시차, 최대 약 16분)를 함께 되돌려 시주 경계를 실제 태양 위치에 맞추는 계산이에요.'
   ]));
   if(ta.dstMin){
-    wrap.appendChild(el('p',{class:'ts-note'},[
+    detail.appendChild(el('p',{class:'ts-note'},[
       '태어나신 날은 서머타임 시행 기간이라 당시 시계가 1시간 앞당겨져 있었어요. 보정을 켜면 이 1시간도 함께 되돌립니다.'
     ]));
   }
   if(ta.meridian===127.5 && !ta.beforeStd){
-    wrap.appendChild(el('p',{class:'ts-note'},[
+    detail.appendChild(el('p',{class:'ts-note'},[
       '태어나신 시기에 대한민국 표준자오선은 동경 135도가 아니라 127.5도였어요(1908~1911년, 1954~1961년). 보정을 켜면 그 시기의 기준을 씁니다.'
     ]));
   }
   if(ta.beforeStd){
-    wrap.appendChild(el('p',{class:'ts-note'},[
+    detail.appendChild(el('p',{class:'ts-note'},[
       '1908년 4월 1일 이전은 표준시 제도 자체가 없던 시기예요. 이 앱은 그 시기의 지방시 자료를 확인하지 못해 첫 표준자오선(동경 127.5도)으로 가정해 계산합니다. 이 시기의 시주는 참고만 해주세요.'
     ]));
   }
-  wrap.appendChild(el('p',{class:'ts-note'},[
+  detail.appendChild(el('p',{class:'ts-note'},[
     '보정을 끄면 입력한 시계 시각을 그대로 쓰고 표준자오선 이력·서머타임도 반영하지 않습니다. 다른 앱과 결과를 맞춰볼 때 쓰세요. 명리학계에서도 진태양시를 쓰는 쪽과 시계 시각을 그대로 쓰는 쪽이 갈리므로, 어느 한쪽이 정답이라고 말하지 않습니다.'
   ]));
+
+  /* 겉으로 보이는 한 문장 — 같은 사실을 용어 없이 적는다. 값(시각·달라지는지 여부)은
+     위에서 계산한 그대로이고, 여기서 새로 계산하는 것은 없다. */
+  var changeWord = (sameHour && sameDay) ? null
+                 : (sameDay ? '태어난 시각을 적은 두 글자가 달라져요.'
+                            : '태어난 시각과 태어난 날을 적은 두 글자가 모두 달라져요.');
+  var plain;
+  if(spec.adjust){
+    /* 분 단위 숫자 뒤 조사는 한국어로 읽었을 때의 받침으로 갈린다(13:39 → "구" 받침 없음).
+       기존 josaNum()을 그대로 쓴다. 날짜가 덧붙는 경우(effDateNote)에는 ')' 뒤라 '입니다'로 받는다. */
+    plain = '입력하신 '+pad2(spec.hour)+':'+pad2(spec.minute)+'을 그날 해가 떠 있던 위치에 맞추면 '+fmtHm(ta.eff)+effDateNote+
+            (effDateNote ? '입니다.' : josaNum(ta.eff.minute,'이에요.','예요.'))+' 이 시각으로 계산했습니다.';
+    plain += changeWord ? (' 맞추지 않으면 '+changeWord) : ' 맞추지 않아도 결과는 같은 시각이에요.';
+  } else {
+    plain = '지금은 맞추기를 꺼 두셔서, 입력하신 '+pad2(spec.hour)+':'+pad2(spec.minute)+'을 그대로 써서 계산했어요.';
+    plain += changeWord ? (' 맞추기를 켜면 '+changeWord) : ' 맞추기를 켜도 결과는 같아요.';
+  }
+  wrap.appendChild(el('p',{class:'ts-note', style:'color:var(--ink);'},[plain]));
+  wrap.appendChild(buildFoldPanel({
+    label:'어떻게 맞췄는지 자세히 보기', openLabel:'자세한 설명 접기',
+    regionLabel:'태어난 시각을 해의 위치에 맞추는 계산 자세히', btnStyle:'margin-top:10px;',
+    children:[detail]
+  }).wrap);
   /* R23 — 이 표는 여러 화면이 함께 쓴다. 여기서 한 번 훑어 두면 그 화면 모두에서 용어를 눌러 뜻을 볼 수 있다.
      ★ 다만 "값 편집 시트" 안에서는 훑지 않는다(spec.noTerms). openModal()은 새 모달을 열 때
        기존 모달을 강제로 닫으므로(closeModal(true)), 저장하지 않은 입력이 남아 있는 시트 위에서
@@ -8154,9 +8405,9 @@ function buildTermFixNotice(p){
     return null;
   }
   var box = el('div',{class:'migrate-box'});
-  box.appendChild(el('strong',{},['절기 시각 계산을 바로잡았어요 (이 프로필의 결과가 달라졌습니다)']));
+  box.appendChild(el('strong',{},['계절이 바뀌는 마디의 시각 계산을 바로잡았어요 (이 프로필의 결과가 달라졌습니다)']));
   box.appendChild(el('p',{},[
-    '지금까지 이 앱은 절기 시각을 계산할 때 빛의 광행차와 지구 자전축의 장동을 빼먹고 있었어요. 그 탓에 절기 시각이 실제와 어긋나 있었습니다(대체로 이르게, 실측 범위는 24분 이르게부터 3분 늦게까지). 이번에 두 항을 넣어 바로잡았고, 절기 경계 가까이에서 태어나신 이 프로필은 기둥이 달라졌어요.'
+    '계절이 바뀌는 마디의 시각을 계산하는 방법에 빠진 부분이 있어서, 그 시각이 실제와 조금씩 어긋나 있었어요(대체로 이르게, 실측 범위는 24분 이르게부터 3분 늦게까지). 이번에 바로잡았고, 그 마디 가까이에서 태어나신 이 프로필은 글자가 달라졌어요.'
   ]));
   var list = el('div',{class:'ts-table', style:'margin-top:8px;'});
   function row(k,v){ list.appendChild(el('div',{class:'ts-row'},[el('span',{class:'ts-k'},[k]), el('span',{class:'ts-v'},[v])])); }
@@ -8216,7 +8467,7 @@ function buildElementFixNotice(p){
   var box = el('div',{class:'migrate-box'});
   box.appendChild(el('strong',{},['대표 오행을 계산 결과에 맞췄어요 (이 프로필의 값이 달라졌습니다)']));
   box.appendChild(el('p',{},[
-    '여덟 글자 중 가장 많은 기운(대표 오행)은 프로필을 만들 때 한 번 계산해 저장해 두고 있었는데, 그 뒤에 사주 계산이 달라져도(진태양시 보정을 켜거나 끄면 시주가 바뀝니다) 저장된 값이 따라오지 않았어요. 그래서 이 프로필은 화면마다 다른 오행을 말하고 있었습니다. 이번에 계산 결과 하나만 쓰도록 고쳤어요.'
+    '여덟 글자 중 가장 많은 기운은 프로필을 만들 때 한 번 계산해 저장해 두고 있었는데, 그 뒤에 계산이 달라져도(태어난 시각을 해의 위치에 맞추는 설정을 켜거나 끄면 글자가 바뀝니다) 저장된 값이 따라오지 않았어요. 그래서 이 프로필은 화면마다 다른 기운을 말하고 있었습니다. 이번에 계산 결과 하나만 쓰도록 고쳤어요.'
   ]));
   var list = el('div',{class:'ts-table', style:'margin-top:8px;'});
   list.appendChild(el('div',{class:'ts-row'},[
@@ -8252,8 +8503,12 @@ function renderOnboarding(){
     if(CHARACTERS[k]) introRow.appendChild(buildCharSvg(k, 62, {mini:true, label:CHARACTERS[k].name+' 캐릭터'}));
   });
   if(introRow.childNodes.length) wrap.appendChild(introRow);
-  wrap.appendChild(el('p',{},['MBTI와 정통 만세력 사주를 결합해 오늘의 운세와 두 사람의 궁합을 풀어보는 개인용 점괘 노트예요. 생년월일시로 사주팔자를 직접 계산하고, 서버 없이 링크 하나로 함께 궁합도 볼 수 있어요.']));
-  wrap.appendChild(el('p',{class:'section-sub'},['※ 만세력 계산은 태양의 겉보기 황경 근사식과 공개 음력 데이터를 사용한 자체 계산으로, 절기 시각이 실제 관측 기준과 몇 분(최대 약 12분) 차이가 날 수 있습니다.']));
+  /* R30 — 앱을 처음 만나는 화면이다. 여기서는 용어를 한 개도 쓰지 않는다.
+     ('만세력'·'사주팔자'는 내 사주 화면과 용어 사전에 그대로 있다 — 없앤 게 아니라 뒤로 미뤘다.)
+     고지도 짧은 한 문장만 둔다. 아직 아무 계산도 보여주기 전이라 여기서 접이식까지 놓으면
+     "시작하기" 버튼 앞에 눌러야 할 것이 하나 더 생긴다. 자세한 설명은 결과 화면마다 붙는다. */
+  wrap.appendChild(el('p',{},['MBTI와 사주를 함께 봐서 오늘의 운세와 두 사람의 궁합을 풀어보는 개인용 점괘 노트예요. 태어난 날과 시각으로 여덟 글자를 직접 계산하고, 서버 없이 링크 하나로 친구와 함께 궁합도 볼 수 있어요.']));
+  wrap.appendChild(el('p',{class:'section-sub'},['※ 사주 계산은 이 앱이 직접 하는 것이라 실제와 몇 분 차이가 날 수 있어요. 정해진 미래가 아니라 참고로 봐주세요.']));
   wrap.appendChild(el('button',{class:'btn btn-primary',onclick:function(){
     STATE.onboarded=true; saveState(); startSetupWizard(null); render();
   }},['시작하기']));
@@ -8525,7 +8780,7 @@ function renderSetupStep2(){
   }));
 
   /* row 5: 성별 */
-  box.appendChild(settingsRow('성별 (대운 순행/역행 계산에 필요)', SETUP.gender==='F'?'여자':'남자', function(){
+  box.appendChild(settingsRow('성별 (10년 흐름이 도는 방향을 정할 때 필요해요)', SETUP.gender==='F'?'여자':'남자', function(){
     openValueSheet('성별',
       function(){ return {gender:SETUP.gender}; },
       function(d, redraw){
@@ -8598,12 +8853,12 @@ function renderSetupStep3(){
     (SETUP.calendarType==='lunar'?('음력 '+SETUP.year+'-'+pad2(SETUP.month)+'-'+pad2(SETUP.day)+' (양력 '+computed.solarY+'-'+pad2(computed.solarM)+'-'+pad2(computed.solarD)+')'):('양력 '+SETUP.year+'-'+pad2(SETUP.month)+'-'+pad2(SETUP.day)))+
     ' · '+(SETUP.timeUnknown?'시간 모름':pad2(SETUP.hour)+':'+pad2(SETUP.minute))
   ]));
-  if(saju.nearBoundary){ card.appendChild(el('p',{class:'warn-box'},['생일이 절기 경계와 가까워서 월주·연주가 다르게 나올 수 있어요.'])); }
+  if(saju.nearBoundary){ card.appendChild(el('p',{class:'warn-box'},['태어난 날이 계절이 바뀌는 마디와 아주 가까워요. 그래서 태어난 달과 태어난 해를 적은 글자가 다르게 나올 수도 있어요.'])); }
   box.appendChild(card);
 
   /* R20 — 저장하기 전에 진태양시 보정이 무엇을 바꾸는지 그대로 펼쳐 보인다. */
   var tsCard=el('div',{class:'scroll-card'});
-  tsCard.appendChild(cardHead('태어난 시각을 실제 해의 위치에 맞추기', ['진태양시','균시차']));
+  tsCard.appendChild(cardHead('태어난 시각을 실제 해의 위치에 맞추기', ['진태양시'])  /* R30 — '균시차'는 접힌 표 안에 그대로 있다(제목줄에서만 뺐다) */);
   tsCard.appendChild(buildTimeAdjustTable({
     y:computed.solarY, m:computed.solarM, d:computed.solarD,
     timeUnknown:SETUP.timeUnknown, hour:SETUP.hour, minute:SETUP.minute,
@@ -8768,18 +9023,33 @@ var REL_LABEL_BRANCH = SajuEngine.BRANCHES;
 function relationBadges(rel){
   var wrap=el('div',{class:'term-chip-row no-term'});
   function two(pair){ return REL_LABEL_BRANCH[pair[0].idx]+REL_LABEL_BRANCH[pair[1].idx]; }
-  rel.hap.forEach(function(pair){ wrap.appendChild(termChip('육합',{term:two(pair)+' 육합', cls:'tchip-hap'})); });
+  /* ★ 같은 관계가 두 자리에서 겹치면 칩 글자가 똑같아 화면에 같은 칩이 두 번 찍힌다.
+     (예: 자(子) 하나가 시지의 오·일지의 오와 각각 충이면 '자오 충'이 두 번)
+     계산은 맞지만 읽는 사람에게는 그냥 버그로 보인다 — 실제로 그렇게 보였다.
+     그래서 **표시만** 합치고 몇 자리에서 생겼는지 덧붙인다. rel(계산 결과)은 건드리지 않는다. */
+  var items=[], order=[], seen={};
+  function add(key, term, cls){ items.push({key:key, term:term, cls:cls}); }
+  rel.hap.forEach(function(pair){ add('육합', two(pair)+' 육합', 'tchip-hap'); });
   rel.samhap.forEach(function(s){
     var key = s.full ? '삼합' : '반합';
-    wrap.appendChild(termChip(key,{term:ELEMENTS[s.elem]+'국 '+key, cls:'tchip-hap'}));
+    add(key, ELEMENTS[s.elem]+'국 '+key, 'tchip-hap');
   });
-  rel.banghap.forEach(function(s){ wrap.appendChild(termChip('방합',{term:ELEMENTS[s.elem]+' 방합', cls:'tchip-hap'})); });
-  rel.chung.forEach(function(pair){ wrap.appendChild(termChip('충',{term:two(pair)+' 충', cls:'tchip-chung'})); });
-  rel.pa.forEach(function(pair){ wrap.appendChild(termChip('파',{term:two(pair)+' 파', cls:'tchip-pa'})); });
+  rel.banghap.forEach(function(s){ add('방합', ELEMENTS[s.elem]+' 방합', 'tchip-hap'); });
+  rel.chung.forEach(function(pair){ add('충', two(pair)+' 충', 'tchip-chung'); });
+  rel.pa.forEach(function(pair){ add('파', two(pair)+' 파', 'tchip-pa'); });
   rel.hyeong.forEach(function(h){
     /* h.type은 '삼형'·'상형'·'자형'. 예전에는 뒤에 '형'을 한 번 더 붙여 `상형 형`으로 찍혔다. */
     var chars = (h.chars||[]).map(function(b){ return REL_LABEL_BRANCH[b]; }).join('');
-    wrap.appendChild(termChip(h.type,{term:(chars?chars+' ':'')+h.type, cls:'tchip-hyeong'}));
+    add(h.type, (chars?chars+' ':'')+h.type, 'tchip-hyeong');
+  });
+  items.forEach(function(it){
+    var k = it.key+'|'+it.term+'|'+it.cls;
+    if(seen[k]) seen[k].n++;
+    else { seen[k]={it:it, n:1}; order.push(k); }
+  });
+  order.forEach(function(k){
+    var e = seen[k];
+    wrap.appendChild(termChip(e.it.key, {term: e.it.term + (e.n>1 ? ' · '+e.n+'곳' : ''), cls: e.it.cls}));
   });
   if(rel.hap.length+rel.samhap.length+rel.banghap.length+rel.chung.length+rel.pa.length+rel.hyeong.length===0){
     wrap.appendChild(termChip('합충형파',{plain:'뚜렷하게 얽히는 자리가 없어요', term:'합·충·형·파 없음'}));
@@ -8947,7 +9217,7 @@ function renderSaju(){
   var pillarCard=el('div',{class:'scroll-card stamp-in'});
   pillarCard.appendChild(cardHead('태어난 때를 적은 여덟 글자', ['사주팔자','간지']));
   pillarCard.appendChild(buildPillarTable(saju));
-  if(saju.nearBoundary){ pillarCard.appendChild(el('p',{class:'warn-box'},['생일이 절기 경계와 가까워서 월주·연주가 다르게 나올 수 있어요.'])); }
+  if(saju.nearBoundary){ pillarCard.appendChild(el('p',{class:'warn-box'},['태어난 날이 계절이 바뀌는 마디와 아주 가까워요. 그래서 태어난 달과 태어난 해를 적은 글자가 다르게 나올 수도 있어요.'])); }
   if(!saju.hour){ pillarCard.appendChild(el('p',{class:'section-sub'},['내면·자녀운 관련 해석은 참고만 해주세요.'])); }
   view.appendChild(pillarCard);
 
@@ -8961,7 +9231,7 @@ function renderSaju(){
   var migNotice = buildMigrateNotice(p);
   if(migNotice) view.appendChild(migNotice);
   var tsCard=el('div',{class:'scroll-card'});
-  tsCard.appendChild(cardHead('태어난 시각을 실제 해의 위치에 맞추기', ['진태양시','균시차']));
+  tsCard.appendChild(cardHead('태어난 시각을 실제 해의 위치에 맞추기', ['진태양시'])  /* R30 — '균시차'는 접힌 표 안에 그대로 있다(제목줄에서만 뺐다) */);
   tsCard.appendChild(buildTimeAdjustTable({
     y:p.year, m:p.month, d:p.day, timeUnknown: !p.birthTime,
     hour: p.birthTime?p.birthTime.hour:12, minute: p.birthTime?(p.birthTime.minute||0):0,
@@ -8973,7 +9243,7 @@ function renderSaju(){
 
   var elemInfo = dominantElementIdx(saju);
   var elemCard=el('div',{class:'scroll-card'});
-  elemCard.appendChild(cardHead('다섯 가지 기운이 얼마나 있나요', ['오행','신강','신약']));
+  elemCard.appendChild(cardHead('다섯 가지 기운이 얼마나 있나요', ['오행'])  /* R30 — 신강·신약은 바로 아래 문장에 이미 붙는다(같은 줄에 셋을 늘어놓지 않는다) */);
   elemCard.appendChild(buildElemBars(elemInfo.counts));
   elemCard.appendChild(el('p',{class:'section-sub'},['가장 진한 기운은 '+ELEMENTS[elemInfo.idx]+' 기운이에요. 내 힘의 세기는 '+
     (sinGangJak(saju)==='strong'?'넘치는 편(신강)':'모자란 편(신약)')+'이에요 — 글자 수만 세는 간단한 판정이라 참고로만 봐주세요.']));
@@ -9027,7 +9297,7 @@ function renderSaju(){
   var dwUnlocked = sajuDetailUnlocked();
   dwCard.appendChild(el('p',{class:'section-sub', style:'margin-top:14px;'},[ dwUnlocked
     ? '구간을 탭하면 그 시기의 흐름·금전운·건강운을 자세히 볼 수 있어요.'
-    : '구간마다의 두 글자(간지)와 나에게 어떤 자리인지(십성), 기운 강도는 모두 무료예요. 구간을 탭했을 때 나오는 상세는 지금 지나는 대운만 미리 열어두었고, 나머지 구간은 유료예요.' ]));
+    : '구간마다의 두 글자와 나에게 어떤 자리인지, 기운 강도는 모두 무료예요. 구간을 눌렀을 때 나오는 자세한 풀이는 지금 지나는 구간만 미리 열어두었고, 나머지 구간은 유료예요.' ]));
   var scroll=el('div',{class:'daewoon-scroll'});
   dw.list.forEach(function(item,i){
     var sipName = SajuEngine.sipseongOf(saju.day.stemIdx, SajuEngine.STEM_ELEM[item.ganji.stemIdx], SajuEngine.STEM_YY[item.ganji.stemIdx]);
@@ -9575,7 +9845,10 @@ function renderCompat(){
       '상대방의 정보를 입력하면 '+p.name+'님과의 MBTI 궁합 + 사주 궁합을 함께 풀어드려요.'));
     view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '링크로 궁합 보기 (초대 링크 만들기)']));
     if(STATE.profiles.length>=2){
-      view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){ ROUTE='groupCompat'; render(); }},[svgIcon('M10 3 L16 7 L14 15 L6 15 L4 7 Z M10 3 L10 15 M4 7 L14 15 M16 7 L6 15','btn-lead-icon'), '모두의 궁합 보기 (그룹 네트워크)']));
+      view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){
+        GC_SOURCE='profiles'; GC_SEL=null; GC_RANK={order:'best', shown:GC_RANK_STEP};
+        ROUTE='groupCompat'; render();
+      }},[svgIcon('M10 3 L16 7 L14 15 L6 15 L4 7 Z M10 3 L10 15 M4 7 L14 15 M16 7 L6 15','btn-lead-icon'), '모두의 궁합 보기 (모임 · 최대 '+GC_MAX+'명)']));
     }
     view.appendChild(renderCompatForm());
   } else {
@@ -9952,14 +10225,14 @@ function renderCompatSajuDetail(p, draft){
   box.appendChild(compatBackNav());
   box.appendChild(pageHead('궁합 상세', '사주 궁합 상세', null, {marginTop:'14px'}));
   var c1=el('div',{class:'scroll-card'});
-  c1.appendChild(cardHead('두 사람의 기운이 서로를 살리는지 누르는지', ['일간','오행','상생','상극']));
+  c1.appendChild(cardHead('두 사람의 기운이 서로를 살리는지 누르는지', ['일간','오행'])  /* R30 — 상생·상극은 바로 아래 본문에 나온다 */);
   /* ★ 여기에 elemRel(무료 요약 한 줄)을 그대로 다시 쓰면, 돈을 낸 사람이 첫 카드에서
      방금 무료로 읽은 문장을 한 번 더 보게 된다. 유료 상세는 elemDetail(깊은 서술)을 쓴다.
      elemDetail이 없는 예전 기록은 최소한 요약이라도 보이게 fallback을 둔다. */
   c1.appendChild(el('p',{},[r.res.saju.elemDetail || r.res.saju.elemRel]));
   box.appendChild(c1);
   var c2=el('div',{class:'scroll-card'});
-  c2.appendChild(cardHead('배우자 자리끼리 짝이 되는지 부딪히는지', ['일지','육합','충']));
+  c2.appendChild(cardHead('배우자 자리끼리 짝이 되는지 부딪히는지', ['일지'])  /* R30 — 육합·충은 바로 아래 본문에 나온다 */);
   c2.appendChild(el('p',{},[r.res.saju.branchRel]));
   box.appendChild(c2);
   var c3=el('div',{class:'scroll-card'});
@@ -10036,22 +10309,22 @@ function buildCoupleRelationSvg(sajuA, sajuB){
   function ptB(i){ return [stepB*(i+1), h-20]; }
   branchesA.forEach(function(pos,i){
     var xy=ptA(i);
-    var c=document.createElementNS(ns,'circle'); c.setAttribute('cx',xy[0]); c.setAttribute('cy',xy[1]); c.setAttribute('r','14'); c.setAttribute('fill','rgba(201,169,97,.18)'); c.setAttribute('stroke','var(--pA)');
+    var c=document.createElementNS(ns,'circle'); c.setAttribute('cx',xy[0]); c.setAttribute('cy',xy[1]); c.setAttribute('r','14'); c.setAttribute('fill','rgba(88,68,22,.10)'); c.setAttribute('stroke','var(--pA)');
     svg.appendChild(c);
-    var t=document.createElementNS(ns,'text'); t.setAttribute('x',xy[0]); t.setAttribute('y',xy[1]+4); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','11'); t.setAttribute('fill','#ece4d3'); t.textContent=sajuA[pos].branch;
+    var t=document.createElementNS(ns,'text'); t.setAttribute('x',xy[0]); t.setAttribute('y',xy[1]+4); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','11'); t.setAttribute('fill','#231F18'); t.textContent=sajuA[pos].branch;
     svg.appendChild(t);
   });
   branchesB.forEach(function(pos,i){
     var xy=ptB(i);
-    var c=document.createElementNS(ns,'circle'); c.setAttribute('cx',xy[0]); c.setAttribute('cy',xy[1]); c.setAttribute('r','14'); c.setAttribute('fill','rgba(233,79,55,.14)'); c.setAttribute('stroke','var(--pB)');
+    var c=document.createElementNS(ns,'circle'); c.setAttribute('cx',xy[0]); c.setAttribute('cy',xy[1]); c.setAttribute('r','14'); c.setAttribute('fill','rgba(143,36,19,.08)'); c.setAttribute('stroke','var(--pB)');
     svg.appendChild(c);
-    var t=document.createElementNS(ns,'text'); t.setAttribute('x',xy[0]); t.setAttribute('y',xy[1]+4); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','11'); t.setAttribute('fill','#ece4d3'); t.textContent=sajuB[pos].branch;
+    var t=document.createElementNS(ns,'text'); t.setAttribute('x',xy[0]); t.setAttribute('y',xy[1]+4); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','11'); t.setAttribute('fill','#231F18'); t.textContent=sajuB[pos].branch;
     svg.appendChild(t);
   });
   branchesA.forEach(function(posA,i){
     branchesB.forEach(function(posB,j){
       var relSet = SajuEngine.branchRelations([{idx:sajuA[posA].branchIdx},{idx:sajuB[posB].branchIdx}]);
-      var color = relSet.hap.length>0 ? '#9fc28c' : (relSet.chung.length>0 ? '#f0846f' : null);
+      var color = relSet.hap.length>0 ? '#3F6B45' : (relSet.chung.length>0 ? '#8F2413' : null);
       if(color){
         var a=ptA(i), b=ptB(j);
         var line=document.createElementNS(ns,'line'); line.setAttribute('x1',a[0]); line.setAttribute('y1',a[1]); line.setAttribute('x2',b[0]); line.setAttribute('y2',b[1]); line.setAttribute('stroke',color); line.setAttribute('stroke-width','1.6'); line.setAttribute('opacity','.8');
@@ -10061,8 +10334,8 @@ function buildCoupleRelationSvg(sajuA, sajuB){
   });
   var wrap=el('div',{style:'overflow-x:auto;'},[svg]);
   var legend=el('div',{class:'legend', style:'margin-top:8px;'},[
-    el('span',{},[el('span',{class:'dot',style:'background:#9fc28c'}),'합']),
-    el('span',{},[el('span',{class:'dot',style:'background:#f0846f'}),'충'])
+    el('span',{},[el('span',{class:'dot',style:'background:#3F6B45'}),'합']),
+    el('span',{},[el('span',{class:'dot',style:'background:#8F2413'}),'충'])
   ]);
   var outer=el('div',{},[wrap,legend]);
   return outer;
@@ -10091,15 +10364,15 @@ function buildRadarSvg(pA, pB){
   [0.25,0.5,0.75,1].forEach(function(f){
     var poly=document.createElementNS(ns,'polygon');
     var p=[]; for(var i=0;i<5;i++){ var xy=pt(i,R*f); p.push(xy[0]+','+xy[1]); }
-    poly.setAttribute('points',p.join(' ')); poly.setAttribute('fill','none'); poly.setAttribute('stroke','rgba(201,169,97,.2)');
+    poly.setAttribute('points',p.join(' ')); poly.setAttribute('fill','none'); poly.setAttribute('stroke','rgba(35,31,24,.18)');
     svg.appendChild(poly);
   });
   for(var i=0;i<5;i++){
     var xy=pt(i,R);
-    var line=document.createElementNS(ns,'line'); line.setAttribute('x1',cx); line.setAttribute('y1',cy); line.setAttribute('x2',xy[0]); line.setAttribute('y2',xy[1]); line.setAttribute('stroke','rgba(201,169,97,.2)');
+    var line=document.createElementNS(ns,'line'); line.setAttribute('x1',cx); line.setAttribute('y1',cy); line.setAttribute('x2',xy[0]); line.setAttribute('y2',xy[1]); line.setAttribute('stroke','rgba(35,31,24,.18)');
     svg.appendChild(line);
     var label=document.createElementNS(ns,'text'); var lp=pt(i,R+16);
-    label.setAttribute('x',lp[0]); label.setAttribute('y',lp[1]); label.setAttribute('fill','#a79f8f'); label.setAttribute('font-size','11'); label.setAttribute('text-anchor','middle');
+    label.setAttribute('x',lp[0]); label.setAttribute('y',lp[1]); label.setAttribute('fill','#494334'); label.setAttribute('font-size','11'); label.setAttribute('text-anchor','middle');
     label.textContent=ELEMENTS[i];
     svg.appendChild(label);
   }
@@ -10107,26 +10380,57 @@ function buildRadarSvg(pA, pB){
     var vals=elementProfile(profile.elementIdx);
     var pts=[]; for(var i=0;i<5;i++){ var xy=pt(i, R*(vals[i]/100)); pts.push(xy[0]+','+xy[1]); }
     var poly=document.createElementNS(ns,'polygon');
-    poly.setAttribute('points',pts.join(' ')); poly.setAttribute('fill',color); poly.setAttribute('fill-opacity','0.18'); poly.setAttribute('stroke',color); poly.setAttribute('stroke-width','2');
+    poly.setAttribute('points',pts.join(' ')); poly.setAttribute('fill',color); poly.setAttribute('fill-opacity','0.13'); poly.setAttribute('stroke',color); poly.setAttribute('stroke-width','2');
     return poly;
   }
-  svg.appendChild(polyFor(pA,'#c9a961'));
-  svg.appendChild(polyFor(pB,'#e94f37'));
+  svg.appendChild(polyFor(pA,'#584416'));
+  svg.appendChild(polyFor(pB,'#8F2413'));
   return svg;
 }
 
 /* =====================================================================
-   기능17: 그룹 궁합 네트워크 (신규, v3)
-   새 궁합 계산 로직 없음 — computeCompat/getSajuResult를 nC2로 재사용만 한다.
+   기능17: 모임(그룹) 궁합 — 최대 30명 (R28에서 확장)
+   ---------------------------------------------------------------------
+   ★ 새 궁합 계산 로직은 한 줄도 만들지 않았다. 기존 computeCompat / getSajuResult를
+     그대로 nC2로 부를 뿐이다. 30명이면 435쌍이라 계산량이 늘어서 두 가지만 손봤다.
+       ① 사람 객체(toCompatPerson)를 쌍마다 만들지 않고 사람당 한 번만 만든다.
+          예전에는 435쌍 × 2 = 870번 만들었고 그때마다 getSajuResult가 불렸다. 이제 30번이다.
+       ② 같은 명단이면 이미 계산한 결과를 그대로 쓴다(GC_PAIRS_CACHE).
+     ★ 캐시가 있어도 값은 달라지지 않는다 — 캐시 키에 computeCompat이 실제로 읽는 값
+       (이름·MBTI·대표 오행·띠·일주 간지)을 전부 넣어, 하나라도 바뀌면 반드시 다시 계산한다.
+
+   무료/유료 경계 (SPEC "기술 제약 확인 → 4. 무료/유료 경계" 표):
+     무료 — 그림 · 점수 · 등급 · 일상어 이름표 · 전체 순위 목록 · 사람별 최고/최저 상대
+     유료 — 쌍별 상세(사주 관점 문장 · MBTI 케미 문장 · 사주/MBTI 하위 점수). 1:1과 같은 compat_full 하나다.
+   잠긴 부분은 흐리게 가리지 않고 DOM에 아예 만들지 않는다(R24에서 세운 규칙).
 ===================================================================== */
+var GC_MAX = 30;                        /* 한 모임에 세울 수 있는 최대 인원 */
 var GC_TIER_ORDER = ['천생연분형','찰떡궁합형','무난동행형','노력필요형','인연신중형'];
+/* R28 — 선과 이름표에 쓰는 색을 어두운 배경에서 실제로 읽히는 값으로 올렸다.
+   R29 — 밝은 톤으로 뒤집으면서 다섯 색을 전부 다시 잡았다. 예전 값은 "어두운 배경에서 밝게"였고
+   그대로 두면 종이 위에서 전부 씻겨 사라진다. 지금은 다섯 색 모두 바탕 대비 7:1 이상이다
+   (천생연분 7.23 / 찰떡 7.63 / 무난 8.95 / 노력필요 7.52 / 인연신중 7.18).
+   이름표 글자로도 쓰이는 색이라 그림 기준(3:1)이 아니라 본문 기준(7:1)으로 잡았다.
+   아래 다섯 색은 전부 페이지 배경 대비 6:1 이상이다(계산해서 골랐다). 새 팔레트를 만든 게 아니라
+   원래 있던 금박/주색/인디고/회갈 계열을 그대로 밝기만 올린 값이다. */
 var GC_TIER_COLORS = {
-  '천생연분형':'#c9a961', /* 금박색 */
-  '찰떡궁합형':'#e2624a', /* 주색 밝은 톤 */
-  '무난동행형':'#6b6ba0', /* 인디고 중간톤 */
-  '노력필요형':'#8a7f68', /* 회갈색 */
-  '인연신중형':'#4a4550'  /* 먹색에 가까운 저채도 톤 */
+  '천생연분형':'#634C10', /* 금박색 어두운 톤 */
+  '찰떡궁합형':'#8F2413', /* 인주색 — --red-hi와 같은 값 */
+  '무난동행형':'#3A3C72', /* 인디고 */
+  '노력필요형':'#554B3B', /* 회갈색 */
+  '인연신중형':'#41505E'  /* 저채도 청회색 */
 };
+/* R21·R23 규칙: 화면에는 일상어를 먼저 크게, 원래 등급 이름은 뒤에 작게.
+   선 위 이름표는 자리가 좁아 일상어만 쓰고, 등급 이름은 바로 아래 범례에서 짝지어 보여준다. */
+var GC_TIER_PLAIN = {
+  '천생연분형':'천생연분',
+  '찰떡궁합형':'척하면 척',
+  '무난동행형':'그럭저럭',
+  '노력필요형':'맞춰가는 중',
+  '인연신중형':'삐걱삐걱'
+};
+function gcPlain(tier){ return GC_TIER_PLAIN[tier] || tier; }
+
 /* 프로필 객체를 computeCompat이 기대하는 person 형태로 변환 (submitCompat의 pA 매핑과 동일 패턴) */
 function toCompatPerson(p){
   /* ★ R25 — 사주를 먼저 구한다. 객체 리터럴 안에서 getSajuResult(p)를 부르면
@@ -10134,132 +10438,474 @@ function toCompatPerson(p){
   var saju = getSajuResult(p);
   return {mbti:p.mbti, elementIdx:p.elementIdx, zodiacIdx:p.zodiacIdx, name:p.name, element:p.element, zodiac:p.zodiac, saju:saju, gender:p.gender};
 }
-/* STATE.profiles 전체를 nC2 조합으로 짝지어 기존 computeCompat을 그대로 재사용해 궁합을 산출 */
-function buildGroupCompatPairs(profiles){
-  var pairs=[];
-  for(var i=0;i<profiles.length;i++){
-    for(var j=i+1;j<profiles.length;j++){
-      var pA=toCompatPerson(profiles[i]), pB=toCompatPerson(profiles[j]);
-      var res=computeCompat(pA,pB);
-      pairs.push({a:profiles[i], b:profiles[j], res:res});
+/* 모임에 세우는 "사람 한 명". 저장된 프로필에서 올 수도 있고, 모임 링크에서 올 수도 있다.
+   두 경로가 같은 모양을 내놓아야 그림·순위·카드가 출처를 몰라도 되게 만든다. */
+function gcMemberFromProfile(p){
+  var person = toCompatPerson(p);
+  return {id:p.id, name:p.name || '이름 없음', mbti:person.mbti, elementIdx:person.elementIdx, person:person};
+}
+function gcMemberFromMeetRow(row, i){
+  var saju = null;
+  try{
+    saju = SajuEngine.computeSaju(row.y, row.mo, row.d, (row.h==null?null:row.h), (row.mi||0),
+      {lon:row.lo, adjust:!!row.ts});
+  }catch(e){ saju = null; }
+  var ei = saju ? dominantElementIdx(saju).idx : 0;
+  var z = calcZodiac(row.y);
+  var person = {mbti:row.m, elementIdx:ei, zodiacIdx:z.idx, name:row.n, element:ELEMENTS[ei],
+                zodiac:z.name, saju:saju, gender:row.g};
+  return {id:'k'+i, name:row.n, mbti:row.m, elementIdx:ei, person:person};
+}
+
+/* ---------------------------------------------------------------------
+   쌍 계산 — nC2. 30명이면 435쌍이다.
+   계산식은 computeCompat 그대로이고, 여기서 하는 일은 "같은 명단이면 다시 안 돈다"뿐이다.
+--------------------------------------------------------------------- */
+var GC_PAIRS_CACHE = {key:null, pairs:null, ms:0, computed:0};
+function gcNow(){ return (window.performance && performance.now) ? performance.now() : Date.now(); }
+function gcCacheKey(members){
+  return members.map(function(m){
+    var s = m.person.saju;
+    return m.id+'~'+m.name+'~'+m.mbti+'~'+m.person.elementIdx+'~'+m.person.zodiacIdx+'~'+
+           (s && s.day ? s.day.stemIdx+'_'+s.day.branchIdx : 'x');
+  }).join('|');
+}
+function buildGroupCompatPairs(members){
+  var key = gcCacheKey(members);
+  if(GC_PAIRS_CACHE.key === key) return GC_PAIRS_CACHE.pairs;
+  var t0 = gcNow(), pairs = [], i, j;
+  for(i=0;i<members.length;i++){
+    for(j=i+1;j<members.length;j++){
+      pairs.push({ai:i, bi:j, a:members[i], b:members[j],
+                  res:computeCompat(members[i].person, members[j].person)});
     }
   }
+  GC_PAIRS_CACHE = {key:key, pairs:pairs, ms:gcNow()-t0, computed:pairs.length};
   return pairs;
 }
-/* 원형 네트워크 그래프: SVG 연결선 레이어 + 절대위치 HTML 노드 버튼 (모바일 반응형 좌표계 0~100 상대값) */
-function buildGroupCompatGraph(profiles, pairs){
-  var n=profiles.length;
-  var R = n<=5?38:(n<=8?34:30);
-  var pos = profiles.map(function(p,i){
-    var angle = Math.PI*2*i/n - Math.PI/2; /* 12시 방향부터 시계방향 */
-    return {id:p.id, x:50+R*Math.cos(angle), y:50+R*Math.sin(angle)};
-  });
-  var posById={}; pos.forEach(function(pt){ posById[pt.id]=pt; });
 
-  var wrap=el('div',{});
-  var container=el('div',{class:'gc-container'});
+/* ---------------------------------------------------------------------
+   배치표 — 인원이 늘면 고리를 늘리고 아바타를 줄인다.
+   ---------------------------------------------------------------------
+   숫자는 전부 "가장 좁은 화면"을 기준으로 잡았다. 320px에서 main 좌우 여백이 13px씩이라
+   무대 한 변은 실측 294px이다(실제 브라우저에서 잰 값).
+     · f = 무대 한 변 대비 고리 반지름 비율(중심에서). 실제 반지름 = f × 294px
+     · cap = 그 고리에 세울 수 있는 최대 인원 = 2πr / (아바타 지름 + 최소 여유)
+   세 고리(30명, 17/9/4명)일 때 294px 기준 실제 값:
+     반지름 114.7 / 66.2 / 27.9px → 같은 고리 이웃 간격 42.4 / 46.2 / 39.5px,
+     고리 사이 간격 48.5 / 38.3px. 아바타가 30px이므로 어느 쪽도 그림이 겹치지 않는다.
+   ★ 다만 누르는 자리는 44px을 유지하므로(터치 목표를 줄이지 않는다) 20명을 넘어서면
+     이웃한 두 버튼의 판정 영역이 조금 겹친다. 그림이 겹치는 게 아니라 판정만 겹치는 것이고,
+     겹치는 쪽을 없애려면 손가락 목표를 44px 아래로 내려야 해서 이 쪽을 택했다.
+     실측 겹침 넓이는 SELF_CHECK R28 표에 그대로 적었다(판단이지 검증이 아니다).
+--------------------------------------------------------------------- */
+function gcLayoutSpec(n){
+  if(n<=6)  return {rings:[{f:0.335, cap:6}],                                     av:'clamp(48px,12vw,66px)',   avMin:48, fs:12, tagfs:11, max:'440px'};
+  if(n<=10) return {rings:[{f:0.365, cap:10}],                                    av:'clamp(44px,10.5vw,58px)', avMin:44, fs:11, tagfs:11, max:'480px'};
+  if(n<=15) return {rings:[{f:0.385, cap:15}],                                    av:'clamp(38px,9vw,52px)',    avMin:38, fs:10, tagfs:10, max:'520px'};
+  if(n<=25) return {rings:[{f:0.390, cap:17},{f:0.205, cap:9}],                   av:'clamp(34px,8vw,46px)',    avMin:34, fs:10, tagfs:10, max:'560px'};
+  return      {rings:[{f:0.390, cap:18},{f:0.225, cap:10},{f:0.095, cap:4}],      av:'clamp(30px,7vw,42px)',    avMin:30, fs:9,  tagfs:10, max:'580px'};
+}
+/* 고리별 인원 배분. 바깥 고리부터 수용력에 비례해 나누고, 남으면 여유 있는 고리에 채운다. */
+function gcAllocate(n, caps){
+  var total=0, i;
+  for(i=0;i<caps.length;i++) total+=caps[i];
+  var out=[], left=n;
+  for(i=0;i<caps.length;i++){
+    var want = Math.min(caps[i], left, Math.round(n*caps[i]/total));
+    if(i===caps.length-1) want = Math.min(caps[i], left);
+    out.push(want); left -= want;
+  }
+  for(i=0;i<out.length && left>0;i++){
+    var add = Math.min(caps[i]-out[i], left);
+    out[i]+=add; left-=add;
+  }
+  return out;
+}
+/* 사람 자리(0~100 상대 좌표). 12시 방향부터 시계 방향으로, 안쪽 고리는 반 칸 어긋나게 둔다
+   (같은 각도로 겹쳐 놓으면 선이 한 방향으로만 뻗어 실뭉치처럼 보인다). */
+function gcPositions(n){
+  var spec = gcLayoutSpec(n);
+  var alloc = gcAllocate(n, spec.rings.map(function(r){ return r.cap; }));
+  var pos = [];
+  spec.rings.forEach(function(ring, ri){
+    var cnt = alloc[ri];
+    if(!cnt) return;
+    var off = -Math.PI/2 + (ri%2 ? Math.PI/cnt : 0);
+    for(var i=0;i<cnt;i++){
+      var a = off + Math.PI*2*i/cnt;
+      pos.push({x:50 + ring.f*100*Math.cos(a), y:50 + ring.f*100*Math.sin(a), ring:ri});
+    }
+  });
+  return {spec:spec, pos:pos};
+}
+/* 두 사각형이 겹치는지. 이름표 자리를 고를 때만 쓴다(단위는 "무대 한 변의 %"). */
+function gcOverlap(a,b){
+  return !(a.x+a.w <= b.x || b.x+b.w <= a.x || a.y+a.h <= b.y || b.y+b.h <= a.y);
+}
+
+/* ---------------------------------------------------------------------
+   그림 — 원형 배치 + 캐릭터 아바타 + 관계선 + 일상어 이름표 (전부 인라인 SVG/DOM, 외부 라이브러리 0)
+   ---------------------------------------------------------------------
+   30명이면 쌍이 435개다. 다 그리면 실뭉치가 되므로 선은 "눈에 띄는 것만" 그린다.
+     · 쌍이 10개 이하(사람 5명까지)  → 전부 그린다. 참고 이미지와 같은 그림이 나오는 구간이다.
+     · 그보다 많으면              → 제일 잘 맞는 K쌍 + 제일 안 맞는 K쌍만 (K는 4~6)
+     · 사람을 누르면              → 그 사람과 나머지 사이의 선만
+--------------------------------------------------------------------- */
+function buildGroupCompatGraph(members, pairs, onSelect){
+  var n = members.length;
+  var lay = gcPositions(n), spec = lay.spec, pos = lay.pos;
+  var wrap = el('div',{});
+  var stage = el('div',{class:'gc-stage',
+    style:'--gc-av:'+spec.av+';--gc-fs:'+spec.fs+'px;--gc-tagfs:'+spec.tagfs+'px;--gc-max:'+spec.max+';'});
   var ns='http://www.w3.org/2000/svg';
   var svg=document.createElementNS(ns,'svg');
   svg.setAttribute('viewBox','0 0 100 100');
   svg.setAttribute('preserveAspectRatio','xMidYMid meet');
   svg.setAttribute('class','gc-svg');
-  svg.setAttribute('aria-hidden','true');
+  /* 선 그림 자체에 이름을 붙인다. 사람 버튼은 아래에 진짜 버튼으로 따로 있으므로,
+     여기 role='img'가 버튼을 삼키지 않는다(형제 관계다). */
+  svg.setAttribute('role','img');
+  svg.setAttribute('aria-label','모임 궁합 그림');
+  stage.appendChild(svg);
+  var tagLayer = el('div',{class:'gc-tags','aria-hidden':'true'});
+  stage.appendChild(tagLayer);
+  /* 이름표를 다 못 놓았을 때 그림 아래에 글로 옮겨 적는 자리(paint에서 채운다) */
+  var drawnBox = el('div',{});
 
-  var lineEls=[]; /* {line, aId, bId} */
-  pairs.forEach(function(pr){
-    var a=posById[pr.a.id], b=posById[pr.b.id];
-    var line=document.createElementNS(ns,'line');
-    line.setAttribute('x1',a.x); line.setAttribute('y1',a.y);
-    line.setAttribute('x2',b.x); line.setAttribute('y2',b.y);
-    line.setAttribute('stroke', GC_TIER_COLORS[pr.res.combinedTier]);
-    line.setAttribute('stroke-width','1.4');
-    line.setAttribute('vector-effect','non-scaling-stroke');
-    line.setAttribute('class','gc-line');
-    line.style.opacity='0.85';
-    svg.appendChild(line);
-    lineEls.push({line:line, aId:pr.a.id, bId:pr.b.id});
-  });
-  container.appendChild(svg);
-
-  var nodeEls=[]; /* {btn,id} */
-  pos.forEach(function(pt){
-    var p=profiles.filter(function(pp){ return pp.id===pt.id; })[0];
-    var btn=el('button',{type:'button', class:'gc-node', style:'left:'+pt.x+'%;top:'+pt.y+'%;', 'aria-pressed':'false', 'aria-label':p.name+' 기준으로 궁합 보기'});
-    var avatar=el('div',{class:'gc-avatar', 'aria-hidden':'true'},[(p.name||'?').trim().slice(0,1)||'?']);
-    if(p.element && ELEMENT_COLOR[p.element]){ avatar.style.borderColor = ELEMENT_COLOR[p.element]; }
-    btn.appendChild(avatar);
-    btn.appendChild(el('div',{class:'gc-label'},[p.name]));
+  /* 사람 노드 — 아바타는 캐릭터 그림(MBTI 21종 중 하나), 없으면 이름 첫 글자 */
+  var nodeBtns = [];
+  members.forEach(function(m, i){
+    var pt = pos[i];
+    var btn = el('button',{type:'button', class:'gc-node',
+      style:'left:'+pt.x.toFixed(2)+'%;top:'+pt.y.toFixed(2)+'%;',
+      'aria-pressed':'false', 'aria-label':m.name+'님 기준으로 궁합 보기'});
+    var av = el('div',{class:'gc-avatar'});
+    var ck = charKeyForMbti(m.mbti) || charKeyForElementIdx(m.elementIdx);
+    if(ck) av.appendChild(buildCharSvg(ck, 100, {mini:true, label:m.name+'님의 캐릭터'}));
+    else av.appendChild(el('span',{},[(m.name||'?').trim().slice(0,1) || '?']));
+    btn.appendChild(av);
+    btn.appendChild(el('div',{class:'gc-label'},[m.name]));
     btn.addEventListener('click', function(e){
       e.stopPropagation();
-      var willSelect = this.getAttribute('aria-pressed')!=='true';
-      applySelection(willSelect ? this._gcId : null);
+      select(this.getAttribute('aria-pressed')==='true' ? null : i);
     });
-    btn._gcId = pt.id;
-    container.appendChild(btn);
-    nodeEls.push({btn:btn, id:pt.id});
+    stage.appendChild(btn);
+    nodeBtns.push(btn);
   });
+  /* 빈 곳을 누르면 전체로 돌아온다 */
+  stage.addEventListener('click', function(){ select(null); });
 
-  container.addEventListener('click', function(){ applySelection(null); });
-
-  function applySelection(id){
-    nodeEls.forEach(function(ne){
-      var isSelected = ne.id===id;
-      ne.btn.setAttribute('aria-pressed', isSelected?'true':'false');
-      ne.btn.classList.toggle('dim', id!=null && !isSelected);
-    });
-    lineEls.forEach(function(le){
-      if(id==null){ le.line.style.opacity='0.85'; le.line.setAttribute('stroke-width','1.4'); }
-      else{
-        var related = le.aId===id || le.bId===id;
-        le.line.style.opacity = related?'1':'0.15';
-        le.line.setAttribute('stroke-width', related?'2':'1.4');
-      }
-    });
+  /* 이름표를 놓을 때 피해야 하는 자리 = 얼굴(아바타)이 차지하는 칸.
+     아래 이름 글자까지 통째로 피하게 하면 30명일 때 놓을 자리가 아예 없어져 이름표가 한 개도
+     안 남는다(실측으로 확인했다). 그래서 "얼굴은 절대 가리지 않는다"만 지키고, 이름 글자와는
+     겹칠 수 있게 뒀다 — 이름 글자는 이름표보다 뒤(z축 아래)에 있고, 정말 필요하면 사람을 눌러
+     그 사람만 보면 된다. 대신 겹친 정도는 실측해 SELF_CHECK에 적는다. */
+  function byScoreDesc(a,b){ return b.res.combined - a.res.combined; }
+  /* 이름표를 놓는 순서 = 중요한 것부터. 자리가 모자라면 뒤쪽이 밀리므로,
+     "제일 잘 맞는 짝"과 "제일 부딪히는 짝"을 번갈아 맨 앞에 세운다. */
+  function interleaveEnds(sorted, k){
+    var out=[], i;
+    for(i=0;i<k;i++){
+      if(sorted[i] && out.indexOf(sorted[i])<0) out.push(sorted[i]);
+      var back = sorted[sorted.length-1-i];
+      if(back && out.indexOf(back)<0) out.push(back);
+    }
+    return out;
+  }
+  function pickHighlights(sel){
+    if(sel!=null){
+      var mine = pairs.filter(function(pr){ return pr.ai===sel || pr.bi===sel; });
+      var s = mine.slice().sort(byScoreDesc);
+      return {lines:mine, labels:interleaveEnds(s, 3)};
+    }
+    /* 쌍이 10개 이하(사람 5명까지)면 전부 그린다 — 참고 이미지와 같은 그림이 나오는 구간이다. */
+    if(pairs.length<=10) return {lines:pairs, labels:interleaveEnds(pairs.slice().sort(byScoreDesc), Math.ceil(pairs.length/2))};
+    var sorted = pairs.slice().sort(byScoreDesc);
+    /* 사람이 많을수록 선을 적게 그린다. 30명이면 435쌍이라 다 그리면 실뭉치가 되고,
+       선이 많으면 이름표를 놓을 자리도 함께 사라진다(실측으로 확인했다). */
+    var k = n<=15 ? 4 : 3;
+    var lines = interleaveEnds(sorted, k);
+    return {lines:lines, labels:lines.slice()};
   }
 
-  wrap.appendChild(container);
+  /* ---------------------------------------------------------------------
+     이름표 놓기 — 실제로 그려진 크기를 재서 놓는다.
+     ---------------------------------------------------------------------
+     ★ 처음에는 "글자 수 × 글자 크기"로 어림해 놓았는데, 어림값은 무대 폭을 320px 기준으로만
+       잡아 두므로 화면이 넓어져도 이름표가 여전히 크다고 착각해 넓은 화면에서도 이름표가
+       사라졌다(실제 브라우저에서 잡았다). 그래서 한 번 붙여 놓고 rAF에서 실제 크기를 재
+       그 값으로 자리를 정한다. 얼굴 자리도 어림하지 않고 실제 아바타 사각형을 잰다.
+     ★ 되돌릴 것이 없는 1회성 rAF다(setInterval·resize 리스너를 남기지 않는다).
+       화면 폭이 바뀌면 다음 렌더에서 다시 잰다 — 그동안은 이름표가 조금 어긋날 수 있다.
+  --------------------------------------------------------------------- */
+  var TAG_RAF = 0;
+  var pending = null;   /* {items:[{el,pr,a,b}], hi:..., sel:..., desc:...} */
+  function layoutTags(){
+    TAG_RAF = 0;
+    if(!pending) return;
+    var job = pending;
+    var sr = stage.getBoundingClientRect();
+    if(!sr.width){ return; }                       /* 아직 화면에 붙지 않았으면 그냥 둔다 */
+    var W = sr.width;
+    function toPctX(px){ return (px - sr.left)/W*100; }
+    function toPctY(px){ return (px - sr.top)/W*100; }
+    /* 얼굴 자리(실측) */
+    var faces = nodeBtns.map(function(b){
+      var r = b.firstChild.getBoundingClientRect();
+      return {x:toPctX(r.left)-0.4, y:toPctY(r.top)-0.4, w:r.width/W*100+0.8, h:r.height/W*100+0.8};
+    });
+    /* 이름 글자 자리(실측) — 가능하면 이것도 피하지만, 못 피하면 얼굴만 피한다. */
+    var labels = nodeBtns.map(function(b){
+      var r = b.lastChild.getBoundingClientRect();
+      return {x:toPctX(r.left), y:toPctY(r.top), w:r.width/W*100, h:r.height/W*100};
+    });
+    var tOffs = [0.50,0.42,0.58,0.35,0.65,0.28,0.72,0.22,0.78];
+    var placed = [], skipped = 0;
+    job.items.forEach(function(it){
+      var tr = it.el.getBoundingClientRect();
+      var w = tr.width/W*100, h = tr.height/W*100;
+      var a=it.a, b=it.b;
+      var dx=b.x-a.x, dy=b.y-a.y, len=Math.sqrt(dx*dx+dy*dy) || 1;
+      var nx=-dy/len, ny=dx/len;                   /* 선에 수직인 방향 */
+      var perp = [0, h*0.9, -h*0.9, h*1.9, -h*1.9];
+      /* 1바퀴: 얼굴+이름 글자 둘 다 피한다. 2바퀴: 자리가 없으면 얼굴만 피한다. */
+      for(var pass=0; pass<2; pass++){
+        for(var si=0; si<tOffs.length; si++){
+          for(var pi=0; pi<perp.length; pi++){
+            var t = tOffs[si];
+            var cx = a.x + dx*t + nx*perp[pi], cy = a.y + dy*t + ny*perp[pi];
+            var box = {x:cx-w/2, y:cy-h/2, w:w, h:h};
+            if(box.x<0 || box.y<0 || box.x+box.w>100 || box.y+box.h>100) continue;
+            var bad=false, q;
+            for(q=0;q<placed.length && !bad;q++) if(gcOverlap(box, placed[q])) bad=true;
+            for(q=0;q<faces.length && !bad;q++) if(gcOverlap(box, faces[q])) bad=true;
+            if(!bad && pass===0){ for(q=0;q<labels.length && !bad;q++) if(gcOverlap(box, labels[q])) bad=true; }
+            if(bad) continue;
+            placed.push(box);
+            it.el.style.left = cx.toFixed(2)+'%';
+            it.el.style.top = cy.toFixed(2)+'%';
+            it.el.style.visibility = 'visible';
+            return;
+          }
+        }
+      }
+      if(it.el.parentNode) it.el.parentNode.removeChild(it.el);
+      skipped++;
+    });
+    finishDesc(job, skipped);
+    pending = null;
+  }
+  /* 그림 설명(낭독용)과 "그림에 그린 선" 목록. 몇 개를 못 놓았는지까지 알아야 문장이 정확해지므로
+     이름표를 다 놓은 뒤에 쓴다. */
+  function finishDesc(job, skipped){
+    var desc = job.desc;
+    if(skipped>0) desc += ' 이름표 '+skipped+'개는 자리가 겹쳐 그림에서 생략했고, 바로 아래 목록에 그대로 있습니다.';
+    svg.setAttribute('aria-label', desc);
+
+    /* 사람이 많아지면 이름표를 놓을 자리가 실제로 사라진다(20명 이상 320px에서 실측).
+       그때는 이름표를 억지로 겹쳐 찍는 대신, 지금 그림에 그린 선을 그대로 글로 옮겨 적는다.
+       ★ 여기 적히는 것은 이름·점수·등급(일상어)까지다 — 유료인 쌍별 해설 문장은 넣지 않는다. */
+    while(drawnBox.firstChild) drawnBox.removeChild(drawnBox.firstChild);
+    if(skipped>0){
+      drawnBox.appendChild(el('p',{class:'section-sub', style:'margin:12px 0 4px;text-align:center;'},
+        ['그림에 그린 선 '+job.hi.lines.length+'개']));
+      var list = el('div',{});
+      job.hi.lines.slice().sort(byScoreDesc).forEach(function(pr){
+        var row = el('div',{class:'gc-rank-row'});
+        row.appendChild(el('span',{class:'gr-no'},[el('span',{style:'display:inline-block;width:9px;height:9px;border-radius:50%;background:'+GC_TIER_COLORS[pr.res.combinedTier]+';'})]));
+        row.appendChild(el('span',{class:'gr-who'},[pr.a.name+' × '+pr.b.name]));
+        row.appendChild(el('span',{class:'gr-val'},[
+          pr.res.combined+'점',
+          el('span',{class:'gr-plain', style:'color:'+GC_TIER_COLORS[pr.res.combinedTier]+';'},[gcPlain(pr.res.combinedTier)])
+        ]));
+        list.appendChild(row);
+      });
+      drawnBox.appendChild(list);
+    }
+  }
+
+  function paint(sel){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    while(tagLayer.firstChild) tagLayer.removeChild(tagLayer.firstChild);
+    var hi = pickHighlights(sel);
+    hi.lines.forEach(function(pr){
+      var a=pos[pr.ai], b=pos[pr.bi];
+      var line=document.createElementNS(ns,'line');
+      line.setAttribute('x1',a.x.toFixed(2)); line.setAttribute('y1',a.y.toFixed(2));
+      line.setAttribute('x2',b.x.toFixed(2)); line.setAttribute('y2',b.y.toFixed(2));
+      line.setAttribute('stroke', GC_TIER_COLORS[pr.res.combinedTier]);
+      line.setAttribute('stroke-width', sel!=null ? '2' : '1.6');
+      line.setAttribute('stroke-linecap','round');
+      line.setAttribute('vector-effect','non-scaling-stroke');
+      line.setAttribute('class','gc-line');
+      line.setAttribute('opacity','0.92');
+      svg.appendChild(line);
+    });
+    /* 이름표를 일단 다 붙여 둔다(안 보이게). 자리는 바로 아래 rAF에서 실제 크기를 재 정한다. */
+    var items = hi.labels.map(function(pr){
+      var sp = el('span',{class:'gc-tag',
+        style:'left:50%;top:50%;visibility:hidden;color:'+GC_TIER_COLORS[pr.res.combinedTier]+';'},
+        [gcPlain(pr.res.combinedTier)]);
+      tagLayer.appendChild(sp);
+      return {el:sp, pr:pr, a:pos[pr.ai], b:pos[pr.bi]};
+    });
+
+    var sorted = pairs.slice().sort(byScoreDesc);
+    var top = sorted[0], bot = sorted[sorted.length-1];
+    var desc;
+    if(sel!=null){
+      var mine = pairs.filter(function(pr){ return pr.ai===sel || pr.bi===sel; }).slice().sort(byScoreDesc);
+      var bestOther = mine[0] ? (mine[0].ai===sel ? mine[0].b : mine[0].a) : null;
+      var worstOther = mine.length ? (mine[mine.length-1].ai===sel ? mine[mine.length-1].b : mine[mine.length-1].a) : null;
+      desc = members[sel].name+'님을 가운데 두고 나머지 '+(n-1)+'명과의 선만 보이는 그림입니다.';
+      if(bestOther) desc += ' 제일 잘 맞는 사람은 '+bestOther.name+'('+mine[0].res.combined+'점 · '+gcPlain(mine[0].res.combinedTier)+')';
+      if(worstOther) desc += ', 제일 부딪히는 사람은 '+worstOther.name+'('+mine[mine.length-1].res.combined+'점 · '+gcPlain(mine[mine.length-1].res.combinedTier)+')입니다.';
+    } else {
+      /* ★ 이름이 문장에 들어가므로 '과/와'를 고정으로 쓰면 반드시 틀린다("민수과 하늘"). */
+      desc = n+'명을 원으로 놓고 '+hi.lines.length+'쌍을 선으로 이은 그림입니다. 전체 '+pairs.length+'쌍 가운데 '+
+        '제일 잘 맞는 짝은 '+josa(top.a.name,'과','와')+' '+top.b.name+'('+top.res.combined+'점 · '+gcPlain(top.res.combinedTier)+'), '+
+        '제일 부딪히는 짝은 '+josa(bot.a.name,'과','와')+' '+bot.b.name+'('+bot.res.combined+'점 · '+gcPlain(bot.res.combinedTier)+')입니다.';
+    }
+    svg.setAttribute('aria-label', desc);
+    pending = {items:items, hi:hi, sel:sel, desc:desc};
+    if(TAG_RAF) cancelAnimationFrame(TAG_RAF);
+    TAG_RAF = requestAnimationFrame(layoutTags);
+  }
+
+  function select(idx){
+    GC_SEL = idx;
+    nodeBtns.forEach(function(b, i){
+      var on = (i===idx);
+      b.setAttribute('aria-pressed', on?'true':'false');
+      b.classList.toggle('dim', idx!=null && !on);
+    });
+    paint(idx);
+    if(onSelect) onSelect(idx);
+  }
+
+  wrap.appendChild(stage);
+  wrap.appendChild(el('p',{class:'gc-hint'},['궁금한 친구를 눌러보세요. 다시 누르면 전체로 돌아와요.']));
+  wrap.appendChild(drawnBox);
 
   var legend=el('div',{class:'gc-legend'});
   GC_TIER_ORDER.forEach(function(t){
-    legend.appendChild(el('span',{},[el('span',{class:'dot', style:'background:'+GC_TIER_COLORS[t]+';'}), t]));
+    legend.appendChild(el('span',{},[
+      el('span',{class:'dot', style:'background:'+GC_TIER_COLORS[t]+';'}),
+      gcPlain(t),
+      el('span',{class:'gl-term'},['('+t+')'])
+    ]));
   });
   wrap.appendChild(legend);
+
+  select(GC_SEL!=null && GC_SEL<n ? GC_SEL : null);
   return wrap;
 }
+
+/* ---------------------------------------------------------------------
+   전체 순위 목록 — 30명이면 435쌍이라 전부 늘어놓지 않는다.
+   잘 맞는 순 / 안 맞는 순을 골라 10쌍씩 끊어 보여주고 "더 보기"로 늘린다.
+   ★ 무료 범위: 이름 · 점수 · 등급(일상어)까지만. 쌍별 해설 문장은 여기 넣지 않는다.
+--------------------------------------------------------------------- */
+var GC_RANK_STEP = 10;
+var GC_RANK = {order:'best', shown:GC_RANK_STEP};
+function buildGroupRankPanel(pairs){
+  var card = el('div',{class:'scroll-card'});
+  card.appendChild(el('h3',{},['전체 순위']));
+  card.appendChild(el('p',{class:'section-sub'},
+    [pairs.length+'쌍을 모두 견줘 봤어요. 점수와 등급까지는 무료로 보여드려요.']));
+  var tabs = el('div',{class:'gc-members', role:'group', 'aria-label':'순위 정렬 방식'});
+  var listBox = el('div',{});
+  var moreWrap = el('div',{});
+
+  function paintList(){
+    while(listBox.firstChild) listBox.removeChild(listBox.firstChild);
+    while(moreWrap.firstChild) moreWrap.removeChild(moreWrap.firstChild);
+    var sorted = pairs.slice().sort(function(a,b){
+      return GC_RANK.order==='best' ? (b.res.combined-a.res.combined) : (a.res.combined-b.res.combined);
+    });
+    var show = Math.min(GC_RANK.shown, sorted.length);
+    sorted.slice(0, show).forEach(function(pr, i){
+      var row = el('div',{class:'gc-rank-row'});
+      row.appendChild(el('span',{class:'gr-no'},[(i+1)+'.']));
+      row.appendChild(el('span',{class:'gr-who'},[pr.a.name+' × '+pr.b.name]));
+      row.appendChild(el('span',{class:'gr-val'},[
+        pr.res.combined+'점',
+        el('span',{class:'gr-plain', style:'color:'+GC_TIER_COLORS[pr.res.combinedTier]+';'},[gcPlain(pr.res.combinedTier)])
+      ]));
+      listBox.appendChild(row);
+    });
+    if(show < sorted.length){
+      moreWrap.appendChild(el('button',{class:'btn btn-ghost btn-sm', type:'button', style:'margin-top:10px;',
+        onclick:function(){ GC_RANK.shown += GC_RANK_STEP; paintList(); }},
+        ['더 보기 (남은 '+(sorted.length-show)+'쌍)']));
+    } else if(sorted.length > GC_RANK_STEP){
+      moreWrap.appendChild(el('button',{class:'btn btn-ghost btn-sm', type:'button', style:'margin-top:10px;',
+        onclick:function(){ GC_RANK.shown = GC_RANK_STEP; paintList(); }}, ['접기']));
+    }
+  }
+  [['best','잘 맞는 순'],['worst','안 맞는 순']].forEach(function(pair){
+    var b = el('button',{type:'button', class:'gc-member',
+      'aria-pressed': GC_RANK.order===pair[0] ? 'true':'false'}, [pair[1]]);
+    b.addEventListener('click', function(){
+      GC_RANK.order = pair[0]; GC_RANK.shown = GC_RANK_STEP;
+      $all('button', tabs).forEach(function(x){ x.setAttribute('aria-pressed', x===b ? 'true':'false'); });
+      paintList();
+    });
+    tabs.appendChild(b);
+  });
+  card.appendChild(tabs);
+  card.appendChild(listBox);
+  card.appendChild(moreWrap);
+  paintList();
+  return card;
+}
+
 /* 인물별 궁합 요약 카드 리스트 — 사주+MBTI 두 축을 항상 병기, "이어보기"로 1:1 상세 펼치기
    ★ 무료 범위는 1:1 궁합 화면과 같은 기준으로 맞춘다.
-     무료: 이름 · 등급 배지 · 한 줄 요약(사주 관점 한 줄 + MBTI 케미 한 줄)
+     무료: 이름 · 등급 배지 · 한 줄 요약(사주 관점 한 줄 + MBTI 케미 한 줄) · 최고/최저 상대(점수·등급)
      유료(compat_full): 쌍별 상세 — 종합/사주/MBTI 점수, 쌍마다의 오행 관계와 케미 문장
      잠긴 부분은 흐리게 가리는 게 아니라 아예 DOM에 만들지 않는다. */
-function buildGroupCompatCards(profiles, pairs, unlocked){
+function buildGroupCompatCards(members, pairs, unlocked){
   var wrap=el('div',{class:'gc-cards'});
-  profiles.forEach(function(p){
-    var related = pairs.filter(function(pr){ return pr.a.id===p.id || pr.b.id===p.id; });
+  members.forEach(function(m, mi){
+    var related = pairs.filter(function(pr){ return pr.ai===mi || pr.bi===mi; });
+    if(!related.length) return;
     var avg = Math.round(related.reduce(function(s,pr){ return s+pr.res.combined; },0)/related.length);
     var tier = avg>=85?'천생연분형':avg>=70?'찰떡궁합형':avg>=55?'무난동행형':avg>=40?'노력필요형':'인연신중형';
-    var best = related.reduce(function(m,pr){ return pr.res.combined>m.res.combined?pr:m; }, related[0]);
+    var best = related.reduce(function(x,pr){ return pr.res.combined>x.res.combined?pr:x; }, related[0]);
+    var worst = related.reduce(function(x,pr){ return pr.res.combined<x.res.combined?pr:x; }, related[0]);
+    var bestOther = best.ai===mi ? best.b : best.a;
+    var worstOther = worst.ai===mi ? worst.b : worst.a;
     var elemPhrase = best.res.saju.elemRel.indexOf(' — ')>=0 ? best.res.saju.elemRel.split(' — ')[1] : best.res.saju.elemRel;
     var mbtiPhrase = best.res.categories.chemistry;
 
     var card=el('div',{class:'scroll-card'});
     var head=el('div',{style:'display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;'});
-    head.appendChild(el('h3',{style:'margin-bottom:0;'},[p.name]));
+    head.appendChild(el('h3',{style:'margin-bottom:0;'},[m.name]));
     head.appendChild(el('span',{class:'badge', style:'border-color:'+GC_TIER_COLORS[tier]+';color:'+GC_TIER_COLORS[tier]+';'},[tier]));
     card.appendChild(head);
     card.appendChild(el('p',{class:'section-sub', style:'margin-top:8px;'},['사주로는 '+elemPhrase+', MBTI로는 '+mbtiPhrase]));
+    /* 사람별 "나와 제일 잘 맞는 사람 / 제일 부딪히는 사람" — 점수와 등급까지가 무료다. */
+    card.appendChild(el('p',{class:'section-sub', style:'margin-top:6px;'},
+      ['제일 잘 맞는 사람: '+bestOther.name+' ('+best.res.combined+'점 · '+gcPlain(best.res.combinedTier)+')']));
+    if(related.length>1){
+      card.appendChild(el('p',{class:'section-sub', style:'margin-top:2px;'},
+        ['제일 부딪히는 사람: '+worstOther.name+' ('+worst.res.combined+'점 · '+gcPlain(worst.res.combinedTier)+')']));
+    }
 
     if(unlocked){
       /* aria-expanded만 있고 aria-controls가 없으면 "무엇이 펼쳐지는지"를 보조기술이 알 수 없다.
          펼쳐지는 영역에 id를 부여하고 그 id를 그대로 가리킨다(가리키는 id가 실제로 존재해야 한다). */
-      var detailId = 'gcDetail-'+p.id;
+      var detailId = 'gcDetail-'+m.id;
       /* 라벨 글자와 방향 아이콘을 분리해 둔다 — 예전에는 '↓'/'↑' 문자를 라벨에 섞어
          낭독기가 "아래쪽 화살표"까지 읽었다. 아래 토글에서 이 둘을 따로 갈아 끼운다. */
-      var expandLabel=el('span',{},[p.name+'의 쌍별 상세 이어보기']);
+      var expandLabel=el('span',{},[m.name+'의 쌍별 상세 이어보기']);
       var expandBtn=el('button',{class:'btn btn-ghost btn-sm', type:'button', style:'margin-top:6px;',
         'aria-expanded':'false', 'aria-controls':detailId},[expandLabel, dirIcon('down')]);
-      var detail=el('div',{id:detailId, class:'hidden', style:'margin-top:8px;', role:'region', 'aria-label':p.name+'의 쌍별 상세'});
+      var detail=el('div',{id:detailId, class:'hidden', style:'margin-top:8px;', role:'region', 'aria-label':m.name+'의 쌍별 상세'});
       related.forEach(function(pr){
-        var other = pr.a.id===p.id?pr.b:pr.a;
+        var other = pr.ai===mi ? pr.b : pr.a;
         var row=el('div',{class:'gc-pair-row'});
         var left=el('div',{},[
           el('div',{},[other.name]),
@@ -10279,7 +10925,7 @@ function buildGroupCompatCards(profiles, pairs, unlocked){
         expandLabel.textContent = personName + (open ? '의 쌍별 상세 이어보기' : '의 쌍별 상세 접기');
         this.replaceChild(dirIcon(open ? 'down' : 'up'), this.lastChild);
         this._detail.classList.toggle('hidden', open);
-      }; })(p.name));
+      }; })(m.name));
       expandBtn._detail = detail;
       card.appendChild(expandBtn);
       card.appendChild(detail);
@@ -10292,26 +10938,186 @@ function buildGroupCompatCards(profiles, pairs, unlocked){
   });
   return wrap;
 }
-/* 렌더: 그룹 궁합 네트워크 화면 (renderCompat()과 별개 화면, 기존 1:1 궁합 입력/상태 건드리지 않음) */
+
+/* =====================================================================
+   모임 링크 — 여러 사람을 한 주소에 담아 보낸다 (서버 없음)
+   ---------------------------------------------------------------------
+   담기는 항목은 궁합 초대 링크와 완전히 같다. 그래서 항목표도 INVITE_FIELDS 하나를 그대로 쓴다
+   (초대 링크는 그 표를 JSON으로, 모임 링크는 같은 표를 사람당 한 줄씩 쉼표로 잇는다).
+   ★ 왜 JSON을 안 쓰나 — 30명이면 따옴표·중괄호만으로도 주소가 1,000자 넘게 길어진다.
+     아래 방식은 한 사람당 약 60~70자다(한글 3글자 이름 기준, 실측값은 SELF_CHECK R28 참고).
+   ★ 기존 초대 링크(#invite=...)는 한 글자도 건드리지 않았다 — 이미 나간 링크가 그대로 열린다.
+     새 형식은 다른 이름표(#meet=)를 쓰고, 맨 앞에 형식 번호를 붙여 나중에 바꿔도 옛 링크를 구분한다.
+   ★ 구분자로 쉼표(,)와 세미콜론(;)을 쓰는 이유: 둘 다 encodeURIComponent가 반드시 %XX로 바꾸는
+     글자라, 이름 안에 들어 있어도 구분자와 헷갈리지 않는다. (물결표 ~ 나 느낌표 ! 는 안 바뀐다.)
+===================================================================== */
+var GC_MEET_VER = '1';
+/* 주소 길이 상한. 브라우저 자체 한계는 훨씬 크지만(크롬 2MB · 파이어폭스 6.5만 · 사파리 8만 자),
+   링크는 메신저·QR·문서를 거쳐 다니고 그 쪽 한계가 훨씬 낮다. 옛 IE 한계(2,083자)에서 굳어진
+   "2,000자 이하로 유지" 관행을 그대로 따른다. 실제로 몇 명이 들어가는지는 아래 buildMeetLink가
+   한 명씩 붙여 보며 재고, 화면에도 그 숫자를 그대로 적는다(지어낸 숫자를 쓰지 않는다). */
+var GC_URL_SAFE_MAX = 2000;
+function gcMeetRow(p){
+  return INVITE_FIELDS.map(function(f){
+    var v = f.get(p);
+    if(v===null || v===undefined) return '';
+    if(f.k==='n') return encodeURIComponent(String(v).slice(0,20));
+    if(f.k==='lo') return String(Math.round(Number(v)*100)/100);
+    if(f.k==='ts') return v ? '1' : '0';
+    return String(v);
+  }).join(',');
+}
+/* 프로필 목록을 앞에서부터 담다가 상한을 넘으면 멈춘다. 몇 명이 담겼는지 함께 돌려준다. */
+function buildMeetLink(profiles){
+  var base = location.href.split('#')[0];
+  var used = [], link = base + '#meet=' + GC_MEET_VER, i;
+  for(i=0;i<profiles.length;i++){
+    var cand = base + '#meet=' + GC_MEET_VER + ';' + used.concat([gcMeetRow(profiles[i])]).join(';');
+    if(cand.length > GC_URL_SAFE_MAX && used.length >= 2) break;
+    used.push(gcMeetRow(profiles[i]));
+    link = cand;
+  }
+  return {url:link, count:used.length, total:profiles.length, len:link.length};
+}
+function decodeMeetFromHash(hash){
+  var m = /[#&]meet=([^&]+)/.exec(hash||'');
+  if(!m) return null;
+  var parts = String(m[1]).split(';');
+  if(parts.shift() !== GC_MEET_VER) return null;
+  var rows = [];
+  for(var i=0;i<parts.length && rows.length<GC_MAX;i++){
+    var f = parts[i].split(',');
+    if(f.length < INVITE_FIELDS.length) continue;
+    var o = {};
+    INVITE_FIELDS.forEach(function(fd, ix){ o[fd.k] = f[ix]; });
+    var name='';
+    try{ name = decodeURIComponent(o.n||'').slice(0,20); }catch(e){ name=''; }
+    var mbti = /^[EI][NS][FT][JP]$/.test(o.m||'') ? o.m : null;
+    var y=parseInt(o.y,10), mo=parseInt(o.mo,10), d=parseInt(o.d,10);
+    if(!mbti || !MBTI_MATRIX[mbti]) continue;
+    if(!(y>=1900 && y<=2100) || !(mo>=1 && mo<=12) || !(d>=1 && d<=31)) continue;
+    var h = (o.h==='' || o.h==null) ? null : parseInt(o.h,10);
+    if(h!=null && !(h>=0 && h<=23)) h=null;
+    var mi = parseInt(o.mi,10); if(!(mi>=0 && mi<=59)) mi=0;
+    var lo = parseFloat(o.lo); if(!isFinite(lo) || lo<-180 || lo>180) lo = SajuEngine.LON_DEFAULT;
+    rows.push({n: name || ('친구'+(rows.length+1)), m:mbti, y:y, mo:mo, d:d, h:h, mi:mi,
+               g:(o.g==='M'?'M':'F'), lo:lo, ts:(o.ts==='1')});
+  }
+  return rows.length>=2 ? rows : null;
+}
+function openMeetLinkModal(profiles){
+  var made = buildMeetLink(profiles);
+  var body = el('div',{});
+  body.appendChild(el('p',{},['이 링크를 보내면, 링크를 연 사람 화면에 지금 이 모임 그림이 그대로 떠요. 받는 사람이 정보를 따로 입력하지 않아도 돼요.']));
+  body.appendChild(el('div',{class:'field'},[ el('input',{type:'text', value:made.url, readOnly:'readonly', id:'meetLinkInput'}) ]));
+  body.appendChild(el('p',{class:'biz-hint'},[
+    '주소 길이는 '+made.len+'자예요. 브라우저 자체 한계는 이보다 훨씬 크지만(크롬 약 2MB), 메신저·QR·문서를 거치며 잘리는 일이 있어 '+
+    GC_URL_SAFE_MAX+'자를 넘지 않도록 인원을 끊었어요.'
+  ]));
+  if(made.count < made.total){
+    body.appendChild(el('p',{class:'biz-hint'},[
+      '지금 모임 '+made.total+'명 가운데 앞에서부터 '+made.count+'명까지만 링크에 담겼어요. 이름이 길수록 한 사람이 차지하는 주소 길이가 늘어나서, 담기는 인원은 그때그때 달라져요. 나머지는 링크를 나눠 보내주세요.'
+    ]));
+  }
+  /* 링크에 무엇이 들어가는지 만들기 전에 알린다. 개인정보처리방침에도 같은 표(INVITE_FIELDS)로 적혀 있다. */
+  body.appendChild(el('p',{class:'biz-hint'},[
+    '이 링크 주소 안에는 모임에 담긴 '+made.count+'명의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+
+    ' 암호화 없이 그대로 담깁니다. 내 정보만이 아니라 다른 사람의 정보까지 함께 나가는 링크예요. 받는 사람의 대화 기록과 브라우저 방문 기록에도 남으니, 모임에 있는 사람들에게만 보내주세요.'
+  ]));
+  openModal('모임 링크', body, [
+    {label:'닫기', cls:'btn-ghost', onclick:closeModal},
+    {label:'공유하기', cls:'btn-primary', onclick:function(){
+      if(navigator.share){
+        navigator.share({title:'인연점 모임 궁합', text:'우리 모임 궁합을 한 그림으로 봤어요.', url:made.url}).catch(function(){});
+      } else {
+        copyText(made.url);
+      }
+    }}
+  ]);
+}
+
+/* =====================================================================
+   렌더: 모임 궁합 화면 (renderCompat()과 별개 화면, 기존 1:1 궁합 입력/상태 건드리지 않음)
+===================================================================== */
+var GC_SEL = null;      /* 지금 눌러 둔 사람의 자리 번호. null이면 전체 보기 */
+var GC_PICK = null;     /* 모임에 넣기로 고른 프로필 id 목록. null이면 저장된 순서대로 앞에서 30명 */
+var GC_SOURCE = 'profiles';  /* 'profiles' = 내 저장 프로필 / 'link' = 모임 링크로 받은 명단 */
+function gcUsableProfiles(){
+  return STATE.profiles.filter(function(p){
+    return p && typeof p.year==='number' && p.mbti && MBTI_MATRIX[p.mbti];
+  });
+}
+function gcMembers(){
+  if(GC_SOURCE==='link' && PENDING_MEET){
+    return PENDING_MEET.slice(0, GC_MAX).map(gcMemberFromMeetRow);
+  }
+  var list = gcUsableProfiles();
+  if(GC_PICK){
+    var set={}; GC_PICK.forEach(function(id){ set[id]=1; });
+    var picked = list.filter(function(p){ return set[p.id]; });
+    if(picked.length>=2) list = picked;
+  }
+  return list.slice(0, GC_MAX).map(gcMemberFromProfile);
+}
 function renderGroupCompat(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view'});
-  view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='compat'; render(); }},[dirIcon('left'), '궁합 보기로 돌아가기']));
-  view.appendChild(pageHead('궁합 보기 · 그룹', '모두의 궁합 보기', null, {marginTop:'14px'}));
-  view.appendChild(el('p',{class:'section-sub'},['저장된 프로필 전체를 한 화면에서 이어서 봐요. 사주 궁합과 MBTI 궁합을 함께 반영한 점수예요.']));
+  var fromLink = (GC_SOURCE==='link' && PENDING_MEET);
 
-  if(STATE.profiles.length<2){
-    view.appendChild(emptyState('프로필이 2명 이상 필요합니다','그룹 궁합을 보려면 프로필이 2명 이상 필요합니다.', function(){ startSetupWizard(null); render(); }, '새 프로필 추가하기'));
+  view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+    if(fromLink){ GC_SOURCE='profiles'; GC_SEL=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); return; }
+    ROUTE='compat'; render();
+  }},[dirIcon('left'), fromLink ? '내 프로필로 모임 보기' : '궁합 보기로 돌아가기']));
+  view.appendChild(pageHead('궁합 보기 · 모임', fromLink ? '받은 모임 궁합' : '모두의 궁합 보기', null, {marginTop:'14px'}));
+  view.appendChild(el('p',{class:'section-sub'},[fromLink
+    ? '모임 링크로 받은 명단이에요. 이 화면에서만 보고, 기기에 저장하지 않아요.'
+    : '저장된 프로필로 모임을 만들어요. 한 모임에 최대 '+GC_MAX+'명까지 한 그림에서 볼 수 있어요.']));
+
+  var usable = gcUsableProfiles();
+  if(!fromLink && usable.length<2){
+    view.appendChild(emptyState('프로필이 2명 이상 필요합니다','모임 궁합을 보려면 생년월일과 MBTI가 채워진 프로필이 2명 이상 필요합니다.', function(){ startSetupWizard(null); render(); }, '새 프로필 추가하기'));
     main.appendChild(view);
     return;
   }
 
-  var profiles = STATE.profiles;
-  var pairs = buildGroupCompatPairs(profiles);
+  /* 모임 멤버 고르기 — 저장된 프로필이 많으면 이번 모임에 넣을 사람만 고른다. */
+  if(!fromLink && usable.length>2){
+    var chosen = {};
+    (GC_PICK || usable.slice(0, GC_MAX).map(function(p){ return p.id; })).forEach(function(id){ chosen[id]=1; });
+    view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['이번 모임에 넣을 사람을 골라요.']));
+    var chips = el('div',{class:'gc-members', role:'group','aria-label':'모임 멤버 고르기'});
+    usable.forEach(function(p){
+      var on = !!chosen[p.id];
+      var b = el('button',{type:'button', class:'gc-member', 'aria-pressed':on?'true':'false'},[p.name]);
+      b.addEventListener('click', function(){
+        var cur = {};
+        $all('button', chips).forEach(function(x, ix){ if(x.getAttribute('aria-pressed')==='true') cur[usable[ix].id]=1; });
+        if(on) delete cur[p.id]; else cur[p.id]=1;
+        var ids = usable.map(function(q){ return q.id; }).filter(function(id){ return cur[id]; });
+        if(ids.length<2){ showToast('모임에는 2명 이상이 있어야 해요.'); return; }
+        if(ids.length>GC_MAX){ showToast('한 모임에는 '+GC_MAX+'명까지 넣을 수 있어요.'); return; }
+        GC_PICK = ids; GC_SEL = null; render();
+      });
+      chips.appendChild(b);
+    });
+    view.appendChild(chips);
+    if(usable.length>GC_MAX){
+      view.appendChild(el('p',{class:'biz-hint'},
+        ['저장된 프로필이 '+usable.length+'명이라 한 화면에 다 세우면 서로 겹쳐서 못 읽어요. 한 모임에는 '+GC_MAX+'명까지만 넣을 수 있어요.']));
+    }
+  }
+
+  var members = gcMembers();
+  if(members.length<2){
+    view.appendChild(emptyState('모임을 만들 수 없어요','생년월일과 MBTI가 모두 채워진 사람이 2명 이상 필요합니다.', function(){ ROUTE='compat'; render(); }, '궁합 보기로 돌아가기'));
+    main.appendChild(view);
+    return;
+  }
+  var pairs = buildGroupCompatPairs(members);
   var avgAll = Math.round(pairs.reduce(function(s,pr){ return s+pr.res.combined; },0)/pairs.length);
 
   var gaugeCard=el('div',{class:'scroll-card'});
-  gaugeCard.appendChild(el('div',{class:'gauge-label'},['전체 평균 궁합 지수']));
+  gaugeCard.appendChild(el('div',{class:'gauge-label'},[members.length+'명 · 전체 평균 궁합 지수']));
   gaugeCard.appendChild(el('div',{style:'display:flex;justify-content:center;'},[buildDonutGauge(avgAll, 152)]));
   var best = pairs.reduce(function(m,pr){ return pr.res.combined>m.res.combined?pr:m; }, pairs[0]);
   var worst = pairs.reduce(function(m,pr){ return pr.res.combined<m.res.combined?pr:m; }, pairs[0]);
@@ -10323,16 +11129,35 @@ function renderGroupCompat(){
   }
   view.appendChild(gaugeCard);
 
-  view.appendChild(buildGroupCompatGraph(profiles, pairs));
+  /* 누른 사람 기준 요약 — 그림 아래에 글로도 남긴다(그림을 못 보는 경우를 위해서다). */
+  var focusBox = el('p',{class:'section-sub', style:'text-align:center;', role:'status'},['']);
+  function updateFocus(idx){
+    if(idx==null){ focusBox.textContent = ''; return; }
+    var mine = pairs.filter(function(pr){ return pr.ai===idx || pr.bi===idx; }).sort(function(a,b){ return b.res.combined-a.res.combined; });
+    if(!mine.length){ focusBox.textContent=''; return; }
+    var hi = mine[0], lo = mine[mine.length-1];
+    focusBox.textContent = members[idx].name+'님 기준 — 제일 잘 맞는 사람 '+
+      (hi.ai===idx?hi.b:hi.a).name+' ('+hi.res.combined+'점 · '+gcPlain(hi.res.combinedTier)+'), 제일 부딪히는 사람 '+
+      (lo.ai===idx?lo.b:lo.a).name+' ('+lo.res.combined+'점 · '+gcPlain(lo.res.combinedTier)+')';
+  }
+  view.appendChild(buildGroupCompatGraph(members, pairs, updateFocus));
+  view.appendChild(focusBox);
+  view.appendChild(buildGroupRankPanel(pairs));
+
   /* 그룹 궁합도 1:1 궁합과 같은 상품(compat_full)·같은 잠금 정책을 따른다.
      쌍별 상세를 무료로 열어두면 1:1 유료 상세보다 더 많은 것을 공짜로 주게 된다. */
   var groupUnlocked = hasAccess(PRODUCTS.compat_full.id);
-  view.appendChild(buildGroupCompatCards(profiles, pairs, groupUnlocked));
+  view.appendChild(buildGroupCompatCards(members, pairs, groupUnlocked));
   if(!groupUnlocked){
     var gBlock = lockedBlock(PRODUCTS.compat_full, '', '모두의 궁합 상세');
     gBlock.insertBefore(el('div',{class:'locked-count'},
       [pairs.length+'쌍의 사주·MBTI 상세 점수가 잠겨 있어요']), gBlock.firstChild);
     view.appendChild(gBlock);
+  }
+  if(!fromLink){
+    view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:16px;', onclick:function(){
+      openMeetLinkModal(members.map(function(m){ return STATE.profiles.filter(function(p){ return p.id===m.id; })[0]; }).filter(Boolean));
+    }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '모임 링크 만들기 (지금 멤버 그대로)']));
   }
   view.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, MBTI 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
   main.appendChild(autoTermify(view));
@@ -10702,7 +11527,7 @@ function renderSettings(){
       body.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:function(){
         closeModal(); startSetupWizard(p);
       }},['정보 수정']));
-      body.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;color:var(--red-hi);border-color:rgba(233,79,55,.4);', onclick:function(){
+      body.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;color:var(--red-hi);border-color:rgba(143,36,19,.4);', onclick:function(){
         closeModal();
         confirmModal(p.name+' 프로필을 삭제할까요? 관련 기록은 유지됩니다.', function(){
           STATE.profiles = STATE.profiles.filter(function(x){return x.id!==p.id;});
@@ -10812,84 +11637,92 @@ function wrapCanvasText(ctx, text, x, yy, maxWidth, lineHeight){
 }
 /* 캐릭터를 얹는 카드 종류. openShareModal(캔버스 높이)과 drawShareCard(그리는 자리)가 같은 표를 본다. */
 var SHARE_CARD_WITH_CHAR = { saju:1, report:1, mbtiReport:1, compatSummary:1 };
+/* R29 — 공유 카드도 함께 밝은 톤으로 뒤집었다. 앱만 밝히고 내보내는 그림만 어두우면
+   "저장하기"를 누른 순간 다른 서비스의 카드가 나온다. 글꼴도 화면과 같은 규칙을 쓴다:
+   본문·제목·숫자는 고딕(CARD_SANS), 인장 '緣'과 사주 간지만 명조(CARD_SERIF). */
+var CARD_SANS  = "'Pretendard Variable','Pretendard','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif";
+var CARD_SERIF = "'Nanum Myeongjo','AppleMyungjo','Batang',serif";
 function drawShareCard(canvas, kind, profile, data){
   var ctx=canvas.getContext('2d');
   var w=canvas.width, h=canvas.height;
-  ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle='#c9a961'; ctx.lineWidth=3; ctx.strokeRect(18,18,w-36,h-36);
-  ctx.strokeStyle='rgba(201,169,97,.4)'; ctx.lineWidth=1; ctx.strokeRect(30,30,w-60,h-60);
+  ctx.fillStyle='#F3F0E9'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle='#584416'; ctx.lineWidth=3; ctx.strokeRect(18,18,w-36,h-36);
+  ctx.strokeStyle='rgba(88,68,22,.35)'; ctx.lineWidth=1; ctx.strokeRect(30,30,w-60,h-60);
 
-  ctx.beginPath(); ctx.arc(w-90,90,42,0,Math.PI*2); ctx.strokeStyle='#e94f37'; ctx.lineWidth=3; ctx.stroke();
-  ctx.fillStyle='#e94f37'; ctx.font='700 26px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.beginPath(); ctx.arc(w-90,90,42,0,Math.PI*2); ctx.strokeStyle='#8F2413'; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle='#8F2413'; ctx.font='700 26px '+CARD_SERIF; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText('緣', w-90, 92);
 
-  ctx.fillStyle='#c9a961'; ctx.font='700 30px serif'; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#584416'; ctx.font='700 30px '+CARD_SANS; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
   ctx.fillText('인연점', 50, 100);
 
-  ctx.fillStyle='#ece4d3'; ctx.font='400 17px sans-serif';
+  ctx.fillStyle='#231F18'; ctx.font='400 17px '+CARD_SANS;
   var y=170;
 
   if(kind==='fortune'){
-    ctx.font='700 22px serif'; ctx.fillStyle='#ece4d3';
+    ctx.font='700 22px '+CARD_SANS; ctx.fillStyle='#231F18';
     ctx.fillText(profile.name+'님의 오늘의 운세', 50, y); y+=16;
-    ctx.font='400 14px sans-serif'; ctx.fillStyle='#a79f8f';
+    ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#544E40';
     ctx.fillText(data.date, 50, y+18); y+=50;
     FORTUNE_CATS.forEach(function(cat){
       var item=data.items[cat.key];
-      ctx.font='700 15px sans-serif'; ctx.fillStyle='#c9a961';
+      ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416';
       ctx.fillText(item.label, 50, y); y+=22;
-      ctx.font='400 15px sans-serif'; ctx.fillStyle='#ece4d3';
+      ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18';
       y=wrapCanvasText(ctx, item.text, 50, y, w-100, 21); y+=14;
     });
-    y+=6; ctx.font='400 14px sans-serif'; ctx.fillStyle='#c9a961';
+    y+=6; ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#584416';
     ctx.fillText('행운 아이템 '+data.luckyItem+' · 행운 색상 '+data.luckyColor, 50, y);
   } else if(kind==='report'){
-    ctx.font='700 22px serif'; ctx.fillText(profile.name+'님의 성향 리포트', 50, y); y+=40;
-    ctx.font='700 26px serif'; ctx.fillStyle='#c9a961'; ctx.fillText(profile.mbti, 50, y); y+=8;
-    ctx.font='400 16px sans-serif'; ctx.fillStyle='#ece4d3'; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=60;
-    ctx.font='700 16px sans-serif'; ctx.fillStyle='#c9a961'; ctx.fillText('오행 · '+profile.element, 50, y); y+=26;
-    ctx.font='400 15px sans-serif'; ctx.fillStyle='#ece4d3';
+    ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+'님의 성향 리포트', 50, y); y+=40;
+    ctx.font='700 26px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText(profile.mbti, 50, y); y+=8;
+    ctx.font='400 16px '+CARD_SANS; ctx.fillStyle='#231F18'; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=60;
+    ctx.font='700 16px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('오행 · '+profile.element, 50, y); y+=26;
+    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18';
     y=wrapCanvasText(ctx, ELEMENT_TRAIT[profile.element], 50, y, w-100, 21);
   } else if(kind==='saju'){
     var s=data.year?data:getSajuResult(profile);
-    ctx.font='700 22px serif'; ctx.fillText(profile.name+'님의 사주팔자', 50, y); y+=44;
+    ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+'님의 사주팔자', 50, y); y+=44;
     var cols = s.hour?['year','month','day','hour']:['year','month','day'];
     var labelMap={year:'연주',month:'월주',day:'일주',hour:'시주'};
     var colW=(w-100)/cols.length;
     cols.forEach(function(pos,i){
       var g=s[pos]; var cx=50+colW*i+colW/2;
       ctx.textAlign='center';
-      ctx.font='400 13px sans-serif'; ctx.fillStyle='#a79f8f'; ctx.fillText(labelMap[pos], cx, y);
-      ctx.font='700 30px serif'; ctx.fillStyle='#ece4d3'; ctx.fillText(g.stem+g.branch, cx, y+42);
-      ctx.font='400 13px sans-serif'; ctx.fillStyle='#c9a961'; ctx.fillText(g.stemH+g.branchH, cx, y+62);
+      ctx.font='400 13px '+CARD_SANS; ctx.fillStyle='#544E40'; ctx.fillText(labelMap[pos], cx, y);
+      /* 간지 두 글자만 명조로 남긴다 — 화면의 인장 칸(.pillar-seal .ch)과 같은 규칙이다. */
+      ctx.font='700 30px '+CARD_SERIF; ctx.fillStyle='#231F18'; ctx.fillText(g.stem+g.branch, cx, y+42);
+      ctx.font='400 13px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText(g.stemH+g.branchH, cx, y+62);
     });
     ctx.textAlign='left';
     y+=110;
-    ctx.font='400 14px sans-serif'; ctx.fillStyle='#a79f8f';
-    y=wrapCanvasText(ctx, '이 계산은 태양의 겉보기 황경 근사식과 공개 음력 데이터를 사용한 자체 만세력 로직으로, 절기 시각이 실제와 최대 약 12분 차이가 날 수 있습니다.', 50, y, w-100, 20);
+    ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#544E40';
+    /* R30 — 공유 카드는 그림이라 접을 수 없다. 그래서 여기에는 짧은 문장만 넣는다
+       (앱 화면의 기본 고지와 같은 말이다). 자세한 설명은 앱 안의 "계산 방법 자세히"에 있다. */
+    y=wrapCanvasText(ctx, '사주 계산은 이 앱이 직접 한 것이라 실제와 몇 분 차이가 날 수 있어요. 정해진 미래가 아니라 참고 자료로 봐주세요.', 50, y, w-100, 20);
   } else if(kind==='mbtiReport'){
     var rpt = buildMbtiReport16(profile);
-    ctx.font='700 22px serif'; ctx.fillText(profile.name+'님의 MBTI 풀이', 50, y); y+=40;
-    ctx.font='700 30px serif'; ctx.fillStyle='#c9a961'; ctx.fillText(profile.mbti, 50, y); y+=8;
-    ctx.font='400 16px sans-serif'; ctx.fillStyle='#ece4d3'; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=64;
-    ctx.font='700 15px sans-serif'; ctx.fillStyle='#c9a961'; ctx.fillText('오프닝', 50, y); y+=22;
-    ctx.font='400 15px sans-serif'; ctx.fillStyle='#ece4d3';
+    ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+'님의 MBTI 풀이', 50, y); y+=40;
+    ctx.font='700 30px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText(profile.mbti, 50, y); y+=8;
+    ctx.font='400 16px '+CARD_SANS; ctx.fillStyle='#231F18'; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=64;
+    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('오프닝', 50, y); y+=22;
+    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18';
     y=wrapCanvasText(ctx, rpt.sections[0].body.replace(/<[^>]+>/g,''), 50, y, w-100, 21); y+=18;
-    ctx.font='700 15px sans-serif'; ctx.fillStyle='#c9a961'; ctx.fillText('4지표', 50, y); y+=22;
-    ctx.font='400 15px sans-serif'; ctx.fillStyle='#ece4d3';
+    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('4지표', 50, y); y+=22;
+    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18';
     ctx.fillText(profile.mbti.split('').join('  ·  '), 50, y);
   } else {
     var r=data;
-    ctx.font='700 22px serif'; ctx.fillText(profile.name+' × '+r.pB.name, 50, y); y+=50;
-    ctx.font='700 60px serif'; ctx.fillStyle='#c9a961'; ctx.textAlign='center';
+    ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+' × '+r.pB.name, 50, y); y+=50;
+    ctx.font='700 60px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.textAlign='center';
     ctx.fillText(r.res.combined+'점', w/2, y+40); y+=70;
-    ctx.font='400 18px sans-serif'; ctx.fillStyle='#ece4d3';
+    ctx.font='400 18px '+CARD_SANS; ctx.fillStyle='#231F18';
     ctx.fillText(r.res.combinedTier, w/2, y); y+=50;
     ctx.textAlign='left';
-    ctx.font='700 15px sans-serif'; ctx.fillStyle='#c9a961'; ctx.fillText('사주 관점', 50, y); y+=22;
-    ctx.font='400 15px sans-serif'; ctx.fillStyle='#ece4d3'; y=wrapCanvasText(ctx, r.res.saju.elemRel, 50, y, w-100, 21); y+=16;
-    ctx.font='700 15px sans-serif'; ctx.fillStyle='#c9a961'; ctx.fillText('MBTI 관점', 50, y); y+=22;
-    ctx.font='400 15px sans-serif'; ctx.fillStyle='#ece4d3'; y=wrapCanvasText(ctx, r.res.categories.chemistry, 50, y, w-100, 21);
+    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('사주 관점', 50, y); y+=22;
+    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18'; y=wrapCanvasText(ctx, r.res.saju.elemRel, 50, y, w-100, 21); y+=16;
+    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('MBTI 관점', 50, y); y+=22;
+    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18'; y=wrapCanvasText(ctx, r.res.categories.chemistry, 50, y, w-100, 21);
   }
 
   /* R19 — 캐릭터를 카드 아래쪽에 크게 얹는다. 화면과 같은 좌표(CHARACTERS)를 Path2D로 다시 그리는 방식이라
@@ -10904,9 +11737,9 @@ function drawShareCard(canvas, kind, profile, data){
       var kA=charKeyForMbti(profile.mbti), kB=charKeyForMbti(rr.pB.mbti);
       var cs=Math.max(104, Math.min(152, avail-38)), gap=26;
       var x0=(w-(cs*2+gap))/2, cy=top+Math.max(0,(avail-(cs+34))/2);
-      if(kA) drawCharOnCanvas(ctx, kA, x0, cy, cs, '#ece4d3');
-      if(kB) drawCharOnCanvas(ctx, kB, x0+cs+gap, cy, cs, '#ece4d3');
-      ctx.font='400 14px sans-serif'; ctx.fillStyle='#c9a961';
+      if(kA) drawCharOnCanvas(ctx, kA, x0, cy, cs, '#231F18');
+      if(kB) drawCharOnCanvas(ctx, kB, x0+cs+gap, cy, cs, '#231F18');
+      ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#584416';
       if(kA) ctx.fillText(CHARACTERS[kA].name.split(' · ')[0], x0+cs/2, cy+cs+22);
       if(kB) ctx.fillText(CHARACTERS[kB].name.split(' · ')[0], x0+cs+gap+cs/2, cy+cs+22);
     } else if(kind!=='compatSummary' && avail >= 150){
@@ -10916,15 +11749,15 @@ function drawShareCard(canvas, kind, profile, data){
       if(key){
         var size=Math.max(120, Math.min(196, avail-38));
         var cyy=top+Math.max(0,(avail-(size+34))/2);
-        drawCharOnCanvas(ctx, key, (w-size)/2, cyy, size, '#ece4d3');
-        ctx.font='400 15px sans-serif'; ctx.fillStyle='#c9a961';
+        drawCharOnCanvas(ctx, key, (w-size)/2, cyy, size, '#231F18');
+        ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#584416';
         ctx.fillText(CHARACTERS[key].name, w/2, cyy+size+26);
       }
     }
     ctx.textAlign='left';
   }
 
-  ctx.font='400 11px sans-serif'; ctx.fillStyle='#7d7768'; ctx.textAlign='center';
+  ctx.font='400 11px '+CARD_SANS; ctx.fillStyle='#544E40'; ctx.textAlign='center';
   ctx.fillText('자체 계산 만세력 기반 참고용 콘텐츠입니다', w/2, h-40);
 }
 
@@ -11004,8 +11837,25 @@ adminBadgeMount();
    서버 모드라면 조회가 끝날 때까지 '잠금'이 기본값이다 — 열어두고 나중에 닫으면 이미 늦다. */
 primeEntitlements();
 
-/* 초기 렌더: 초대 링크로 진입했고 이미 프로필이 있으면 봉인 해제 화면부터 보여준다 */
-if(PENDING_INVITE && !INVITE_CONSUMED && STATE.profiles.length>0){
+/* 초기 렌더: 초대 링크로 진입했고 이미 프로필이 있으면 봉인 해제 화면부터 보여준다.
+   모임 링크(#meet=)면 모임 화면부터 보여준다. 둘 다 "내 프로필이 하나는 있어야" 열린다 —
+   프로필이 없으면 앱이 설정 마법사부터 띄우기 때문이다(초대 링크도 원래 같은 조건이다). */
+var MEET_HASH_PRESENT = /[#&]meet=/.test(location.hash||'');
+PENDING_MEET = decodeMeetFromHash(location.hash);
+/* ★ 읽기에 실패한(깨진·옛 형식) 링크도 지운다. 파싱이 안 됐다고 개인정보가 사라지는 게 아니다 —
+   주소창에는 그대로 남아 있다. 그래서 "읽었는가"가 아니라 "해시에 meet가 있었는가"로 판단한다. */
+if(MEET_HASH_PRESENT){
+  /* ★ 주소창과 방문 기록에서 해시를 지운다.
+     모임 링크에는 남의 개인정보가 최대 30명분(이름·MBTI·생년월일·태어난 시각·출생지) 들어 있다.
+     화면은 "받은 명단을 이 기기에 저장하지 않아요"라고 말하는데, 주소를 그대로 두면
+     주소창·방문 기록·나중에 이 페이지를 다시 열 때까지 그 정보가 남는다 — 말과 실제가 어긋난다.
+     1:1 초대 링크(#invite=)는 이미 같은 처리를 하고 있었고, 모임 경로에만 빠져 있었다.
+     이미 읽어서 PENDING_MEET에 담은 뒤이므로 화면 동작에는 영향이 없다. */
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+}
+if(PENDING_MEET && STATE.profiles.length>0){
+  GC_SOURCE='link'; ROUTE='groupCompat';
+} else if(PENDING_INVITE && !INVITE_CONSUMED && STATE.profiles.length>0){
   ROUTE='inviteAccept';
 }
 render();
