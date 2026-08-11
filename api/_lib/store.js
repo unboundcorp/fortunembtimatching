@@ -141,3 +141,116 @@ export async function noteRestoreTry(sessionId) {
     body: JSON.stringify({ session_id: sessionId }),
   });
 }
+
+/* =====================================================================
+   AI 해석 — 캐시 / 사용 횟수 / 테스트 허가
+   ---------------------------------------------------------------------
+   ── 필요한 테이블 (schema.sql에 같은 내용이 있다) ─────────────────────
+   create table if not exists ai_cache (
+     cache_key  text primary key,
+     product_id text not null,
+     body       text not null,
+     model      text not null,
+     created_at timestamptz not null default now()
+   );
+   create table if not exists ai_usage (
+     id         bigserial primary key,
+     session_id text not null,
+     cache_key  text not null,
+     created_at timestamptz not null default now()
+   );
+   create unique index if not exists ai_usage_uniq on ai_usage (session_id, cache_key);
+   create table if not exists test_grants (
+     session_id text primary key,
+     expires_at timestamptz not null
+   );
+   create table if not exists unlock_attempts (
+     id bigserial primary key,
+     session_id text not null,
+     tried_at   timestamptz not null default now()
+   );
+   ────────────────────────────────────────────────────────────────────── */
+
+/* 같은 사주·같은 상품이면 만들어 둔 글을 그대로 쓴다.
+   ★ 돈 문제만이 아니다. 다시 열 때마다 다른 말이 나오면 "아까랑 다른데?"가 된다.
+     한 사람의 풀이는 한 번 정해지면 그대로여야 읽는 사람이 믿을 수 있다. */
+export async function getAiCache(cacheKey) {
+  const rows = await rest(`ai_cache?cache_key=eq.${encodeURIComponent(cacheKey)}&select=*&limit=1`);
+  return rows && rows[0] ? rows[0] : null;
+}
+
+export async function putAiCache({ cacheKey, productId, body, model }) {
+  /* 같은 열쇠가 이미 있으면 덮지 않는다(먼저 만든 것이 정본이다).
+     동시에 두 번 눌러 둘 다 만들어졌을 때 뒤엣것으로 바뀌면 방금 읽던 글이 달라진다. */
+  await rest('ai_cache?on_conflict=cache_key', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal,resolution=ignore-duplicates' },
+    body: JSON.stringify({ cache_key: cacheKey, product_id: productId, body, model }),
+  });
+}
+
+/* 이 사람이 '새로 만든' 해석이 몇 개인가.
+   ★ 세는 단위는 호출 횟수가 아니라 서로 다른 해석의 수(session_id + cache_key 한 쌍)다.
+     그래야 만들다 끊겨서 다시 눌러도 한 번으로 친다. */
+export async function aiUsedCount(sessionId) {
+  const rows = await rest(
+    `ai_usage?session_id=eq.${encodeURIComponent(sessionId)}&select=cache_key`
+  );
+  return Array.isArray(rows) ? rows.length : 0;
+}
+
+export async function noteAiUse(sessionId, cacheKey) {
+  await rest('ai_usage?on_conflict=session_id,cache_key', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal,resolution=ignore-duplicates' },
+    body: JSON.stringify({ session_id: sessionId, cache_key: cacheKey }),
+  });
+}
+
+/* 이 세션이 이미 만든 적 있는 해석인가 — 다시 만드는 게 아니라 다시 보는 것이면 횟수를 안 쓴다. */
+export async function aiAlreadyUsed(sessionId, cacheKey) {
+  const rows = await rest(
+    `ai_usage?session_id=eq.${encodeURIComponent(sessionId)}&cache_key=eq.${encodeURIComponent(cacheKey)}&select=cache_key&limit=1`
+  );
+  return !!(rows && rows[0]);
+}
+
+/* ---- 테스트 허가 ----
+   운영자가 결제 없이 유료 기능을 확인하기 위한 것이다.
+   ★ 열쇠는 코드에 넣지 않는다. Vercel 환경변수(TEST_UNLOCK_CODE)에만 두고 서버가 대조한다.
+     예전에 fortune-test.html에 관리자 키를 박아 공개 저장소에 올린 사고가 있었다.
+     그때 그 주소를 아는 사람은 누구나 유료 기능을 전부 열 수 있었다. 같은 실수를 반복하지 않는다. */
+export async function grantTestAccess(sessionId, hours) {
+  const expires = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+  await rest('test_grants?on_conflict=session_id', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal,resolution=merge-duplicates' },
+    body: JSON.stringify({ session_id: sessionId, expires_at: expires }),
+  });
+  return expires;
+}
+
+export async function testAccessOf(sessionId) {
+  const rows = await rest(`test_grants?session_id=eq.${encodeURIComponent(sessionId)}&select=*&limit=1`);
+  const row = rows && rows[0] ? rows[0] : null;
+  if (!row) return null;
+  if (new Date(row.expires_at).getTime() <= Date.now()) return null;
+  return row;
+}
+
+/* 코드 맞히기를 막는다. 코드가 짧아도 무한정 찍어보지는 못하게 한다. */
+export async function tooManyUnlockTries(sessionId) {
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const rows = await rest(
+    `unlock_attempts?session_id=eq.${encodeURIComponent(sessionId)}&tried_at=gte.${encodeURIComponent(since)}&select=id`
+  );
+  return Array.isArray(rows) && rows.length >= 10;
+}
+
+export async function noteUnlockTry(sessionId) {
+  await rest('unlock_attempts', {
+    method: 'POST',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ session_id: sessionId }),
+  });
+}

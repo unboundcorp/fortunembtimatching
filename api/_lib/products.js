@@ -12,8 +12,27 @@ export const PRODUCTS = {
   saju_full:    { id: 'saju_full',    name: '사주 풀이 전체 해석', price: 1900, kind: 'once' },
   mbti_full:    { id: 'mbti_full',    name: 'MBTI 풀이 전체 해석', price: 1900, kind: 'once' },
   compat_full:  { id: 'compat_full',  name: '궁합 상세 전체',      price: 1900, kind: 'once' },
-  premium_pass: { id: 'premium_pass', name: '전체 이용권 30일',    price: 4900, kind: 'pass', days: 30 },
+  premium_pass: { id: 'premium_pass', name: '전체 이용권 7일',     price: 4900, kind: 'pass', days: 7 },
 };
+
+/* =====================================================================
+   AI 해석을 '새로 만들 수 있는' 횟수
+   ---------------------------------------------------------------------
+   AI 해석은 한 번 만들 때마다 실제로 돈이 나간다. 그런데 이용권은 브라우저 단위라
+   프로필을 여러 개 만들면 한 번 결제로 몇 번이든 만들 수 있었다. 그대로 두면
+   단품 1,900원을 받고 원가를 그보다 더 쓰는 일이 생긴다.
+
+   ★ '다시 보기'는 횟수를 쓰지 않는다. 한 번 만든 해석은 서버에 저장해 두고 그대로 내어준다.
+     그래서 산 사람이 손해 볼 일은 없다 — 같은 사주를 백 번 열어도 1회다.
+   ★ 만들다 실패한 것도 세지 않는다. 실패는 우리 잘못이지 이용자가 쓴 횟수가 아니다.
+   ★ 이 숫자는 화면과 약관에도 같이 적어야 한다. 서버에서만 막고 말하지 않으면
+     "왜 안 되냐"는 문의가 되고, 미리 알리지 않은 제한은 분쟁거리가 된다.
+===================================================================== */
+export const AI_QUOTA = { once: 1, pass: 10 };
+
+export function aiQuotaOf(kind) {
+  return kind === 'pass' ? AI_QUOTA.pass : AI_QUOTA.once;
+}
 
 export function productOf(id) {
   return Object.prototype.hasOwnProperty.call(PRODUCTS, id) ? PRODUCTS[id] : null;

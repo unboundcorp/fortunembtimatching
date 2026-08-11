@@ -106,3 +106,45 @@ alter table groups add column if not exists owner_hash text;
 alter table groups add column if not exists owner_salt text;
 alter table groups alter column pin_hash drop not null;
 alter table groups alter column pin_salt drop not null;
+
+-- =====================================================================
+-- AI 해석 (2026-08-12)
+-- 캐시가 핵심이다. 같은 사주·같은 상품이면 만들어 둔 글을 그대로 내어준다.
+-- 돈이 안 나가고, '볼 때마다 다른 말이 나오는' 문제도 함께 없어진다.
+-- =====================================================================
+create table if not exists ai_cache (
+  cache_key  text primary key,
+  product_id text not null,
+  body       text not null,
+  model      text not null,
+  created_at timestamptz not null default now()
+);
+
+-- 새로 만든 해석의 수. 세는 단위는 호출 횟수가 아니라 '서로 다른 해석'이다.
+-- 만들다 끊겨서 다시 눌러도 한 번으로 친다.
+create table if not exists ai_usage (
+  id         bigserial primary key,
+  session_id text not null,
+  cache_key  text not null,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists ai_usage_uniq on ai_usage (session_id, cache_key);
+create index if not exists ai_usage_session_idx on ai_usage (session_id);
+
+-- 운영자 테스트 허가. 열쇠는 여기 없다(Vercel 환경변수 TEST_UNLOCK_CODE).
+create table if not exists test_grants (
+  session_id text primary key,
+  expires_at timestamptz not null
+);
+
+create table if not exists unlock_attempts (
+  id         bigserial primary key,
+  session_id text not null,
+  tried_at   timestamptz not null default now()
+);
+create index if not exists unlock_attempts_idx on unlock_attempts (session_id, tried_at desc);
+
+alter table ai_cache        enable row level security;
+alter table ai_usage        enable row level security;
+alter table test_grants     enable row level security;
+alter table unlock_attempts enable row level security;
