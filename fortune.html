@@ -3262,12 +3262,14 @@ var INVITE_HASH_RAW = location.hash || '';
 var PENDING_INVITE = null;
 /* R33 — 방 번호로 들어온 경우(#r=). 뜻 없는 번호라 주소에 남의 생년월일이 없다. */
 var PENDING_ROOM = (/[#&]r=([A-Za-z0-9_-]{10,})/.exec(INVITE_HASH_RAW) || [])[1] || null;
+/* R34 — 저장된 그룹 주소(#g=). 주소에는 뜻 없는 번호만 들어간다. */
+var PENDING_GROUP = (/[#&]g=([A-Za-z0-9_-]{8,})/.exec(INVITE_HASH_RAW) || [])[1] || null;
 /* ★ 초대 링크에도 남의 생년월일시·출생지가 들어 있다. 예전에는 "확인하고 궁합 입력하기"를
    누른 뒤에야 주소에서 지웠는데, 그때까지는 주소창·방문 기록에 그대로 남아 있었다.
    위에서 이미 메모리로 읽어 두었으므로(location.hash를 다시 읽는 곳은 이 파일에 없다)
    여기서 바로 지워도 흐름에 영향이 없다. 읽기에 실패한 링크도 함께 지운다 —
    파싱이 안 됐다고 주소에서 사라지는 게 아니기 때문이다. (그룹 링크와 같은 규칙) */
-if(/[#&](invite|i1|r)=/.test(INVITE_HASH_RAW)){
+if(/[#&](invite|i1|r|g)=/.test(INVITE_HASH_RAW)){
   try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
 }
 var INVITE_CONSUMED = false;
@@ -9320,6 +9322,14 @@ function renderSetupStep3(){
     var goInvite = !wasEdit && PENDING_INVITE && !INVITE_CONSUMED;
     var goMeet   = !wasEdit && PENDING_MEET;
     var goRoom   = !wasEdit && PENDING_ROOM;
+    var goGroup  = !wasEdit && PENDING_GROUP;
+    if(goGroup){
+      var gid = PENDING_GROUP; PENDING_GROUP=null;
+      showToast('프로필을 저장했어요. 받은 그룹을 열어볼게요.');
+      ROUTE='compat'; render();
+      openSavedGroup(gid);
+      return;
+    }
     if(goRoom){
       ROUTE='roomJoin';
       showToast('프로필을 저장했어요. 받은 초대장을 열어볼게요.');
@@ -10278,6 +10288,8 @@ function renderCompat(){
   if(!COMPAT_DRAFT.result){
     var recent = buildRecentRoomsCard();
     if(recent) view.appendChild(recent);
+    var savedG = buildSavedGroupsCard();
+    if(savedG) view.appendChild(savedG);
   }
   if(!COMPAT_DRAFT.result){
     /* R32 — 초대 링크로 들어온 화면에서는 칸이 이미 채워져 있다. "입력하면"이라고 말하면
@@ -11521,6 +11533,192 @@ function openMeetLinkModal(profiles){
 ===================================================================== */
 var GC_SEL = null;      /* 지금 눌러 둔 사람의 자리 번호. null이면 전체 보기 */
 var GC_PICK = null;     /* 그룹에 넣기로 고른 프로필 id 목록. null이면 저장된 순서대로 앞에서 30명 */
+/* =====================================================================
+   R34 — 저장된 그룹 (이름 + 관리용 PIN)
+   ---------------------------------------------------------------------
+   대표님 지시: 지속가능한 별도 URL + 그룹 이름 + 관리용 PIN.
+
+   · 저장하면 주소(#g=...)가 생긴다. 그 주소로 언제든 같은 그룹이 열린다.
+   · 링크를 아는 사람은 볼 수 있고, 고치거나 지우는 것만 PIN이 필요하다.
+   · PIN은 서버가 되돌릴 수 없는 형태로만 갖고 있어서, 잊으면 아무도 못 연다.
+     그래서 만들 때 그 사실을 분명히 적는다 — 나중에 알면 늦다.
+   ★ 이 기기에는 그룹 주소와 이름만 기억한다. 명단(남의 생년월일)은 저장하지 않는다.
+===================================================================== */
+var GROUP_ENDPOINT = '/api/group';
+var GROUP_VIEW = null;   /* {id, name, members[], mine} — 그룹 주소로 열었을 때만 값이 있다 */
+
+function groupFetch(payload){
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 8000) : null;
+  return fetch(GROUP_ENDPOINT, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload||{}), signal: ctrl?ctrl.signal:undefined
+  }).then(function(r){
+    if(timer) clearTimeout(timer);
+    return r.json().catch(function(){ return {}; }).then(function(d){
+      if(!r.ok){ var e=new Error(d && d.reason ? d.reason : ('HTTP '+r.status)); e.status=r.status; throw e; }
+      return d;
+    });
+  }).catch(function(e){ if(timer) clearTimeout(timer); throw e; });
+}
+
+/* 이 기기가 기억하는 저장된 그룹 목록 — 주소와 이름뿐이다. */
+function savedGroups(){ return Array.isArray(STATE.savedGroups) ? STATE.savedGroups : []; }
+function rememberGroup(id, name){
+  var list = savedGroups().filter(function(x){ return x && x.id !== id; });
+  list.unshift({id:id, name:(name||'').slice(0,40), at:Date.now()});
+  STATE.savedGroups = list.slice(0, 20);
+  saveState();
+}
+function forgetGroup(id){
+  STATE.savedGroups = savedGroups().filter(function(x){ return x && x.id !== id; });
+  saveState();
+}
+function groupLink(id){ return location.href.split('#')[0] + '#g=' + id; }
+
+/* 지금 화면에 세워진 사람들을 서버에 보낼 한 줄로 만든다(그룹 링크와 같은 형식). */
+function currentGroupMembersText(){
+  return gcMembers().map(function(m){ return gcMeetRow(m.profile || m); }).join(';');
+}
+
+/* ---- 저장하기 ---- */
+function openGroupSaveModal(){
+  var body = el('div',{});
+  var nameInput = el('input',{type:'text', maxLength:'40', placeholder:'예: 우리 동아리', id:'grpName'});
+  body.appendChild(el('div',{class:'field'},[ el('label',{for:'grpName'},['그룹 이름']), nameInput ]));
+  var pinInput = el('input',{type:'text', inputMode:'numeric', maxLength:'8', placeholder:'숫자 4~8자리', id:'grpPin'});
+  body.appendChild(el('div',{class:'field'},[ el('label',{for:'grpPin'},['관리용 PIN']), pinInput ]));
+  body.appendChild(el('p',{class:'biz-hint'},[
+    '이름을 바꾸거나 사람을 더하고 빼거나 그룹을 지울 때 이 PIN이 필요해요.'
+  ]));
+  /* ★ 잊으면 못 연다는 사실을 만들기 "전에" 말한다. 나중에 알면 늦다. */
+  body.appendChild(el('p',{class:'warn-box'},[
+    'PIN은 저희도 알 수 없는 형태로 보관돼요. 잊으시면 알려드릴 방법이 없으니 꼭 기억해 두세요. (그룹을 지우는 것만은 문의 주시면 도와드려요.)'
+  ]));
+  body.appendChild(el('p',{class:'biz-hint'},[
+    '그룹에는 담긴 분들의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 함께 저장돼요. 그분들의 동의를 받고 저장해 주세요. '+GROUP_TTL_PHRASE+' 동안 보관되고, 열 때마다 기간이 다시 시작돼요.'
+  ]));
+
+  openModal('그룹 저장하기', body, [
+    {label:'취소', cls:'btn-ghost', onclick:closeModal},
+    {label:'저장', cls:'btn-primary', onclick:function(){
+      var name = (nameInput.value||'').trim();
+      var pin  = (pinInput.value||'').trim();
+      if(!name){ showToast('그룹 이름을 적어주세요.'); return; }
+      if(!/^\d{4,8}$/.test(pin)){ showToast('PIN은 숫자 4~8자리로 정해주세요.'); return; }
+      var members = currentGroupMembersText();
+      if(!members){ showToast('저장할 사람이 없어요.'); return; }
+      closeModal();
+      showToast('그룹을 저장하는 중이에요…');
+      groupFetch({action:'create', name:name, pin:pin, members:members})
+        .then(function(d){
+          if(!d || !d.groupId) throw new Error('저장에 실패했어요.');
+          rememberGroup(d.groupId, name);
+          openGroupSavedModal(d.groupId, name);
+        })
+        .catch(function(err){ showToast(String(err && err.message || '지금은 저장할 수 없어요.')); });
+    }}
+  ]);
+}
+
+function openGroupSavedModal(id, name){
+  var link = groupLink(id);
+  var body = el('div',{});
+  body.appendChild(el('p',{},['"'+name+'" 그룹을 저장했어요. 아래 주소로 언제든 다시 열 수 있어요.']));
+  body.appendChild(el('div',{class:'field'},[ el('input',{type:'text', value:link, readOnly:'readonly', id:'grpLink'}) ]));
+  body.appendChild(el('p',{class:'biz-hint'},['이 주소를 아는 사람은 그룹을 볼 수 있어요. 이름을 바꾸거나 지우려면 PIN이 필요해요.']));
+  openModal('그룹을 저장했어요', body, [
+    {label:'닫기', cls:'btn-ghost', onclick:function(){ closeModal(); render(); }},
+    {label:'주소 공유', cls:'btn-primary', onclick:function(){
+      if(navigator.share){ navigator.share({title:COMPANY.serviceName+' 그룹 · '+name, url:link}).catch(function(){}); }
+      else { copyText(link); }
+    }}
+  ]);
+}
+
+/* ---- 열기 ---- */
+function openSavedGroup(id){
+  showToast('그룹을 불러오는 중이에요…');
+  groupFetch({action:'get', groupId:id}).then(function(d){
+    if(!d || !d.members) throw new Error('그룹을 찾을 수 없어요.');
+    var rows = String(d.members).split(';').filter(Boolean);
+    PENDING_MEET = rows.map(function(r){ return inviteRowToObj(r); }).filter(inviteObjValid);
+    if(!PENDING_MEET.length) throw new Error('명단을 읽지 못했어요.');
+    GROUP_VIEW = {id:id, name:d.name};
+    rememberGroup(id, d.name);
+    GC_SOURCE='link'; GC_SEL=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0};
+    ROUTE='groupCompat'; render(); window.scrollTo(0,0);
+  }).catch(function(err){
+    var st = err && err.status;
+    if(st===404){ forgetGroup(id); showToast('이 그룹은 없거나 보관 기간이 지났어요.'); }
+    else showToast(String(err && err.message || '지금은 불러올 수 없어요.'));
+    render();
+  });
+}
+
+/* ---- 관리(PIN) ---- */
+function openGroupManageModal(){
+  if(!GROUP_VIEW) return;
+  var body = el('div',{});
+  var pinInput = el('input',{type:'text', inputMode:'numeric', maxLength:'8', placeholder:'저장할 때 정한 PIN', id:'mgPin'});
+  body.appendChild(el('div',{class:'field'},[ el('label',{for:'mgPin'},['관리용 PIN']), pinInput ]));
+  var nameInput = el('input',{type:'text', maxLength:'40', value:GROUP_VIEW.name||'', id:'mgName'});
+  body.appendChild(el('div',{class:'field'},[ el('label',{for:'mgName'},['그룹 이름']), nameInput ]));
+  body.appendChild(el('p',{class:'biz-hint'},['이름을 바꾸거나, 지금 화면에 있는 사람들로 명단을 다시 저장할 수 있어요.']));
+
+  openModal('그룹 관리', body, [
+    {label:'닫기', cls:'btn-ghost', onclick:closeModal},
+    {label:'저장', cls:'btn-primary', onclick:function(){
+      var pin=(pinInput.value||'').trim(), nm=(nameInput.value||'').trim();
+      if(!/^\d{4,8}$/.test(pin)){ showToast('PIN은 숫자 4~8자리예요.'); return; }
+      closeModal();
+      groupFetch({action:'update', groupId:GROUP_VIEW.id, pin:pin, name:nm, members:currentGroupMembersText()})
+        .then(function(){
+          GROUP_VIEW.name = nm || GROUP_VIEW.name;
+          rememberGroup(GROUP_VIEW.id, GROUP_VIEW.name);
+          showToast('그룹을 저장했어요.'); render();
+        })
+        .catch(function(err){ showToast(String(err && err.message || '고치지 못했어요.')); });
+    }}
+  ]);
+}
+
+function confirmDeleteGroup(){
+  if(!GROUP_VIEW) return;
+  var body = el('div',{});
+  var pinInput = el('input',{type:'text', inputMode:'numeric', maxLength:'8', placeholder:'PIN', id:'delPin'});
+  body.appendChild(el('p',{},['"'+(GROUP_VIEW.name||'이 그룹')+'"을 지울까요? 지우면 이 주소로는 다시 열 수 없어요.']));
+  body.appendChild(el('div',{class:'field'},[ el('label',{for:'delPin'},['관리용 PIN']), pinInput ]));
+  openModal('그룹 지우기', body, [
+    {label:'취소', cls:'btn-ghost', onclick:closeModal},
+    {label:'지우기', cls:'btn-primary', onclick:function(){
+      var pin=(pinInput.value||'').trim();
+      if(!/^\d{4,8}$/.test(pin)){ showToast('PIN은 숫자 4~8자리예요.'); return; }
+      closeModal();
+      groupFetch({action:'delete', groupId:GROUP_VIEW.id, pin:pin})
+        .then(function(){
+          forgetGroup(GROUP_VIEW.id);
+          GROUP_VIEW=null; PENDING_MEET=null; GC_SOURCE='profiles';
+          showToast('그룹을 지웠어요.'); ROUTE='compat'; render();
+        })
+        .catch(function(err){ showToast(String(err && err.message || '지우지 못했어요.')); });
+    }}
+  ]);
+}
+
+/* 궁합 화면에 두는 "저장한 그룹" 목록 */
+function buildSavedGroupsCard(){
+  var list = savedGroups();
+  if(!list.length) return null;
+  var card = el('div',{class:'scroll-card'});
+  card.appendChild(el('h3',{},['저장한 그룹']));
+  card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 열 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관돼요.']));
+  list.forEach(function(g){
+    card.appendChild(settingsRow(g.name || '이름 없는 그룹', '열기', function(){ openSavedGroup(g.id); }));
+  });
+  return card;
+}
+
 var GC_SOURCE = 'profiles';  /* 'profiles' = 내 저장 프로필 / 'link' = 그룹 링크로 받은 명단 */
 function gcUsableProfiles(){
   return STATE.profiles.filter(function(p){
@@ -11545,10 +11743,12 @@ function renderGroupCompat(){
   var fromLink = (GC_SOURCE==='link' && PENDING_MEET);
 
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
-    if(fromLink){ GC_SOURCE='profiles'; GC_SEL=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); return; }
-    ROUTE='compat'; render();
+    if(fromLink){ GC_SOURCE='profiles'; GC_SEL=null; GROUP_VIEW=null; PENDING_MEET=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); return; }
+    GROUP_VIEW=null; ROUTE='compat'; render();
   }},[dirIcon('left'), fromLink ? '내 프로필로 그룹 보기' : '궁합 보기로 돌아가기']));
-  view.appendChild(pageHead('궁합 보기 · 그룹', fromLink ? '받은 그룹 궁합' : '모두의 궁합 보기', null, {marginTop:'14px'}));
+  view.appendChild(pageHead('궁합 보기 · 그룹',
+    (GROUP_VIEW && GROUP_VIEW.name) ? GROUP_VIEW.name : (fromLink ? '받은 그룹 궁합' : '모두의 궁합 보기'),
+    null, {marginTop:'14px'}));
   view.appendChild(el('p',{class:'section-sub'},[fromLink
     ? '그룹 링크로 받은 명단이에요. 이 화면에서만 보고, 기기에 저장하지 않아요.'
     : '저장된 프로필로 그룹을 만들어요. 한 그룹에 최대 '+GC_MAX+'명까지 한 그림에서 볼 수 있어요.']));
@@ -11639,6 +11839,38 @@ function renderGroupCompat(){
       openMeetLinkModal(members.map(function(m){ return STATE.profiles.filter(function(p){ return p.id===m.id; })[0]; }).filter(Boolean));
     }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '그룹 링크 만들기 (지금 멤버 그대로)']));
   }
+
+  /* =====================================================================
+     R34 — 그룹 저장 / 관리
+     ---------------------------------------------------------------------
+     · 아직 저장 안 한 그룹  → [이 그룹 저장하기]
+     · 저장된 그룹을 열어 봄 → 주소 + [그룹 관리] + [지우기]
+     ★ 링크로 받은 명단(fromLink)이라도 저장할 수 있게 둔다. 받은 그룹을 내가 이름 붙여
+       보관하고 싶은 것이 자연스럽고, 그때도 담긴 분들의 동의는 저장하는 사람의 몫이다
+       (그 안내는 저장 화면에 적혀 있다).
+  ===================================================================== */
+  var gsCard = el('div',{class:'scroll-card', style:'margin-top:16px;'});
+  if(GROUP_VIEW){
+    gsCard.appendChild(el('h3',{},['이 그룹 주소']));
+    gsCard.appendChild(el('p',{class:'biz-hint'},['이 주소로 언제든 다시 열 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관되고, 열 때마다 기간이 다시 시작돼요.']));
+    gsCard.appendChild(el('div',{class:'field'},[
+      el('input',{type:'text', value:groupLink(GROUP_VIEW.id), readOnly:'readonly', id:'groupViewLink'})
+    ]));
+    var gRow = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;'});
+    gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+      var lk = groupLink(GROUP_VIEW.id);
+      if(navigator.share){ navigator.share({title:COMPANY.serviceName+' 그룹 · '+(GROUP_VIEW.name||''), url:lk}).catch(function(){}); }
+      else { copyText(lk); }
+    }},['주소 공유']));
+    gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:openGroupManageModal},['그룹 관리']));
+    gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:confirmDeleteGroup},['그룹 지우기']));
+    gsCard.appendChild(gRow);
+  } else {
+    gsCard.appendChild(el('h3',{},['이 그룹 저장하기']));
+    gsCard.appendChild(el('p',{class:'biz-hint'},['이름을 붙여 저장하면 주소가 생겨요. 새로고침하거나 나중에 다시 와도 그 주소로 같은 그룹이 열려요.']));
+    gsCard.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:10px;', onclick:openGroupSaveModal},['이름 붙여 저장하기']));
+  }
+  view.appendChild(gsCard);
   view.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, MBTI 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
   main.appendChild(autoTermify(view));
 }
@@ -12710,6 +12942,10 @@ if(MEET_HASH_PRESENT){
 }
 if(PENDING_MEET && STATE.profiles.length>0){
   GC_SOURCE='link'; ROUTE='groupCompat';
+} else if(PENDING_GROUP && STATE.profiles.length>0){
+  /* 그룹 주소로 들어왔다. 명단은 서버에서 받아온다. */
+  ROUTE='compat';
+  setTimeout(function(){ openSavedGroup(PENDING_GROUP); PENDING_GROUP=null; }, 0);
 } else if(PENDING_ROOM && STATE.profiles.length>0){
   ROUTE='roomJoin';
 } else if(PENDING_INVITE && !INVITE_CONSUMED && STATE.profiles.length>0){
