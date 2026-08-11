@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>인연점 · 정통 만세력 사주 × MBTI 궁합</title>
+<title>케미체크 · 사주 × MBTI 궁합</title>
 <meta name="description" content="클라이언트에서 직접 계산하는 만세력 사주와 MBTI를 결합한 운세·궁합 플랫폼">
 <style>
 /* ===================== 리셋 & 베이스 ===================== */
@@ -999,7 +999,7 @@ main{flex:1;padding:28px 20px 96px;}
   <header class="app-header" id="appHeader" hidden>
     <div class="brand">
       <div class="brand-seal" aria-hidden="true">緣</div>
-      <span class="brand-name">인연점</span>
+      <span class="brand-name">케미체크</span>
     </div>
     <div class="profile-switch" id="profileSwitch"></div>
   </header>
@@ -1061,7 +1061,7 @@ main{flex:1;padding:28px 20px 96px;}
    (가격을 formatWon(PRODUCTS[...].price) 한 곳으로 모은 것과 같은 원칙)
 ===================================================================== */
 var COMPANY = {
-  serviceName:  '인연점',
+  serviceName:  '케미체크',
   legalName:    '주식회사 언바운드',
   legalNameEn:  'Unbound',
   ceo:          '박정인',
@@ -8636,7 +8636,7 @@ function renderOnboarding(){
   var main=$('#main'); main.innerHTML='';
   var wrap=el('div',{class:'onboard view'});
   wrap.appendChild(buildConstellationSvg());
-  wrap.appendChild(el('h1',{},['인연점']));
+  wrap.appendChild(el('h1',{},[COMPANY.serviceName]));
   /* ★ R22 — 첫 화면에 캐릭터 셋을 세운다. 이 앱을 처음 본 사람이 "무슨 앱인지"를
      문장보다 먼저 알게 되는 자리이고, 여기에는 계산 근거·고지·결제가 없다.
      세 종만 쓰는 이유: 21종을 다 세우면 320px에서 줄이 네 겹이 되고 첫 화면이 시끄러워진다. */
@@ -10407,6 +10407,21 @@ function renderCompatSummary(p, draft){
   box.appendChild(el('div',{style:'display:flex;justify-content:center;'},[buildDonutGauge(r.res.combined, 152)]));
   box.appendChild(el('div',{style:'text-align:center;'},[el('span',{class:'tier-label'},[r.res.combinedTier])]));
   box.appendChild(el('p',{class:'cm-verdict-line'},[COMPAT_TIER_LINE[r.res.combinedTier] || '']));
+  /* =====================================================================
+     R33 — 두 사람 화면의 점수가 1~2점 다를 수 있다. 그 이유를 미리 적는다.
+     ---------------------------------------------------------------------
+     사주에서 오행의 상생은 방향이 있는 관계다. "내가 상대를 북돋는 것"과
+     "상대가 나를 북돋는 것"을 같은 것으로 보지 않으므로, 보는 사람이 누구냐에 따라
+     사주 점수가 조금 달라진다(내가 북돋는 쪽 95 · 상대가 북돋는 쪽 90).
+     MBTI·오행·띠 점수는 양쪽이 완전히 같다.
+     ★ 계산을 억지로 대칭으로 만들지 않는다 — 그건 명리의 관계 개념을 지우는 일이다.
+       대신 두 사람이 화면을 나란히 놓고 "왜 다르지?" 하지 않도록 여기서 미리 말한다.
+       (실시간 연결로 두 화면에 동시에 결과가 뜨게 되면서 실제로 보이게 된 자리다.) */
+  if(r.res.saju && r.res.saju.elemTerm && /상생/.test(r.res.saju.elemTerm)){
+    box.appendChild(el('p',{class:'biz-hint', style:'text-align:center;margin-top:6px;'},[
+      '이 점수는 '+p.name+'님 기준이에요. 사주에서 서로를 북돋는 관계는 방향에 따라 조금 다르게 보기 때문에, 상대방 화면에는 1~2점 다르게 나올 수 있어요.'
+    ]));
+  }
 
   /* R19 — 두 사람의 캐릭터를 나란히. 그림과 이름뿐이라 궁합 상세(유료)와는 무관하다. */
   box.appendChild(buildCompatCharPair(p.name, r.pA, r.pB));
@@ -11282,7 +11297,7 @@ function openMeetLinkModal(profiles){
     {label:'닫기', cls:'btn-ghost', onclick:closeModal},
     {label:'공유하기', cls:'btn-primary', onclick:function(){
       if(navigator.share){
-        navigator.share({title:'인연점 모임 궁합', text:'우리 모임 궁합을 한 그림으로 봤어요.', url:made.url}).catch(function(){});
+        navigator.share({title:COMPANY.serviceName+' 모임 궁합', text:'우리 모임 궁합을 한 그림으로 봤어요.', url:made.url}).catch(function(){});
       } else {
         copyText(made.url);
       }
@@ -11648,7 +11663,7 @@ function showInviteModal(profile, link, live, ttlHours){
     {label:'닫기', cls:'btn-ghost', onclick:closeModal},
     {label:'공유하기', cls:'btn-primary', onclick:function(){
       if(navigator.share){
-        navigator.share({title:'인연점 궁합 초대', text:profile.name+'님이 궁합을 보자고 초대했어요.', url:link}).catch(function(){});
+        navigator.share({title:COMPANY.serviceName+' 궁합 초대', text:profile.name+'님이 궁합을 보자고 초대했어요.', url:link}).catch(function(){});
       } else {
         copyText(link);
       }
@@ -11736,7 +11751,7 @@ function buildRoomWaitCard(){
   ]));
   var row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;'});
   row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
-    if(navigator.share){ navigator.share({title:'인연점 궁합 초대', url:ROOM_WAIT.link}).catch(function(){}); }
+    if(navigator.share){ navigator.share({title:COMPANY.serviceName+' 궁합 초대', url:ROOM_WAIT.link}).catch(function(){}); }
     else { copyText(ROOM_WAIT.link); }
   }},['링크 다시 보내기']));
   row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
@@ -12129,20 +12144,20 @@ function openShareModal(kind, profile, data){
 function buildShareText(kind, profile, data){
   if(kind==='fortune'){
     var f=data;
-    return '[인연점] '+profile.name+'님의 오늘의 운세 ('+f.date+')\n'+
+    return '['+COMPANY.serviceName+'] '+profile.name+'님의 오늘의 운세 ('+f.date+')\n'+
       FORTUNE_CATS.map(function(c){ return c.label+': '+f.items[c.key].text; }).join('\n')+
       '\n행운 아이템: '+f.luckyItem+' / 행운 색상: '+f.luckyColor;
   } else if(kind==='report'){
-    return '[인연점] '+profile.name+'님의 성향 리포트\nMBTI: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n오행: '+profile.element+' — '+ELEMENT_TRAIT[profile.element];
+    return '['+COMPANY.serviceName+'] '+profile.name+'님의 성향 리포트\nMBTI: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n오행: '+profile.element+' — '+ELEMENT_TRAIT[profile.element];
   } else if(kind==='saju'){
     var s=data;
-    return '[인연점] '+profile.name+'님의 사주팔자\n연주 '+s.year.text+'('+s.year.textH+') · 월주 '+s.month.text+'('+s.month.textH+') · 일주 '+s.day.text+'('+s.day.textH+')'+(s.hour?(' · 시주 '+s.hour.text+'('+s.hour.textH+')'):' · 시주 모름');
+    return '['+COMPANY.serviceName+'] '+profile.name+'님의 사주팔자\n연주 '+s.year.text+'('+s.year.textH+') · 월주 '+s.month.text+'('+s.month.textH+') · 일주 '+s.day.text+'('+s.day.textH+')'+(s.hour?(' · 시주 '+s.hour.text+'('+s.hour.textH+')'):' · 시주 모름');
   } else if(kind==='mbtiReport'){
     var rpt=buildMbtiReport16(profile);
-    return '[인연점] '+profile.name+'님의 MBTI 풀이\n유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n'+rpt.sections[0].body.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+    return '['+COMPANY.serviceName+'] '+profile.name+'님의 MBTI 풀이\n유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n'+rpt.sections[0].body.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
   } else {
     var r=data;
-    return '[인연점] '+profile.name+' × '+r.pB.name+' 궁합 결과\n종합 점수: '+r.res.combined+'점 ('+r.res.combinedTier+')\n사주: '+r.res.saju.elemRel+'\nMBTI: '+r.res.categories.chemistry;
+    return '['+COMPANY.serviceName+'] '+profile.name+' × '+r.pB.name+' 궁합 결과\n종합 점수: '+r.res.combined+'점 ('+r.res.combinedTier+')\n사주: '+r.res.saju.elemRel+'\nMBTI: '+r.res.categories.chemistry;
   }
 }
 function copyText(text){
@@ -12190,7 +12205,7 @@ function drawShareCard(canvas, kind, profile, data){
   ctx.fillText('緣', w-90, 92);
 
   ctx.fillStyle='#584416'; ctx.font='700 30px '+CARD_SANS; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
-  ctx.fillText('인연점', 50, 100);
+  ctx.fillText(COMPANY.serviceName, 50, 100);
 
   ctx.fillStyle='#231F18'; ctx.font='400 17px '+CARD_SANS;
   var y=170;
