@@ -8065,12 +8065,15 @@ function buildPairReasons(pA, pB, res){
     care.push(res.saju.elemRel + ' 서로를 자극하는 기운이라 짧게는 재밌고 길게는 지칠 수 있어요. 다툰 날은 결론을 미루고 하루 자고 이야기하는 편이 좋아요.');
   }
 
-  /* ③ 일지 — 태어난 날의 아래 글자끼리 맺는 관계 */
+  /* ③ 일지 — 태어난 날의 아래 글자끼리 맺는 관계.
+     ★ 값은 '육합' / '충' / '해당 없음' 세 가지뿐이다. 처음에 /충|형|파|해/ 로 걸렀더니
+       '해당 없음'의 "해"가 걸려서 관계가 없는 사람에게 "부딪히는 관계"라고 말했다.
+       부분 일치로 뜻을 판정하지 않는다 — 값을 그대로 비교한다. */
   var bt = res.saju && res.saju.branchTerm ? res.saju.branchTerm : '';
-  if(/합/.test(bt)){
-    good.push('태어난 날의 아래 글자끼리 짝을 이루는 관계(' + bt + ')예요. 가까이 지낼수록 편해지고, 사소한 일에도 손발이 맞는 편이에요.');
-  } else if(/충|형|파|해/.test(bt)){
-    care.push('태어난 날의 아래 글자끼리 부딪히는 관계(' + bt + ')예요. 생활 리듬이나 속도가 어긋나기 쉬우니, 함께 지내는 시간을 미리 정해두면 훨씬 나아요.');
+  if(bt === '육합'){
+    good.push('태어난 날의 아래 글자끼리 짝을 이루는 관계(육합)예요. 가까이 지낼수록 편해지고, 사소한 일에도 손발이 맞는 편이에요.');
+  } else if(bt === '충'){
+    care.push('태어난 날의 아래 글자끼리 정면으로 부딪히는 관계(충)예요. 생활 리듬이나 속도가 어긋나기 쉬우니, 함께 지내는 시간을 미리 정해두면 훨씬 나아요.');
   }
 
   /* ④ 띠 — 점수대만 말한다. 근거가 얕은 항목이라 강하게 말하지 않는다. */
@@ -8091,7 +8094,7 @@ function buildPairReasons(pA, pB, res){
 function buildPairReasonBlock(pA, pB, res, compact){
   var r = buildPairReasons(pA, pB, res);
   var box = el('div',{class: compact ? '' : 'scroll-card'});
-  if(!compact) box.appendChild(el('h3',{},['어떤 점이 잘 맞고, 어디가 부딪힐까']));
+  if(!compact) box.appendChild(el('h3',{},['왜 이런 점수가 나왔을까']));
   var g = el('div',{style:'margin-top:6px;'});
   g.appendChild(el('p',{class:'cm-label', style:'margin:0 0 4px;'},['잘 맞는 점']));
   var gu = el('ul',{class:'reason-list'});
