@@ -50,3 +50,29 @@ alter table restore_attempts enable row level security;
 --
 -- 결제창까지 갔는데 안 끝난 건(이탈률):
 --   select status, count(*) from orders where created_at >= now() - interval '7 days' group by status;
+
+-- =====================================================================
+-- 궁합 방 (R33) — 두 사람 화면을 실시간으로 잇기 위한 표
+-- ---------------------------------------------------------------------
+-- ★ 여기 담기는 a_payload / b_payload 는 개인정보다
+--   (이름·MBTI·생년월일·태어난 시각·성별·출생지). 그래서 반드시 기한을 둔다.
+--   서버 코드는 expires_at 이 지난 방을 "없는 것"으로 취급하고, 방을 새로 만들 때마다
+--   지난 방을 실제로 지운다. 화면에 적은 보관 기간과 코드가 같은 말을 해야 한다.
+-- ★ 서버는 payload 안을 해석하지 않는다. 앱이 만든 문자열 한 줄을 그대로 보관한다.
+-- =====================================================================
+create table if not exists rooms (
+  room_id    text primary key,                    -- 18바이트 난수 (추측 불가)
+  a_payload  text not null,                       -- 방을 만든 사람(초대한 쪽)
+  b_payload  text,                                -- 링크를 열고 들어온 사람
+  created_at timestamptz not null default now(),
+  joined_at  timestamptz,
+  expires_at timestamptz not null                 -- 이 시각이 지나면 못 읽는다
+);
+
+create index if not exists rooms_expires_idx on rooms (expires_at);
+
+alter table rooms enable row level security;
+-- 정책을 만들지 않는다 = service_role(서버 함수)만 접근. 공개 키로는 한 줄도 못 읽는다.
+
+-- 지금 몇 개가 살아 있는지 확인:
+--   select count(*) from rooms where expires_at > now();

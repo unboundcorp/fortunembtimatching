@@ -3224,12 +3224,14 @@ var COMPAT_SUB = null; /* null=요약, 'saju'=사주궁합 상세, 'mbti'=MBTI�
    — 모임 링크(#meet=)가 이미 같은 이유로 같은 방식을 쓰고 있었다. */
 var INVITE_HASH_RAW = location.hash || '';
 var PENDING_INVITE = null;
+/* R33 — 방 번호로 들어온 경우(#r=). 뜻 없는 번호라 주소에 남의 생년월일이 없다. */
+var PENDING_ROOM = (/[#&]r=([A-Za-z0-9_-]{10,})/.exec(INVITE_HASH_RAW) || [])[1] || null;
 /* ★ 초대 링크에도 남의 생년월일시·출생지가 들어 있다. 예전에는 "확인하고 궁합 입력하기"를
    누른 뒤에야 주소에서 지웠는데, 그때까지는 주소창·방문 기록에 그대로 남아 있었다.
    위에서 이미 메모리로 읽어 두었으므로(location.hash를 다시 읽는 곳은 이 파일에 없다)
    여기서 바로 지워도 흐름에 영향이 없다. 읽기에 실패한 링크도 함께 지운다 —
    파싱이 안 됐다고 주소에서 사라지는 게 아니기 때문이다. (모임 링크와 같은 규칙) */
-if(/[#&](invite|i1)=/.test(INVITE_HASH_RAW)){
+if(/[#&](invite|i1|r)=/.test(INVITE_HASH_RAW)){
   try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
 }
 var INVITE_CONSUMED = false;
@@ -9071,7 +9073,11 @@ function renderSetupStep3(){
     ===================================================================== */
     var goInvite = !wasEdit && PENDING_INVITE && !INVITE_CONSUMED;
     var goMeet   = !wasEdit && PENDING_MEET;
-    if(goMeet){
+    var goRoom   = !wasEdit && PENDING_ROOM;
+    if(goRoom){
+      ROUTE='roomJoin';
+      showToast('프로필을 저장했어요. 받은 초대장을 열어볼게요.');
+    } else if(goMeet){
       GC_SOURCE='link'; ROUTE='groupCompat';
       showToast('프로필을 저장했어요. 받은 모임을 보여드릴게요.');
     } else if(goInvite){
@@ -10020,6 +10026,8 @@ function renderCompat(){
   if(!COMPAT_DRAFT) COMPAT_DRAFT = defaultCompatDraft();
 
   var view=el('div',{class:'view'});
+  /* R33 — 상대를 기다리는 중이면 그 안내를 맨 위에 둔다. 결과가 나오면 자동으로 사라진다. */
+  if(ROOM_WAIT && !COMPAT_DRAFT.result) view.appendChild(buildRoomWaitCard());
   if(!COMPAT_DRAFT.result){
     /* R32 — 초대 링크로 들어온 화면에서는 칸이 이미 채워져 있다. "입력하면"이라고 말하면
        무엇을 더 넣으라는 건지 알 수 없고, 채워진 값이 자기 정보라고 오해하게 된다.
@@ -11446,21 +11454,130 @@ function decodeInviteFromHash(hash){
     return inviteObjValid(obj) ? obj : null;
   }catch(e){ return null; }
 }
+/* =====================================================================
+   R33 — 궁합 방: 두 사람 화면을 실시간으로 잇는다 (대표님 지시)
+   ---------------------------------------------------------------------
+   예전에는 링크 안에 보낸 사람 정보를 통째로 담아 보냈다. 그래서 결과는 받는 쪽에서만
+   나왔고, 보낸 쪽 화면은 상대가 열었는지조차 몰랐다.
+   이제는 서버에 "방"을 만들고 링크에는 방 번호만 담는다.
+     · 보낸 사람 — 방을 만들고, 상대가 들어올 때까지 방을 들여다본다(몇 초마다).
+     · 받은 사람 — 방에서 상대 정보를 받고, 자기 정보를 놓는다. 그 순간 양쪽에 결과가 뜬다.
+
+   ★ 덤으로 개인정보가 주소에서 빠진다. 예전 링크에는 생년월일이 그대로 적혀 있어
+     대화 기록·방문 기록에 남았는데, 이제 링크에는 뜻 없는 번호만 남는다.
+   ★ 대신 그 정보가 서버에 잠시 저장된다. 그래서 기한을 두고(48시간), 지나면 못 읽는다.
+   ★ 서버가 없거나 실패하면 예전 방식(링크에 정보 담기)으로 되돌아간다.
+     서버가 죽었다고 궁합 기능 자체가 멈추면 안 된다.
+===================================================================== */
+var ROOM_ENDPOINT = '/api/room';
+var ROOM_POLL_MS = 3000;      /* 몇 초마다 방을 들여다볼지 */
+var ROOM_POLL_MAX_MIN = 10;   /* 이 시간이 지나면 그만 본다 — 배터리를 계속 쓰지 않는다 */
+var ROOM_WAIT = null;         /* {roomId, link, timer, startedAt, ttlHours} — 기다리는 중일 때만 값이 있다 */
+
+function roomFetch(payload){
+  var ctrl = (typeof AbortController!=='undefined') ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 8000) : null;
+  return fetch(ROOM_ENDPOINT, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload||{}), signal: ctrl?ctrl.signal:undefined
+  }).then(function(r){
+    if(timer) clearTimeout(timer);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }).catch(function(e){ if(timer) clearTimeout(timer); throw e; });
+}
+
+/* 방에서 받은 한 줄을 COMPAT_DRAFT에 옮긴다. 초대 링크를 풀 때와 같은 표를 쓰므로
+   형식이 한 곳에서만 정의된다(INVITE_FIELDS). */
+function applyRowToCompatDraft(row){
+  var o = inviteRowToObj(row);
+  if(!inviteObjValid(o)) return false;
+  COMPAT_DRAFT = defaultCompatDraft();
+  COMPAT_DRAFT.name = o.n||''; COMPAT_DRAFT.mbti = o.m||null;
+  COMPAT_DRAFT.year = o.y; COMPAT_DRAFT.month = o.mo; COMPAT_DRAFT.day = o.d;
+  if(o.h!=null){ COMPAT_DRAFT.timeUnknown=false; COMPAT_DRAFT.hour=o.h; COMPAT_DRAFT.minute=o.mi||0; }
+  COMPAT_DRAFT.gender = o.g||'F';
+  if(typeof o.lo==='number' && isFinite(o.lo)){ COMPAT_DRAFT.birthLon=o.lo; COMPAT_DRAFT.birthLonKey='custom'; }
+  if(o.ts!=null) COMPAT_DRAFT.solarTimeAdjust = !!o.ts;
+  COMPAT_DRAFT.fromInvite = true;
+  return true;
+}
+
+function stopRoomWait(){
+  if(ROOM_WAIT && ROOM_WAIT.timer){ clearTimeout(ROOM_WAIT.timer); }
+  ROOM_WAIT = null;
+}
+
+/* 보낸 사람이 방을 들여다보는 고리. 상대가 들어오면 그 자리에서 결과를 그린다. */
+function pollRoom(){
+  if(!ROOM_WAIT) return;
+  var minutes = (Date.now() - ROOM_WAIT.startedAt) / 60000;
+  if(minutes > ROOM_POLL_MAX_MIN){
+    ROOM_WAIT.timedOut = true;
+    if(ROUTE==='compat') render();
+    stopRoomWaitKeepFlag();
+    return;
+  }
+  roomFetch({action:'get', roomId:ROOM_WAIT.roomId}).then(function(d){
+    if(!ROOM_WAIT) return;
+    if(d && d.b){
+      var roomId = ROOM_WAIT.roomId;
+      stopRoomWait();
+      if(applyRowToCompatDraft(d.b)){
+        showToast('상대방이 정보를 입력했어요. 궁합을 보여드릴게요.');
+        try{ submitCompat(); return; }catch(e){ console.warn('방 결과 계산 실패', e); }
+      }
+      ROUTE='compat'; render();
+      return;
+    }
+    ROOM_WAIT.timer = setTimeout(pollRoom, ROOM_POLL_MS);
+  }).catch(function(){
+    /* 한 번 실패했다고 그만두지 않는다 — 지하철에서 잠깐 끊기는 일이 흔하다. */
+    if(ROOM_WAIT) ROOM_WAIT.timer = setTimeout(pollRoom, ROOM_POLL_MS*2);
+  });
+}
+function stopRoomWaitKeepFlag(){
+  if(ROOM_WAIT && ROOM_WAIT.timer){ clearTimeout(ROOM_WAIT.timer); ROOM_WAIT.timer=null; }
+}
+function startRoomWait(roomId, link, ttlHours){
+  stopRoomWait();
+  ROOM_WAIT = {roomId:roomId, link:link, ttlHours:ttlHours||48, startedAt:Date.now(), timer:null, timedOut:false};
+  ROOM_WAIT.timer = setTimeout(pollRoom, ROOM_POLL_MS);
+}
+
+/* 방 만들기를 먼저 시도하고, 안 되면 예전 방식(링크에 정보 담기)으로 되돌아간다. */
 function openInviteLinkModal(profile){
-  var link = location.href.split('#')[0] + '#' + INVITE_VER + '=' + encodeInvite(profile);
+  var base = location.href.split('#')[0];
+  var fallback = base + '#' + INVITE_VER + '=' + encodeInvite(profile);
+  showToast('초대 링크를 만드는 중이에요…');
+  roomFetch({action:'create', payload: encodeInvite(profile)})
+    .then(function(d){
+      if(!d || !d.roomId) throw new Error('roomId 없음');
+      var link = base + '#r=' + d.roomId;
+      startRoomWait(d.roomId, link, d.ttlHours);
+      showInviteModal(profile, link, true, d.ttlHours);
+    })
+    .catch(function(){
+      /* 서버가 없거나 실패 — 예전 방식으로도 궁합은 볼 수 있다. 다만 내 화면은 안 바뀐다. */
+      showInviteModal(profile, fallback, false, 0);
+    });
+}
+function showInviteModal(profile, link, live, ttlHours){
   var body=el('div',{});
-  /* ★ 이 문장은 실제 동작과 정확히 같아야 한다. 두 가지를 분명히 적는다 —
-     (1) 상대에게 이 앱 프로필이 없으면 먼저 만들어야 한다(그 뒤 자동으로 결과로 이어진다),
-     (2) 결과는 링크를 연 사람 화면에만 뜬다. 내 화면은 저절로 바뀌지 않는다(서버가 없다). */
-  body.appendChild(el('p',{},['이 링크를 열면 '+profile.name+'님과의 궁합 결과가 상대방 화면에 바로 나와요. 상대방이 이 앱을 처음 쓰는 경우에는 자기 프로필을 먼저 만들고, 그다음 결과로 이어져요.']));
-  body.appendChild(el('p',{class:'biz-hint'},['결과는 링크를 연 상대방 화면에 나옵니다. '+profile.name+'님 화면은 저절로 바뀌지 않아요 — 상대방이 결과를 캡처해 보내주거나, 상대방도 자기 링크를 만들어 보내주면 같은 결과를 보실 수 있어요.']));
+  /* ★ 이 문장은 실제 동작과 정확히 같아야 한다. 방이 만들어졌을 때와 아닐 때가 다르다. */
+  if(live){
+    body.appendChild(el('p',{},['이 링크를 상대방에게 보내주세요. 상대방이 열면 '+profile.name+'님 화면에도 궁합 결과가 자동으로 나타나요. 이 화면을 켜둔 채 기다리시면 돼요.']));
+    body.appendChild(el('p',{class:'biz-hint'},[
+      '두 분의 닉네임·MBTI·생년월일·태어난 시각·성별·출생지가 이 링크를 잇기 위해 '+ttlHours+'시간 동안만 서버에 보관되고, 그 뒤에는 읽을 수 없게 됩니다. 링크 주소에는 생년월일이 들어 있지 않아요.'
+    ]));
+  } else {
+    body.appendChild(el('p',{},['이 링크를 열면 '+profile.name+'님과의 궁합 결과가 상대방 화면에 나와요. 상대방이 이 앱을 처음 쓰는 경우에는 자기 프로필을 먼저 만들고, 그다음 결과로 이어져요.']));
+    body.appendChild(el('p',{class:'biz-hint'},[
+      '지금은 실시간 연결을 쓸 수 없어 예전 방식으로 만들었어요. 결과는 링크를 연 상대방 화면에만 나오고 '+profile.name+'님 화면은 바뀌지 않아요. 이 링크 주소 안에는 '+profile.name+'님의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 그대로 담기니 궁합을 볼 상대에게만 보내주세요.'
+    ]));
+  }
   var box2=el('div',{class:'field'},[ el('input',{type:'text',value:link,readOnly:'readonly', id:'inviteLinkInput'}) ]);
   body.appendChild(box2);
-  /* 링크에 무엇이 들어가는지 만들기 전에 알린다. 개인정보처리방침에도 같은 내용이 적혀 있다. */
-  body.appendChild(el('p',{class:'biz-hint'},[
-    '이 링크 주소 안에는 '+profile.name+'님의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+
-    ' 암호화 없이 그대로 담깁니다. 링크는 받는 사람의 대화 기록과 브라우저 방문 기록에도 남으니, 궁합을 볼 상대에게만 보내주세요.'
-  ]));
   openModal('궁합 초대 링크', body, [
     {label:'닫기', cls:'btn-ghost', onclick:closeModal},
     {label:'공유하기', cls:'btn-primary', onclick:function(){
@@ -11472,6 +11589,97 @@ function openInviteLinkModal(profile){
     }}
   ]);
 }
+/* =====================================================================
+   R33 — 방 번호로 들어온 화면 (링크를 연 쪽)
+   ---------------------------------------------------------------------
+   ① 방에서 보낸 사람 정보를 받아온다
+   ② 내 정보를 방에 놓는다 → 이 순간 보낸 사람 화면에도 결과가 뜬다
+   ③ 내 화면에도 결과를 그린다
+   ★ 서버가 답하지 않으면 막다른 길에 두지 않는다 — 무엇이 잘못됐는지 적고 다시 시도할 길을 준다.
+===================================================================== */
+var ROOM_JOIN_STATE = {busy:false, error:null};
+function renderRoomJoin(){
+  var main=$('#main'); main.innerHTML='';
+  var wrap=el('div',{class:'envelope-wrap view'});
+  wrap.appendChild(el('div',{class:'envelope'},[
+    el('div',{class:'body'}), el('div',{class:'flap'}), el('div',{class:'seal'},['緣'])
+  ]));
+
+  if(ROOM_JOIN_STATE.error){
+    wrap.appendChild(pageHead('초대장', '초대장을 열지 못했어요'));
+    wrap.appendChild(el('p',{class:'section-sub'},[ROOM_JOIN_STATE.error]));
+    wrap.appendChild(el('button',{class:'btn btn-primary', onclick:function(){
+      ROOM_JOIN_STATE.error=null; render(); joinRoomNow();
+    }},['다시 시도']));
+    wrap.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:10px;', onclick:function(){
+      PENDING_ROOM=null; ROUTE='home'; render();
+    }},['홈으로']));
+    main.appendChild(autoTermify(wrap));
+    return;
+  }
+
+  wrap.appendChild(pageHead('초대장', '궁합을 보자고 초대했어요'));
+  wrap.appendChild(el('p',{class:'section-sub'},['봉인을 여는 중이에요. 잠시만 기다려주세요…']));
+  main.appendChild(autoTermify(wrap));
+  if(!ROOM_JOIN_STATE.busy) joinRoomNow();
+}
+
+function joinRoomNow(){
+  var me = activeProfile();
+  if(!me || !PENDING_ROOM) return;
+  ROOM_JOIN_STATE.busy = true;
+  roomFetch({action:'join', roomId:PENDING_ROOM, payload: encodeInvite(me)})
+    .then(function(d){
+      ROOM_JOIN_STATE.busy = false;
+      if(!d || !d.a) throw new Error('상대 정보 없음');
+      if(!applyRowToCompatDraft(d.a)) throw new Error('상대 정보를 읽지 못함');
+      PENDING_ROOM = null;
+      ROUTE='compat';
+      try{ submitCompat(); }
+      catch(e){ console.warn('방 결과 계산 실패', e); render(); }
+    })
+    .catch(function(err){
+      ROOM_JOIN_STATE.busy = false;
+      var msg = String(err && err.message || err);
+      ROOM_JOIN_STATE.error = /404/.test(msg)
+        ? '이 초대장은 만료됐거나 찾을 수 없어요. 상대방에게 링크를 다시 받아주세요. (초대장은 만든 뒤 48시간 동안만 열려요.)'
+        : '지금은 연결이 되지 않아요. 잠시 뒤 다시 시도해 주세요.';
+      render();
+    });
+}
+
+/* 보낸 사람이 상대를 기다리는 동안 궁합 화면 위에 얹는 안내 카드 */
+function buildRoomWaitCard(){
+  var card = el('div',{class:'scroll-card'});
+  if(ROOM_WAIT.timedOut){
+    card.appendChild(el('h3',{},['기다리기를 멈췄어요']));
+    card.appendChild(el('p',{class:'biz-hint'},[
+      '상대방이 아직 링크를 열지 않았어요. 초대장은 만든 뒤 '+ROOM_WAIT.ttlHours+'시간 동안 열려 있으니, 상대방이 열면 [다시 확인]을 눌러주세요.'
+    ]));
+    card.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
+      ROOM_WAIT.timedOut=false; ROOM_WAIT.startedAt=Date.now(); render(); pollRoom();
+    }},['다시 확인']));
+  } else {
+    card.appendChild(el('h3',{},['상대방을 기다리는 중이에요']));
+    card.appendChild(el('p',{class:'biz-hint'},[
+      '상대방이 링크를 열면 이 화면에 궁합 결과가 자동으로 나타나요. 이 화면을 켜둔 채 기다려 주세요.'
+    ]));
+  }
+  card.appendChild(el('div',{class:'field', style:'margin-top:10px;'},[
+    el('input',{type:'text', value:ROOM_WAIT.link, readOnly:'readonly', id:'roomWaitLink'})
+  ]));
+  var row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;'});
+  row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+    if(navigator.share){ navigator.share({title:'인연점 궁합 초대', url:ROOM_WAIT.link}).catch(function(){}); }
+    else { copyText(ROOM_WAIT.link); }
+  }},['링크 다시 보내기']));
+  row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+    stopRoomWait(); showToast('기다리기를 그만뒀어요.'); render();
+  }},['그만두기']));
+  card.appendChild(row);
+  return card;
+}
+
 function renderInviteAccept(){
   var main=$('#main'); main.innerHTML='';
   var wrap=el('div',{class:'envelope-wrap view'});
@@ -12031,6 +12239,7 @@ function render(){
   if(!STATE.onboarded && STATE.profiles.length===0){ renderOnboarding(); return; }
   if(ROUTE==='setup' && SETUP){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderSetup(); return; }
   if(STATE.profiles.length===0){ startSetupWizard(null); renderSetup(); return; }
+  if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
   if(ROUTE==='inviteAccept'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderInviteAccept(); return; }
 
   $all('.tab-btn').forEach(function(b){
@@ -12120,6 +12329,8 @@ if(MEET_HASH_PRESENT){
 }
 if(PENDING_MEET && STATE.profiles.length>0){
   GC_SOURCE='link'; ROUTE='groupCompat';
+} else if(PENDING_ROOM && STATE.profiles.length>0){
+  ROUTE='roomJoin';
 } else if(PENDING_INVITE && !INVITE_CONSUMED && STATE.profiles.length>0){
   ROUTE='inviteAccept';
 }
