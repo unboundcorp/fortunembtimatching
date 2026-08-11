@@ -86,9 +86,13 @@ body{
      동시에 줄 길이가 짧아져 320px에서의 넘침 위험도 함께 줄어든다. */
   letter-spacing:-.005em;
   background:var(--base);
+  /* ★ R32 — 알파를 .05/.04 → .03/.025 로 낮췄다.
+     검수가 화면 위쪽에서 이 두 그라데이션이 바탕을 rgb(225~230,…)까지 어둡게 만들어,
+     그 자리에 놓인 --gold 글자가 6.91~6.95:1(자체 기준 7:1 미달)로 떨어지는 것을 실측했다.
+     색을 바꾸지 않고 바탕이 어두워지는 폭만 줄이는 쪽을 골랐다 — 팔레트는 그대로 두고 싶었다. */
   background-image:
-    radial-gradient(ellipse at 15% -10%, rgba(88,68,22,.05), transparent 55%),
-    radial-gradient(ellipse at 100% 0%, rgba(88,68,22,.04), transparent 45%);
+    radial-gradient(ellipse at 15% -10%, rgba(88,68,22,.03), transparent 55%),
+    radial-gradient(ellipse at 100% 0%, rgba(88,68,22,.025), transparent 45%);
   color:var(--ink);
   min-height:100vh;
   /* R22 — 줄간격을 1.6에서 1.75로 넓혔다. "귀엽게"의 절반은 여백이라, 색을 건드리지 않고
@@ -442,11 +446,8 @@ main{flex:1;padding:28px 20px 96px;}
 .gauge-label{text-align:center;color:var(--ink-dim);font-size:.85rem;margin-bottom:6px;}
 
 .disclaimer{font-size:.8rem;color:var(--ink-dim);text-align:center;margin-top:26px;line-height:1.8;border-top:1px dashed rgba(88,68,22,.30);padding-top:16px;}
-/* R30 — 짧은 고지 + "계산 방법 자세히" 접이식 한 덩어리. 새 색·새 부품을 만들지 않았고,
-   접힌 안쪽은 이미 있는 .why-panel/.why-note를 그대로 쓴다(긴 글이라 왼쪽 정렬로만 돌려놓는다). */
-.disclaimer-wrap{margin-top:26px;}
-.disclaimer-wrap .disclaimer{margin-top:0;}
-.disclaimer-wrap .why-panel{text-align:left;}
+/* R32 — .disclaimer-wrap(계산 한계 고지 + 접이식) 규칙은 지웠다. 그 덩어리를 화면에서 뺐기 때문이다.
+   ★ .disclaimer 자체는 남긴다 — MBTI·캐릭터·용어사전·궁합 고지 7곳이 아직 이 클래스를 쓴다. */
 
 .share-preview{display:flex;justify-content:center;margin:18px 0;}
 .share-preview canvas{border:1px solid rgba(88,68,22,.24);border-radius:var(--r-md);max-width:100%;height:auto;box-shadow:var(--shadow-soft);}
@@ -774,8 +775,17 @@ main{flex:1;padding:28px 20px 96px;}
 .gc-node:hover .gc-avatar{border-color:var(--gold);}
 .gc-node:focus-visible .gc-avatar{border-color:var(--gold);box-shadow:0 0 0 3px rgba(88,68,22,.26);}
 .gc-node[aria-pressed="true"] .gc-avatar{border-color:var(--red-hi);box-shadow:0 0 0 3px rgba(143,36,19,.18);}
+/* ★ R32 — 이름표가 SVG 관계선·다른 사람 얼굴 위에 그대로 얹혀 최저 1.18:1까지 떨어졌다(검수 실측).
+   글자색을 바꿔도 밑에 무엇이 지나갈지 알 수 없으므로, 글자 뒤에 종이색 알약을 깔아
+   "밑에 무엇이 있든 같은 바탕"을 만든다. 이러면 대비가 바탕색 하나로 고정된다. */
 .gc-label{font-size:var(--gc-fs,11px);line-height:1.25;color:var(--ink-dim);white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;max-width:calc(var(--gc-av,44px) + 10px);text-align:center;}
+  /* ★ box-sizing이 border-box라, 알약 padding(좌우 5px씩)을 그냥 얹으면 글자가 쓸 수 있는 폭이
+     10px 줄어 좁은 화면에서 이름이 더 빨리 "…"로 잘린다. 그래서 max-width를 딱 그만큼 늘려
+     **글자가 쓰는 폭은 예전과 같게** 맞춘다(알약만 바깥으로 커진다). */
+  text-overflow:ellipsis;max-width:calc(var(--gc-av,44px) + 10px + 10px);text-align:center;
+  background:var(--base);padding:1px 5px;border-radius:7px;
+  box-shadow:0 0 0 2px var(--base);   /* 알약 바깥 2px까지 같은 바탕 — 획이 테두리에 닿아도 선과 안 겹친다 */
+  position:relative;z-index:2;}
 .gc-node[aria-pressed="true"] .gc-label{color:var(--gold);}
 .gc-hint{text-align:center;color:var(--ink-dim);font-size:.84rem;margin:16px 0 0;}
 .gc-legend{display:flex;flex-wrap:wrap;gap:9px 16px;justify-content:center;margin:14px 0 4px;font-size:.78rem;color:var(--ink-dim);}
@@ -4409,10 +4419,21 @@ function buildLegalPanel(){
   return card;
 }
 
-/* 설정: AI 해석 연결. 사용자가 느낀 "퀄리티 차이"를 실제로 메우는 자리다. */
-function buildInterpreterPanel(){
-  var card = el('div',{class:'scroll-card'});
-  card.appendChild(el('h3',{},['풀이 품질 · AI 해석 연결']));
+/* =====================================================================
+   AI 해석 연결 — 운영자용. 관리자 테스트 콘솔 안에만 있다.
+   ---------------------------------------------------------------------
+   ★ 예전에는 이 카드가 설정 화면(사용자용)에 그대로 있었다. 해석 서버 주소·모델 이름·
+     "서버가 지켜야 할 형식 보기"는 이 앱을 운영하는 사람이 채우는 값이지, 손님이 채우는 값이 아니다.
+     손님 화면에 두면 "이게 왜 여기 있나"라는 질문을 부르고, 서버 주소를 아무거나 넣어볼 수도 있다.
+     그래서 결제 연동 진단(buildBillingPanel)이 이미 간 길을 그대로 따라 관리자 콘솔로 옮겼다.
+   ★ ADMIN_KEY가 null인 배포본에서는 openAdminConsole()이 첫 줄에서 멈추므로
+     이 카드는 DOM에 만들어지지도 않는다. 화면에서 가리는 것이 아니라 아예 안 만든다.
+   ★ afterSave: 콘솔은 모달이라 render()로는 다시 그려지지 않는다. 저장/되돌리기 뒤에
+     콘솔 자신을 다시 칠하라고 넘겨받는 함수다(넘기지 않으면 아무 일도 하지 않는다).
+===================================================================== */
+function buildInterpreterPanel(afterSave){
+  var card = el('div',{class:'admin-sec'});
+  card.appendChild(el('h4',{},['7. 풀이 품질 · AI 해석 연결']));
   card.appendChild(el('p',{class:'biz-hint'},[
     '사주팔자(네 기둥) 계산은 이 앱이 절기까지 직접 계산해서 뽑습니다. 하지만 그 사주를 읽어주는 문장은 기본적으로 미리 준비된 해석표를 조합한 것이라, 사람이 AI에게 직접 물어볼 때보다 얕게 느껴집니다. 아래에 해석 서버를 연결하면 같은 사주 데이터를 AI가 직접 읽고 풀이합니다.'
   ]));
@@ -4453,6 +4474,9 @@ function buildInterpreterPanel(){
     INTERP_EDIT = (cur.endpoint===saved.endpoint && cur.model===saved.model) ? null : cur;
     saveBtn.disabled = !INTERP_EDIT;
     dirtyLine.hidden = !INTERP_EDIT;
+    /* 글자를 치는 동안 잠금 상태를 따라오게 한다. 이 카드는 관리자 콘솔(모달) 안에만 있으므로
+       Esc·배경 클릭으로 콘솔이 닫히는 것도 여기서 함께 막힌다. */
+    MODAL_GUARD = INTERP_EDIT ? interpUnsavedWarn : null;
   }
   epInput.addEventListener('input', onEdit);
   modelInput.addEventListener('input', onEdit);
@@ -4465,22 +4489,29 @@ function buildInterpreterPanel(){
     Interpreter.lastError = null;
     Interpreter.save();
     INTERP_EDIT = null;
+    MODAL_GUARD = null;   /* 저장했으므로 잠글 이유가 사라졌다 */
     showToast(ep ? 'AI 해석을 연결했어요.' : '기본 해석표로 되돌렸어요.');
     render();
+    if(afterSave) afterSave();
   });
 
   var row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;'});
   row.appendChild(saveBtn);
   row.appendChild(el('button',{class:'btn btn-ghost btn-sm', disabled: interpDirty()?null:'disabled', onclick:function(){
-    INTERP_EDIT = null; showToast('입력한 내용을 되돌렸어요.'); render();
+    INTERP_EDIT = null; MODAL_GUARD = null;
+    showToast('입력한 내용을 되돌렸어요.'); render(); if(afterSave) afterSave();
   }},['되돌리기']));
   row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ showInterpreterContract(); }},['서버가 지켜야 할 형식 보기']));
   card.appendChild(row);
   card.appendChild(dirtyLine);
   return card;
 }
-/* 설정 화면의 AI 해석 입력칸에 "저장하지 않은 글자"가 있으면 여기에 담긴다. null이면 저장본과 같다는 뜻. */
+/* 관리자 콘솔의 AI 해석 입력칸에 "저장하지 않은 글자"가 있으면 여기에 담긴다. null이면 저장본과 같다는 뜻. */
 var INTERP_EDIT = null;
+/* 저장하지 않은 채 콘솔을 닫으려 할 때 알린다. openValueSheet의 warn()과 같은 역할·같은 말투. */
+function interpUnsavedWarn(){
+  showToast('AI 해석 설정에 저장하지 않은 변경이 있어요. [저장]을 누르거나 [되돌리기]로 되돌려 주세요.');
+}
 function interpDirty(){
   if(!INTERP_EDIT) return false;
   return INTERP_EDIT.endpoint !== (Interpreter.config.endpoint||'') ||
@@ -5038,7 +5069,7 @@ function openAdminConsole(){
   /* ---- 7. 데이터 초기화 ---- */
   function secReset(){
     var s = el('div',{class:'admin-sec'});
-    s.appendChild(el('h4',{},['7. 데이터 초기화']));
+    s.appendChild(el('h4',{},['8. 데이터 초기화']));
     s.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[
       '되돌릴 수 없습니다. 누르면 한 번 더 확인을 받고 실행합니다.'
     ]));
@@ -5091,7 +5122,7 @@ function openAdminConsole(){
   /* ---- 8. 이 콘솔의 한계 (코드 주석과 같은 내용을 화면에도 적는다) ---- */
   function secLimits(){
     var s = el('div',{class:'admin-sec'});
-    s.appendChild(el('h4',{},['8. 이 콘솔은 보안 장치가 아닙니다']));
+    s.appendChild(el('h4',{},['9. 이 콘솔은 보안 장치가 아닙니다']));
     [ '이 앱은 단일 HTML 파일입니다. ADMIN_KEY에 넣은 값은 브라우저의 소스 보기 한 번으로 누구나 읽을 수 있습니다. 이것은 보안이 아니라, 실수로 열리지 않게 하는 잠금장치입니다.',
       '배포본은 ADMIN_KEY = null 로 두세요. null이면 주소에 무엇을 붙여도 이 콘솔이 열리지 않고, 배지·버튼·설정 항목도 만들어지지 않습니다.',
       '테스트는 파일을 사본으로 떠서, 사본의 ADMIN_KEY에만 값을 넣고 하세요. 키가 든 파일을 그대로 배포하지 마세요.',
@@ -5117,14 +5148,26 @@ function openAdminConsole(){
     host.appendChild(secResponseSim());
     host.appendChild(secRehearsal());
     host.appendChild(buildBillingPanel());   /* 6. 결제 연동 진단 · 서버 주소 (설정 화면에서 옮겨 왔다) */
+    host.appendChild(buildInterpreterPanel(paint));  /* 7. AI 해석 연결 (설정 화면에서 옮겨 왔다) */
     host.appendChild(secReset());
     host.appendChild(secLimits());
     host.appendChild(secLog());
   }
 
   paint();
+  /* ★ AI 해석 카드가 이 안으로 들어왔으므로, "저장 안 하고 닫으려 할 때 알리기"도 여기가 맡는다.
+     방식은 openValueSheet가 이미 쓰는 것과 같다 — 확인창을 겹쳐 띄우지 않고 토스트로 알린 뒤 닫지 않는다.
+     (confirmModal은 overlay 없이 openModal을 부르므로 이 콘솔을 헐어 버린다. [취소]를 눌러도
+      돌아올 콘솔이 없어지는 함정이 된다. 실제로 그렇게 짰다가 이 주석을 남긴다.)
+     되돌릴 길은 카드 안의 [되돌리기]가 이미 준다 — 잠가도 함정이 되지 않는다. */
   openModal('관리자 테스트 콘솔 · 실제 결제가 아닙니다', host,
-    [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
+    [{label:'닫기', cls:'btn-ghost', onclick:function(){
+      if(interpDirty()){ interpUnsavedWarn(); return; }
+      MODAL_GUARD = null; closeModal(true);
+    }}]);
+  /* ★ 잠금은 반드시 openModal "뒤에" 건다 — openModal이 안에서 closeModal(true)로 MODAL_GUARD를 지운다.
+     (openValueSheet 8130행에 같은 이유가 적혀 있다.) */
+  MODAL_GUARD = interpDirty() ? interpUnsavedWarn : null;
 }
 
 /* 리포트 한 벌(목차 + 안내 띠 + 섹션)을 host 안에 그린다.
@@ -6859,7 +6902,13 @@ function buildReport13(profile, saju){
   var chars = sajuChars(saju);
   var totalChars = chars.length;
   var maxCount = Math.max.apply(null, counts);
-  var balanceKey = (maxCount >= Math.ceil(totalChars*0.5)) ? 'many' : (counts.every(function(c){return c<=totalChars/5+0.6;}) ? 'balanced' : 'balanced');
+  /* ★ R32 — 예전 코드는 `… ? 'balanced' : 'balanced'` 로 삼항의 양쪽이 같았다.
+     고르게 퍼졌는지 검사(counts.every)를 해 놓고 결과를 버렸다는 뜻이다(검수 F-10).
+     지금은 그 검사를 지우고 실제로 하는 일만 적는다 — "절반 이상 쏠렸으면 many, 아니면 balanced".
+     ※ 남은 문제는 코드가 아니라 문구다. 3/2/1/1/1처럼 살짝만 치우친 사주도 balanced로 묶여
+        "오행이 고르게 자리 잡아서"를 듣는다. 이걸 제대로 나누려면 "약간 치우침" 문구를 새로
+        써야 하는데, 이 앱의 말투에 맞는 새 문장을 검토 없이 지어내지 않는다. 남은 일로 보고한다. */
+  var balanceKey = (maxCount >= Math.ceil(totalChars*0.5)) ? 'many' : 'balanced';
   // 균형/과다: 특정 오행이 절반 이상이면 과다, 0개인 오행이 있으면 그 관점에선 '부족'(오프닝은 대표적으로 과다/균형만 사용, 부족은 잠재력 섹션에서 별도 사용)
   var minCount = Math.min.apply(null, counts);
   if(minCount===0 && maxCount<Math.ceil(totalChars*0.5)) balanceKey='few';
@@ -6945,9 +6994,34 @@ function buildReport13(profile, saju){
     '<p>'+PB.moneyType[moneyKey]+'</p><p>'+PB.jaegoText[jaego?'yes':'no']+'</p><p>'+PB.moneyShingang[sg]+'</p><p>'+PB.moneyPsych[moneyKey]+'</p>'+
     '<p>큰돈이 오가는 계약이나 투자 결정은 이 풀이가 아니라 반드시 실제 자료와 전문가 조언을 함께 참고해줘 — 여긴 어디까지나 성향을 짚어보는 참고용이야.</p>');
 
+  // 대운 목록 계산 (8·10~12 섹션 공용) — s8이 "다가올 대운"을 실제로 보므로 s8보다 먼저 구한다.
+  var dw = null;
+  if(profile.gender){
+    dw = SajuEngine.daewoonList(saju.birthUTCms, profile.year, saju.year.stemIdx, SajuEngine.STEM_YY[saju.year.stemIdx], profile.gender, saju.month.idx);
+  }
+  var ageNow = (new Date().getFullYear()) - profile.year + 1;
+  var curIdx = 0;
+  if(dw){ for(var i=0;i<dw.list.length;i++){ if(ageNow>=dw.list[i].startAge) curIdx=i; } }
+
   // 8. 잠재력
   var weakestElem = counts.indexOf(Math.min.apply(null,counts));
-  var nextTermSoon = !!(saju.termBoundary && saju.termBoundary.next);
+  /* ★ R32 — 예전에는 이 값이 `saju.termBoundary && saju.termBoundary.next`, 즉 "생일 뒤에 다음 절기가 있는가"였다.
+     3년치 절기표를 쓰므로 사실상 모든 사용자에게 항상 참이었고, 그래서 화면에는 늘 "다가오는 대운에서
+     이 기운이 채워지는 흐름"만 나갔다. 반대 문장(no)은 닿지 않는 죽은 코드였다(검수 F-7).
+     게다가 그 판정은 "부족한 기운(weakestElem)"과 대조조차 하지 않았다 — 대운을 본다고 말하면서 절기를 봤다.
+
+     이제는 실제로 본다. 앞으로 올 대운 2구간(약 20년)의 천간·지지 오행 중에
+     지금 가장 여린 오행이 실제로 들어 있는지를 확인한다. 새 데이터·새 계산은 없다 —
+     이미 만들어 둔 dw.list와 기존 STEM_ELEM/BRANCH_ELEM 룩업만 쓴다. */
+  var nextTermSoon = false;
+  if(dw && dw.list){
+    for(var ni = curIdx+1; ni <= curIdx+2 && ni < dw.list.length; ni++){
+      var ng = dw.list[ni].ganji;
+      if(SajuEngine.STEM_ELEM[ng.stemIdx] === weakestElem || SajuEngine.BRANCH_ELEM[ng.branchIdx] === weakestElem){
+        nextTermSoon = true; break;
+      }
+    }
+  }
   // v4-B: 용신 근사 — 오행 균형에서 가장 부족한 오행을 "필요한 기운"으로 제시(정교한 용신 산출이 아닌 근사, 고정 로직 없음)
   var yongsinHtml = '<p>사주에서는 이렇게 부족한 기운을 채워주는 걸 <strong>용신(用神)</strong>이라고 불러. 정통 용신 이론은 사주 전체 구조를 훨씬 정교하게 따지지만, 여기서는 원국의 오행 균형만으로 '+safeName+'에게 지금 근사적으로 필요한 기운을 짚어볼게.</p>';
   // v5-A 신규: 오행-장부 대응(ELEM_ORGAN, 고정 룩업) — 이미 계산된 오행 카운트(counts/maxCount/weakestElem)에서 가장 많은/적은 오행을 근거로 건강 관련 서술 추가. 새 계산 없음.
@@ -6969,14 +7043,7 @@ function buildReport13(profile, saju){
   /* v5-A: 대운=계절 비유. R14에서 이 함수의 사본을 없애고 모듈 최상단의 daeunSeasonLine(sipName)으로 합쳤다.
      같은 판정을 두 벌 두면 문구뱅크를 넓힐 때 한쪽만 넓어져 두 화면이 서로 다른 말을 하게 된다. */
 
-  // 대운 목록 계산 (10~12 섹션 공용)
-  var dw = null;
-  if(profile.gender){
-    dw = SajuEngine.daewoonList(saju.birthUTCms, profile.year, saju.year.stemIdx, SajuEngine.STEM_YY[saju.year.stemIdx], profile.gender, saju.month.idx);
-  }
-  var ageNow = (new Date().getFullYear()) - profile.year + 1;
-  var curIdx = 0;
-  if(dw){ for(var i=0;i<dw.list.length;i++){ if(ageNow>=dw.list[i].startAge) curIdx=i; } }
+  /* 대운 목록 계산은 s8보다 위로 올라갔다 — s8이 "다가올 대운"을 실제로 보게 하려면 여기서는 이미 있어야 한다. */
 
   // 10. 과거 대운 흐름
   if(dw && curIdx>0){
@@ -7796,10 +7863,12 @@ function buildCompatMetricBars(res){
     /* 막대는 그림이라 role='img' + 수치를 담은 aria-label을 준다. 옆의 숫자는 같은 값을
        두 번 읽지 않도록 aria-hidden으로 감춘다(라벨·한마디는 실제 글자로 읽힌다). */
     row.appendChild(el('div',{class:'cm-track', role:'img',
-      /* "100점 만점"이라고 하지 않는다 — 항목마다 도달 가능한 최댓값이 달라
-         (예: 성격 궁합은 98, 오행은 95) 100은 실제로 닿지 않는 항목이 있다.
-         막대는 0~100 눈금 위에 그리는 것이므로 눈금이라고만 말한다. */
-      'aria-label':m.label+' '+v+'점 (0~100 눈금)'},[
+      /* ★ R32 — 예전에는 "(0~100 눈금)"이라고 읽어 줬다. 그런데 실제 도달 범위는
+         성격 30~98 · 오행 45~95 · 지지 40~90 · 띠 35~90이라, 낭독기 사용자는
+         닿지도 않는 0과 100을 양 끝으로 듣게 된다(검수가 R24부터 6라운드째 지적한 자리).
+         "100점 기준"은 눈금의 기준만 말하고 도달 범위를 약속하지 않으므로 사실과 어긋나지 않는다.
+         바로 옆 대운 막대가 이미 "(98점 만점)"으로 정확하게 말하고 있어 표현도 같은 결이 된다. */
+      'aria-label':m.label+' '+v+'점 (100점 기준)'},[
       el('div',{class:'cm-fill', style:'width:'+v+'%;background:'+compatBarColor(v)+';'}) ]));
     row.appendChild(el('div',{class:'cm-foot'},[
       el('span',{class:'cm-verdict'},[compatMetricWord(m, v)]),
@@ -7933,42 +8002,24 @@ function emptyState(title, sub, onAction, actionLabel){
   return e;
 }
 /* =====================================================================
-   R30 — 고지문을 두 겹으로 나눴다 (지우지 않았다)
+   R32 — 화면의 계산 한계 고지를 전부 뺐다 (대표님 지시, 2026-08-11)
    ---------------------------------------------------------------------
-   이 문단은 두 가지 일을 한다. SPEC_v2의 최우선 원칙("계산에 자신 없는 부분을 명시적으로
-   고지한다")이고, 동시에 이용약관 본문과 짝을 이루는 고지다. 그래서 없앨 수 없다.
-   다만 대표님이 화면에서 직접 짚으셨듯 "광행차·장동·균시차·표준자오선·겉보기 황경"은
-   만든 사람이 알아야 할 말이지 보는 사람이 알아야 할 말이 아니다.
+   R30에서 "짧은 두 문장 + 접이식 상세"로 두 겹이던 고지문을, 대표님 지시로 화면에서 통째로 없앴다.
+   지시 원문: "약관에만 남아있으면 돼 / 2) 전부 삭제"
 
-     · 기본으로 보이는 것 = 두 문장(DISCLAIM_SHORT). 전문 용어 0개.
-     · "계산 방법 자세히"를 눌렀을 때만 = 예전 문단 그대로(DISCLAIM_LONG). 한 글자도 안 줄였다.
+   지운 자리는 다음 8곳이다.
+     · 홈 · 내 사주 · 성향 리포트 · 궁합 · 온보딩 요약 카드 (disclaimer() 5곳)
+     · 사주풀이 13섹션 리포트 (disclaimerReport() 1곳)
+     · 온보딩 첫 화면의 "※ …" 한 줄
+     · 공유 카드(Canvas)에 그려 넣던 한 줄
 
-   접는 방식은 새로 만들지 않고 buildFoldPanel(대운·궁합 근거가 쓰던 그 부품)을 그대로 쓴다.
-   ★ 이용약관 본문(openTermsModal 제3조)은 손대지 않았다 — 법적 고지는 그대로 둔다.
+   ★ 남아 있는 곳 — 이용약관 제7조(openTermsModal). 법적 고지 본문은 손대지 않았다.
+     계산 오차("공개 자료 80건 대조, 최대 약 12분")와 면책 문장이 거기에 그대로 있다.
+   ★ 되살릴 때: 이 주석 자리에 DISCLAIM_* 상수와 buildDisclaimerFold/disclaimer/disclaimerReport를
+     되돌린 뒤 위 8곳에 다시 붙이면 된다. 직전 원본은 archive/fortune_20260811-0032.html 에 있다.
+   ★ SPEC_v2의 최우선 원칙("계산에 자신 없는 부분을 명시적으로 고지한다")과는 어긋나는 방향이다.
+     그 사실을 감추지 않고 여기 적어 둔다 — 판단은 대표님이 하셨고, 근거는 약관에 고지가 남는다는 것이다.
 ===================================================================== */
-var DISCLAIM_SHORT = '사주 계산은 이 앱이 직접 한 것이라 실제와 몇 분 차이가 날 수 있어요. 사주는 정해진 미래가 아니라 나를 이해하는 참고 자료로 봐주세요.';
-var DISCLAIM_LONG = '이 계산은 태양의 겉보기 황경(광행차·장동 포함) 근사식과 공개 음력 데이터를 사용한 자체 만세력 로직입니다. 절기 시각은 공개 자료 80건과 대조해 최대 약 12분 차이가 났고, 절기가 자정에 아주 가까우면 날짜가 하루 달라질 수 있습니다. 시주는 출생지 경도·균시차·표준시 이력을 되돌린 진태양시로 계산하며(설정에서 끌 수 있습니다), 진태양시를 쓸지 시계 시각을 그대로 쓸지는 명리학계에서도 견해가 갈립니다. 사주는 정해진 미래를 알려주는 것이 아니라 타고난 기질과 흐름의 경향을 읽는 참고 자료입니다.';
-var DISCLAIM_SHORT_R = '사주 계산은 우리가 직접 한 거라 실제와 몇 분 차이가 날 수 있어. 사주는 정해진 미래를 알려주는 게 아니라 타고난 기질과 흐름을 읽는 참고 자료야.';
-var DISCLAIM_LONG_R = '이 계산은 태양의 겉보기 황경(광행차·장동까지 넣은 값) 근사식과 공개 음력 데이터를 쓴 자체 만세력 로직이야. 절기 시각은 공개 자료 80건과 맞춰보니 최대 12분쯤 차이가 났고, 절기가 자정에 아주 가까우면 날짜가 하루 달라질 수도 있어. 시주는 출생지 경도·균시차·표준시 이력을 되돌린 진태양시로 계산했어(설정에서 끌 수 있어). 진태양시를 쓸지 시계 시각을 그대로 쓸지는 명리학계에서도 갈리는 문제라 어느 한쪽이 정답이라고 말하진 않을게. 사주는 정해진 미래를 알려주는 게 아니라 타고난 기질과 흐름의 경향을 읽는 참고 자료야. 신살·격국·용신 풀이 역시 정통 이론의 정교한 산출식 대신 오행 균형과 고정 조회표로 근사한 결과라는 점도 참고해줘.';
-/* 짧은 고지 + "계산 방법 자세히" 접이식을 한 덩어리로 만든다.
-   short/long 두 벌을 받는 이유는 화면 성격에 따라 말투가 다르기 때문이다(정중체 / 반말 리포트체). */
-function buildDisclaimerFold(shortText, longText, foldLabel){
-  var fold = buildFoldPanel({
-    label: foldLabel, openLabel:'자세한 설명 접기', regionLabel:'사주 계산 방법과 오차에 대한 자세한 설명',
-    btnStyle:'margin-top:10px;',
-    children:[ el('p',{class:'why-note', style:'margin-top:0;'},[longText]) ]
-  });
-  return el('div',{class:'disclaimer-wrap'},[ el('p',{class:'disclaimer'},[shortText]), fold.wrap ]);
-}
-/* v4-C: 정중체 고지문(온보딩·홈·성향 리포트·내 사주 등 "UI 안내" 화면 공용) —
-   반말 리포트 본문(disclaimerReport)과 톤이 섞이지 않도록 화면 성격에 따라 둘을 구분해 쓴다. */
-function disclaimer(){
-  return buildDisclaimerFold(DISCLAIM_SHORT, DISCLAIM_LONG, '계산 방법 자세히 보기');
-}
-/* v4-C: 반말 다정체 고지문 — 사주풀이 13섹션 리포트(기능6) 화면 전용. 리포트 본문과 같은 톤을 유지한다. */
-function disclaimerReport(){
-  return buildDisclaimerFold(DISCLAIM_SHORT_R, DISCLAIM_LONG_R, '계산 방법 자세히 보기');
-}
 function svgIcon(pathD, cls){
   var ns='http://www.w3.org/2000/svg';
   var svg=document.createElementNS(ns,'svg'); svg.setAttribute('viewBox','0 0 20 20'); svg.setAttribute('class',cls||'sec-icon'); svg.setAttribute('aria-hidden','true');
@@ -8367,7 +8418,7 @@ function buildMigrateNotice(p){
     var elemOff = dominantElementIdx(off).idx, elemOn = dominantElementIdx(on).idx;
     if(elemOff !== elemOn){
       box.appendChild(el('p',{style:'margin-top:6px;'},[
-        '보정을 켜면 여덟 글자 중 가장 많은 기운(대표 오행)도 '+ELEMENTS[elemOff]+'에서 '+ELEMENTS[elemOn]+
+        '보정을 켜면 '+charCountWord(p)+' 글자 중 가장 많은 기운(대표 오행)도 '+ELEMENTS[elemOff]+'에서 '+ELEMENTS[elemOn]+
         josaOnlyText(ELEMENTS[elemOn],'으로','로')+' 바뀝니다. 이 값은 궁합의 오행 점수와 그룹 궁합 그림에도 쓰여요.'
       ]));
     }
@@ -8407,7 +8458,10 @@ function buildTermFixNotice(p){
   var box = el('div',{class:'migrate-box'});
   box.appendChild(el('strong',{},['계절이 바뀌는 마디의 시각 계산을 바로잡았어요 (이 프로필의 결과가 달라졌습니다)']));
   box.appendChild(el('p',{},[
-    '계절이 바뀌는 마디의 시각을 계산하는 방법에 빠진 부분이 있어서, 그 시각이 실제와 조금씩 어긋나 있었어요(대체로 이르게, 실측 범위는 24분 이르게부터 3분 늦게까지). 이번에 바로잡았고, 그 마디 가까이에서 태어나신 이 프로필은 글자가 달라졌어요.'
+    /* ★ R32 — 이 24분은 "바로잡기 전"의 오차다. 다른 화면(용어 사전·이용약관)이 말하는 "최대 약 12분"은
+       "바로잡은 뒤 남은" 차이라, 화면만 보면 정확도를 말하는 숫자가 두 개로 갈리는 것처럼 읽혔다(검수 지적).
+       숫자를 바꾸지 않고, 어느 쪽이 언제의 값인지를 문장 안에서 구분해 준다. */
+    '계절이 바뀌는 마디의 시각을 계산하는 방법에 빠진 부분이 있어서, 그 시각이 실제와 조금씩 어긋나 있었어요(바로잡기 전 기준으로 대체로 이르게, 실측 범위는 24분 이르게부터 3분 늦게까지). 이번에 바로잡았고, 그 마디 가까이에서 태어나신 이 프로필은 글자가 달라졌어요. 바로잡은 뒤에도 공개 자료와 최대 약 12분 차이는 남습니다.'
   ]));
   var list = el('div',{class:'ts-table', style:'margin-top:8px;'});
   function row(k,v){ list.appendChild(el('div',{class:'ts-row'},[el('span',{class:'ts-k'},[k]), el('span',{class:'ts-v'},[v])])); }
@@ -8428,7 +8482,7 @@ function buildTermFixNotice(p){
      기둥만 알리고 이 줄을 빼면 사용자는 궁합 점수가 왜 달라졌는지 알 수 없다. */
   var elemNow = dominantElementIdx(now).idx, elemOld = dominantElementIdx(old).idx;
   if(elemNow !== elemOld){
-    row('여덟 글자 중 가장 많은 기운(대표 오행)',
+    row(charCountWord(p)+' 글자 중 가장 많은 기운(대표 오행)',
         ELEMENTS[elemOld]+'에서 '+ELEMENTS[elemNow]+josaOnly(ELEMENTS[elemNow],'으로','로')+
         ' 바뀌었어요. 이 값은 궁합의 오행 점수와 그룹 궁합 그림에도 쓰여서, 예전에 보신 궁합 점수와 달라질 수 있어요');
     /* 이 상자가 대표 오행 변화를 이미 설명했으니, 아래 buildElementFixNotice가 같은 말을 또 하지 않게 한다.
@@ -8471,12 +8525,12 @@ function buildElementFixNotice(p){
   ]));
   var list = el('div',{class:'ts-table', style:'margin-top:8px;'});
   list.appendChild(el('div',{class:'ts-row'},[
-    el('span',{class:'ts-k'},['여덟 글자 중 가장 많은 기운(대표 오행)']),
+    el('span',{class:'ts-k'},[charCountWord(p)+' 글자 중 가장 많은 기운(대표 오행)']),
     el('span',{class:'ts-v'},[ELEMENTS[before]+'에서 '+ELEMENTS[p.elementIdx]+josaOnly(ELEMENTS[p.elementIdx],'으로','로')+' 바뀌었어요'])
   ]));
   box.appendChild(list);
   box.appendChild(el('p',{style:'margin-top:8px;'},[
-    '바뀐 쪽이 지금 이 화면의 여덟 글자에서 실제로 센 값이에요. 이 값은 궁합의 오행 점수와 그룹 궁합 그림에도 쓰이니, 예전에 보신 궁합 점수와 달라질 수 있어요.'
+    '바뀐 쪽이 지금 이 화면의 '+charCountWord(p)+' 글자에서 실제로 센 값이에요. 이 값은 궁합의 오행 점수와 그룹 궁합 그림에도 쓰이니, 예전에 보신 궁합 점수와 달라질 수 있어요.'
   ]));
   box.appendChild(el('div',{style:'margin-top:10px;'},[
     el('button',{class:'btn btn-primary btn-sm', onclick:function(){
@@ -8508,7 +8562,6 @@ function renderOnboarding(){
      고지도 짧은 한 문장만 둔다. 아직 아무 계산도 보여주기 전이라 여기서 접이식까지 놓으면
      "시작하기" 버튼 앞에 눌러야 할 것이 하나 더 생긴다. 자세한 설명은 결과 화면마다 붙는다. */
   wrap.appendChild(el('p',{},['MBTI와 사주를 함께 봐서 오늘의 운세와 두 사람의 궁합을 풀어보는 개인용 점괘 노트예요. 태어난 날과 시각으로 여덟 글자를 직접 계산하고, 서버 없이 링크 하나로 친구와 함께 궁합도 볼 수 있어요.']));
-  wrap.appendChild(el('p',{class:'section-sub'},['※ 사주 계산은 이 앱이 직접 하는 것이라 실제와 몇 분 차이가 날 수 있어요. 정해진 미래가 아니라 참고로 봐주세요.']));
   wrap.appendChild(el('button',{class:'btn btn-primary',onclick:function(){
     STATE.onboarded=true; saveState(); startSetupWizard(null); render();
   }},['시작하기']));
@@ -8869,7 +8922,6 @@ function renderSetupStep3(){
       ['출생지·보정 설정 바꾸기']));
   }
   box.appendChild(tsCard);
-  box.appendChild(disclaimer());
 
   box.appendChild(el('div',{class:'field'},[
     el('label',{for:'profName'},['프로필 이름 (닉네임)']),
@@ -9072,7 +9124,7 @@ function renderHome(){
      같은 화면에서 두 줄이 서로 다른 오행을 말하는 것처럼 읽힌다(실제로 그렇게 보였다).
      그래서 값은 그대로 두고 무엇을 센 값인지 문장에 밝힌다. */
   view.appendChild(pageHead(todayStr(), p.name+'님의 오늘의 운세',
-    p.mbti+' ('+TYPE_TAGLINE[p.mbti]+') · 사주 여덟 글자 중 '+p.element+josaOnly(p.element,'이','가')+' 가장 많아요'));
+    p.mbti+' ('+TYPE_TAGLINE[p.mbti]+') · 사주 '+charCountWord(p)+' 글자 중 '+p.element+josaOnly(p.element,'이','가')+' 가장 많아요'));
 
   /* ★ R22 — 홈은 이 앱에서 가장 자주 열리는 화면인데 여기만 캐릭터가 0개였다(R19 실측).
      일간(日干) 오행 캐릭터를 세운다. 사주 화면과 같은 함수·같은 그림이라 새로 만든 것이 없고,
@@ -9118,7 +9170,6 @@ function renderHome(){
 
   view.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openShareModal('fortune', p, fortune); }},['오늘의 운세 공유하기']));
   view.appendChild(glossaryLinkButton());
-  view.appendChild(disclaimer());
   main.appendChild(autoTermify(view));
 }
 function buildStars(n){
@@ -9160,7 +9211,7 @@ function renderReport(){
   view.appendChild(indCard);
 
   var elCard=el('div',{class:'scroll-card'});
-  elCard.appendChild(cardHead('타고난 기운의 결 — '+p.element+' (여덟 글자 중 가장 많은 기운)', ['오행']));
+  elCard.appendChild(cardHead('타고난 기운의 결 — '+p.element+' ('+charCountWord(p)+' 글자 중 가장 많은 기운)', ['오행']));
   elCard.appendChild(el('p',{},[ELEMENT_TRAIT[p.element]]));
   var saju = getSajuResult(p);
   if(saju){ elCard.appendChild(buildElemBars(dominantElementIdx(saju).counts)); }
@@ -9180,7 +9231,6 @@ function renderReport(){
   view.appendChild(circleCTA(CTA_ICON.arrow, '내 MBTI 풀이 읽어보기', function(){ ROUTE='mbtiReport'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('report', p, null); }},['리포트 요약 공유하기']));
   view.appendChild(glossaryLinkButton());
-  view.appendChild(disclaimer());
   main.appendChild(autoTermify(view));
 }
 function reportCol(title, text){
@@ -9215,7 +9265,7 @@ function renderSaju(){
   }
 
   var pillarCard=el('div',{class:'scroll-card stamp-in'});
-  pillarCard.appendChild(cardHead('태어난 때를 적은 여덟 글자', ['사주팔자','간지']));
+  pillarCard.appendChild(cardHead('태어난 때를 적은 '+charCountWord(p)+' 글자', ['사주팔자','간지']));
   pillarCard.appendChild(buildPillarTable(saju));
   if(saju.nearBoundary){ pillarCard.appendChild(el('p',{class:'warn-box'},['태어난 날이 계절이 바뀌는 마디와 아주 가까워요. 그래서 태어난 달과 태어난 해를 적은 글자가 다르게 나올 수도 있어요.'])); }
   if(!saju.hour){ pillarCard.appendChild(el('p',{class:'section-sub'},['내면·자녀운 관련 해석은 참고만 해주세요.'])); }
@@ -9360,7 +9410,6 @@ function renderSaju(){
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ ROUTE='monthlyFortune'; render(); }},['올해 월별 운세 보기']));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('saju', p, saju); }},['사주 요약 카드 저장하기']));
   view.appendChild(glossaryLinkButton());
-  view.appendChild(disclaimer());
   main.appendChild(autoTermify(view));
 }
 /* R23 — 용어 사전으로 가는 버튼. 여러 화면에서 같은 모양으로 쓴다(무료). */
@@ -9455,7 +9504,6 @@ function renderMonthlyFortune(){
   }
 
   view.appendChild(glossaryLinkButton());
-  view.appendChild(disclaimer());
   main.appendChild(autoTermify(view));
 }
 /* '기축(己丑)이에요' / '경오(庚午)예요' — 받침 판정은 괄호 앞 한글 음절로 한다(josaOnlyText).
@@ -9573,13 +9621,12 @@ function renderReport13(){
     function(){ return Interpreter.buildSajuPayload(p, saju); }, p.name);
 
   var sumCard=el('div',{class:'scroll-card'});
-  sumCard.appendChild(cardHead('태어난 때를 적은 여덟 글자', ['사주팔자']));
+  sumCard.appendChild(cardHead('태어난 때를 적은 '+charCountWord(p)+' 글자', ['사주팔자']));
   sumCard.appendChild(buildPillarTable(saju));
   view.appendChild(sumCard);
 
   view.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openShareModal('saju', p, saju); }},['이 풀이 요약 카드로 저장하기']));
   view.appendChild(glossaryLinkButton());
-  view.appendChild(disclaimerReport());
   main.appendChild(autoTermify(view));
 }
 
@@ -9821,7 +9868,33 @@ function defaultCompatDraft(){
     calendarType:'solar', lunarLeap:false, year:2000, month:1, day:1,
     timeUnknown:true, hour:12, minute:0, gender:'F', result:null,
     /* R20 — 상대방도 출생지·진태양시 보정을 따로 가진다(사람마다 태어난 곳이 다르다). */
-    birthLonKey:'seoul', birthLon:SajuEngine.LON_DEFAULT, solarTimeAdjust:true};
+    birthLonKey:'seoul', birthLon:SajuEngine.LON_DEFAULT, solarTimeAdjust:true,
+    /* R32 — 이 입력이 "초대 링크를 열어서 이미 채워진 것"인지. 화면 문구를 고르는 데만 쓴다. */
+    fromInvite:false};
+}
+/* =====================================================================
+   R32 — 궁합 입력 화면의 "상대방" 표기 (대표님 지적, 2026-08-11)
+   ---------------------------------------------------------------------
+   내가 직접 입력할 때는 "상대방 닉네임"이 맞다. 그런데 초대 링크를 열고 들어온 화면에서는
+   그 칸이 이미 채워져 있고, 채워진 값은 링크를 보낸 사람의 정보다. 거기서 "상대방"은
+   누구를 가리키는지 흐릿하다 — 보는 사람은 자기 화면에서 남을 "상대방"이라 부르는 셈이라
+   자기 정보로 오해하기 쉽다.
+
+   그래서 초대 링크로 들어온 경우에만 "상대방" 대신 **그 사람의 이름**을 쓴다.
+   ("상대방 닉네임" → "TS님 닉네임") 이름은 링크에 이미 들어 있으므로 새로 물어볼 것이 없고,
+   누구의 정보인지가 한 번에 읽힌다. 직접 입력하는 평소 경로는 "상대방" 그대로 둔다.
+===================================================================== */
+/* R32 — 시주(태어난 시각)를 모르는 프로필은 기둥이 셋뿐이라 글자가 여섯이다.
+   앱은 다른 자리에서 이미 "(시주를 모르면 여섯 글자)" · "시간을 몰라서 시주는 계산에서 제외했어요"라고
+   정확히 적으면서, 정작 그 사람의 사주를 가리키는 문장 여러 곳은 조건 없이 "여덟 글자"라고 말했다(검수 F-6).
+   ★ 용어 사전·문구뱅크의 "타고난 여덟 글자(원국)"는 사주 일반을 설명하는 말이므로 바꾸지 않는다.
+     바꾸는 것은 "이 사람의 사주"를 가리키는 자리뿐이다. */
+function charCountWord(p){ return (p && p.birthTime) ? '여덟' : '여섯'; }
+function compatPartyPrefix(){
+  if(COMPAT_DRAFT && COMPAT_DRAFT.fromInvite && COMPAT_DRAFT.name){
+    return String(COMPAT_DRAFT.name).slice(0,20) + '님';
+  }
+  return '상대방';
 }
 /* 궁합 입력이 "손대지 않은 처음 상태"인지. 화면을 떠날 때 물어볼지 판단하는 데만 쓴다. */
 function compatDraftDirty(){
@@ -9841,8 +9914,13 @@ function renderCompat(){
 
   var view=el('div',{class:'view'});
   if(!COMPAT_DRAFT.result){
+    /* R32 — 초대 링크로 들어온 화면에서는 칸이 이미 채워져 있다. "입력하면"이라고 말하면
+       무엇을 더 넣으라는 건지 알 수 없고, 채워진 값이 자기 정보라고 오해하게 된다.
+       그래서 그 경우에는 누구 정보가 채워졌는지와 다음에 누를 것을 그대로 적는다. */
     view.appendChild(pageHead('두 사람', '궁합 보기',
-      '상대방의 정보를 입력하면 '+p.name+'님과의 MBTI 궁합 + 사주 궁합을 함께 풀어드려요.'));
+      (COMPAT_DRAFT.fromInvite && COMPAT_DRAFT.name)
+        ? (COMPAT_DRAFT.name+'님이 보낸 정보는 링크에 담겨 와서 이미 채워져 있어요. 아래 [궁합 풀어보기]를 누르면 '+p.name+'님과의 MBTI 궁합 + 사주 궁합을 함께 풀어드려요.')
+        : ('상대방의 정보를 입력하면 '+p.name+'님과의 MBTI 궁합 + 사주 궁합을 함께 풀어드려요.')));
     view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '링크로 궁합 보기 (초대 링크 만들기)']));
     if(STATE.profiles.length>=2){
       view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){
@@ -9860,10 +9938,12 @@ function renderCompat(){
 function renderCompatForm(){
   var box=el('div',{});
   /* ★ R20 — 여기 여섯 줄도 전부 "시트에서 고르고 [확인]" 구조로 바꿨다. */
+  /* ★ R32 — 줄 이름 앞에 붙는 말. 평소엔 '상대방', 초대 링크로 들어왔으면 'TS님'처럼 실제 이름이다. */
+  var PL = compatPartyPrefix();
 
   /* row 1: 상대방 닉네임 */
-  box.appendChild(settingsRow('상대방 닉네임', COMPAT_DRAFT.name || '입력 안 함', function(){
-    openValueSheet('상대방 닉네임',
+  box.appendChild(settingsRow((PL+' 닉네임'), COMPAT_DRAFT.name || '입력 안 함', function(){
+    openValueSheet((PL+' 닉네임'),
       function(){ return {name:COMPAT_DRAFT.name}; },
       function(d, redraw){
         var body=el('div',{});
@@ -9871,16 +9951,16 @@ function renderCompatForm(){
         /* 한 글자마다 시트를 다시 그리면 포커스가 튄다 — 값만 사본에 담고, 반영은 [확인]에서 한다. */
         input.addEventListener('input', function(){ d.name = input.value; });
         input.addEventListener('change', function(){ redraw(); });
-        body.appendChild(el('div',{class:'field'},[ el('label',{for:'partnerName'},['상대방 닉네임']), input ]));
+        body.appendChild(el('div',{class:'field'},[ el('label',{for:'partnerName'},[(PL+' 닉네임')]), input ]));
         return body;
       },
       function(d){ COMPAT_DRAFT.name = d.name; },
-      {savedToast:'상대방 닉네임을 저장했어요.'});
+      {savedToast:(PL+' 닉네임을 저장했어요.')});
   }));
 
   /* row 2: 상대방 MBTI */
-  box.appendChild(settingsRow('상대방 MBTI', COMPAT_DRAFT.mbti || '선택 안 함', function(){
-    openValueSheet('상대방 MBTI',
+  box.appendChild(settingsRow((PL+' MBTI'), COMPAT_DRAFT.mbti || '선택 안 함', function(){
+    openValueSheet((PL+' MBTI'),
       function(){ return {mbti:COMPAT_DRAFT.mbti, testMode:false, testAnswers:[], testQIdx:0}; },
       function(d, redraw){
         var body=el('div',{});
@@ -9912,12 +9992,12 @@ function renderCompatForm(){
         return body;
       },
       function(d){ COMPAT_DRAFT.mbti = d.mbti; },
-      {savedToast:'상대방 MBTI를 저장했어요.'});
+      {savedToast:(PL+' MBTI를 저장했어요.')});
   }));
 
   /* row 3: 상대방 양력/음력 */
-  box.appendChild(settingsRow('상대방 양력/음력', COMPAT_DRAFT.calendarType==='lunar'?'음력':'양력', function(){
-    openValueSheet('상대방 양력/음력',
+  box.appendChild(settingsRow((PL+' 양력/음력'), COMPAT_DRAFT.calendarType==='lunar'?'음력':'양력', function(){
+    openValueSheet((PL+' 양력/음력'),
       function(){ return {calendarType:COMPAT_DRAFT.calendarType}; },
       function(d, redraw){
         var body=el('div',{});
@@ -9935,8 +10015,8 @@ function renderCompatForm(){
 
   /* row 4: 상대방 생년월일 */
   var partnerDateValue = COMPAT_DRAFT.year+'-'+pad2(COMPAT_DRAFT.month)+'-'+pad2(COMPAT_DRAFT.day);
-  box.appendChild(settingsRow('상대방 생년월일', partnerDateValue, function(){
-    openValueSheet('상대방 생년월일',
+  box.appendChild(settingsRow((PL+' 생년월일'), partnerDateValue, function(){
+    openValueSheet((PL+' 생년월일'),
       function(){ return {year:COMPAT_DRAFT.year, month:COMPAT_DRAFT.month, day:COMPAT_DRAFT.day}; },
       function(d, redraw){
         var body=el('div',{});
@@ -9958,20 +10038,20 @@ function renderCompatForm(){
         return body;
       },
       function(d){ COMPAT_DRAFT.year=d.year; COMPAT_DRAFT.month=d.month; COMPAT_DRAFT.day=d.day; },
-      {savedToast:'상대방 생년월일을 저장했어요.'});
+      {savedToast:(PL+' 생년월일을 저장했어요.')});
   }));
 
   /* row 5: 상대방 태어난 시각 — R20에서 분(分)까지 */
   var partnerTimeValue = COMPAT_DRAFT.timeUnknown ? '시간 모름' : (pad2(COMPAT_DRAFT.hour)+':'+pad2(COMPAT_DRAFT.minute));
-  box.appendChild(settingsRow('상대방 태어난 시각', partnerTimeValue, function(){
-    openValueSheet('상대방 태어난 시각',
+  box.appendChild(settingsRow((PL+' 태어난 시각'), partnerTimeValue, function(){
+    openValueSheet((PL+' 태어난 시각'),
       function(){ return {timeUnknown:COMPAT_DRAFT.timeUnknown, hour:COMPAT_DRAFT.hour, minute:COMPAT_DRAFT.minute}; },
       function(d, redraw){
         var body=el('div',{});
         body.appendChild(el('div',{class:'chk-row'},[
           el('input',{type:'checkbox',id:'partnerTimeUnknown', checked: d.timeUnknown?'checked':null,
             onchange:function(e){ d.timeUnknown=e.target.checked; redraw(); }}),
-          el('label',{for:'partnerTimeUnknown'},['상대방 태어난 시간을 몰라요'])
+          el('label',{for:'partnerTimeUnknown'},[(PL+' 태어난 시간을 몰라요')])
         ]));
         if(!d.timeUnknown){
           var trow=el('div',{class:'row2', style:'margin-top:8px;'});
@@ -9987,15 +10067,15 @@ function renderCompatForm(){
         return body;
       },
       function(d){ COMPAT_DRAFT.timeUnknown=d.timeUnknown; COMPAT_DRAFT.hour=d.hour; COMPAT_DRAFT.minute=d.minute; },
-      {savedToast:'상대방 태어난 시각을 저장했어요.'});
+      {savedToast:(PL+' 태어난 시각을 저장했어요.')});
   }));
 
   /* row 6: 상대방 출생지 · 진태양시 보정 (R20 신규) */
   var partnerPlaceValue = COMPAT_DRAFT.timeUnknown ? '시간 모름 — 해당 없음'
     : (placeLabelOfKey(COMPAT_DRAFT.birthLonKey, COMPAT_DRAFT.birthLon) + ' · 보정 ' + (COMPAT_DRAFT.solarTimeAdjust?'켬':'끔'));
-  box.appendChild(settingsRow('상대방 출생지 · 태어난 시각 보정', partnerPlaceValue, function(){
+  box.appendChild(settingsRow((PL+' 출생지 · 태어난 시각 보정'), partnerPlaceValue, function(){
     var solar = setupSolarDate(COMPAT_DRAFT);
-    openValueSheet('상대방 출생지 · 태어난 시각 보정(진태양시)',
+    openValueSheet((PL+' 출생지 · 태어난 시각 보정(진태양시)'),
       function(){ return {birthLonKey:COMPAT_DRAFT.birthLonKey, birthLon:COMPAT_DRAFT.birthLon, solarTimeAdjust:COMPAT_DRAFT.solarTimeAdjust}; },
       function(d, redraw){
         return buildPlaceAdjustSheetBody(d, redraw, solar ? {
@@ -10004,12 +10084,12 @@ function renderCompatForm(){
         } : null);
       },
       function(d){ COMPAT_DRAFT.birthLonKey=d.birthLonKey; COMPAT_DRAFT.birthLon=d.birthLon; COMPAT_DRAFT.solarTimeAdjust=d.solarTimeAdjust; },
-      {savedToast:'상대방 출생지·보정 설정을 저장했어요.'});
+      {savedToast:(PL+' 출생지·보정 설정을 저장했어요.')});
   }));
 
   /* row 7: 상대방 성별 */
-  box.appendChild(settingsRow('상대방 성별', COMPAT_DRAFT.gender==='F'?'여자':'남자', function(){
-    openValueSheet('상대방 성별',
+  box.appendChild(settingsRow((PL+' 성별'), COMPAT_DRAFT.gender==='F'?'여자':'남자', function(){
+    openValueSheet((PL+' 성별'),
       function(){ return {gender:COMPAT_DRAFT.gender}; },
       function(d, redraw){
         var body=el('div',{});
@@ -10022,7 +10102,7 @@ function renderCompatForm(){
         return body;
       },
       function(d){ COMPAT_DRAFT.gender = d.gender; },
-      {savedToast:'상대방 성별을 저장했어요.'});
+      {savedToast:(PL+' 성별을 저장했어요.')});
   }));
 
   var canSubmit = !!COMPAT_DRAFT.mbti;
@@ -10030,7 +10110,7 @@ function renderCompatForm(){
     if(!COMPAT_DRAFT.mbti) return;
     submitCompat();
   }, !canSubmit));
-  if(!canSubmit){ box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin-top:-4px;'},['상대방 MBTI를 선택하면 궁합을 볼 수 있어요.'])); }
+  if(!canSubmit){ box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin-top:-4px;'},[(PL+' MBTI를 선택하면 궁합을 볼 수 있어요.')])); }
   return box;
 }
 function submitCompat(){
@@ -11254,6 +11334,8 @@ function renderInviteAccept(){
         COMPAT_DRAFT.birthLonKey = 'custom';
       }
       if(PENDING_INVITE.ts!=null) COMPAT_DRAFT.solarTimeAdjust = !!PENDING_INVITE.ts;
+      /* R32 — 이 화면의 칸들은 "상대방"이 아니라 링크를 보낸 사람의 정보다. 문구가 그렇게 나가도록 표시해 둔다. */
+      COMPAT_DRAFT.fromInvite = true;
     }
     INVITE_CONSUMED = true;
     history.replaceState(null,'',location.pathname+location.search);
@@ -11506,8 +11588,8 @@ function renderSettings(){
     '여러 프로필(예: 본인, 가족)을 등록하고 전환할 수 있습니다. 각 프로필의 만세력 계산 결과는 프로필별로 저장돼요.'));
 
   view.appendChild(buildPurchasePanel());
-  view.appendChild(buildInterpreterPanel());
-  /* 결제 연동 진단(서버 주소·엔드포인트 설정 여부·연동 규격)은 관리자 테스트 콘솔로 옮겼다.
+  /* 결제 연동 진단(서버 주소·엔드포인트 설정 여부·연동 규격)과 AI 해석 연결(해석 서버 주소·모델)은
+     둘 다 관리자 테스트 콘솔로 옮겼다. 운영자가 채우는 값이지 손님이 채우는 값이 아니다.
      여기에는 사용자가 알아야 할 사실 — 지금 결제를 할 수 있는지 — 만 남긴다. */
   view.appendChild(buildPaymentStatusPanel());
 
@@ -11696,10 +11778,8 @@ function drawShareCard(canvas, kind, profile, data){
     });
     ctx.textAlign='left';
     y+=110;
-    ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#544E40';
-    /* R30 — 공유 카드는 그림이라 접을 수 없다. 그래서 여기에는 짧은 문장만 넣는다
-       (앱 화면의 기본 고지와 같은 말이다). 자세한 설명은 앱 안의 "계산 방법 자세히"에 있다. */
-    y=wrapCanvasText(ctx, '사주 계산은 이 앱이 직접 한 것이라 실제와 몇 분 차이가 날 수 있어요. 정해진 미래가 아니라 참고 자료로 봐주세요.', 50, y, w-100, 20);
+    /* R32 — 계산 한계 고지를 화면·공유 카드에서 전부 뺐다(대표님 지시). 이용약관 제7조에만 남는다.
+       ★ 되살릴 때는 이 자리에 wrapCanvasText로 DISCLAIM_SHORT 한 줄을 다시 넣으면 된다. */
   } else if(kind==='mbtiReport'){
     var rpt = buildMbtiReport16(profile);
     ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+'님의 MBTI 풀이', 50, y); y+=40;
@@ -11800,7 +11880,10 @@ function render(){
    저장 단계를 만들면 반드시 따라와야 하는 짝이 "저장 안 하고 나가려 할 때 알리기"다.
    지금 이 앱에서 "값을 넣어놓고 아직 저장하지 않은 상태"가 남을 수 있는 곳은 두 군데다.
      · 궁합 상대 입력 — 궁합 탭을 다시 누르면 입력이 통째로 초기화된다(예전에는 말없이 버렸다)
-     · 설정 → AI 해석 서버 주소·모델 — 다른 탭으로 나가면 입력칸의 글자가 사라진다
+     · 관리자 콘솔 → AI 해석 서버 주소·모델 — 콘솔을 닫으면 입력칸의 글자가 사라진다
+   ★ AI 해석 카드가 설정 화면에서 관리자 콘솔(모달)로 옮겨 갔으므로, 이제 그 경고는 라우트 이동이 아니라
+     콘솔의 [닫기]가 맡는다(openAdminConsole의 닫기 버튼). 여기 남은 라우트 검사는 콘솔을 열어 둔 채
+     탭을 누르는 경우를 위한 그물이다 — ADMIN_KEY가 null이면 interpDirty()가 참이 될 일 자체가 없다.
    프로필 마법사는 탭바 자체가 숨겨져 있어 이 경로로 나갈 수 없고, 대신 leaveSetupWizard()가 같은 일을 한다.
 ===================================================================== */
 function guardRouteChange(nextRoute, proceed){
@@ -11808,7 +11891,7 @@ function guardRouteChange(nextRoute, proceed){
     confirmModal('상대방 정보를 입력하던 중이에요. 저장하지 않은 입력을 버리고 이동할까요?', proceed, '나가기');
     return;
   }
-  if(ROUTE==='settings' && nextRoute!=='settings' && interpDirty()){
+  if(interpDirty()){
     confirmModal('AI 해석 설정에 저장하지 않은 변경이 있어요. 저장하지 않고 이동할까요?', function(){
       INTERP_EDIT = null; proceed();
     }, '나가기');
