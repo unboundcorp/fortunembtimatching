@@ -11449,7 +11449,11 @@ function decodeInviteFromHash(hash){
 function openInviteLinkModal(profile){
   var link = location.href.split('#')[0] + '#' + INVITE_VER + '=' + encodeInvite(profile);
   var body=el('div',{});
-  body.appendChild(el('p',{},['이 링크를 보내면, 링크를 연 상대방 화면에 '+profile.name+'님의 정보가 자동으로 채워진 궁합 입력 화면이 떠요. 상대방은 자기 정보만 입력하면 바로 결과를 볼 수 있어요.']));
+  /* ★ 이 문장은 실제 동작과 정확히 같아야 한다. 두 가지를 분명히 적는다 —
+     (1) 상대에게 이 앱 프로필이 없으면 먼저 만들어야 한다(그 뒤 자동으로 결과로 이어진다),
+     (2) 결과는 링크를 연 사람 화면에만 뜬다. 내 화면은 저절로 바뀌지 않는다(서버가 없다). */
+  body.appendChild(el('p',{},['이 링크를 열면 '+profile.name+'님과의 궁합 결과가 상대방 화면에 바로 나와요. 상대방이 이 앱을 처음 쓰는 경우에는 자기 프로필을 먼저 만들고, 그다음 결과로 이어져요.']));
+  body.appendChild(el('p',{class:'biz-hint'},['결과는 링크를 연 상대방 화면에 나옵니다. '+profile.name+'님 화면은 저절로 바뀌지 않아요 — 상대방이 결과를 캡처해 보내주거나, 상대방도 자기 링크를 만들어 보내주면 같은 결과를 보실 수 있어요.']));
   var box2=el('div',{class:'field'},[ el('input',{type:'text',value:link,readOnly:'readonly', id:'inviteLinkInput'}) ]);
   body.appendChild(box2);
   /* 링크에 무엇이 들어가는지 만들기 전에 알린다. 개인정보처리방침에도 같은 내용이 적혀 있다. */
@@ -11475,7 +11479,8 @@ function renderInviteAccept(){
     el('div',{class:'body'}), el('div',{class:'flap'}), el('div',{class:'seal'},['緣'])
   ]));
   wrap.appendChild(pageHead('초대장', (PENDING_INVITE&&PENDING_INVITE.n?PENDING_INVITE.n:'친구')+'님이 궁합을 보자고 초대했어요'));
-  wrap.appendChild(el('p',{class:'section-sub'},['봉인이 풀리는 동안 잠시만 기다려주세요. 확인을 누르면 상대 정보가 채워진 궁합 입력 화면으로 이동해요.']));
+  /* R33 — 문구가 실제 동작과 같아야 한다. 이제는 입력 화면이 아니라 결과가 바로 뜬다. */
+  wrap.appendChild(el('p',{class:'section-sub'},['봉인이 풀리는 동안 잠시만 기다려주세요. 확인을 누르면 두 사람의 궁합 결과가 바로 나와요.']));
   wrap.appendChild(el('button',{class:'btn btn-primary', onclick:function(){
     COMPAT_DRAFT = defaultCompatDraft();
     if(PENDING_INVITE){
@@ -11495,8 +11500,27 @@ function renderInviteAccept(){
     }
     INVITE_CONSUMED = true;
     history.replaceState(null,'',location.pathname+location.search);
-    ROUTE='compat'; render();
-  }},['확인하고 궁합 입력하기']));
+    ROUTE='compat';
+    /* =====================================================================
+       R33 — 초대장을 열면 궁합 결과까지 한 번에 보여준다 (대표님 지시)
+       ---------------------------------------------------------------------
+       링크에는 보낸 사람 정보가 다 들어 있고, 받는 사람 정보는 자기 프로필에 있다.
+       즉 계산에 필요한 값이 이 시점에 전부 갖춰져 있는데, 예전에는 값이 채워진
+       "입력 화면"에 내려놓고 [궁합 풀어보기]를 한 번 더 누르게 했다.
+       받는 사람 입장에서는 채울 것도 없는 입력 화면이라 무엇을 하라는 건지 알기 어렵다.
+       그래서 여기서 바로 계산해 결과 화면(궁합 대시보드)을 띄운다.
+       ★ 고칠 것이 있으면 결과 화면의 [다시 입력하기]로 돌아갈 수 있으므로 길이 막히지 않는다.
+       ★ 계산에 필요한 값이 하나라도 없으면(옛 형식 링크 등) 억지로 계산하지 않고
+         예전처럼 입력 화면에 남긴다 — 빈 값으로 계산하면 엉뚱한 결과가 나온다.
+    ===================================================================== */
+    var ready = !!(COMPAT_DRAFT.mbti && COMPAT_DRAFT.year && COMPAT_DRAFT.month && COMPAT_DRAFT.day);
+    if(ready){
+      try{ submitCompat(); }
+      catch(e){ console.warn('초대 링크 자동 계산 실패 — 입력 화면으로 남깁니다.', e); render(); }
+    } else {
+      render();
+    }
+  }},['확인하고 궁합 보기']));
   main.appendChild(autoTermify(wrap));
 }
 
