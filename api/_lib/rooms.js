@@ -88,6 +88,38 @@ export async function getRoom(roomId) {
   return rows && rows[0] ? rows[0] : null;
 }
 
+/* =====================================================================
+   ★ R34 — 열 때마다 기한을 다시 센다 (밀어내기 만료)
+   ---------------------------------------------------------------------
+   대표님 지적: "그룹은 1년인데 궁합은 30일이면, 40일 뒤에 다시 봤을 때 궁합이 없어지지 않나?"
+
+   그룹 궁합은 그룹에 저장된 명단으로 그 자리에서 다시 계산하므로 방과 무관하다.
+   하지만 1:1 궁합은 방이 사라지면 정말로 못 연다. 그래서 "만든 지 30일"이 아니라
+   "마지막으로 연 지 30일"로 센다. 계속 보는 궁합은 계속 살아 있고,
+   아무도 안 보는 궁합만 조용히 사라진다 — 남의 생년월일을 이유 없이 오래 쥐고 있지 않으면서도
+   쓰는 사람의 기록은 지키는 선이다.
+
+   ★ 실패해도 조회 자체는 계속한다. 기한 연장에 실패했다고 못 보게 만들 이유는 없다.
+===================================================================== */
+async function touchRoom(roomId) {
+  try {
+    await rest(`rooms?room_id=eq.${encodeURIComponent(roomId)}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ expires_at: expiryISO() }),
+    });
+  } catch (err) {
+    console.warn('방 기한 연장 실패(무시하고 계속):', err?.message);
+  }
+}
+
+/* 조회하면서 기한도 함께 밀어준다. 화면에서 부르는 조회는 전부 이쪽을 쓴다. */
+export async function getRoomAndTouch(roomId) {
+  const row = await getRoom(roomId);
+  if (row) await touchRoom(roomId);
+  return row;
+}
+
 /* 들어온 사람의 정보를 놓는다.
    ★ b 자리가 비어 있을 때만 채운다. 이미 누가 들어와 있으면 덮어쓰지 않는다 —
      링크가 여러 사람에게 퍼졌을 때 먼저 연 사람의 결과가 나중 사람에게 밀려나면 안 된다. */
@@ -100,8 +132,8 @@ export async function joinRoom(roomId, payload) {
       body: JSON.stringify({ b_payload: payload, joined_at: new Date().toISOString() }),
     }
   );
-  if (rows && rows[0]) return rows[0];
+  if (rows && rows[0]) { await touchRoom(roomId); return rows[0]; }
   /* 못 채웠으면 두 경우다 — 방이 없거나(기한 지남 포함), 이미 누가 들어와 있거나.
      후자는 그 사람의 결과를 그대로 보여주면 되므로, 현재 상태를 읽어서 돌려준다. */
-  return await getRoom(roomId);
+  return await getRoomAndTouch(roomId);
 }

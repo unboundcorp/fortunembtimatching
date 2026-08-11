@@ -815,7 +815,7 @@ main{flex:1;padding:28px 20px 96px;}
 .gc-legend .gl-term{color:var(--ink-faint);font-size:.68rem;margin-left:4px;}
 .gc-cards{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-card);margin-top:24px;}
 .gc-pair-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px dashed rgba(88,68,22,.28);font-size:.82rem;}
-/* 모임 멤버 고르기 칩 */
+/* 그룹 멤버 고르기 칩 */
 .gc-members{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 2px;}
 .gc-member{min-height:44px;padding:9px 14px;border-radius:var(--r-pill);border:1px solid rgba(88,68,22,.26);background:var(--panel-3);
   color:var(--ink-dim);font-size:.8rem;transition:background .15s,color .15s,border-color .15s;}
@@ -1481,7 +1481,7 @@ var HOURS = ['자시(23~01)','축시(01~03)','인시(03~05)','묘시(05~07)','�
 
 var MBTI_TEST_Q = [
   {q:'주말에 에너지를 얻는 방법은?', a:['친구들과 어울려 논다','혼자 조용히 쉰다'], dim:0},
-  {q:'모임에서 나는?', a:['먼저 말을 걸고 대화를 주도한다','필요할 때만 말하는 편이다'], dim:0},
+  {q:'그룹에서 나는?', a:['먼저 말을 걸고 대화를 주도한다','필요할 때만 말하는 편이다'], dim:0},
   {q:'새 정보를 받아들일 때?', a:['구체적 사실과 경험을 먼저 본다','전체적 의미와 가능성을 먼저 본다'], dim:1},
   {q:'설명을 들을 때 선호하는 방식은?', a:['단계별로 순서대로','핵심 아이디어와 비유로'], dim:1},
   {q:'결정을 내릴 때 중요한 것은?', a:['논리와 원칙','사람과 관계에 미칠 영향'], dim:2},
@@ -3257,7 +3257,7 @@ var COMPAT_SUB = null; /* null=요약, 'saju'=사주궁합 상세, 'mbti'=MBTI�
    그 표는 이 줄보다 한참 아래에서 만들어진다. 여기서 풀려고 하면 표가 undefined라
    부팅이 통째로 죽는다(실제로 그렇게 만들었다가 실측으로 잡았다).
    그래서 주소만 문자열로 챙겨 두고, 표가 준비된 맨 아래 부팅 절에서 푼다.
-   — 모임 링크(#meet=)가 이미 같은 이유로 같은 방식을 쓰고 있었다. */
+   — 그룹 링크(#meet=)가 이미 같은 이유로 같은 방식을 쓰고 있었다. */
 var INVITE_HASH_RAW = location.hash || '';
 var PENDING_INVITE = null;
 /* R33 — 방 번호로 들어온 경우(#r=). 뜻 없는 번호라 주소에 남의 생년월일이 없다. */
@@ -3266,12 +3266,12 @@ var PENDING_ROOM = (/[#&]r=([A-Za-z0-9_-]{10,})/.exec(INVITE_HASH_RAW) || [])[1]
    누른 뒤에야 주소에서 지웠는데, 그때까지는 주소창·방문 기록에 그대로 남아 있었다.
    위에서 이미 메모리로 읽어 두었으므로(location.hash를 다시 읽는 곳은 이 파일에 없다)
    여기서 바로 지워도 흐름에 영향이 없다. 읽기에 실패한 링크도 함께 지운다 —
-   파싱이 안 됐다고 주소에서 사라지는 게 아니기 때문이다. (모임 링크와 같은 규칙) */
+   파싱이 안 됐다고 주소에서 사라지는 게 아니기 때문이다. (그룹 링크와 같은 규칙) */
 if(/[#&](invite|i1|r)=/.test(INVITE_HASH_RAW)){
   try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
 }
 var INVITE_CONSUMED = false;
-/* 모임 링크(#meet=)로 받은 명단. 여기서 바로 읽지 않고 맨 아래 부팅 절에서 채운다 —
+/* 그룹 링크(#meet=)로 받은 명단. 여기서 바로 읽지 않고 맨 아래 부팅 절에서 채운다 —
    decodeMeetFromHash()는 INVITE_FIELDS 표를 읽는데, 그 표가 이 줄보다 아래에서 만들어지기 때문이다.
    (초대 링크는 표를 안 읽고 JSON만 풀어서 여기서 바로 읽을 수 있다.) */
 var PENDING_MEET = null;
@@ -4350,8 +4350,8 @@ function openTermsModal(){
   h('제6조의2 (공유 링크에 대한 책임)');
   /* ★ 이 조항은 이 서비스의 구조에서 반드시 필요하다. 링크 하나로 남의 생년월일이
      통째로 옮겨 가는 기능이 있고(초대·모임), 링크를 누구에게 보낼지는 전적으로 이용자가 정한다. */
-  p('서비스는 궁합 초대 링크와 모임 링크를 통해 이용자가 입력한 정보를 다른 사람에게 전달할 수 있는 기능을 제공합니다. 링크를 누구에게 보낼지는 이용자가 정하며, 링크를 받은 사람이나 그 밖의 제3자가 링크를 통해 정보를 열람함으로써 발생하는 문제에 대한 책임은 링크를 공유한 이용자에게 있습니다.');
-  p('모임 링크에는 본인 외 다른 사람의 정보도 함께 담깁니다. 이용자는 그 사람들의 동의를 받은 뒤에만 링크를 만들어야 합니다.');
+  p('서비스는 궁합 초대 링크와 그룹 링크를 통해 이용자가 입력한 정보를 다른 사람에게 전달할 수 있는 기능을 제공합니다. 링크를 누구에게 보낼지는 이용자가 정하며, 링크를 받은 사람이나 그 밖의 제3자가 링크를 통해 정보를 열람함으로써 발생하는 문제에 대한 책임은 링크를 공유한 이용자에게 있습니다.');
+  p('그룹 링크에는 본인 외 다른 사람의 정보도 함께 담깁니다. 이용자는 그 사람들의 동의를 받은 뒤에만 링크를 만들어야 합니다.');
   h('제6조의3 (지적재산권)');
   p('서비스가 제공하는 해석 문장·이미지·캐릭터 등 콘텐츠에 대한 권리는 회사에 귀속됩니다. 이용자는 개인적·비상업적 목적으로 결과 화면을 저장하거나 공유할 수 있으며, 그 밖의 무단 복제·배포·상업적 이용은 금지됩니다.');
   h('제6조의4 (서비스의 변경 및 중단)');
@@ -4399,22 +4399,22 @@ function openPrivacyModal(){
   ul([
     /* ★ R32에서 AI 해석 설정은 일반 이용자 화면에서 제거되어 관리자 전용이 되었다.
        "이용자가 켤 수 있다"고 적어두면 사실과 다르다. */
-    '① 궁합 방(실시간 연결)을 사용하는 경우: 궁합 초대 링크를 만들거나 그 링크를 여는 순간, 두 사람의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 회사의 서버에 저장됩니다. 이 정보는 두 사람의 화면에 같은 결과를 띄우기 위한 용도로만 쓰이며, 만든 때로부터 '+ROOM_TTL_TEXT+'이 지나면 읽을 수 없게 되고 지워집니다. 이 저장은 서버 코드가 조회 시점에 기한을 확인하는 방식으로 강제됩니다. 서버에 연결할 수 없을 때는 방을 만들지 않고, 아래 ②의 방식으로 동작합니다.',
+    '① 궁합 방(실시간 연결)을 사용하는 경우: 궁합 초대 링크를 만들거나 그 링크를 여는 순간, 두 사람의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 회사의 서버에 저장됩니다. 이 정보는 두 사람의 화면에 같은 결과를 띄우기 위한 용도로만 쓰이며, '+ROOM_TTL_PHRASE+'이 지나면 읽을 수 없게 되고 지워집니다(열 때마다 기간이 다시 시작됩니다). 이 저장은 서버 코드가 조회 시점에 기한을 확인하는 방식으로 강제됩니다. 서버에 연결할 수 없을 때는 방을 만들지 않고, 아래 ②의 방식으로 동작합니다.',
     /* ★ 이 문장의 항목 목록은 INVITE_FIELDS(초대 링크 payload 정의)에서 그대로 만들어진다.
        손으로 적지 않는다 — R20에서 손으로 적어 두었다가 코드와 어긋난 적이 있다. */
-    '② 링크 주소에 정보를 담아 보내는 경우: 모임 링크는 항상, 궁합 초대 링크는 위 ①의 서버 연결을 쓸 수 없을 때 이 방식으로 만들어집니다. 이때는 링크 주소(URL) 안에 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 암호화 없이 그대로 담깁니다. 초대 링크에는 링크를 만든 본인 1명분이, 모임 링크에는 그 모임에 담은 사람 수만큼(최대 '+GC_MAX+'명) 같은 항목이 들어갑니다 — 즉 모임 링크는 본인 외 다른 사람의 정보도 함께 내보냅니다. 이 방식은 회사 서버를 거치지 않는 대신, 링크를 받은 사람의 대화 기록과 브라우저 방문 기록에 정보가 그대로 남습니다.',
+    '② 링크 주소에 정보를 담아 보내는 경우: 그룹 링크는 항상, 궁합 초대 링크는 위 ①의 서버 연결을 쓸 수 없을 때 이 방식으로 만들어집니다. 이때는 링크 주소(URL) 안에 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 암호화 없이 그대로 담깁니다. 초대 링크에는 링크를 만든 본인 1명분이, 그룹 링크에는 그 그룹에 담은 사람 수만큼(최대 '+GC_MAX+'명) 같은 항목이 들어갑니다 — 즉 그룹 링크는 본인 외 다른 사람의 정보도 함께 내보냅니다. 이 방식은 회사 서버를 거치지 않는 대신, 링크를 받은 사람의 대화 기록과 브라우저 방문 기록에 정보가 그대로 남습니다.',
     '③ 결제·이용권 확인·구매 복원: 회사가 지정한 결제 서버로 상품 ID·가격·영수증 번호와 이용권 조회 요청이 전송됩니다. 이용자가 "구매 내역 복원"에서 영수증 번호를 입력한 경우에도 그 번호가 같은 서버로 전송되어, 해당 구매를 지금 사용 중인 브라우저에 다시 연결하는 데 쓰입니다. 이때 브라우저 쿠키가 함께 전송되어 이용자를 식별하는 데 쓰입니다. 이 경로에는 사주 정보가 포함되지 않습니다.',
     '④ 유료 본문 서버를 연결한 경우: 유료 해석 문장을 만들기 위해, 회사가 지정한 서버로 성별과 계산된 사주 데이터(사주팔자 네 기둥·오행 분포·십성 분포·일간 강약) 또는 MBTI 유형이 전송됩니다. 이때도 쿠키가 함께 전송됩니다. 닉네임과 생년월일·태어난 시각 원본은 이 경로로 전송하지 않습니다. 다만 사주팔자 네 기둥은 생년월일시로부터 계산된 값이므로, 사실상 생년월일시에 준하는 정보로 보아 주시기 바랍니다.',
     '⑤ 결제창으로 이동할 때: 결제대행사(PG)의 결제 페이지로 브라우저가 이동하므로, 이동한 사실과 직전 페이지 주소가 결제대행사에 전달될 수 있습니다. 이후의 결제 정보 처리는 결제대행사와 회사의 결제 서버가 담당하며, 카드번호 등 결제수단 정보는 이 앱이 입력받지도, 보관하지도 않습니다.'
   ]);
-  p('①은 궁합 초대 링크를 만들거나 열 때 발생하며, 모임 기능에서는 발생하지 않습니다(모임은 항상 ② 방식입니다). ③④는 회사가 결제 서버를 연결한 시점부터 발생합니다. 유료 판매를 아직 시작하지 않았더라도 서버를 연결해 준비하는 기간에는 이용권 조회 요청과 쿠키가 전송될 수 있습니다. ⑤는 실제로 결제창으로 이동할 때에만 발생합니다. 결제 서버가 하나도 연결되지 않은 상태에서는 ①②를 제외하면 어떤 정보도 브라우저 밖으로 나가지 않습니다.');
+  p('①은 궁합 초대 링크를 만들거나 열 때 발생하며, 그룹 기능에서는 발생하지 않습니다(그룹은 항상 ② 방식입니다). ③④는 회사가 결제 서버를 연결한 시점부터 발생합니다. 유료 판매를 아직 시작하지 않았더라도 서버를 연결해 준비하는 기간에는 이용권 조회 요청과 쿠키가 전송될 수 있습니다. ⑤는 실제로 결제창으로 이동할 때에만 발생합니다. 결제 서버가 하나도 연결되지 않은 상태에서는 ①②를 제외하면 어떤 정보도 브라우저 밖으로 나가지 않습니다.');
   p('이 밖에 이용자가 직접 버튼을 눌러 결과를 복사하거나 이미지로 저장하는 경우, 그 내용은 이용자의 클립보드와 기기에 저장됩니다. 이는 네트워크로 전송되는 것이 아니라 이용자의 기기 안에 남는 것이며, 이후 어디에 붙여넣거나 공유할지는 이용자가 정합니다.');
   h('3. 보유 기간, 파기 절차 및 방법');
   p('브라우저 저장소에 저장된 정보는 이용자가 삭제하기 전까지 유지됩니다. 운세·궁합 기록은 최근 200건, 사주풀이·MBTI풀이 기록은 최근 20건을 넘기면 오래된 항목부터 앱이 자동으로 지웁니다.');
   p('파기 절차와 방법: 이용자가 히스토리 화면의 "삭제"·"전체 삭제", 설정의 "프로필 삭제", 또는 브라우저의 사이트 데이터 삭제를 실행하면 해당 항목이 브라우저 저장소에서 즉시 지워지며, 지워진 값은 복구할 수 없습니다(별도의 백업본을 두지 않습니다).');
   p('회사 서버에 저장되는 정보의 보유 기간은 다음과 같습니다.');
   ul([
-    '궁합 방(위 2항 ①): 만든 때로부터 '+ROOM_TTL_TEXT+'. 기한이 지나면 조회되지 않으며, 이후 새 방이 만들어질 때 함께 삭제됩니다.',
+    '궁합 방(위 2항 ①): '+ROOM_TTL_PHRASE+'. 기한이 지나면 조회되지 않으며, 이후 새 방이 만들어질 때 함께 삭제됩니다.',
     '결제·이용권 기록(위 2항 ③): 아래 법령이 정한 기간',
     '계약 또는 청약철회 등에 관한 기록 — 5년 (전자상거래 등에서의 소비자보호에 관한 법률)',
     '대금 결제 및 재화 등의 공급에 관한 기록 — 5년 (같은 법)',
@@ -4576,7 +4576,7 @@ function renderAbout(){
       '내 사주 — 태어난 날과 시각으로 여덟 글자(사주팔자)를 계산하고, 오행과 십성, 10년 단위 흐름(대운)까지 보여드려요.',
       '오늘의 운세 — 그날의 기운과 내 사주를 견주어 총운·금전운·애정운·건강운·학업직장운을 짚어드려요.',
       '궁합 — 두 사람의 MBTI와 사주를 함께 봅니다. 링크를 보내면 상대방 화면과 내 화면에 같은 결과가 나타나요.',
-      '모임 궁합 — 최대 '+GC_MAX+'명까지 한 그림으로 모아 서로의 결을 한눈에 볼 수 있어요.'
+      '그룹 궁합 — 최대 '+GC_MAX+'명까지 한 그림으로 모아 서로의 결을 한눈에 볼 수 있어요.'
     ]);
     infoCard(view, '이런 점이 다릅니다', [
       '회원가입이 없습니다. 이름과 생년월일만 있으면 바로 시작할 수 있어요.',
@@ -9292,9 +9292,9 @@ function renderSetupStep3(){
     var wasEdit = !!SETUP.editId;   /* SETUP을 비우기 전에 잡아 둔다 */
     SETUP=null;
     /* =====================================================================
-       R33 — 초대·모임 링크로 들어왔는데 프로필이 없던 사람을 원래 목적지로 데려간다.
+       R33 — 초대·그룹 링크로 들어왔는데 프로필이 없던 사람을 원래 목적지로 데려간다.
        ---------------------------------------------------------------------
-       부팅할 때 "프로필이 하나는 있어야" 초대장·모임 화면을 연다. 프로필이 없으면
+       부팅할 때 "프로필이 하나는 있어야" 초대장·그룹 화면을 연다. 프로필이 없으면
        마법사부터 뜨는데, **마법사가 끝난 뒤 초대장을 다시 확인하는 경로가 없었다.**
        그래서 링크를 받은 사람이 정보를 다 입력하고 나면 홈으로 떨어지고,
        정작 보러 온 궁합은 영영 안 나왔다(대표님 제보: "정보 입력해도 궁합표가 안 뜬다").
@@ -9311,7 +9311,7 @@ function renderSetupStep3(){
       showToast('프로필을 저장했어요. 받은 초대장을 열어볼게요.');
     } else if(goMeet){
       GC_SOURCE='link'; ROUTE='groupCompat';
-      showToast('프로필을 저장했어요. 받은 모임을 보여드릴게요.');
+      showToast('프로필을 저장했어요. 받은 그룹을 보여드릴게요.');
     } else if(goInvite){
       ROUTE='inviteAccept';
       showToast('프로필을 저장했어요. 받은 초대장을 보여드릴게요.');
@@ -10278,7 +10278,7 @@ function renderCompat(){
       view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){
         GC_SOURCE='profiles'; GC_SEL=null; GC_RANK={order:'best', shown:GC_RANK_STEP};
         ROUTE='groupCompat'; render();
-      }},[svgIcon('M10 3 L16 7 L14 15 L6 15 L4 7 Z M10 3 L10 15 M4 7 L14 15 M16 7 L6 15','btn-lead-icon'), '모두의 궁합 보기 (모임 · 최대 '+GC_MAX+'명)']));
+      }},[svgIcon('M10 3 L16 7 L14 15 L6 15 L4 7 Z M10 3 L10 15 M4 7 L14 15 M16 7 L6 15','btn-lead-icon'), '모두의 궁합 보기 (그룹 · 최대 '+GC_MAX+'명)']));
     }
     view.appendChild(renderCompatForm());
   } else {
@@ -10611,7 +10611,7 @@ function renderCompatSummary(p, draft){
   if(CURRENT_ROOM_ID){
     var linkCard = el('div',{class:'scroll-card'});
     linkCard.appendChild(el('h3',{},['이 궁합 주소']));
-    linkCard.appendChild(el('p',{class:'biz-hint'},['이 주소를 저장해 두면 언제든 이 결과를 다시 볼 수 있어요. 보관 기간은 '+ROOM_TTL_TEXT+'이에요.']));
+    linkCard.appendChild(el('p',{class:'biz-hint'},['이 주소를 저장해 두면 언제든 이 결과를 다시 볼 수 있어요. '+ROOM_TTL_PHRASE+' 동안 열리고, 열 때마다 기간이 다시 시작돼요.']));
     linkCard.appendChild(el('div',{class:'field'},[
       el('input',{type:'text', value:currentRoomLink(), readOnly:'readonly', id:'compatResultLink'})
     ]));
@@ -10870,7 +10870,7 @@ function buildRadarSvg(pA, pB){
      유료 — 쌍별 상세(사주 관점 문장 · MBTI 케미 문장 · 사주/MBTI 하위 점수). 1:1과 같은 compat_full 하나다.
    잠긴 부분은 흐리게 가리지 않고 DOM에 아예 만들지 않는다(R24에서 세운 규칙).
 ===================================================================== */
-var GC_MAX = 30;                        /* 한 모임에 세울 수 있는 최대 인원 */
+var GC_MAX = 30;                        /* 한 그룹에 세울 수 있는 최대 인원 */
 var GC_TIER_ORDER = ['천생연분형','찰떡궁합형','무난동행형','노력필요형','인연신중형'];
 /* R28 — 선과 이름표에 쓰는 색을 어두운 배경에서 실제로 읽히는 값으로 올렸다.
    R29 — 밝은 톤으로 뒤집으면서 다섯 색을 전부 다시 잡았다. 예전 값은 "어두운 배경에서 밝게"였고
@@ -10904,7 +10904,7 @@ function toCompatPerson(p){
   var saju = getSajuResult(p);
   return {mbti:p.mbti, elementIdx:p.elementIdx, zodiacIdx:p.zodiacIdx, name:p.name, element:p.element, zodiac:p.zodiac, saju:saju, gender:p.gender};
 }
-/* 모임에 세우는 "사람 한 명". 저장된 프로필에서 올 수도 있고, 모임 링크에서 올 수도 있다.
+/* 그룹에 세우는 "사람 한 명". 저장된 프로필에서 올 수도 있고, 그룹 링크에서 올 수도 있다.
    두 경로가 같은 모양을 내놓아야 그림·순위·카드가 출처를 몰라도 되게 만든다. */
 function gcMemberFromProfile(p){
   var person = toCompatPerson(p);
@@ -11032,7 +11032,7 @@ function buildGroupCompatGraph(members, pairs, onSelect){
   /* 선 그림 자체에 이름을 붙인다. 사람 버튼은 아래에 진짜 버튼으로 따로 있으므로,
      여기 role='img'가 버튼을 삼키지 않는다(형제 관계다). */
   svg.setAttribute('role','img');
-  svg.setAttribute('aria-label','모임 궁합 그림');
+  svg.setAttribute('aria-label','그룹 궁합 그림');
   stage.appendChild(svg);
   var tagLayer = el('div',{class:'gc-tags','aria-hidden':'true'});
   stage.appendChild(tagLayer);
@@ -11406,10 +11406,10 @@ function buildGroupCompatCards(members, pairs, unlocked){
 }
 
 /* =====================================================================
-   모임 링크 — 여러 사람을 한 주소에 담아 보낸다 (서버 없음)
+   그룹 링크 — 여러 사람을 한 주소에 담아 보낸다 (서버 없음)
    ---------------------------------------------------------------------
    담기는 항목은 궁합 초대 링크와 완전히 같다. 그래서 항목표도 INVITE_FIELDS 하나를 그대로 쓴다
-   (초대 링크는 그 표를 JSON으로, 모임 링크는 같은 표를 사람당 한 줄씩 쉼표로 잇는다).
+   (초대 링크는 그 표를 JSON으로, 그룹 링크는 같은 표를 사람당 한 줄씩 쉼표로 잇는다).
    ★ 왜 JSON을 안 쓰나 — 30명이면 따옴표·중괄호만으로도 주소가 1,000자 넘게 길어진다.
      아래 방식은 한 사람당 약 60~70자다(한글 3글자 이름 기준, 실측값은 SELF_CHECK R28 참고).
    ★ 기존 초대 링크(#invite=...)는 한 글자도 건드리지 않았다 — 이미 나간 링크가 그대로 열린다.
@@ -11474,7 +11474,7 @@ function decodeMeetFromHash(hash){
 function openMeetLinkModal(profiles){
   var made = buildMeetLink(profiles);
   var body = el('div',{});
-  body.appendChild(el('p',{},['이 링크를 보내면, 링크를 연 사람 화면에 지금 이 모임 그림이 그대로 떠요. 받는 사람이 정보를 따로 입력하지 않아도 돼요.']));
+  body.appendChild(el('p',{},['이 링크를 보내면, 링크를 연 사람 화면에 지금 이 그룹 그림이 그대로 떠요. 받는 사람이 정보를 따로 입력하지 않아도 돼요.']));
   body.appendChild(el('div',{class:'field'},[ el('input',{type:'text', value:made.url, readOnly:'readonly', id:'meetLinkInput'}) ]));
   body.appendChild(el('p',{class:'biz-hint'},[
     '주소 길이는 '+made.len+'자예요. 브라우저 자체 한계는 이보다 훨씬 크지만(크롬 약 2MB), 메신저·QR·문서를 거치며 잘리는 일이 있어 '+
@@ -11482,19 +11482,19 @@ function openMeetLinkModal(profiles){
   ]));
   if(made.count < made.total){
     body.appendChild(el('p',{class:'biz-hint'},[
-      '지금 모임 '+made.total+'명 가운데 앞에서부터 '+made.count+'명까지만 링크에 담겼어요. 이름이 길수록 한 사람이 차지하는 주소 길이가 늘어나서, 담기는 인원은 그때그때 달라져요. 나머지는 링크를 나눠 보내주세요.'
+      '지금 그룹 '+made.total+'명 가운데 앞에서부터 '+made.count+'명까지만 링크에 담겼어요. 이름이 길수록 한 사람이 차지하는 주소 길이가 늘어나서, 담기는 인원은 그때그때 달라져요. 나머지는 링크를 나눠 보내주세요.'
     ]));
   }
   /* 링크에 무엇이 들어가는지 만들기 전에 알린다. 개인정보처리방침에도 같은 표(INVITE_FIELDS)로 적혀 있다. */
   body.appendChild(el('p',{class:'biz-hint'},[
-    '이 링크 주소 안에는 모임에 담긴 '+made.count+'명의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+
-    ' 암호화 없이 그대로 담깁니다. 내 정보만이 아니라 다른 사람의 정보까지 함께 나가는 링크예요. 받는 사람의 대화 기록과 브라우저 방문 기록에도 남으니, 모임에 있는 사람들에게만 보내주세요.'
+    '이 링크 주소 안에는 그룹에 담긴 '+made.count+'명의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+
+    ' 암호화 없이 그대로 담깁니다. 내 정보만이 아니라 다른 사람의 정보까지 함께 나가는 링크예요. 받는 사람의 대화 기록과 브라우저 방문 기록에도 남으니, 그룹에 있는 사람들에게만 보내주세요.'
   ]));
-  openModal('모임 링크', body, [
+  openModal('그룹 링크', body, [
     {label:'닫기', cls:'btn-ghost', onclick:closeModal},
     {label:'공유하기', cls:'btn-primary', onclick:function(){
       if(navigator.share){
-        navigator.share({title:COMPANY.serviceName+' 모임 궁합', text:'우리 모임 궁합을 한 그림으로 봤어요.', url:made.url}).catch(function(){});
+        navigator.share({title:COMPANY.serviceName+' 그룹 궁합', text:'우리 그룹 궁합을 한 그림으로 봤어요.', url:made.url}).catch(function(){});
       } else {
         copyText(made.url);
       }
@@ -11503,11 +11503,11 @@ function openMeetLinkModal(profiles){
 }
 
 /* =====================================================================
-   렌더: 모임 궁합 화면 (renderCompat()과 별개 화면, 기존 1:1 궁합 입력/상태 건드리지 않음)
+   렌더: 그룹 궁합 화면 (renderCompat()과 별개 화면, 기존 1:1 궁합 입력/상태 건드리지 않음)
 ===================================================================== */
 var GC_SEL = null;      /* 지금 눌러 둔 사람의 자리 번호. null이면 전체 보기 */
-var GC_PICK = null;     /* 모임에 넣기로 고른 프로필 id 목록. null이면 저장된 순서대로 앞에서 30명 */
-var GC_SOURCE = 'profiles';  /* 'profiles' = 내 저장 프로필 / 'link' = 모임 링크로 받은 명단 */
+var GC_PICK = null;     /* 그룹에 넣기로 고른 프로필 id 목록. null이면 저장된 순서대로 앞에서 30명 */
+var GC_SOURCE = 'profiles';  /* 'profiles' = 내 저장 프로필 / 'link' = 그룹 링크로 받은 명단 */
 function gcUsableProfiles(){
   return STATE.profiles.filter(function(p){
     return p && typeof p.year==='number' && p.mbti && MBTI_MATRIX[p.mbti];
@@ -11533,25 +11533,25 @@ function renderGroupCompat(){
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
     if(fromLink){ GC_SOURCE='profiles'; GC_SEL=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); return; }
     ROUTE='compat'; render();
-  }},[dirIcon('left'), fromLink ? '내 프로필로 모임 보기' : '궁합 보기로 돌아가기']));
-  view.appendChild(pageHead('궁합 보기 · 모임', fromLink ? '받은 모임 궁합' : '모두의 궁합 보기', null, {marginTop:'14px'}));
+  }},[dirIcon('left'), fromLink ? '내 프로필로 그룹 보기' : '궁합 보기로 돌아가기']));
+  view.appendChild(pageHead('궁합 보기 · 그룹', fromLink ? '받은 그룹 궁합' : '모두의 궁합 보기', null, {marginTop:'14px'}));
   view.appendChild(el('p',{class:'section-sub'},[fromLink
-    ? '모임 링크로 받은 명단이에요. 이 화면에서만 보고, 기기에 저장하지 않아요.'
-    : '저장된 프로필로 모임을 만들어요. 한 모임에 최대 '+GC_MAX+'명까지 한 그림에서 볼 수 있어요.']));
+    ? '그룹 링크로 받은 명단이에요. 이 화면에서만 보고, 기기에 저장하지 않아요.'
+    : '저장된 프로필로 그룹을 만들어요. 한 그룹에 최대 '+GC_MAX+'명까지 한 그림에서 볼 수 있어요.']));
 
   var usable = gcUsableProfiles();
   if(!fromLink && usable.length<2){
-    view.appendChild(emptyState('프로필이 2명 이상 필요합니다','모임 궁합을 보려면 생년월일과 MBTI가 채워진 프로필이 2명 이상 필요합니다.', function(){ startSetupWizard(null); render(); }, '새 프로필 추가하기'));
+    view.appendChild(emptyState('프로필이 2명 이상 필요합니다','그룹 궁합을 보려면 생년월일과 MBTI가 채워진 프로필이 2명 이상 필요합니다.', function(){ startSetupWizard(null); render(); }, '새 프로필 추가하기'));
     main.appendChild(view);
     return;
   }
 
-  /* 모임 멤버 고르기 — 저장된 프로필이 많으면 이번 모임에 넣을 사람만 고른다. */
+  /* 그룹 멤버 고르기 — 저장된 프로필이 많으면 이번 그룹에 넣을 사람만 고른다. */
   if(!fromLink && usable.length>2){
     var chosen = {};
     (GC_PICK || usable.slice(0, GC_MAX).map(function(p){ return p.id; })).forEach(function(id){ chosen[id]=1; });
-    view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['이번 모임에 넣을 사람을 골라요.']));
-    var chips = el('div',{class:'gc-members', role:'group','aria-label':'모임 멤버 고르기'});
+    view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['이번 그룹에 넣을 사람을 골라요.']));
+    var chips = el('div',{class:'gc-members', role:'group','aria-label':'그룹 멤버 고르기'});
     usable.forEach(function(p){
       var on = !!chosen[p.id];
       var b = el('button',{type:'button', class:'gc-member', 'aria-pressed':on?'true':'false'},[p.name]);
@@ -11560,8 +11560,8 @@ function renderGroupCompat(){
         $all('button', chips).forEach(function(x, ix){ if(x.getAttribute('aria-pressed')==='true') cur[usable[ix].id]=1; });
         if(on) delete cur[p.id]; else cur[p.id]=1;
         var ids = usable.map(function(q){ return q.id; }).filter(function(id){ return cur[id]; });
-        if(ids.length<2){ showToast('모임에는 2명 이상이 있어야 해요.'); return; }
-        if(ids.length>GC_MAX){ showToast('한 모임에는 '+GC_MAX+'명까지 넣을 수 있어요.'); return; }
+        if(ids.length<2){ showToast('그룹에는 2명 이상이 있어야 해요.'); return; }
+        if(ids.length>GC_MAX){ showToast('한 그룹에는 '+GC_MAX+'명까지 넣을 수 있어요.'); return; }
         GC_PICK = ids; GC_SEL = null; render();
       });
       chips.appendChild(b);
@@ -11569,13 +11569,13 @@ function renderGroupCompat(){
     view.appendChild(chips);
     if(usable.length>GC_MAX){
       view.appendChild(el('p',{class:'biz-hint'},
-        ['저장된 프로필이 '+usable.length+'명이라 한 화면에 다 세우면 서로 겹쳐서 못 읽어요. 한 모임에는 '+GC_MAX+'명까지만 넣을 수 있어요.']));
+        ['저장된 프로필이 '+usable.length+'명이라 한 화면에 다 세우면 서로 겹쳐서 못 읽어요. 한 그룹에는 '+GC_MAX+'명까지만 넣을 수 있어요.']));
     }
   }
 
   var members = gcMembers();
   if(members.length<2){
-    view.appendChild(emptyState('모임을 만들 수 없어요','생년월일과 MBTI가 모두 채워진 사람이 2명 이상 필요합니다.', function(){ ROUTE='compat'; render(); }, '궁합 보기로 돌아가기'));
+    view.appendChild(emptyState('그룹을 만들 수 없어요','생년월일과 MBTI가 모두 채워진 사람이 2명 이상 필요합니다.', function(){ ROUTE='compat'; render(); }, '궁합 보기로 돌아가기'));
     main.appendChild(view);
     return;
   }
@@ -11623,7 +11623,7 @@ function renderGroupCompat(){
   if(!fromLink){
     view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:16px;', onclick:function(){
       openMeetLinkModal(members.map(function(m){ return STATE.profiles.filter(function(p){ return p.id===m.id; })[0]; }).filter(Boolean));
-    }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '모임 링크 만들기 (지금 멤버 그대로)']));
+    }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '그룹 링크 만들기 (지금 멤버 그대로)']));
   }
   view.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, MBTI 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
   main.appendChild(autoTermify(view));
@@ -11675,7 +11675,7 @@ function inviteFieldsText(){
 
    ★ 이미 보낸 옛 링크(#invite=)도 계속 열린다. 형식 이름을 다르게 했기 때문이다.
      받는 쪽은 두 형식을 모두 읽고, 만드는 쪽만 새 형식을 쓴다.
-   ★ 구분자로 쉼표를 쓰는 이유는 모임 링크와 같다 — 이름 안에 쉼표가 들어가도
+   ★ 구분자로 쉼표를 쓰는 이유는 그룹 링크와 같다 — 이름 안에 쉼표가 들어가도
      encodeURIComponent가 %2C로 바꿔주므로 구분자와 헷갈리지 않는다.
 ===================================================================== */
 var INVITE_VER = 'i1';
@@ -11743,6 +11743,10 @@ function decodeInviteFromHash(hash){
 /* ★ 서버(api/_lib/rooms.js)의 ROOM_TTL_HOURS와 같은 값이어야 한다.
    화면에 적은 보관 기간과 서버가 실제로 지키는 기간이 다르면 그건 거짓 고지다. */
 var ROOM_TTL_TEXT = '30일';   /* 서버 ROOM_TTL_HOURS(24*30)와 같은 기간이어야 한다 */
+/* ★ R34 — 기한은 "만든 지"가 아니라 "마지막으로 연 지"부터 센다(서버가 열 때마다 다시 센다).
+   그래서 계속 보는 궁합은 사라지지 않고, 아무도 안 보는 궁합만 조용히 없어진다.
+   문구도 그 사실대로 적어야 한다 — "30일 뒤 사라진다"고만 하면 실제와 다르다. */
+var ROOM_TTL_PHRASE = '마지막으로 연 날로부터 '+ROOM_TTL_TEXT;
 var ROOM_TTL_HOURS_TEXT = ROOM_TTL_TEXT;   /* 옛 이름 — 문구에서 '...시간'으로 쓰던 자리를 함께 정리한다 */
 var ROOM_ENDPOINT = '/api/room';
 var ROOM_POLL_MS = 3000;      /* 몇 초마다 방을 들여다볼지 */
@@ -11842,7 +11846,7 @@ function buildRecentRoomsCard(){
   if(!list.length) return null;
   var card = el('div',{class:'scroll-card'});
   card.appendChild(el('h3',{},['최근에 본 궁합']));
-  card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 볼 수 있어요. 보관 기간은 '+ROOM_TTL_TEXT+'이에요.']));
+  card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 볼 수 있어요. '+ROOM_TTL_PHRASE+' 동안 열 수 있고, 볼 때마다 다시 세요.']));
   list.forEach(function(x){
     card.appendChild(settingsRow((x.name||'이름 없음')+'님과의 궁합', '다시 보기', function(){ reopenRoom(x.id); }));
   });
@@ -12670,7 +12674,7 @@ adminBadgeMount();
 primeEntitlements();
 
 /* 초기 렌더: 초대 링크로 진입했고 이미 프로필이 있으면 봉인 해제 화면부터 보여준다.
-   모임 링크(#meet=)면 모임 화면부터 보여준다. 둘 다 "내 프로필이 하나는 있어야" 열린다 —
+   그룹 링크(#meet=)면 그룹 화면부터 보여준다. 둘 다 "내 프로필이 하나는 있어야" 열린다 —
    프로필이 없으면 앱이 설정 마법사부터 띄우기 때문이다(초대 링크도 원래 같은 조건이다). */
 /* 표(INVITE_FIELDS)가 준비된 지금에서야 두 링크를 푼다. 위에서 주소만 챙겨 뒀다. */
 PENDING_INVITE = decodeInviteFromHash(INVITE_HASH_RAW);
@@ -12680,7 +12684,7 @@ PENDING_MEET = decodeMeetFromHash(location.hash);
    주소창에는 그대로 남아 있다. 그래서 "읽었는가"가 아니라 "해시에 meet가 있었는가"로 판단한다. */
 if(MEET_HASH_PRESENT){
   /* ★ 주소창과 방문 기록에서 해시를 지운다.
-     모임 링크에는 남의 개인정보가 최대 30명분(이름·MBTI·생년월일·태어난 시각·출생지) 들어 있다.
+     그룹 링크에는 남의 개인정보가 최대 30명분(이름·MBTI·생년월일·태어난 시각·출생지) 들어 있다.
      화면은 "받은 명단을 이 기기에 저장하지 않아요"라고 말하는데, 주소를 그대로 두면
      주소창·방문 기록·나중에 이 페이지를 다시 열 때까지 그 정보가 남는다 — 말과 실제가 어긋난다.
      1:1 초대 링크(#invite=)는 이미 같은 처리를 하고 있었고, 모임 경로에만 빠져 있었다.

@@ -17,7 +17,7 @@
      서버가 죽었다고 궁합 기능 자체가 멈추면 안 된다.
 ===================================================================== */
 import { json, methodGuard, readBody } from './_lib/http.js';
-import { createRoom, getRoom, joinRoom } from './_lib/rooms.js';
+import { createRoom, getRoomAndTouch, joinRoom } from './_lib/rooms.js';
 
 /* 앱이 보내는 한 줄(예: "TS,ENTJ,1992,2,14,19,0,F,126.98,1")의 최대 길이.
    넉넉히 잡되 무제한은 아니다 — 저장소에 아무 길이나 밀어 넣을 수 있으면 안 된다. */
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     /* ---- 방 들여다보기: 양쪽 다 쓴다 ---- */
     if (action === 'get') {
       if (typeof body.roomId !== 'string' || !body.roomId) return json(res, 400, { error: 'bad_room' });
-      const room = await getRoom(body.roomId);
+      const room = await getRoomAndTouch(body.roomId);   /* 열었으니 기한을 다시 센다 */
       /* 없는 방과 기한이 지난 방을 구분해 알려주지 않는다 — 방 번호를 찍어보며
          "있는 번호"를 골라낼 수 있게 되기 때문이다. */
       if (!room) return json(res, 404, { error: 'not_found' });
