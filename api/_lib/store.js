@@ -54,8 +54,14 @@ async function rest(path, init = {}) {
     const text = (await res.text().catch(() => '')).slice(0, 300);
     throw new Error(`저장소 오류 (HTTP ${res.status}) ${text}`);
   }
-  if (res.status === 204) return null;
-  return res.json();
+  /* ★ 본문이 비어 있을 수 있다. `Prefer: return=minimal` 로 넣으면 PostgREST는
+     201을 주면서 본문을 안 보낸다(204만 오는 게 아니다). 곧바로 res.json()을 부르면
+     "Unexpected end of JSON input"으로 터진다 — 실제 배포에서 주문 생성이 이걸로 죽었다.
+     상태 코드로 갈라내지 말고 "본문이 있으면 파싱한다"로 통일한다. */
+  const text = await res.text();
+  if (!text) return null;
+  try { return JSON.parse(text); }
+  catch { return null; }
 }
 
 export async function createOrder({ orderId, productId, amount, sessionId }) {
