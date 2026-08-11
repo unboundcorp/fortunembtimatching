@@ -1112,7 +1112,8 @@ var PAYMENT_METHODS = ['신용·체크카드', '간편결제'];
 ===================================================================== */
 var PROCESSORS = [
   { name:'Vercel Inc.',        task:'앱 화면과 서버 기능의 호스팅',        region:'미국',    items:'접속 요청 정보' },
-  { name:'Supabase Inc.',      task:'궁합 방·결제 기록 저장',             region:null,      items:'닉네임·MBTI·생년월일·태어난 시각·성별·출생지, 주문·결제 기록' },
+  /* 대표님이 프로젝트를 서울(ap-northeast-2) 지역으로 만드셨다고 확인해 주셨다(2026-08-11). */
+  { name:'Supabase Inc.',      task:'궁합 방·결제 기록 저장',             region:'대한민국', items:'닉네임·MBTI·생년월일·태어난 시각·성별·출생지, 주문·결제 기록' },
   { name:'토스페이먼츠 주식회사', task:'결제 처리 및 결제수단 인증',         region:'대한민국', items:'주문번호·결제금액·결제수단 정보' }
 ];
 function processorRegion(x){ return companyValue(x.region); }
