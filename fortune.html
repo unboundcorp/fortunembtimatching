@@ -10780,7 +10780,7 @@ function renderCompatSummary(p, draft){
 
   /* R35 — 점수 바로 아래에 "왜 이렇게 나왔는지"를 근거와 함께 둔다. 무료 범위다.
      여기가 비어 있으면 점수만 보고 끝나서, 무엇을 알게 된 건지가 남지 않는다. */
-  view.appendChild(buildPairReasonBlock(r.pA, r.pB, r.res, false));
+  box.appendChild(buildPairReasonBlock(r.pA, r.pB, r.res, false));
 
   /* ② 이 점수가 어디서 왔는지 — MBTI 궁합과 사주 궁합을 따로 나열하지 않고 한 점수의 구성으로 묶는다. */
   var mixCard=el('div',{class:'scroll-card'});
