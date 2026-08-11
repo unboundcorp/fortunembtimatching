@@ -11617,6 +11617,10 @@ function openInviteLinkModal(profile){
       if(!d || !d.roomId) throw new Error('roomId 없음');
       var link = base + '#r=' + d.roomId;
       startRoomWait(d.roomId, link, d.ttlHours);
+      /* ★ 기다림을 시작했으면 화면을 다시 그려야 "상대방을 기다리는 중" 카드가 나온다.
+         모달만 띄우고 말면, 모달을 닫았을 때 아무 일도 없던 것처럼 보인다(실측으로 잡음).
+         모달은 #modalRoot에 따로 뜨므로 여기서 다시 그려도 모달이 닫히지 않는다. */
+      if(ROUTE==='compat') render();
       showInviteModal(profile, link, true, d.ttlHours);
     })
     .catch(function(){
