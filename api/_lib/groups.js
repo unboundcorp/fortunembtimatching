@@ -68,7 +68,19 @@ async function pinMatches(pin, row) {
 function newGroupId() { return crypto.randomBytes(12).toString('base64url'); }
 function expiryISO() { return new Date(Date.now() + GROUP_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString(); }
 
+/* 기한 지난 그룹을 실제로 지운다. 새 그룹을 만들 때마다 곁들여 부른다. */
+async function sweepExpiredGroups() {
+  try {
+    await rest(`groups?expires_at=lt.${new Date().toISOString()}`, {
+      method: 'DELETE', headers: { Prefer: 'return=minimal' },
+    });
+  } catch (err) {
+    console.warn('기한 지난 그룹 정리 실패(무시하고 계속):', err?.message);
+  }
+}
+
 export async function createGroup({ name, pin, members }) {
+  await sweepExpiredGroups();
   const salt = crypto.randomBytes(16).toString('base64');
   const pin_hash = await hashPin(pin, salt);
   const groupId = newGroupId();
@@ -84,12 +96,32 @@ export async function createGroup({ name, pin, members }) {
   return { groupId, ttlDays: GROUP_TTL_DAYS };
 }
 
-/* 열람 — PIN 없이 된다. 링크를 아는 사람만 올 수 있다. */
+/* =====================================================================
+   ★ R34 — 그룹도 "마지막으로 연 지 1년"으로 센다 (밀어내기 만료, 대표님 승인)
+   ---------------------------------------------------------------------
+   1:1 궁합과 같은 규칙이다. 계속 쓰는 그룹은 계속 살아 있고, 아무도 안 여는 그룹만
+   조용히 사라진다. 그룹에는 최대 30명분 생년월일이 들어가므로,
+   쓰지도 않는 명단을 이유 없이 계속 쥐고 있지 않겠다는 뜻이다.
+===================================================================== */
+async function touchGroup(groupId) {
+  try {
+    await rest(`groups?group_id=eq.${encodeURIComponent(groupId)}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ expires_at: expiryISO() }),
+    });
+  } catch (err) {
+    console.warn('그룹 기한 연장 실패(무시하고 계속):', err?.message);
+  }
+}
+
+/* 열람 — PIN 없이 된다. 링크를 아는 사람만 올 수 있다. 열었으니 기한을 다시 센다. */
 export async function getGroup(groupId) {
   const rows = await rest(
     `groups?group_id=eq.${encodeURIComponent(groupId)}&expires_at=gt.${new Date().toISOString()}&select=group_id,name,members,created_at,updated_at&limit=1`
   );
-  return rows && rows[0] ? rows[0] : null;
+  const row = rows && rows[0] ? rows[0] : null;
+  if (row) await touchGroup(groupId);
+  return row;
 }
 
 /* 고치기·지우기 — PIN이 맞아야 한다. */
