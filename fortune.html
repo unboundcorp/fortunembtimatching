@@ -10904,7 +10904,7 @@ function renderCompatSummary(p, draft){
      방을 거쳐 온 결과일 때만 주소가 있다(직접 입력한 궁합은 서버에 없다). */
   if(CURRENT_ROOM_ID){
     var linkCard = el('div',{class:'scroll-card'});
-    linkCard.appendChild(el('h3',{},['이 궁합 주소']));
+    linkCard.appendChild(el('h3',{},['이 궁합 주소 (두 사람 전용)']));
     linkCard.appendChild(el('p',{class:'biz-hint'},['이 주소를 저장해 두면 언제든 이 결과를 다시 볼 수 있어요. '+ROOM_TTL_PHRASE+' 동안 열리고, 열 때마다 기간이 다시 시작돼요.']));
     linkCard.appendChild(el('div',{class:'field'},[
       el('input',{type:'text', value:currentRoomLink(), readOnly:'readonly', id:'compatResultLink'})
@@ -10916,6 +10916,28 @@ function renderCompatSummary(p, draft){
     }},['주소 복사 · 공유']));
     box.appendChild(linkCard);
   }
+
+  /* =====================================================================
+     R37 — 1:1 궁합에서 그룹으로 넓히기 (대표님 지적)
+     ---------------------------------------------------------------------
+     "30명까지 한 번에 본다고 했는데 안 된다"는 말씀이 맞았다. 그 기능은 있는데
+     여기서 갈 길이 없었다. 1:1 궁합 주소(#r=)는 두 사람 전용이고, 30명은 그룹(#g=)인데
+     두 화면이 서로 이어져 있지 않았다. 링크 이름도 둘 다 "궁합 주소"라 구분이 안 됐다.
+     여기서 바로 이 두 사람을 그룹으로 만들고, 접수 주소로 사람을 더 받을 수 있게 한다.
+  ===================================================================== */
+  var moreCard = el('div',{class:'scroll-card'});
+  moreCard.appendChild(el('h3',{},['사람을 더 넣고 싶다면']));
+  moreCard.appendChild(el('p',{class:'biz-hint'},[
+    '이 궁합 주소는 두 사람 전용이에요. 셋 이상을 한 그림에서 보시려면 그룹으로 만들어 주세요. 그룹은 최대 '+GC_MAX+'명까지 들어가고, 접수 주소를 보내면 각자 알아서 들어와요.'
+  ]));
+  moreCard.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:10px;', onclick:function(){
+    var me = activeProfile();
+    if(!me){ showToast('내 프로필이 필요해요.'); return; }
+    /* 지금 두 사람을 그대로 명단으로 삼아 그룹 저장 화면을 연다. */
+    PENDING_GROUP_SEED = [gcMeetRow(me), compatDraftRow(COMPAT_DRAFT)].join(';');
+    openGroupSaveModal();
+  }},['이 두 사람으로 그룹 만들기']));
+  box.appendChild(moreCard);
 
   /* R35 — 점수 바로 아래에 "왜 이렇게 나왔는지"를 근거와 함께 둔다. 무료 범위다.
      여기가 비어 있으면 점수만 보고 끝나서, 무엇을 알게 된 건지가 남지 않는다. */
@@ -11870,6 +11892,15 @@ function forgetGroup(id){
 }
 function groupLink(id){ return location.href.split('#')[0] + '#g=' + id; }
 
+/* 궁합 입력의 상대 정보를 링크 한 줄로 만든다(그룹에 넣을 때 쓴다). */
+function compatDraftRow(d){
+  return inviteObjToRow({
+    n:d.name||'', m:d.mbti, y:d.year, mo:d.month, d:d.day,
+    h:d.timeUnknown?null:d.hour, mi:d.timeUnknown?null:(d.minute||0),
+    g:d.gender||'F', lo:d.birthLon, ts:d.solarTimeAdjust?1:0
+  });
+}
+
 /* 값 객체를 다시 한 줄로 되돌린다(inviteRowToObj의 반대). 받은 명단을 다시 저장할 때 쓴다. */
 function inviteObjToRow(o){
   return INVITE_FIELDS.map(function(f){
@@ -11890,7 +11921,10 @@ function inviteObjToRow(o){
      저장은 되는데 다시 열면 명단을 못 읽었다(실측으로 잡았다).
      그래서 원본을 쓴다 — 내 프로필이면 프로필을, 링크로 받은 명단이면 읽어 둔 값 객체를.
 ===================================================================== */
+/* 1:1 궁합에서 넘어올 때 쓰는 씨앗 명단. 쓰고 나면 반드시 비운다. */
+var PENDING_GROUP_SEED = null;
 function currentGroupMembersText(){
+  if(PENDING_GROUP_SEED) return PENDING_GROUP_SEED;
   if(GC_SOURCE==='link' && PENDING_MEET){
     return PENDING_MEET.slice(0, GC_MAX).map(inviteObjToRow).join(';');
   }
@@ -11922,7 +11956,7 @@ function openGroupSaveModal(){
   ]));
 
   openModal('그룹 저장하기', body, [
-    {label:'취소', cls:'btn-ghost', onclick:closeModal},
+    {label:'취소', cls:'btn-ghost', onclick:function(){ PENDING_GROUP_SEED=null; closeModal(); }},
     {label:'저장', cls:'btn-primary', onclick:function(){
       var name = (nameInput.value||'').trim();
       var pin  = (pinInput.value||'').trim();
@@ -11940,6 +11974,12 @@ function openGroupSaveModal(){
              여전히 [이름 붙여 저장하기]만 보이고, 주소·관리·접수 카드가 나오지 않는다.
              (실측으로 잡았다 — 저장은 됐는데 접수 주소가 어디에도 없었다.) */
           GROUP_VIEW = {id:d.groupId, name:name};
+          if(PENDING_GROUP_SEED){
+            /* 1:1에서 넘어온 경우 — 씨앗을 비우고 그룹 화면으로 데려간다.
+               궁합 결과 화면에 남겨두면 방금 만든 그룹을 볼 길이 없다. */
+            PENDING_GROUP_SEED = null;
+            openSavedGroup(d.groupId);
+          }
           openGroupSavedModal(d.groupId, name);
         })
         .catch(function(err){ showToast(String(err && err.message || '지금은 저장할 수 없어요.')); });
