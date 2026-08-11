@@ -11656,6 +11656,10 @@ function openGroupSaveModal(){
         .then(function(d){
           if(!d || !d.groupId) throw new Error('저장에 실패했어요.');
           rememberGroup(d.groupId, name);
+          /* ★ 저장했으면 이 화면은 이제 "저장된 그룹"이다. 이걸 안 세우면 모달을 닫아도
+             여전히 [이름 붙여 저장하기]만 보이고, 주소·관리·접수 카드가 나오지 않는다.
+             (실측으로 잡았다 — 저장은 됐는데 접수 주소가 어디에도 없었다.) */
+          GROUP_VIEW = {id:d.groupId, name:name};
           openGroupSavedModal(d.groupId, name);
         })
         .catch(function(err){ showToast(String(err && err.message || '지금은 저장할 수 없어요.')); });
