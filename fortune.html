@@ -13536,6 +13536,24 @@ if(MEET_HASH_PRESENT){
      이미 읽어서 PENDING_MEET에 담은 뒤이므로 화면 동작에는 영향이 없다. */
   try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
 }
+/* =====================================================================
+   R39 — 이미 열어 둔 화면에 링크를 붙여 넣은 경우
+   ---------------------------------------------------------------------
+   링크(#gj=, #g=, #r=, #meet=, #i1=)는 페이지가 켜질 때 딱 한 번만 읽는다.
+   그래서 앱을 이미 열어 둔 탭의 주소창에 링크를 붙여 넣으면 주소만 바뀌고
+   화면은 그대로였다 — 받은 사람 눈에는 "링크가 안 열린다"로 보인다.
+   카카오톡에서 누르면 새 창이 뜨니 대개는 괜찮지만, 주소를 복사해 붙이는 분도 있다.
+
+   ★ 여기서 직접 처리하지 않고 새로 고친다. 링크를 읽는 절차가 부팅 코드 곳곳에
+     흩어져 있어(PENDING_* 여러 개) 그걸 다시 실행하려 들면 상태가 반쯤 섞인다.
+     새로 고치면 원래 절차를 그대로 한 번 더 타므로 어긋날 여지가 없다.
+   ★ 우리 링크 형식일 때만 새로 고친다. 화면 안에서 쓰는 #앵커까지 새로 고치면
+     멀쩡히 보던 화면이 튕긴다. */
+window.addEventListener('hashchange', function(){
+  var h = String(location.hash || '').replace(/^#/, '');
+  if(/^(gj|g|r|meet|invite|i1)=/.test(h)){ location.reload(); }
+});
+
 if(PENDING_MEET && STATE.profiles.length>0){
   GC_SOURCE='link'; ROUTE='groupCompat';
 } else if(PENDING_GROUP_JOIN && STATE.profiles.length>0){
