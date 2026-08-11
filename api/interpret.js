@@ -131,7 +131,13 @@ export default async function handler(req, res) {
   const product = productOf(productId);
   if (!product) return json(res, 400, { error: 'bad_request', reason: '없는 상품이에요.' });
 
-  const sessionId = ensureSession(req, res);
+  let sessionId;
+  try {
+    sessionId = ensureSession(req, res);
+  } catch (err) {
+    console.error('세션 발급 실패', err && err.message);
+    return json(res, 500, { error: 'server_error', reason: '서버 설정이 아직 끝나지 않았어요.' });
+  }
   const cacheKey = cacheKeyOf(productId, payload);
 
   try {
@@ -234,7 +240,11 @@ export default async function handler(req, res) {
     return res.end();
 
   } catch (err) {
-    console.error('interpret 실패', err && err.message);
+    const msg = String((err && err.message) || '');
+    console.error('interpret 실패', msg.slice(0, 200));
+    if (!res.headersSent && /Could not find the table/i.test(msg)) {
+      return json(res, 503, { error: 'not_ready', reason: '서버 준비가 아직 안 끝났어요. (데이터베이스 표가 없습니다 — schema.sql을 실행해 주세요)' });
+    }
     /* 이미 스트리밍을 시작했으면 헤더를 다시 못 쓴다 — 사건으로 알린다. */
     if (res.headersSent) {
       send(res, { type: 'error', reason: '해석을 만들다가 문제가 생겼어요.' });

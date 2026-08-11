@@ -32,7 +32,17 @@ export default async function handler(req, res) {
   }
 
   const expected = process.env.TEST_UNLOCK_CODE;
-  const sessionId = ensureSession(req, res);
+
+  /* ★ 세션 발급이 실패하면(SESSION_SECRET 없음) 그 자리에서 멈춘다.
+     감싸지 않으면 그대로 튀어나가 Vercel의 "A server error has occurred"가 뜬다.
+     그 화면은 무엇이 잘못됐는지 아무것도 알려주지 않아, 원인을 찾는 데만 한참 걸린다. */
+  let sessionId;
+  try {
+    sessionId = ensureSession(req, res);
+  } catch (err) {
+    console.error('세션 발급 실패', err && err.message);
+    return json(res, 500, { ok: false, reason: '서버 설정이 아직 끝나지 않았어요.' });
+  }
 
   /* 켜지 않은 기능이라는 사실은 숨기지 않는다. 다만 '무엇이' 열쇠인지는 알리지 않는다. */
   if (!expected || expected.length < 8) {
@@ -43,23 +53,43 @@ export default async function handler(req, res) {
 
   /* 상태 조회 — 이미 허가받았는지만 본다. 코드를 보내지 않으므로 시도로 세지 않는다. */
   if (body.action === 'status') {
-    const cur = await testAccessOf(sessionId);
-    return json(res, 200, { ok: !!cur, until: cur ? cur.expires_at : null });
+    try {
+      const cur = await testAccessOf(sessionId);
+      return json(res, 200, { ok: !!cur, until: cur ? cur.expires_at : null });
+    } catch (err) {
+      return storeFail(res, err);
+    }
   }
 
   const code = String(body.code || '');
   if (!code) return json(res, 400, { ok: false, reason: '코드를 입력해 주세요.' });
 
-  if (await tooManyUnlockTries(sessionId)) {
-    return json(res, 429, { ok: false, reason: '시도가 너무 많아요. 한 시간 뒤에 다시 해주세요.' });
-  }
-  await noteUnlockTry(sessionId);
+  try {
+    if (await tooManyUnlockTries(sessionId)) {
+      return json(res, 429, { ok: false, reason: '시도가 너무 많아요. 한 시간 뒤에 다시 해주세요.' });
+    }
+    await noteUnlockTry(sessionId);
 
-  if (!sameSecret(code, expected)) {
-    /* 맞는지 틀리는지 외에 아무것도 알려주지 않는다. */
-    return json(res, 403, { ok: false, reason: '코드가 맞지 않아요.' });
-  }
+    if (!sameSecret(code, expected)) {
+      /* 맞는지 틀리는지 외에 아무것도 알려주지 않는다. */
+      return json(res, 403, { ok: false, reason: '코드가 맞지 않아요.' });
+    }
 
-  const until = await grantTestAccess(sessionId, GRANT_HOURS);
-  return json(res, 200, { ok: true, until });
+    const until = await grantTestAccess(sessionId, GRANT_HOURS);
+    return json(res, 200, { ok: true, until });
+  } catch (err) {
+    return storeFail(res, err);
+  }
+}
+
+/* 저장소가 준비 안 됐을 때 — 무엇이 없는지 정확히 말한다.
+   ★ "서버 오류"라고만 하면 표를 안 만든 것인지, 키가 틀린 것인지, 코드가 잘못된 것인지
+     구분할 수가 없다. 실제로 이것 때문에 원인 찾는 데 시간을 썼다. */
+function storeFail(res, err) {
+  const msg = String((err && err.message) || '');
+  console.error('testunlock 저장소 오류', msg.slice(0, 200));
+  if (/Could not find the table/i.test(msg)) {
+    return json(res, 503, { ok: false, reason: '서버 준비가 아직 안 끝났어요. (데이터베이스 표가 없습니다 — schema.sql을 실행해 주세요)' });
+  }
+  return json(res, 503, { ok: false, reason: '지금은 처리할 수 없어요. 잠시 후 다시 시도해 주세요.' });
 }
