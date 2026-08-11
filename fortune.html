@@ -6,7 +6,7 @@
 <title>케미체크 · 사주 × MBTI 궁합</title>
 <!-- 파비콘 — 외부 파일을 부르지 않고 SVG를 주소 안에 담는다(요청 0건 원칙 유지).
      인장 모티프의 緣 한 글자. 없으면 브라우저가 /favicon.ico 를 찾다가 404를 낸다. -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23584416'/%3E%3Ctext x='32' y='45' font-size='38' text-anchor='middle' fill='%23F3F0E9' font-family='serif'%3E%E7%B7%A3%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%23FFF7F9'/%3E%3Cpath d='M24 39C24 39 7.5 29.3 7.5 18.6c0-5.1 3.9-8.8 8.5-8.8 3.2 0 6 1.8 8 4.7 2-2.9 4.8-4.7 8-4.7 4.6 0 8.5 3.7 8.5 8.8 0 4-2.3 7.7-5.1 10.8' stroke='%23F76391' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M17 23l5 5 10-10' stroke='%23F76391' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <meta name="description" content="클라이언트에서 직접 계산하는 만세력 사주와 MBTI를 결합한 운세·궁합 플랫폼">
 <style>
 /* ===================== 리셋 & 베이스 ===================== */
@@ -21,59 +21,79 @@
      ① 바탕은 순백이 아니라 아주 옅은 웜그레이(한지). ② 글자는 순검정이 아니라 짙은 먹.
      ③ 금색은 밝은 바탕에서 읽히도록 톤을 낮춘 청동빛 골드. ④ 색 수를 줄이고 채도를 낮췄다.
      대비는 전부 다시 계산했다(본문 7:1 이상). 옆 주석의 숫자는 실제로 잰 값이다. */
-  --void:#FBF8F1;          /* 어두운 면(먹·골드) 위에 얹는 밝은 글자 — 역할이 뒤집혔다 */
-  --base:#F3F0E9;          /* 페이지 바탕: 아주 옅은 웜그레이 */
-  --panel:#FCFAF6;         /* 카드: 바탕보다 반 톤 밝은 웜 오프화이트 */
-  --panel-2:#FFFFFF;       /* 모달·입력칸처럼 "떠 있는" 면 */
-  --panel-3:#F1EEE6;       /* 카드 안에 한 단 눌러 앉히는 면(예전 rgba(0,0,0,.15) 자리) */
-  --track:#E5E1D6;         /* 막대·게이지의 빈 홈 */
-  --ink:#231F18;           /* 본문 먹색 — 바탕 14.41:1 / 카드 15.73:1 */
+  /* ===== R36 브랜드 교체 (2026-08-11 대표님 지시) =====
+     로고가 인장·한지(청동 골드)에서 하트+체크(핑크)로 바뀌었다. 화면 전체를 그 결에 맞춘다.
+     ★ 색만 바꾸지 않는다. 이 앱은 본문 글자 대비를 7:1(AAA)로 잡아 왔고, 그 기준을 그대로 지킨다.
+       아래 숫자는 전부 실제로 계산해서 고른 값이다.
+     ★ 로고 원색(#F76391)은 글자로 쓰면 바탕 대비 2.79:1이라 못 읽는다.
+       그래서 원색은 "그림"(로고·아이콘)에만 쓰고, 글자로 쓰는 브랜드색은 한참 어둡게 내렸다.
+       같은 분홍 계열이되 역할에 따라 밝기를 나눈다 — 이게 이번 교체의 핵심이다. */
+  --void:#FFFFFF;          /* 진한 면 위에 얹는 밝은 글자 */
+  --base:#FFF7F9;          /* 페이지 바탕: 아주 옅은 분홍 흰색 */
+  --panel:#FFFFFF;         /* 카드 */
+  --panel-2:#FFFFFF;       /* 모달·입력칸 */
+  --panel-3:#FDEFF3;       /* 카드 안에 한 단 눌러 앉히는 면 */
+  --track:#F7E1E8;         /* 막대·게이지의 빈 홈 */
+  --brand:#F76391;         /* ★ 로고 원색 — 그림에만. 글자로 쓰지 말 것(2.79:1) */
+  --brand-2:#FF8FAF;       /* 로고의 밝은 쪽 — 그라데이션·장식용 */
+  --ink:#2A1F24;           /* 본문 먹색 — 바탕 15.10:1 / 카드 15.91:1 */
   /* 설명 글자. 밝은 바탕으로 뒤집으면서 "밝게"가 아니라 "어둡게" 가야 한다 —
      방향만 바뀌었지 기준은 그대로 본문 AAA(7:1)다. 바탕 8.70:1 / 카드 9.50:1. */
-  --ink-dim:#494334;
+  --ink-dim:#4E3D46;       /* 바탕 9.58:1 / 카드 10.10:1 */
   /* 결제·보안 고지문. 위계(--ink > --ink-dim > --ink-faint)는 유지하되
      가장 흐린 이 색도 7:1을 넘긴다 — 바탕 7.30:1 / 카드 7.97:1.
      밝은 바탕에서는 세 단계 간격이 어두울 때보다 좁아 보인다(그건 아래 SELF_CHECK에 적었다). */
-  --ink-faint:#544E40;
+  --ink-faint:#5A4750;     /* 바탕 8.13:1 / 카드 8.56:1 — 가장 흐린 색도 7:1을 넘긴다 */
   /* 금박. 밝은 바탕에 밝은 금색을 그대로 쓰면 사라지므로 채도·명도를 낮춘 청동빛으로 내렸다.
      글자로도 쓰이는 색이라 7:1을 넘겨야 한다.
      ★ 처음 잡은 값(#5F4A1C)은 "카드 위"만 보고 정해서 7.4:1이었는데, 실제로 이 색이 가장 많이
        놓이는 자리는 카드가 아니라 **옅은 금색 면(--gold-soft) 위**였다(알약 칩·보조 버튼·배지).
        거기서 재니 6.37~6.49:1로 미달이라 한 단 더 내렸다 — 실측으로 잡은 자리다.
      지금 값: 페이지 8.28:1 / 카드 9.04:1 / --gold-soft 면 위 7.21:1. */
-  --gold:#584416;
-  --gold-2:#68501E;
+  /* ★ --gold 라는 이름은 그대로 둔다. 이 파일 곳곳에서 "강조색"이라는 뜻으로 쓰이고 있어
+     이름을 바꾸면 수백 곳을 함께 고쳐야 한다. 값만 브랜드 분홍의 "글자용 톤"으로 바꾼다.
+     ★ 처음 #A50F45(바탕 7.23:1)로 잡았는데, 이 색이 실제로 가장 많이 놓이는 자리는
+       맨바탕이 아니라 --gold-soft가 깔린 옅은 분홍 면이었다. 거기서 6.61:1로 떨어졌다.
+       (R29에서 청동 골드를 잡을 때도 똑같은 실수를 했고 같은 방법으로 잡았다.)
+       그래서 한 단 더 내리고, 깔리는 면의 알파도 함께 낮춘다. #98003C — 바탕 8.30:1. */
+  --gold:#98003C;
+  --gold-2:#A50F45;
   /* 그라데이션은 "거의 단색 + 미세한 광택"으로 좁혔다. 넓게 잡으면 밝은 쪽 끝에서
      그 위에 얹은 흰 글자가 7:1 아래로 떨어진다(실제로 재서 좁혔다 — 밝은 끝 7.13:1). */
-  --gold-gradient:linear-gradient(135deg,#57431A,#68501E);
-  --gold-soft:rgba(88,68,22,.07);   /* 알파 .09에서 한 번 더 낮췄다 — 이 면 위의 금색 글자를 7:1 위로 올리기 위한 실측 조정 */
-  --gold-line:rgba(88,68,22,.20);
+  /* 버튼처럼 "면"으로 쓰는 자리는 조금 밝아도 된다 — 그 위 글자가 흰색이기 때문이다.
+     #C81E59 위 흰 글자 5.55:1 (보통 글자 AA·큰 글자 AAA). */
+  --gold-gradient:linear-gradient(135deg,#D62E67,#C81E59);
+  --gold-soft:rgba(247,99,145,.055);
+  --gold-line:rgba(247,99,145,.30);
   /* 입력칸 테두리만 따로 둔다. 장식 헤어라인(--gold-line)은 1.4:1이라 "이게 입력칸이구나"를
      알려주지 못한다. 폼 컨트롤 경계는 3:1이 필요하므로 웜그레이 실선으로 분리했다(3.46:1). */
-  --field-line:#8F8676;
-  --red:rgba(143,36,19,.38);
-  --red-hi:#8F2413;        /* 인주(印朱) 빛 — 바탕 7.63:1 / 카드 8.33:1 */
+  --field-line:#C9A7B4;
+  --red:rgba(156,21,51,.38);
+  /* ★ 경고·잠금 글자로도 쓰이므로 본문 기준(7:1)을 넘겨야 한다.
+     처음 #B21E3C로 잡았다가 6.34:1인 것을 재보고 한 단 내렸다. #9C1533 — 바탕 7.76:1. */
+  --red-hi:#9C1533;
   --ok:#3F6B45;
   /* 그림자는 테두리를 대신해 카드를 띄우는 수단이다. 밝은 바탕에서는 검정 알파를
      10% 안팎까지 낮춰야 얼룩이 아니라 "떠 있는 느낌"이 된다. */
-  --shadow:0 18px 44px rgba(58,50,34,.16),0 2px 6px rgba(58,50,34,.06);
-  --shadow-sm:0 4px 14px rgba(58,50,34,.11);
+  --shadow:0 18px 44px rgba(160,60,95,.14),0 2px 6px rgba(160,60,95,.06);
+  --shadow-sm:0 4px 14px rgba(160,60,95,.10);
   /* R22 — 카드에만 쓰는 부드러운 그림자. 기존 --shadow-sm보다 넓고 옅어서 "떠 있는 느낌"만 준다.
      새 색을 만든 게 아니다: 검정 알파값만 조정한 것이라 팔레트는 그대로다. */
-  --shadow-soft:0 6px 20px rgba(58,50,34,.085),0 1px 2px rgba(58,50,34,.05);
+  --shadow-soft:0 6px 20px rgba(160,60,95,.08),0 1px 2px rgba(160,60,95,.05);
   /* R22 — 여백 단계. 값을 손으로 흩어 적지 않고 여기 한 곳에서 키운다. */
   --gap-card:18px;
   --pad-card:24px;
-  --r-lg:20px;   /* 카드 */
-  --r-md:14px;   /* 타일·입력칸·작은 상자 */
+  /* ★ 로고 글자가 끝이 둥근 서체다. 모서리를 더 둥글려 그 결을 화면 전체에 맞춘다. */
+  --r-lg:24px;   /* 카드 */
+  --r-md:16px;   /* 타일·입력칸·작은 상자 */
   --r-pill:999px;
   --serif:'Nanum Myeongjo','AppleMyungjo','Batang','Songti SC',serif;
   /* R29 폰트 — 대표님이 고르신 방식 ⓐ: 이름만 지정하고 없으면 기기 기본 고딕으로 떨어진다.
      @font-face도, CDN 링크도, data: URI도 쓰지 않는다(외부 요청 0건이 이 앱의 검수 항목이다).
      순서: Pretendard → 애플 → 안드로이드 → 윈도우 → 총칭. */
   --sans:'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',Roboto,'Malgun Gothic','Segoe UI',system-ui,sans-serif;
-  --pA:#584416; /* 프로필A 라인색 — 청동 골드 */
-  --pB:#8F2413; /* 프로필B 라인색 — 인주 */
+  --pA:#98003C; /* 프로필A 라인색 — 브랜드 분홍(글자용 톤) */
+  --pB:#3A3C72; /* 프로필B 라인색 — 인디고. 분홍 옆에서 확실히 구분된다 */
   /* 오행 5색. 밝은 바탕에서 사라지지 않도록 전부 어둡고 채도를 낮췄다.
      특히 금(金)은 예전 #cfd3d8(밝은 은색)이라 밝은 바탕에서 1.3:1로 아예 안 보였다.
      지금은 바탕 대비 4.4~5.5:1 — 그림 요소 기준(3:1)을 넉넉히 넘는다. */
@@ -145,8 +165,10 @@ h1,h2,h3,h4{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;}
   padding:16px 20px;border-bottom:1px solid var(--gold-line);
 }
 .brand{display:flex;align-items:center;gap:10px;}
-.brand-seal{width:34px;height:34px;border-radius:50%;border:1px solid var(--gold-line);display:flex;align-items:center;justify-content:center;color:var(--gold);font-family:var(--serif);font-weight:400;font-size:.95rem;flex:none;}
-.brand-name{font-family:var(--sans);font-size:1.2rem;font-weight:700;letter-spacing:-.02em;}
+/* R36 — 인장(緣) 자리에 로고를 넣는다. 외부 파일을 부르지 않으려고 SVG를 직접 그린다. */
+.brand-seal{width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex:none;}
+.brand-seal svg{width:100%;height:100%;display:block;}
+.brand-name{font-family:var(--sans);font-size:1.24rem;font-weight:800;letter-spacing:-.03em;color:var(--gold);}
 .profile-switch{display:flex;align-items:center;gap:8px;}
 .profile-switch select{
   background:var(--panel-2);border:1px solid var(--field-line);color:var(--ink);
@@ -1021,7 +1043,7 @@ main{flex:1;padding:28px 20px 96px;}
 
   <header class="app-header" id="appHeader" hidden>
     <div class="brand">
-      <div class="brand-seal" aria-hidden="true">緣</div>
+      <div class="brand-seal" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M24 40.5C24 40.5 6.5 30.2 6.5 18.8c0-5.4 4.2-9.3 9-9.3 3.4 0 6.4 1.9 8.5 5 2.1-3.1 5.1-5 8.5-5 4.8 0 9 3.9 9 9.3 0 4.2-2.4 8.2-5.4 11.5" stroke="var(--brand)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 23.5 22 29l10.5-10.5" stroke="var(--brand)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M40.5 6.5c.4 2.1.9 2.6 3 3-2.1.4-2.6.9-3 3-.4-2.1-.9-2.6-3-3 2.1-.4 2.6-.9 3-3Z" fill="var(--brand)"/></svg></div>
       <span class="brand-name">케미체크</span>
     </div>
     <div class="profile-switch" id="profileSwitch"></div>
@@ -7992,7 +8014,7 @@ function computeCompat(pA, pB){
   var saju = buildSajuCompat(pA, pB);
   var combined = Math.round(mbti*0.4 + saju.score*0.4 + elem*0.1 + zod*0.1);
   combined = Math.max(1, Math.min(100, combined));
-  var combinedTier = combined>=85?'천생연분형':combined>=70?'찰떡궁합형':combined>=55?'무난동행형':combined>=40?'노력필요형':'인연신중형';
+  var combinedTier = combined>=85?'찰떡 케미':combined>=70?'강한 케미':combined>=55?'무난한 케미':combined>=40?'엇갈린 케미':'상극 케미';
   return {total:total, tier:tier, mbtiScore:mbti, elemScore:elem, zodScore:zod, categories:cats,
     saju:saju, combined:combined, combinedTier:combinedTier};
 }
@@ -8241,11 +8263,11 @@ function compatMetricWord(m, v){ return v>=75 ? m.words[0] : (v>=50 ? m.words[1]
 function compatBarColor(v){ return v>=75 ? 'var(--gold)' : (v>=50 ? '#8C7134' : '#B4442C'); }
 /* 종합 점수 한 줄 — 등급(combinedTier)에서만 고른다. 새 판정이 아니다. */
 var COMPAT_TIER_LINE = {
-  '천생연분형':'설명하지 않아도 통하는 대목이 많은 사이예요. 잘 맞는 만큼, 당연하게 여기지만 않으면 오래 가요.',
-  '찰떡궁합형':'서로 다른 부분이 오히려 잘 물리는 사이예요. 맞춰가는 재미가 있는 조합이에요.',
-  '무난동행형':'첫인상보다 지낼수록 편해지는 쪽이에요. 급하게 결론 내지 않는 편이 좋아요.',
-  '노력필요형':'가만히 두면 어긋나기 쉬운 대신, 말로 맞추면 눈에 띄게 좋아지는 사이예요.',
-  '인연신중형':'결이 많이 다른 조합이에요. 서로 다르다는 걸 인정하는 데서 출발하면 훨씬 수월해져요.'
+  '찰떡 케미':'설명하지 않아도 통하는 대목이 많은 사이예요. 잘 맞는 만큼, 당연하게 여기지만 않으면 오래 가요.',
+  '강한 케미':'서로 다른 부분이 오히려 잘 물리는 사이예요. 맞춰가는 재미가 있는 조합이에요.',
+  '무난한 케미':'첫인상보다 지낼수록 편해지는 쪽이에요. 급하게 결론 내지 않는 편이 좋아요.',
+  '엇갈린 케미':'가만히 두면 어긋나기 쉬운 대신, 말로 맞추면 눈에 띄게 좋아지는 사이예요.',
+  '상극 케미':'결이 많이 다른 조합이에요. 서로 다르다는 걸 인정하는 데서 출발하면 훨씬 수월해져요.'
 };
 function buildCompatMetricBars(res){
   var list = el('div',{class:'cm-list'});
@@ -11033,8 +11055,12 @@ function buildRadarSvg(pA, pB){
    잠긴 부분은 흐리게 가리지 않고 DOM에 아예 만들지 않는다(R24에서 세운 규칙).
 ===================================================================== */
 var GC_MAX = 30;                        /* 한 그룹에 세울 수 있는 최대 인원 */
-var GC_TIER_ORDER = ['천생연분형','찰떡궁합형','무난동행형','노력필요형','인연신중형'];
-/* R28 — 선과 이름표에 쓰는 색을 어두운 배경에서 실제로 읽히는 값으로 올렸다.
+var GC_TIER_ORDER = ['찰떡 케미','강한 케미','무난한 케미','엇갈린 케미','상극 케미'];
+/* R36 — 브랜드가 분홍으로 바뀌면서 다섯 색을 다시 잡았다. 가장 좋은 등급이 브랜드색을 갖는다.
+   다섯 색 전부 새 바탕(#FFF7F9) 대비 7:1 이상이다 — 이름표 글자로도 쓰이는 색이라
+   그림 기준(3:1)이 아니라 본문 기준으로 잡는다.
+   (찰떡 8.30 / 강한 7.61 / 무난 9.63 / 엇갈린 8.11 / 상극 7.86 — 계산해서 고른 값)
+   R28 — 선과 이름표에 쓰는 색을 어두운 배경에서 실제로 읽히는 값으로 올렸다.
    R29 — 밝은 톤으로 뒤집으면서 다섯 색을 전부 다시 잡았다. 예전 값은 "어두운 배경에서 밝게"였고
    그대로 두면 종이 위에서 전부 씻겨 사라진다. 지금은 다섯 색 모두 바탕 대비 7:1 이상이다
    (천생연분 7.23 / 찰떡 7.63 / 무난 8.95 / 노력필요 7.52 / 인연신중 7.18).
@@ -11042,20 +11068,23 @@ var GC_TIER_ORDER = ['천생연분형','찰떡궁합형','무난동행형','노�
    아래 다섯 색은 전부 페이지 배경 대비 6:1 이상이다(계산해서 골랐다). 새 팔레트를 만든 게 아니라
    원래 있던 금박/주색/인디고/회갈 계열을 그대로 밝기만 올린 값이다. */
 var GC_TIER_COLORS = {
-  '천생연분형':'#634C10', /* 금박색 어두운 톤 */
-  '찰떡궁합형':'#8F2413', /* 인주색 — --red-hi와 같은 값 */
-  '무난동행형':'#3A3C72', /* 인디고 */
-  '노력필요형':'#554B3B', /* 회갈색 */
-  '인연신중형':'#41505E'  /* 저채도 청회색 */
+  '찰떡 케미':'#98003C', /* 브랜드 분홍 — 가장 좋은 등급이 브랜드색을 갖는다 */
+  '강한 케미':'#98232F', /* 붉은 계열 — 바탕 7.61:1 */
+  '무난한 케미':'#3A3C72', /* 인디고 */
+  '엇갈린 케미':'#554B3B', /* 회갈색 */
+  '상극 케미':'#41505E'  /* 저채도 청회색 */
 };
 /* R21·R23 규칙: 화면에는 일상어를 먼저 크게, 원래 등급 이름은 뒤에 작게.
    선 위 이름표는 자리가 좁아 일상어만 쓰고, 등급 이름은 바로 아래 범례에서 짝지어 보여준다. */
+/* ★ R36 — 예전에는 등급 이름(천생연분형)과 그림 위 일상어(천생연분)를 따로 뒀다.
+   새 이름은 그 자체가 이미 일상어라 두 벌을 둘 이유가 없다. 한 벌로 합친다 —
+   두 벌을 두면 같은 관계를 화면마다 다른 말로 부르게 된다. */
 var GC_TIER_PLAIN = {
-  '천생연분형':'천생연분',
-  '찰떡궁합형':'척하면 척',
-  '무난동행형':'그럭저럭',
-  '노력필요형':'맞춰가는 중',
-  '인연신중형':'삐걱삐걱'
+  '찰떡 케미':'찰떡 케미',
+  '강한 케미':'강한 케미',
+  '무난한 케미':'무난한 케미',
+  '엇갈린 케미':'엇갈린 케미',
+  '상극 케미':'상극 케미'
 };
 function gcPlain(tier){ return GC_TIER_PLAIN[tier] || tier; }
 
@@ -11426,12 +11455,16 @@ function buildGroupCompatGraph(members, pairs, onSelect){
   wrap.appendChild(el('p',{class:'gc-hint'},['궁금한 친구를 눌러보세요. 다시 누르면 전체로 돌아와요.']));
   wrap.appendChild(drawnBox);
 
+  /* ★ R36 — 예전에는 '일상어 (등급 이름)' 두 벌을 나란히 적었다. 이름이 하나로 합쳐진 지금
+     그대로 두면 '찰떡 케미 (찰떡 케미)'가 된다. 점수 구간을 대신 적어 범례가 실제로 쓸모 있게 한다. */
+  var TIER_RANGE = {'찰떡 케미':'85점 이상','강한 케미':'70~84점','무난한 케미':'55~69점',
+                    '엇갈린 케미':'40~54점','상극 케미':'39점 이하'};
   var legend=el('div',{class:'gc-legend'});
   GC_TIER_ORDER.forEach(function(t){
     legend.appendChild(el('span',{},[
       el('span',{class:'dot', style:'background:'+GC_TIER_COLORS[t]+';'}),
-      gcPlain(t),
-      el('span',{class:'gl-term'},['('+t+')'])
+      t,
+      el('span',{class:'gl-term'},[TIER_RANGE[t] || ''])
     ]));
   });
   wrap.appendChild(legend);
@@ -11510,7 +11543,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
     var related = pairs.filter(function(pr){ return pr.ai===mi || pr.bi===mi; });
     if(!related.length) return;
     var avg = Math.round(related.reduce(function(s,pr){ return s+pr.res.combined; },0)/related.length);
-    var tier = avg>=85?'천생연분형':avg>=70?'찰떡궁합형':avg>=55?'무난동행형':avg>=40?'노력필요형':'인연신중형';
+    var tier = avg>=85?'찰떡 케미':avg>=70?'강한 케미':avg>=55?'무난한 케미':avg>=40?'엇갈린 케미':'상극 케미';
     var best = related.reduce(function(x,pr){ return pr.res.combined>x.res.combined?pr:x; }, related[0]);
     var worst = related.reduce(function(x,pr){ return pr.res.combined<x.res.combined?pr:x; }, related[0]);
     var bestOther = best.ai===mi ? best.b : best.a;
@@ -13022,7 +13055,21 @@ function drawShareCard(canvas, kind, profile, data){
 
   ctx.beginPath(); ctx.arc(w-90,90,42,0,Math.PI*2); ctx.strokeStyle='#8F2413'; ctx.lineWidth=3; ctx.stroke();
   ctx.fillStyle='#8F2413'; ctx.font='700 26px '+CARD_SERIF; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('緣', w-90, 92);
+  /* R36 — 인장 글자 자리에 로고 하트를 그린다. Canvas라 SVG를 쓸 수 없어 경로로 직접 그린다. */
+  (function drawLogoMark(cx, cy, sc){
+    ctx.save();
+    ctx.translate(cx, cy); ctx.scale(sc, sc);
+    ctx.strokeStyle = '#F76391'; ctx.lineWidth = 3.4; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.beginPath();
+    ctx.moveTo(0, 16.5);
+    ctx.bezierCurveTo(-17.5, 6.2, -17.5, -5.2, -8.5, -9.5);
+    ctx.bezierCurveTo(-3.5, -11.5, 0, -8, 0, -8);
+    ctx.bezierCurveTo(0, -8, 3.5, -11.5, 8.5, -9.5);
+    ctx.bezierCurveTo(17.5, -5.2, 15.5, 4.5, 10.5, 10);
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-7.5, -0.5); ctx.lineTo(-2, 5); ctx.lineTo(8.5, -5.5); ctx.stroke();
+    ctx.restore();
+  })(w-84, 78, 1.15);
 
   ctx.fillStyle='#584416'; ctx.font='700 30px '+CARD_SANS; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
   ctx.fillText(COMPANY.serviceName, 50, 100);
