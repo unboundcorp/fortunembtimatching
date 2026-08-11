@@ -1,0 +1,10 @@
+{
+  "name": "fortune-server",
+  "private": true,
+  "version": "1.0.0",
+  "description": "인연점 결제 서버 (토스페이먼츠) — 외부 의존성 0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}
