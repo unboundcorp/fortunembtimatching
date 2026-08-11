@@ -76,3 +76,26 @@ alter table rooms enable row level security;
 
 -- 지금 몇 개가 살아 있는지 확인:
 --   select count(*) from rooms where expires_at > now();
+
+-- =====================================================================
+-- 저장된 모임 (R34) — 이름과 관리용 PIN으로 다시 여는 그룹
+-- ---------------------------------------------------------------------
+-- ★ pin_hash 는 scrypt 해시다. PIN 원본은 어디에도 저장하지 않는다.
+--   저장소가 통째로 새어도 PIN을 알 수 없고, 그래서 잊으면 복구할 수 없다.
+-- ★ members 도 개인정보다(최대 30명분). 보관 기간을 두고 expires_at 으로 강제한다.
+-- =====================================================================
+create table if not exists groups (
+  group_id   text primary key,
+  name       text not null,
+  pin_hash   text not null,
+  pin_salt   text not null,
+  members    text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  expires_at timestamptz not null
+);
+
+create index if not exists groups_expires_idx on groups (expires_at);
+
+alter table groups enable row level security;
+-- 정책 없음 = service_role(서버 함수)만 접근

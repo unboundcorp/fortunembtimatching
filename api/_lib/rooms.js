@@ -10,7 +10,12 @@
 ===================================================================== */
 import crypto from 'node:crypto';
 
-export const ROOM_TTL_HOURS = 48;
+/* ★ R34 — 48시간에서 30일로 늘렸다.
+   대표님 지적: "새로고침하거나 다른 탭 갔다 오면 궁합이 없어진다."
+   결과를 다시 열 수 있으려면 방이 그때까지 살아 있어야 한다.
+   ★ 늘린 만큼 개인정보가 더 오래 남는다는 뜻이므로, 화면과 개인정보처리방침의
+     보관 기간도 같은 숫자로 함께 고쳤다. 한쪽만 바꾸면 그 순간 거짓 고지가 된다. */
+export const ROOM_TTL_HOURS = 24 * 30;
 
 function conf() {
   const url = process.env.SUPABASE_URL;

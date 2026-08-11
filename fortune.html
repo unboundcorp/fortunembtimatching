@@ -4399,7 +4399,7 @@ function openPrivacyModal(){
   ul([
     /* ★ R32에서 AI 해석 설정은 일반 이용자 화면에서 제거되어 관리자 전용이 되었다.
        "이용자가 켤 수 있다"고 적어두면 사실과 다르다. */
-    '① 궁합 방(실시간 연결)을 사용하는 경우: 궁합 초대 링크를 만들거나 그 링크를 여는 순간, 두 사람의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 회사의 서버에 저장됩니다. 이 정보는 두 사람의 화면에 같은 결과를 띄우기 위한 용도로만 쓰이며, 만든 때로부터 '+ROOM_TTL_HOURS_TEXT+'시간이 지나면 읽을 수 없게 되고 지워집니다. 이 저장은 서버 코드가 조회 시점에 기한을 확인하는 방식으로 강제됩니다. 서버에 연결할 수 없을 때는 방을 만들지 않고, 아래 ②의 방식으로 동작합니다.',
+    '① 궁합 방(실시간 연결)을 사용하는 경우: 궁합 초대 링크를 만들거나 그 링크를 여는 순간, 두 사람의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 회사의 서버에 저장됩니다. 이 정보는 두 사람의 화면에 같은 결과를 띄우기 위한 용도로만 쓰이며, 만든 때로부터 '+ROOM_TTL_TEXT+'이 지나면 읽을 수 없게 되고 지워집니다. 이 저장은 서버 코드가 조회 시점에 기한을 확인하는 방식으로 강제됩니다. 서버에 연결할 수 없을 때는 방을 만들지 않고, 아래 ②의 방식으로 동작합니다.',
     /* ★ 이 문장의 항목 목록은 INVITE_FIELDS(초대 링크 payload 정의)에서 그대로 만들어진다.
        손으로 적지 않는다 — R20에서 손으로 적어 두었다가 코드와 어긋난 적이 있다. */
     '② 링크 주소에 정보를 담아 보내는 경우: 모임 링크는 항상, 궁합 초대 링크는 위 ①의 서버 연결을 쓸 수 없을 때 이 방식으로 만들어집니다. 이때는 링크 주소(URL) 안에 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 암호화 없이 그대로 담깁니다. 초대 링크에는 링크를 만든 본인 1명분이, 모임 링크에는 그 모임에 담은 사람 수만큼(최대 '+GC_MAX+'명) 같은 항목이 들어갑니다 — 즉 모임 링크는 본인 외 다른 사람의 정보도 함께 내보냅니다. 이 방식은 회사 서버를 거치지 않는 대신, 링크를 받은 사람의 대화 기록과 브라우저 방문 기록에 정보가 그대로 남습니다.',
@@ -4414,7 +4414,7 @@ function openPrivacyModal(){
   p('파기 절차와 방법: 이용자가 히스토리 화면의 "삭제"·"전체 삭제", 설정의 "프로필 삭제", 또는 브라우저의 사이트 데이터 삭제를 실행하면 해당 항목이 브라우저 저장소에서 즉시 지워지며, 지워진 값은 복구할 수 없습니다(별도의 백업본을 두지 않습니다).');
   p('회사 서버에 저장되는 정보의 보유 기간은 다음과 같습니다.');
   ul([
-    '궁합 방(위 2항 ①): 만든 때로부터 '+ROOM_TTL_HOURS_TEXT+'시간. 기한이 지나면 조회되지 않으며, 이후 새 방이 만들어질 때 함께 삭제됩니다.',
+    '궁합 방(위 2항 ①): 만든 때로부터 '+ROOM_TTL_TEXT+'. 기한이 지나면 조회되지 않으며, 이후 새 방이 만들어질 때 함께 삭제됩니다.',
     '결제·이용권 기록(위 2항 ③): 아래 법령이 정한 기간',
     '계약 또는 청약철회 등에 관한 기록 — 5년 (전자상거래 등에서의 소비자보호에 관한 법률)',
     '대금 결제 및 재화 등의 공급에 관한 기록 — 5년 (같은 법)',
@@ -4438,7 +4438,7 @@ function openPrivacyModal(){
   p('서비스는 별도의 회원가입을 두지 않아 비밀번호를 수집하지 않으며, 카드번호 등 결제수단 정보를 앱이 직접 입력받지 않습니다. 외부로 나가는 요청 주소는 https만 허용하며, 예외는 개발·시험 목적의 로컬 주소(localhost, 127.0.0.1)뿐으로 이 경우 데이터가 이용자의 기기 밖으로 나가지 않습니다. 외부에서 받은 해석 문장은 화면에 넣기 전 허용된 태그만 남기고 걸러냅니다. 회사 서버로 전송되는 항목은 유료 해석을 만드는 데 필요한 최소한으로 제한합니다.');
   h('7. 정보주체의 권리와 행사 방법');
   p('이용자는 자신의 개인정보에 대해 열람·정정·삭제·처리정지를 요구할 권리가 있습니다. 브라우저에 저장된 정보는 설정과 히스토리 화면에서 직접 열람하고 수정·삭제할 수 있습니다.');
-  p('회사 서버로 전송된 정보에 대해서는 아래 개인정보 보호책임자에게 요청하시면 접수일로부터 10일 이내에 처리하고 결과를 알려드립니다. 궁합 방에 저장된 정보는 요청하지 않으셔도 '+ROOM_TTL_HOURS_TEXT+'시간이 지나면 자동으로 읽을 수 없게 되며, 그 전에 삭제를 원하시면 사용하신 초대 링크와 함께 요청해 주시기 바랍니다. 만 14세 미만 아동의 법정대리인도 같은 권리를 행사할 수 있습니다.');
+  p('회사 서버로 전송된 정보에 대해서는 아래 개인정보 보호책임자에게 요청하시면 접수일로부터 10일 이내에 처리하고 결과를 알려드립니다. 궁합 방에 저장된 정보는 요청하지 않으셔도 '+ROOM_TTL_TEXT+'이 지나면 자동으로 읽을 수 없게 되며, 그 전에 삭제를 원하시면 사용하신 초대 링크와 함께 요청해 주시기 바랍니다. 만 14세 미만 아동의 법정대리인도 같은 권리를 행사할 수 있습니다.');
   h('8. 만 14세 미만');
   p('서비스는 만 14세 미만 아동을 대상으로 하지 않으며, 만 14세 미만 아동의 개인정보를 알면서 수집하지 않습니다.');
   h('9. 개인정보 보호책임자');
@@ -4646,7 +4646,7 @@ function renderFaq(){
       ['궁합 링크는 어떻게 쓰나요?', '궁합 보기 → 초대 링크 만들기를 누르고 그 링크를 보내면 됩니다. 상대방이 열면 상대방 화면과 내 화면에 같은 결과가 나타나요.'],
       ['상대방도 이 앱을 써야 하나요?', '링크를 열면 자기 정보를 한 번 넣게 되고, 그 뒤 바로 결과가 나옵니다. 따로 설치할 것은 없어요.'],
       ['두 사람 화면의 점수가 조금 달라요', '사주에서 서로를 북돋는 관계는 방향에 따라 다르게 봅니다. 그래서 보는 사람 기준으로 1~2점 차이가 날 수 있어요. MBTI·오행·띠 점수는 양쪽이 같습니다.'],
-      ['입력한 정보는 어디에 저장되나요?', '기본적으로 이 기기의 브라우저에만 저장됩니다. 궁합 링크로 두 사람을 이을 때만 그 정보가 '+ROOM_TTL_HOURS_TEXT+'시간 동안 서버에 보관되고, 그 뒤에는 읽을 수 없게 됩니다.'],
+      ['입력한 정보는 어디에 저장되나요?', '기본적으로 이 기기의 브라우저에만 저장됩니다. 궁합 링크로 두 사람을 이을 때만 그 정보가 '+ROOM_TTL_TEXT+' 동안 서버에 보관되고, 그 뒤에는 읽을 수 없게 됩니다.'],
       ['기록을 지우려면요?', '히스토리 화면에서 하나씩 또는 전체를 지울 수 있고, 설정에서 프로필을 지울 수 있습니다. 브라우저의 사이트 데이터를 지우셔도 됩니다.'],
       ['유료 결제는 무엇인가요?', '기본 풀이는 무료로 보실 수 있고, 더 자세한 해석을 원하시면 건별로 결제하실 수 있습니다. 결제 전에 무엇이 열리는지 화면에 먼저 적어드려요.'],
       ['사주 결과가 다른 곳과 달라요', '절기 시각을 계산하는 방법과 진태양시를 쓰는지 여부에 따라 결과가 달라질 수 있습니다. 이 서비스가 어떻게 계산했는지는 내 사주 화면에서 펼쳐 보실 수 있어요.']
@@ -10260,6 +10260,11 @@ function renderCompat(){
   var view=el('div',{class:'view'});
   /* R33 — 상대를 기다리는 중이면 그 안내를 맨 위에 둔다. 결과가 나오면 자동으로 사라진다. */
   if(ROOM_WAIT && !COMPAT_DRAFT.result) view.appendChild(buildRoomWaitCard());
+  /* R34 — 전에 본 궁합을 다시 열 수 있게 목록을 준다. 새로고침해도 사라지지 않는다. */
+  if(!COMPAT_DRAFT.result){
+    var recent = buildRecentRoomsCard();
+    if(recent) view.appendChild(recent);
+  }
   if(!COMPAT_DRAFT.result){
     /* R32 — 초대 링크로 들어온 화면에서는 칸이 이미 채워져 있다. "입력하면"이라고 말하면
        무엇을 더 넣으라는 건지 알 수 없고, 채워진 값이 자기 정보라고 오해하게 된다.
@@ -10479,6 +10484,8 @@ function submitCompat(){
   var res = computeCompat(pA, pB);
   /* 화면에서 지금 보고 있는 결과는 메모리(COMPAT_DRAFT)에만 둔다 — 저장소로 가지 않는다. */
   COMPAT_DRAFT.result = {pA:pA, pB:pB, res:res};
+  /* R34 — 방을 거쳐 온 결과면 그 방을 기억해 둔다. 다음에 궁합 화면에서 다시 열 수 있다. */
+  if(CURRENT_ROOM_ID) rememberRoom(CURRENT_ROOM_ID, pB.name);
   COMPAT_SUB = null;
   /* ★ R24 — 기록에는 입력값과 점수·등급만 담는다. 상세 문장(elemDetail·branchRel·comment·
      연애/우정/갈등)은 한 글자도 저장하지 않는다. 다시 볼 때는 권한을 확인하고 다시 계산한다. */
@@ -10598,6 +10605,23 @@ function renderCompatSummary(p, draft){
 
   /* R19 — 두 사람의 캐릭터를 나란히. 그림과 이름뿐이라 궁합 상세(유료)와는 무관하다. */
   box.appendChild(buildCompatCharPair(p.name, r.pA, r.pB));
+
+  /* R34 — 이 궁합의 주소. 저장해 두면 새로고침하거나 다른 기기에서도 다시 열 수 있다.
+     방을 거쳐 온 결과일 때만 주소가 있다(직접 입력한 궁합은 서버에 없다). */
+  if(CURRENT_ROOM_ID){
+    var linkCard = el('div',{class:'scroll-card'});
+    linkCard.appendChild(el('h3',{},['이 궁합 주소']));
+    linkCard.appendChild(el('p',{class:'biz-hint'},['이 주소를 저장해 두면 언제든 이 결과를 다시 볼 수 있어요. 보관 기간은 '+ROOM_TTL_TEXT+'이에요.']));
+    linkCard.appendChild(el('div',{class:'field'},[
+      el('input',{type:'text', value:currentRoomLink(), readOnly:'readonly', id:'compatResultLink'})
+    ]));
+    linkCard.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:10px;', onclick:function(){
+      var lk = currentRoomLink();
+      if(navigator.share){ navigator.share({title:COMPANY.serviceName+' 궁합 결과', url:lk}).catch(function(){}); }
+      else { copyText(lk); }
+    }},['주소 복사 · 공유']));
+    box.appendChild(linkCard);
+  }
 
   /* ② 이 점수가 어디서 왔는지 — MBTI 궁합과 사주 궁합을 따로 나열하지 않고 한 점수의 구성으로 묶는다. */
   var mixCard=el('div',{class:'scroll-card'});
@@ -11712,13 +11736,14 @@ function decodeInviteFromHash(hash){
 
    ★ 덤으로 개인정보가 주소에서 빠진다. 예전 링크에는 생년월일이 그대로 적혀 있어
      대화 기록·방문 기록에 남았는데, 이제 링크에는 뜻 없는 번호만 남는다.
-   ★ 대신 그 정보가 서버에 잠시 저장된다. 그래서 기한을 두고(48시간), 지나면 못 읽는다.
+   ★ 대신 그 정보가 서버에 잠시 저장된다. 그래서 기한을 두고(30일), 지나면 못 읽는다.
    ★ 서버가 없거나 실패하면 예전 방식(링크에 정보 담기)으로 되돌아간다.
      서버가 죽었다고 궁합 기능 자체가 멈추면 안 된다.
 ===================================================================== */
 /* ★ 서버(api/_lib/rooms.js)의 ROOM_TTL_HOURS와 같은 값이어야 한다.
    화면에 적은 보관 기간과 서버가 실제로 지키는 기간이 다르면 그건 거짓 고지다. */
-var ROOM_TTL_HOURS_TEXT = 48;
+var ROOM_TTL_TEXT = '30일';   /* 서버 ROOM_TTL_HOURS(24*30)와 같은 기간이어야 한다 */
+var ROOM_TTL_HOURS_TEXT = ROOM_TTL_TEXT;   /* 옛 이름 — 문구에서 '...시간'으로 쓰던 자리를 함께 정리한다 */
 var ROOM_ENDPOINT = '/api/room';
 var ROOM_POLL_MS = 3000;      /* 몇 초마다 방을 들여다볼지 */
 var ROOM_POLL_MAX_MIN = 10;   /* 이 시간이 지나면 그만 본다 — 배터리를 계속 쓰지 않는다 */
@@ -11753,6 +11778,77 @@ function applyRowToCompatDraft(row){
   return true;
 }
 
+/* =====================================================================
+   R34 — 본 궁합을 다시 열 수 있게 한다 (대표님 지적)
+   ---------------------------------------------------------------------
+   "새로고침하거나 다른 탭 갔다가 궁합을 다시 누르면 없어진다."
+   맞는 말이었다. 결과를 메모리(COMPAT_DRAFT)에만 두고 아무 데도 남기지 않았다.
+
+   고치는 방법은 두 가지를 함께 둔다.
+     ① 방 번호를 이 기기에 기억해 둔다 → 궁합 화면에 "다시 보기" 목록이 생긴다.
+     ② 결과에 주소를 준다 → 그 주소를 저장해 두면 다른 기기·다른 사람도 열 수 있다.
+   ★ 기억하는 것은 방 번호와 상대 이름뿐이다. 상대의 생년월일을 이 기기에 저장하지 않는다 —
+     그 값은 서버의 방에 있고, 열 때마다 받아온다.
+===================================================================== */
+var RECENT_ROOM_MAX = 10;
+function recentRooms(){
+  return Array.isArray(STATE.recentRooms) ? STATE.recentRooms : [];
+}
+function rememberRoom(roomId, otherName){
+  if(!roomId) return;
+  var list = recentRooms().filter(function(x){ return x && x.id !== roomId; });
+  list.unshift({id:roomId, name:(otherName||'').slice(0,20), at:Date.now()});
+  STATE.recentRooms = list.slice(0, RECENT_ROOM_MAX);
+  saveState();
+}
+function forgetRoom(roomId){
+  STATE.recentRooms = recentRooms().filter(function(x){ return x && x.id !== roomId; });
+  saveState();
+}
+/* 지금 보고 있는 궁합의 주소. 방을 거쳐 온 결과일 때만 있다. */
+var CURRENT_ROOM_ID = null;
+function currentRoomLink(){
+  return CURRENT_ROOM_ID ? (location.href.split('#')[0] + '#r=' + CURRENT_ROOM_ID) : null;
+}
+
+/* 저장해 둔 방을 다시 연다. 서버에서 두 사람 정보를 받아 그 자리에서 계산한다. */
+function reopenRoom(roomId){
+  showToast('궁합을 불러오는 중이에요…');
+  roomFetch({action:'get', roomId:roomId}).then(function(d){
+    if(!d || !d.a || !d.b) throw new Error('아직 상대방이 들어오지 않았어요.');
+    var me = activeProfile();
+    var mine = encodeInvite(me);
+    /* 두 자리 중 내가 아닌 쪽을 상대로 삼는다. 내가 만든 방이면 a가 나다. */
+    var other = (d.a === mine) ? d.b : d.a;
+    if(!applyRowToCompatDraft(other)) throw new Error('상대 정보를 읽지 못했어요.');
+    CURRENT_ROOM_ID = roomId;
+    ROUTE='compat';
+    submitCompat();
+  }).catch(function(err){
+    var msg = String(err && err.message || err);
+    if(/404/.test(msg)){
+      forgetRoom(roomId);
+      showToast('이 궁합은 보관 기간('+ROOM_TTL_TEXT+')이 지나 열 수 없어요.');
+    } else {
+      showToast(msg.indexOf('아직')===0 ? msg : '지금은 불러올 수 없어요. 잠시 뒤 다시 시도해 주세요.');
+    }
+    render();
+  });
+}
+
+/* 궁합 화면 맨 위의 "최근에 본 궁합" 목록 */
+function buildRecentRoomsCard(){
+  var list = recentRooms();
+  if(!list.length) return null;
+  var card = el('div',{class:'scroll-card'});
+  card.appendChild(el('h3',{},['최근에 본 궁합']));
+  card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 볼 수 있어요. 보관 기간은 '+ROOM_TTL_TEXT+'이에요.']));
+  list.forEach(function(x){
+    card.appendChild(settingsRow((x.name||'이름 없음')+'님과의 궁합', '다시 보기', function(){ reopenRoom(x.id); }));
+  });
+  return card;
+}
+
 function stopRoomWait(){
   if(ROOM_WAIT && ROOM_WAIT.timer){ clearTimeout(ROOM_WAIT.timer); }
   ROOM_WAIT = null;
@@ -11773,6 +11869,7 @@ function pollRoom(){
     if(d && d.b){
       var roomId = ROOM_WAIT.roomId;
       stopRoomWait();
+      CURRENT_ROOM_ID = roomId;   /* R34 */
       if(applyRowToCompatDraft(d.b)){
         showToast('상대방이 정보를 입력했어요. 궁합을 보여드릴게요.');
         try{ submitCompat(); return; }catch(e){ console.warn('방 결과 계산 실패', e); }
@@ -11822,7 +11919,7 @@ function showInviteModal(profile, link, live, ttlHours){
   if(live){
     body.appendChild(el('p',{},['이 링크를 상대방에게 보내주세요. 상대방이 열면 '+profile.name+'님 화면에도 궁합 결과가 자동으로 나타나요. 이 화면을 켜둔 채 기다리시면 돼요.']));
     body.appendChild(el('p',{class:'biz-hint'},[
-      '두 분의 닉네임·MBTI·생년월일·태어난 시각·성별·출생지가 이 링크를 잇기 위해 '+ttlHours+'시간 동안만 서버에 보관되고, 그 뒤에는 읽을 수 없게 됩니다. 링크 주소에는 생년월일이 들어 있지 않아요.'
+      '두 분의 닉네임·MBTI·생년월일·태어난 시각·성별·출생지가 이 링크를 잇기 위해 '+ROOM_TTL_TEXT+' 동안만 서버에 보관되고, 그 뒤에는 읽을 수 없게 됩니다. 링크 주소에는 생년월일이 들어 있지 않아요.'
     ]));
   } else {
     body.appendChild(el('p',{},['이 링크를 열면 '+profile.name+'님과의 궁합 결과가 상대방 화면에 나와요. 상대방이 이 앱을 처음 쓰는 경우에는 자기 프로필을 먼저 만들고, 그다음 결과로 이어져요.']));
@@ -11887,6 +11984,7 @@ function joinRoomNow(){
       ROOM_JOIN_STATE.busy = false;
       if(!d || !d.a) throw new Error('상대 정보 없음');
       if(!applyRowToCompatDraft(d.a)) throw new Error('상대 정보를 읽지 못함');
+      CURRENT_ROOM_ID = PENDING_ROOM;   /* R34 — 결과 주소와 "다시 보기" 목록에 쓰인다 */
       PENDING_ROOM = null;
       ROUTE='compat';
       try{ submitCompat(); }
@@ -11896,7 +11994,7 @@ function joinRoomNow(){
       ROOM_JOIN_STATE.busy = false;
       var msg = String(err && err.message || err);
       ROOM_JOIN_STATE.error = /404/.test(msg)
-        ? '이 초대장은 만료됐거나 찾을 수 없어요. 상대방에게 링크를 다시 받아주세요. (초대장은 만든 뒤 48시간 동안만 열려요.)'
+        ? '이 초대장은 만료됐거나 찾을 수 없어요. 상대방에게 링크를 다시 받아주세요. (초대장은 만든 뒤 '+ROOM_TTL_TEXT+' 동안만 열려요.)'
         : '지금은 연결이 되지 않아요. 잠시 뒤 다시 시도해 주세요.';
       render();
     });
@@ -11908,7 +12006,7 @@ function buildRoomWaitCard(){
   if(ROOM_WAIT.timedOut){
     card.appendChild(el('h3',{},['기다리기를 멈췄어요']));
     card.appendChild(el('p',{class:'biz-hint'},[
-      '상대방이 아직 링크를 열지 않았어요. 초대장은 만든 뒤 '+ROOM_WAIT.ttlHours+'시간 동안 열려 있으니, 상대방이 열면 [다시 확인]을 눌러주세요.'
+      '상대방이 아직 링크를 열지 않았어요. 초대장은 만든 뒤 '+ROOM_TTL_TEXT+' 동안 열려 있으니, 상대방이 열면 [다시 확인]을 눌러주세요.'
     ]));
     card.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
       ROOM_WAIT.timedOut=false; ROOM_WAIT.startedAt=Date.now(); render(); pollRoom();
@@ -12556,7 +12654,7 @@ $('#tabbar').addEventListener('click', function(e){
   if(!btn) return;
   var next = btn.dataset.route;
   guardRouteChange(next, function(){
-    if(next==='compat'){ COMPAT_DRAFT=null; COMPAT_SUB=null; }
+    if(next==='compat'){ COMPAT_DRAFT=null; COMPAT_SUB=null; CURRENT_ROOM_ID=null; }
     setRoute(next);
   });
 });
