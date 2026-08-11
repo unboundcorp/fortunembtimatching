@@ -454,6 +454,22 @@ main{flex:1;padding:28px 20px 96px;}
 /* R32 — .disclaimer-wrap(계산 한계 고지 + 접이식) 규칙은 지웠다. 그 덩어리를 화면에서 뺐기 때문이다.
    ★ .disclaimer 자체는 남긴다 — MBTI·캐릭터·용어사전·궁합 고지 7곳이 아직 이 클래스를 쓴다. */
 
+/* =====================================================================
+   R34 — 사이트 공통 하단(푸터)
+   ---------------------------------------------------------------------
+   ★ 사업자 정보는 "굉장히 잘 보이지 않게"가 지시였다. 다만 전자상거래법 제13조
+     표시의무 항목이라 아예 숨기거나 읽을 수 없게 만들면 안 된다.
+     그래서 글자를 작게·연하게 두되 대비는 4.5:1 위로 유지한다(--ink-faint).
+     "눈에 안 띈다"와 "못 읽는다"는 다르고, 지켜야 할 선은 후자다.
+===================================================================== */
+.site-footer{margin:34px 0 8px;padding:22px 14px 8px;border-top:1px solid rgba(88,68,22,.16);text-align:center;}
+.site-footer .fl-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 18px;margin-bottom:14px;}
+.site-footer .fl{background:none;border:0;padding:4px 2px;font-family:inherit;font-size:.84rem;
+  color:var(--ink-dim);cursor:pointer;text-decoration:none;line-height:1.4;}
+.site-footer .fl:hover,.site-footer .fl:focus-visible{color:var(--gold);text-decoration:underline;}
+.site-footer .biz{margin-top:16px;}
+.site-footer .biz p{font-size:.68rem;color:var(--ink-faint);line-height:1.75;margin:0;}
+.site-footer .copy{margin-top:10px;font-size:.68rem;color:var(--ink-faint);}
 .share-preview{display:flex;justify-content:center;margin:18px 0;}
 .share-preview canvas{border:1px solid rgba(88,68,22,.24);border-radius:var(--r-md);max-width:100%;height:auto;box-shadow:var(--shadow-soft);}
 
@@ -4486,6 +4502,163 @@ function openRefundModal(){
   openModal('환불 · 청약철회 안내', body, [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
 }
 /* 설정 화면 하단에 붙는 법적 고지 4종 진입점. */
+/* =====================================================================
+   R34 — 모든 화면 맨 아래에 붙는 공통 하단
+   ---------------------------------------------------------------------
+   대표님 지시: 서비스 소개 · 사주 가이드 · MBTI 가이드 · 자주 묻는 질문 ·
+   개선 의견 · 이용약관 · 개인정보처리방침을 어느 화면에서든 볼 수 있게 하고,
+   사업자 정보는 잘 보이지 않게 아래에 둔다.
+===================================================================== */
+var FOOTER_PAGES = [
+  ['about',   '서비스 소개'],
+  ['guideSaju', '사주 가이드'],
+  ['guideMbti', 'MBTI 가이드'],
+  ['faq',     '자주 묻는 질문']
+];
+/* 안내 페이지들은 스스로 푸터를 붙이므로 여기서 또 붙이지 않는다. */
+function appendFooterOnce(){
+  var main = $('#main');
+  if(!main) return;
+  if(main.querySelector('.site-footer')) return;
+  var view = main.querySelector('.view') || main;
+  view.appendChild(buildSiteFooter());
+}
+function buildSiteFooter(){
+  var f = el('div',{class:'site-footer'});
+  var row = el('div',{class:'fl-row'});
+  FOOTER_PAGES.forEach(function(pair){
+    row.appendChild(el('button',{class:'fl', type:'button', onclick:function(){
+      ROUTE = pair[0]; render(); window.scrollTo(0,0);
+    }},[pair[1]]));
+  });
+  /* 개선 의견 — 서버로 받는 창구가 없으므로 메일로 연다. 없는 기능을 있는 척하지 않는다. */
+  row.appendChild(el('a',{class:'fl', href:'mailto:'+companyValue(COMPANY.supportEmail)+'?subject='+encodeURIComponent('['+COMPANY.serviceName+'] 개선 의견')},['개선 의견']));
+  row.appendChild(el('button',{class:'fl', type:'button', onclick:openTermsModal},['이용약관']));
+  row.appendChild(el('button',{class:'fl', type:'button', onclick:openPrivacyModal},['개인정보처리방침']));
+  row.appendChild(el('button',{class:'fl', type:'button', onclick:openRefundModal},['환불 · 청약철회']));
+  f.appendChild(row);
+
+  var biz = el('div',{class:'biz'});
+  biz.appendChild(el('p',{},[COMPANY.legalName+' · 대표 '+COMPANY.ceo]));
+  biz.appendChild(el('p',{},['사업자등록번호 '+COMPANY.bizRegNo+' · 통신판매업신고 '+companyValue(COMPANY.mailOrderNo)]));
+  biz.appendChild(el('p',{},[COMPANY.address]));
+  biz.appendChild(el('p',{},[companyValue(COMPANY.supportPhone)+' · '+companyValue(COMPANY.supportEmail)]));
+  f.appendChild(biz);
+  f.appendChild(el('p',{class:'copy'},['© '+(new Date().getFullYear())+' '+COMPANY.legalNameEn]));
+  return f;
+}
+
+/* 하단 페이지들의 공통 뼈대 — 제목 + 본문 + 돌아가기 */
+function buildInfoPage(title, sub, build){
+  var main=$('#main'); main.innerHTML='';
+  var view=el('div',{class:'view'});
+  view.appendChild(pageHead(title, sub));
+  build(view);
+  view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:18px;', onclick:function(){
+    ROUTE='home'; render(); window.scrollTo(0,0);
+  }},['홈으로 돌아가기']));
+  view.appendChild(buildSiteFooter());
+  main.appendChild(autoTermify(view));
+}
+function infoCard(view, title, paras){
+  var c = el('div',{class:'scroll-card'});
+  if(title) c.appendChild(el('h3',{},[title]));
+  paras.forEach(function(t){ c.appendChild(el('p',{class:'biz-hint'},[t])); });
+  view.appendChild(c);
+}
+
+function renderAbout(){
+  buildInfoPage('서비스 소개', COMPANY.serviceName+'가 하는 일', function(view){
+    infoCard(view, null, [
+      'MBTI와 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 편하게 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.'
+    ]);
+    infoCard(view, '무엇을 볼 수 있나요', [
+      '내 사주 — 태어난 날과 시각으로 여덟 글자(사주팔자)를 계산하고, 오행과 십성, 10년 단위 흐름(대운)까지 보여드려요.',
+      '오늘의 운세 — 그날의 기운과 내 사주를 견주어 총운·금전운·애정운·건강운·학업직장운을 짚어드려요.',
+      '궁합 — 두 사람의 MBTI와 사주를 함께 봅니다. 링크를 보내면 상대방 화면과 내 화면에 같은 결과가 나타나요.',
+      '모임 궁합 — 최대 '+GC_MAX+'명까지 한 그림으로 모아 서로의 결을 한눈에 볼 수 있어요.'
+    ]);
+    infoCard(view, '이런 점이 다릅니다', [
+      '회원가입이 없습니다. 이름과 생년월일만 있으면 바로 시작할 수 있어요.',
+      '사주를 직접 계산합니다. 절기와 진태양시까지 따져서 여덟 글자를 뽑아요.',
+      '어려운 말을 앞세우지 않습니다. 일상어로 먼저 말하고, 원래 용어는 뒤에 작게 붙여요. 모르는 말은 눌러서 바로 뜻을 볼 수 있어요.'
+    ]);
+    infoCard(view, '참고해 주세요', [
+      '여기서 드리는 해석은 오락과 참고를 위한 콘텐츠입니다. 정해진 미래를 알려주는 것이 아니라, 나와 상대를 이해하는 하나의 실마리로 봐주세요.',
+      '의료·법률·투자처럼 전문가의 판단이 필요한 일은 반드시 그쪽에 물어보셔야 합니다.'
+    ]);
+  });
+}
+
+function renderGuideSaju(){
+  buildInfoPage('사주 가이드', '처음 보시는 분을 위한 안내', function(view){
+    infoCard(view, '사주가 뭔가요', [
+      '태어난 해·달·날·시각을 각각 두 글자로 바꿔 적은 것이 사주입니다. 기둥이 넷이라 사주(四柱), 글자가 여덟이라 팔자(八字)라고 불러요.',
+      '태어난 시각을 모르면 기둥이 셋(여섯 글자)이 됩니다. 그래도 대부분의 풀이는 볼 수 있어요.'
+    ]);
+    infoCard(view, '오행과 십성', [
+      '오행은 목·화·토·금·수 다섯 가지 기운입니다. 여덟 글자 안에 어떤 기운이 많고 적은지가 타고난 결을 만듭니다.',
+      '십성은 각 글자가 나(일간)와 어떤 관계인지를 나타냅니다. 재물·관계·표현·배움 같은 삶의 영역과 이어져요.'
+    ]);
+    infoCard(view, '대운 — 10년 단위 흐름', [
+      '대운은 10년마다 바뀌는 큰 흐름입니다. 타고난 여덟 글자가 바탕이라면, 대운은 그 위를 지나가는 계절 같은 것이에요.',
+      '성별에 따라 흐름이 도는 방향이 달라집니다. 프로필에서 성별을 정확히 골라주셔야 하는 이유예요.'
+    ]);
+    infoCard(view, '계산에 대해', [
+      '사주에서 달의 경계는 달력 1일이 아니라 절기입니다. 이 서비스는 태양의 위치를 직접 계산해 절기 시각을 구합니다.',
+      '태어난 시각은 출생지 경도를 반영한 진태양시로 맞춥니다. 설정에서 끌 수 있고, 쓸지 말지는 명리학계에서도 견해가 갈립니다.',
+      '모르는 낱말이 나오면 눌러보세요. 용어 사전에 '+ (typeof GLOSSARY!=='undefined' && GLOSSARY ? Object.keys(GLOSSARY).length : 86) +'개 낱말의 뜻을 쉬운 말로 적어 두었습니다.'
+    ]);
+  });
+}
+
+function renderGuideMbti(){
+  buildInfoPage('MBTI 가이드', '네 글자가 말해주는 것', function(view){
+    infoCard(view, 'MBTI가 뭔가요', [
+      '사람이 세상을 받아들이고 결정하는 방식을 네 가지 축으로 나눈 성격 유형 분류입니다. 각 축에서 한쪽을 골라 네 글자가 만들어져요.'
+    ]);
+    infoCard(view, '네 가지 축', [
+      'E / I — 기운을 밖에서 얻는지, 안에서 얻는지',
+      'S / N — 지금 보이는 것을 보는지, 그 너머의 가능성을 보는지',
+      'T / F — 판단할 때 논리를 앞세우는지, 사람과 관계를 앞세우는지',
+      'J / P — 정해두고 움직이는지, 열어두고 움직이는지'
+    ]);
+    infoCard(view, '모르면 어떻게 하나요', [
+      '프로필을 만들 때 "모르겠어요 — 간단 테스트로 알아보기"를 누르시면 8문항으로 대략의 유형을 잡아드립니다.',
+      '이 테스트는 정식 검사가 아니라 간단한 참고용입니다. 이미 알고 계신 유형이 있다면 그걸 고르시는 편이 정확해요.'
+    ]);
+    infoCard(view, '사주와 함께 보면', [
+      'MBTI는 지금의 나를 설명하고, 사주는 타고난 결과 흐름을 봅니다. 두 가지가 같은 이야기를 할 때도 있고 다른 이야기를 할 때도 있어요.',
+      '궁합에서는 MBTI 40% · 사주 40% · 오행 10% · 띠 10%로 합쳐 하나의 점수로 보여드립니다.'
+    ]);
+    infoCard(view, '참고해 주세요', [
+      'MBTI는 사람을 가두는 틀이 아닙니다. 같은 유형이어도 실제 모습은 저마다 다릅니다. 나를 이해하는 하나의 언어 정도로 봐주세요.'
+    ]);
+  });
+}
+
+function renderFaq(){
+  buildInfoPage('자주 묻는 질문', '궁금하신 것들', function(view){
+    [
+      ['회원가입을 해야 하나요?', '아니요. 이름과 생년월일만 넣으면 바로 시작할 수 있어요. 입력하신 정보는 이 기기의 브라우저에 저장되고, 서버로 보내지 않습니다.'],
+      ['다른 기기에서도 볼 수 있나요?', '기기마다 따로 저장되기 때문에 자동으로 옮겨지지는 않아요. 다른 기기에서는 프로필을 다시 만들어 주셔야 합니다.'],
+      ['태어난 시각을 모르는데요?', '"시간 모름"을 고르시면 됩니다. 시주(태어난 시각의 기둥)를 뺀 여섯 글자로 계산하고, 그 사실을 화면에 함께 적어드려요.'],
+      ['궁합 링크는 어떻게 쓰나요?', '궁합 보기 → 초대 링크 만들기를 누르고 그 링크를 보내면 됩니다. 상대방이 열면 상대방 화면과 내 화면에 같은 결과가 나타나요.'],
+      ['상대방도 이 앱을 써야 하나요?', '링크를 열면 자기 정보를 한 번 넣게 되고, 그 뒤 바로 결과가 나옵니다. 따로 설치할 것은 없어요.'],
+      ['두 사람 화면의 점수가 조금 달라요', '사주에서 서로를 북돋는 관계는 방향에 따라 다르게 봅니다. 그래서 보는 사람 기준으로 1~2점 차이가 날 수 있어요. MBTI·오행·띠 점수는 양쪽이 같습니다.'],
+      ['입력한 정보는 어디에 저장되나요?', '기본적으로 이 기기의 브라우저에만 저장됩니다. 궁합 링크로 두 사람을 이을 때만 그 정보가 '+ROOM_TTL_HOURS_TEXT+'시간 동안 서버에 보관되고, 그 뒤에는 읽을 수 없게 됩니다.'],
+      ['기록을 지우려면요?', '히스토리 화면에서 하나씩 또는 전체를 지울 수 있고, 설정에서 프로필을 지울 수 있습니다. 브라우저의 사이트 데이터를 지우셔도 됩니다.'],
+      ['유료 결제는 무엇인가요?', '기본 풀이는 무료로 보실 수 있고, 더 자세한 해석을 원하시면 건별로 결제하실 수 있습니다. 결제 전에 무엇이 열리는지 화면에 먼저 적어드려요.'],
+      ['사주 결과가 다른 곳과 달라요', '절기 시각을 계산하는 방법과 진태양시를 쓰는지 여부에 따라 결과가 달라질 수 있습니다. 이 서비스가 어떻게 계산했는지는 내 사주 화면에서 펼쳐 보실 수 있어요.']
+    ].forEach(function(qa){
+      var c = el('div',{class:'scroll-card'});
+      c.appendChild(el('h3',{},[qa[0]]));
+      c.appendChild(el('p',{class:'biz-hint'},[qa[1]]));
+      view.appendChild(c);
+    });
+  });
+}
+
 function buildLegalPanel(){
   var card = el('div',{class:'scroll-card'});
   card.appendChild(el('h3',{},['약관 · 사업자 정보']));
@@ -8650,7 +8823,7 @@ function renderOnboarding(){
      ('만세력'·'사주팔자'는 내 사주 화면과 용어 사전에 그대로 있다 — 없앤 게 아니라 뒤로 미뤘다.)
      고지도 짧은 한 문장만 둔다. 아직 아무 계산도 보여주기 전이라 여기서 접이식까지 놓으면
      "시작하기" 버튼 앞에 눌러야 할 것이 하나 더 생긴다. 자세한 설명은 결과 화면마다 붙는다. */
-  wrap.appendChild(el('p',{},['MBTI와 사주를 함께 봐서 오늘의 운세와 두 사람의 궁합을 풀어보는 개인용 점괘 노트예요. 태어난 날과 시각으로 여덟 글자를 직접 계산하고, 서버 없이 링크 하나로 친구와 함께 궁합도 볼 수 있어요.']));
+  wrap.appendChild(el('p',{},['MBTI와 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 편하게 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.']));
   wrap.appendChild(el('button',{class:'btn btn-primary',onclick:function(){
     STATE.onboarded=true; saveState(); startSetupWizard(null); render();
   }},['시작하기']));
@@ -12341,7 +12514,15 @@ function render(){
   else if(ROUTE==='groupCompat') renderGroupCompat();
   else if(ROUTE==='history') renderHistory();
   else if(ROUTE==='settings') renderSettings();
+  else if(ROUTE==='about') renderAbout();
+  else if(ROUTE==='guideSaju') renderGuideSaju();
+  else if(ROUTE==='guideMbti') renderGuideMbti();
+  else if(ROUTE==='faq') renderFaq();
   else renderHome();
+  /* R34 — 모든 화면 맨 아래에 공통 하단을 붙인다.
+     각 render 함수를 일일이 고치지 않고 여기서 한 번에 처리한다 —
+     화면이 늘어날 때마다 푸터를 빠뜨리는 일이 없도록. */
+  appendFooterOnce();
 }
 
 /* =====================================================================
