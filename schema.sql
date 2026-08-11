@@ -99,3 +99,10 @@ create index if not exists groups_expires_idx on groups (expires_at);
 
 alter table groups enable row level security;
 -- 정책 없음 = service_role(서버 함수)만 접근
+
+-- R39 — 소유자 토큰. PIN 없이 만든 그룹을 "만든 기기"에서 관리할 수 있게 한다.
+-- pin_hash 는 이제 선택이므로 not null 제약을 푼다.
+alter table groups add column if not exists owner_hash text;
+alter table groups add column if not exists owner_salt text;
+alter table groups alter column pin_hash drop not null;
+alter table groups alter column pin_salt drop not null;

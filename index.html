@@ -1,1 +1,17 @@
-<meta http-equiv="refresh" content="0; url=fortune.html">
+<!doctype html>
+<meta charset="utf-8">
+<!-- 옛 주소(GitHub Pages)로 들어온 사람을 새 주소로 보낸다.
+     이 저장소는 GitHub Pages와 Vercel 두 곳에 배포되는데, 서버 기능(/api/*)은 Vercel에만 있다.
+     옛 주소로 들어오면 그룹·실시간 궁합이 405로 실패하므로 그쪽에서는 바로 넘긴다. -->
+<title>케미체크</title>
+<script>
+  (function(){
+    var LIVE = 'https://fortunembtimatching.vercel.app/fortune.html';
+    var here = location.hostname;
+    /* Vercel에서 열렸다면 같은 곳의 앱으로, 그 밖(GitHub Pages 등)이면 새 주소로 */
+    var to = (here.indexOf('vercel.app') >= 0) ? ('fortune.html' + location.search + location.hash)
+                                               : (LIVE + location.search + location.hash);
+    location.replace(to);
+  })();
+</script>
+<noscript><a href="https://fortunembtimatching.vercel.app/fortune.html">케미체크로 이동</a></noscript>

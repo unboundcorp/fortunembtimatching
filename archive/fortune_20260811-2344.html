@@ -3369,26 +3369,6 @@ var COMPAT_SUB = null; /* null=요약, 'saju'=사주궁합 상세, 'mbti'=MBTI�
    부팅이 통째로 죽는다(실제로 그렇게 만들었다가 실측으로 잡았다).
    그래서 주소만 문자열로 챙겨 두고, 표가 준비된 맨 아래 부팅 절에서 푼다.
    — 그룹 링크(#meet=)가 이미 같은 이유로 같은 방식을 쓰고 있었다. */
-/* =====================================================================
-   R39 — 옛 주소(GitHub Pages)로 들어온 사람을 새 주소로 보낸다
-   ---------------------------------------------------------------------
-   대표님 제보: "그룹 만들기를 눌렀더니 HTTP 405만 뜬다."
-   원인은 옛 주소가 아직 살아 있어서였다. GitHub Pages는 파일만 내어주는 곳이라
-   /api/group 같은 서버 기능이 아예 없고, 그래서 405(그런 방식은 안 받는다)를 돌려준다.
-   앱은 멀쩡한데 그 주소로 들어가면 그룹·실시간 궁합이 전부 실패한다.
-
-   ★ 같은 파일이 두 곳에 배포되므로 파일을 통째로 리다이렉트로 바꿀 수는 없다
-     (그러면 새 주소에서도 앱이 안 뜬다). 그래서 "지금 어느 주소에서 열렸는지"를 보고
-     옛 주소일 때만 옮긴다. 해시(#r=, #g=, #gj=)도 그대로 들고 간다 —
-     안 들고 가면 받은 링크가 열리다 만다.
-===================================================================== */
-(function moveToLiveHost(){
-  var OLD_HOSTS = ['unboundcorp.github.io'];
-  var LIVE = 'https://fortunembtimatching.vercel.app/fortune.html';
-  if(OLD_HOSTS.indexOf(location.hostname) < 0) return;
-  try{ location.replace(LIVE + location.search + location.hash); }catch(e){}
-})();
-
 var INVITE_HASH_RAW = location.hash || '';
 var PENDING_INVITE = null;
 /* R33 — 방 번호로 들어온 경우(#r=). 뜻 없는 번호라 주소에 남의 생년월일이 없다. */
@@ -11935,19 +11915,11 @@ function groupFetch(payload){
 
 /* 이 기기가 기억하는 저장된 그룹 목록 — 주소와 이름뿐이다. */
 function savedGroups(){ return Array.isArray(STATE.savedGroups) ? STATE.savedGroups : []; }
-function rememberGroup(id, name, token){
-  var prev = savedGroups().filter(function(x){ return x && x.id === id; })[0];
+function rememberGroup(id, name){
   var list = savedGroups().filter(function(x){ return x && x.id !== id; });
-  /* ★ R39 — 소유자 토큰을 함께 기억한다. 이 기기에서는 PIN 없이 그룹을 고치고 지울 수 있다.
-     토큰은 이 기기 밖으로 나가지 않는다(링크에도, 화면에도 넣지 않는다). */
-  list.unshift({id:id, name:(name||'').slice(0,40), at:Date.now(),
-                token: token || (prev && prev.token) || null});
+  list.unshift({id:id, name:(name||'').slice(0,40), at:Date.now()});
   STATE.savedGroups = list.slice(0, 20);
   saveState();
-}
-function groupToken(id){
-  var g = savedGroups().filter(function(x){ return x && x.id === id; })[0];
-  return g && g.token ? g.token : null;
 }
 function forgetGroup(id){
   STATE.savedGroups = savedGroups().filter(function(x){ return x && x.id !== id; });
@@ -12088,43 +12060,24 @@ function openSavedGroup(id){
 /* ---- 관리(PIN) ---- */
 function openGroupManageModal(){
   if(!GROUP_VIEW) return;
-  var mine = !!groupToken(GROUP_VIEW.id);   /* 이 기기에서 만든 그룹인가 */
   var body = el('div',{});
+  var pinInput = el('input',{type:'text', inputMode:'numeric', maxLength:'8', placeholder:'저장할 때 정한 PIN', id:'mgPin'});
+  body.appendChild(el('div',{class:'field'},[ el('label',{for:'mgPin'},['관리용 PIN']), pinInput ]));
   var nameInput = el('input',{type:'text', maxLength:'40', value:GROUP_VIEW.name||'', id:'mgName'});
   body.appendChild(el('div',{class:'field'},[ el('label',{for:'mgName'},['그룹 이름']), nameInput ]));
-
-  /* ★ R39 — 이 기기에서 만든 그룹이면 PIN을 묻지 않는다. 만든 사람이 자기 그룹을 만지는 것이라
-     매번 PIN을 요구하면 그게 더 이상하다. 대신 "다른 기기에서도 관리하려면" PIN을 정할 수 있게 한다. */
-  var pinInput = el('input',{type:'text', inputMode:'numeric', maxLength:'8',
-    placeholder: mine ? '정하지 않으면 이 기기에서만 관리돼요' : '저장할 때 정한 PIN', id:'mgPin'});
-  body.appendChild(el('div',{class:'field'},[
-    el('label',{for:'mgPin'},[mine ? '관리용 PIN 정하기 (선택)' : '관리용 PIN']), pinInput
-  ]));
-  body.appendChild(el('p',{class:'biz-hint'},[ mine
-    ? '이 그룹은 이 기기에서 만드셨어요. 여기서는 PIN 없이 바로 고칠 수 있어요. 다른 기기나 다른 분도 관리하게 하려면 PIN을 정해 알려주세요. 한 번 정한 PIN은 저희도 알 수 없으니 꼭 기억해 두세요.'
-    : '저장할 때 정한 PIN을 넣어주세요.' ]));
   body.appendChild(el('p',{class:'biz-hint'},['이름을 바꾸거나, 지금 화면에 있는 사람들로 명단을 다시 저장할 수 있어요.']));
 
   openModal('그룹 관리', body, [
     {label:'닫기', cls:'btn-ghost', onclick:closeModal},
     {label:'저장', cls:'btn-primary', onclick:function(){
       var pin=(pinInput.value||'').trim(), nm=(nameInput.value||'').trim();
-      var newPinVal = null;
-      if(mine){
-        /* 이 기기에서 만든 그룹 — 칸에 적힌 값은 "새로 정하는 PIN"이다. */
-        if(pin && !/^\d{4,8}$/.test(pin)){ showToast('PIN은 숫자 4~8자리예요.'); return; }
-        newPinVal = pin || null; pin = '';
-      } else {
-        if(!/^\d{4,8}$/.test(pin)){ showToast('PIN은 숫자 4~8자리예요.'); return; }
-      }
+      if(!/^\d{4,8}$/.test(pin)){ showToast('PIN은 숫자 4~8자리예요.'); return; }
       closeModal();
-      groupFetch({action:'update', groupId:GROUP_VIEW.id, pin:pin, newPin:newPinVal, name:nm,
-                  members:currentGroupMembersText(), ownerToken:groupToken(GROUP_VIEW.id)})
+      groupFetch({action:'update', groupId:GROUP_VIEW.id, pin:pin, name:nm, members:currentGroupMembersText()})
         .then(function(){
           GROUP_VIEW.name = nm || GROUP_VIEW.name;
           rememberGroup(GROUP_VIEW.id, GROUP_VIEW.name);
-          showToast(newPinVal ? 'PIN을 정했어요. 다른 기기에서도 이 PIN으로 관리할 수 있어요.' : '그룹을 저장했어요.');
-          render();
+          showToast('그룹을 저장했어요.'); render();
         })
         .catch(function(err){ showToast(String(err && err.message || '고치지 못했어요.')); });
     }}
@@ -12134,18 +12087,16 @@ function openGroupManageModal(){
 function confirmDeleteGroup(){
   if(!GROUP_VIEW) return;
   var body = el('div',{});
-  var mineDel = !!groupToken(GROUP_VIEW.id);
-  var pinInput = el('input',{type:'text', inputMode:'numeric', maxLength:'8',
-    placeholder: mineDel ? '이 기기에서 만든 그룹이라 필요 없어요' : 'PIN', id:'delPin'});
+  var pinInput = el('input',{type:'text', inputMode:'numeric', maxLength:'8', placeholder:'PIN', id:'delPin'});
   body.appendChild(el('p',{},['"'+(GROUP_VIEW.name||'이 그룹')+'"을 지울까요? 지우면 이 주소로는 다시 열 수 없어요.']));
-  if(!mineDel) body.appendChild(el('div',{class:'field'},[ el('label',{for:'delPin'},['관리용 PIN']), pinInput ]));
+  body.appendChild(el('div',{class:'field'},[ el('label',{for:'delPin'},['관리용 PIN']), pinInput ]));
   openModal('그룹 지우기', body, [
     {label:'취소', cls:'btn-ghost', onclick:closeModal},
     {label:'지우기', cls:'btn-primary', onclick:function(){
       var pin=(pinInput.value||'').trim();
-      if(!groupToken(GROUP_VIEW.id) && !/^\d{4,8}$/.test(pin)){ showToast('PIN은 숫자 4~8자리예요.'); return; }
+      if(!/^\d{4,8}$/.test(pin)){ showToast('PIN은 숫자 4~8자리예요.'); return; }
       closeModal();
-      groupFetch({action:'delete', groupId:GROUP_VIEW.id, pin:pin, ownerToken:groupToken(GROUP_VIEW.id)})
+      groupFetch({action:'delete', groupId:GROUP_VIEW.id, pin:pin})
         .then(function(){
           forgetGroup(GROUP_VIEW.id);
           GROUP_VIEW=null; PENDING_MEET=null; GC_SOURCE='profiles';
@@ -12712,35 +12663,24 @@ function startRoomWait(roomId, link, ttlHours){
   ROOM_WAIT.timer = setTimeout(pollRoom, ROOM_POLL_MS);
 }
 
-/* =====================================================================
-   R39 — 초대 링크를 만드는 순간 그룹이 된다 (대표님 지시)
-   ---------------------------------------------------------------------
-   예전에는 초대 링크가 "두 사람 전용 방(#r=)"이었다. 그래서 셋째 사람을 넣으려면
-   1:1 결과에서 [그룹 만들기]를 한 번 더 눌러야 했고, 그 사실을 아는 사람이 없었다.
-
-   이제 링크를 누르는 순간 그룹을 만들고, 그 그룹의 접수 주소(#gj=)를 건넨다.
-   받은 사람은 자기 정보를 넣고 들어온다 — 두 명이든 서른 명이든 같은 링크 하나로 된다.
-
-   ★ 링크 한 번 만들자고 이름과 PIN까지 정하라고 하지 않는다.
-     이름은 "○○님의 궁합"으로 자동으로 짓고, PIN은 안 정해도 된다.
-     대신 만든 기기에 소유자 토큰을 저장해 두어 그 기기에서는 PIN 없이 관리할 수 있다.
-     다른 기기에서도 관리하고 싶으면 나중에 그룹 관리에서 PIN을 정하면 된다.
-   ★ 서버가 죽어 있으면 예전처럼 링크에 정보를 담아 보낸다(그때는 1:1이다).
-     서버가 안 된다고 공유 자체가 막히면 안 된다.
-===================================================================== */
+/* 방 만들기를 먼저 시도하고, 안 되면 예전 방식(링크에 정보 담기)으로 되돌아간다. */
 function openInviteLinkModal(profile){
   var base = location.href.split('#')[0];
   var fallback = base + '#' + INVITE_VER + '=' + encodeInvite(profile);
-  showToast('궁합 링크를 만드는 중이에요…');
-  var autoName = (profile.name || '나') + '님의 궁합';
-  groupFetch({action:'create', name:autoName, members: gcMeetRow(profile)})
+  showToast('초대 링크를 만드는 중이에요…');
+  roomFetch({action:'create', payload: encodeInvite(profile)})
     .then(function(d){
-      if(!d || !d.groupId) throw new Error('groupId 없음');
-      rememberGroup(d.groupId, autoName, d.ownerToken);
-      GROUP_VIEW = {id:d.groupId, name:autoName};
-      showInviteModal(profile, groupJoinLink(d.groupId), true, d.ttlDays);
+      if(!d || !d.roomId) throw new Error('roomId 없음');
+      var link = base + '#r=' + d.roomId;
+      startRoomWait(d.roomId, link, d.ttlHours);
+      /* ★ 기다림을 시작했으면 화면을 다시 그려야 "상대방을 기다리는 중" 카드가 나온다.
+         모달만 띄우고 말면, 모달을 닫았을 때 아무 일도 없던 것처럼 보인다(실측으로 잡음).
+         모달은 #modalRoot에 따로 뜨므로 여기서 다시 그려도 모달이 닫히지 않는다. */
+      if(ROUTE==='compat') render();
+      showInviteModal(profile, link, true, d.ttlHours);
     })
     .catch(function(){
+      /* 서버가 없거나 실패 — 예전 방식으로도 궁합은 볼 수 있다. 다만 내 화면은 안 바뀐다. */
       showInviteModal(profile, fallback, false, 0);
     });
 }
@@ -12748,12 +12688,9 @@ function showInviteModal(profile, link, live, ttlHours){
   var body=el('div',{});
   /* ★ 이 문장은 실제 동작과 정확히 같아야 한다. 방이 만들어졌을 때와 아닐 때가 다르다. */
   if(live){
-    body.appendChild(el('p',{},['이 링크를 보내주세요. 받은 분이 자기 정보를 넣으면 바로 궁합이 나오고, '+profile.name+'님 화면에도 함께 나타나요. 두 명이든 '+GC_MAX+'명이든 이 링크 하나로 됩니다.']));
+    body.appendChild(el('p',{},['이 링크를 상대방에게 보내주세요. 상대방이 열면 '+profile.name+'님 화면에도 궁합 결과가 자동으로 나타나요. 이 화면을 켜둔 채 기다리시면 돼요.']));
     body.appendChild(el('p',{class:'biz-hint'},[
-      '들어온 분들의 '+inviteFieldsText()+'가 이 궁합을 잇기 위해 서버에 저장돼요. '+GROUP_TTL_PHRASE+' 동안 보관되고, 열 때마다 기간이 다시 시작돼요. 링크 주소에는 생년월일이 들어 있지 않아요.'
-    ]));
-    body.appendChild(el('p',{class:'biz-hint'},[
-      '이름을 바꾸거나 사람을 빼고 싶으시면 궁합 화면의 [그룹 관리]에서 하실 수 있어요. 이 기기에서는 PIN 없이 바로 되고, 다른 기기에서도 관리하시려면 거기서 PIN을 정하시면 돼요.'
+      '두 분의 닉네임·MBTI·생년월일·태어난 시각·성별·출생지가 이 링크를 잇기 위해 '+ROOM_TTL_TEXT+' 동안만 서버에 보관되고, 그 뒤에는 읽을 수 없게 됩니다. 링크 주소에는 생년월일이 들어 있지 않아요.'
     ]));
   } else {
     body.appendChild(el('p',{},['이 링크를 열면 '+profile.name+'님과의 궁합 결과가 상대방 화면에 나와요. 상대방이 이 앱을 처음 쓰는 경우에는 자기 프로필을 먼저 만들고, 그다음 결과로 이어져요.']));

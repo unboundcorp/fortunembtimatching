@@ -58,11 +58,17 @@ function hashPin(pin, salt) {
 
 /* 맞춰볼 때는 반드시 시간을 일정하게 쓰는 비교를 한다.
    보통 비교는 앞자리가 틀리면 바로 끝나서, 응답 시간 차이로 한 자리씩 알아낼 수 있다. */
-async function pinMatches(pin, row) {
-  const got = await hashPin(pin, row.pin_salt);
-  const a = Buffer.from(got), b = Buffer.from(row.pin_hash);
+async function hashMatches(value, hash, salt) {
+  if (!value || !hash || !salt) return false;
+  const got = await hashPin(value, salt);
+  const a = Buffer.from(got), b = Buffer.from(hash);
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);
+}
+/* PIN이 맞거나, 만든 기기의 토큰이 맞으면 통과. 둘 중 하나면 된다. */
+async function canManage(row, pin, ownerToken) {
+  if (await hashMatches(ownerToken, row.owner_hash, row.owner_salt)) return true;
+  return await hashMatches(pin, row.pin_hash, row.pin_salt);
 }
 
 function newGroupId() { return crypto.randomBytes(12).toString('base64url'); }
@@ -79,21 +85,35 @@ async function sweepExpiredGroups() {
   }
 }
 
+/* =====================================================================
+   ★ R39 — PIN을 안 정해도 그룹을 만들 수 있게 한다 (대표님 지시)
+   ---------------------------------------------------------------------
+   "링크를 만드는 순간 바로 그룹이 되게" 하려면, 링크 한 번 만들자고 PIN까지 정하라고
+   할 수는 없다. 그래서 만들 때 소유자 토큰(owner_token)을 하나 발급해 만든 사람 기기에
+   저장해 둔다. 그 기기에서는 PIN 없이도 고치고 지울 수 있다.
+
+   PIN은 "다른 기기에서도 관리하고 싶을 때" 나중에 정하는 선택 사항이 된다.
+   ★ 토큰도 되돌릴 수 없는 형태로만 저장한다 — 저장소가 새어도 남의 그룹을 만질 수 없다.
+     PIN과 같은 원칙이다.
+===================================================================== */
 export async function createGroup({ name, pin, members }) {
   await sweepExpiredGroups();
-  const salt = crypto.randomBytes(16).toString('base64');
-  const pin_hash = await hashPin(pin, salt);
   const groupId = newGroupId();
-  await rest('groups', {
-    method: 'POST',
-    headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({
-      group_id: groupId, name: String(name).slice(0, 40),
-      pin_hash, pin_salt: salt, members,
-      expires_at: expiryISO(),
-    }),
-  });
-  return { groupId, ttlDays: GROUP_TTL_DAYS };
+  const ownerToken = crypto.randomBytes(24).toString('base64url');
+  const tokSalt = crypto.randomBytes(16).toString('base64');
+  const row = {
+    group_id: groupId, name: String(name).slice(0, 40), members,
+    owner_hash: await hashPin(ownerToken, tokSalt), owner_salt: tokSalt,
+    expires_at: expiryISO(),
+  };
+  /* PIN은 없어도 된다. 정한 경우에만 해시를 넣는다. */
+  if (pin) {
+    const salt = crypto.randomBytes(16).toString('base64');
+    row.pin_hash = await hashPin(pin, salt);
+    row.pin_salt = salt;
+  }
+  await rest('groups', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+  return { groupId, ownerToken, ttlDays: GROUP_TTL_DAYS };
 }
 
 /* =====================================================================
@@ -165,23 +185,29 @@ export async function joinGroup(groupId, memberRow) {
   return { ok: true, name: row.name, members: next };
 }
 
-export async function updateGroup(groupId, pin, patch) {
+export async function updateGroup(groupId, pin, patch, ownerToken) {
   const row = await getGroupWithPin(groupId);
   if (!row) return { ok: false, reason: 'not_found' };
-  if (!(await pinMatches(pin, row))) return { ok: false, reason: 'bad_pin' };
+  if (!(await canManage(row, pin, ownerToken))) return { ok: false, reason: 'denied' };
   const body = { updated_at: new Date().toISOString() };
   if (typeof patch.name === 'string' && patch.name.trim()) body.name = patch.name.trim().slice(0, 40);
   if (typeof patch.members === 'string' && patch.members) body.members = patch.members;
+  /* 나중에 PIN을 새로 정하는 경우 — 다른 기기에서도 관리하고 싶을 때 쓴다. */
+  if (typeof patch.newPin === 'string' && /^\d{4,8}$/.test(patch.newPin)) {
+    const salt = crypto.randomBytes(16).toString('base64');
+    body.pin_hash = await hashPin(patch.newPin, salt);
+    body.pin_salt = salt;
+  }
   const rows = await rest(`groups?group_id=eq.${encodeURIComponent(groupId)}`, {
     method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(body),
   });
   return { ok: true, group: rows && rows[0] ? rows[0] : null };
 }
 
-export async function deleteGroup(groupId, pin) {
+export async function deleteGroup(groupId, pin, ownerToken) {
   const row = await getGroupWithPin(groupId);
   if (!row) return { ok: false, reason: 'not_found' };
-  if (!(await pinMatches(pin, row))) return { ok: false, reason: 'bad_pin' };
+  if (!(await canManage(row, pin, ownerToken))) return { ok: false, reason: 'denied' };
   await rest(`groups?group_id=eq.${encodeURIComponent(groupId)}`, {
     method: 'DELETE', headers: { Prefer: 'return=minimal' },
   });

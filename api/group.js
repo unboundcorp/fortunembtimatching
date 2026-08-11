@@ -25,12 +25,13 @@ export default async function handler(req, res) {
   try {
     if (body.action === 'create') {
       if (typeof body.name !== 'string' || !body.name.trim()) return json(res, 400, { error: 'bad_name' });
-      if (badPin(body.pin)) return json(res, 400, { error: 'bad_pin_format' });
+      /* ★ R39 — PIN은 선택이다. 넣었으면 형식만 본다. 안 넣으면 만든 기기의 토큰으로 관리한다. */
+      if (body.pin && badPin(body.pin)) return json(res, 400, { error: 'bad_pin_format' });
       if (typeof body.members !== 'string' || !body.members || body.members.length > MAX_MEMBERS_TEXT) {
         return json(res, 400, { error: 'bad_members' });
       }
-      const r = await createGroup({ name: body.name.trim(), pin: body.pin, members: body.members });
-      return json(res, 200, { groupId: r.groupId, ttlDays: r.ttlDays });
+      const r = await createGroup({ name: body.name.trim(), pin: body.pin || null, members: body.members });
+      return json(res, 200, { groupId: r.groupId, ownerToken: r.ownerToken, ttlDays: r.ttlDays });
     }
 
     if (body.action === 'get') {
@@ -58,16 +59,22 @@ export default async function handler(req, res) {
 
     if (body.action === 'update' || body.action === 'delete') {
       if (typeof body.groupId !== 'string' || !body.groupId) return json(res, 400, { error: 'bad_group' });
-      if (badPin(body.pin)) return json(res, 400, { ok: false, reason: DENY });
+      var hasToken = typeof body.ownerToken === 'string' && body.ownerToken.length > 10;
+      if (!hasToken && badPin(body.pin)) return json(res, 400, { ok: false, reason: DENY });
 
-      if (await tooManyPinTries(body.groupId)) {
-        return json(res, 429, { ok: false, reason: 'PIN 확인을 너무 자주 시도했어요. 10분 뒤에 다시 해주세요.' });
+      /* 만든 기기의 토큰으로 오는 요청은 속도 제한을 걸지 않는다 —
+         찍어 맞히는 시도가 아니라 본인이 자기 그룹을 만지는 것이고,
+         제 그룹을 몇 번 고쳤다고 잠기면 그게 더 이상하다. */
+      if (!hasToken) {
+        if (await tooManyPinTries(body.groupId)) {
+          return json(res, 429, { ok: false, reason: 'PIN 확인을 너무 자주 시도했어요. 10분 뒤에 다시 해주세요.' });
+        }
+        await notePinTry(body.groupId);
       }
-      await notePinTry(body.groupId);
 
       const r = body.action === 'update'
-        ? await updateGroup(body.groupId, body.pin, { name: body.name, members: body.members })
-        : await deleteGroup(body.groupId, body.pin);
+        ? await updateGroup(body.groupId, body.pin, { name: body.name, members: body.members, newPin: body.newPin }, body.ownerToken)
+        : await deleteGroup(body.groupId, body.pin, body.ownerToken);
 
       /* 없는 그룹과 틀린 PIN을 구분해 알려주지 않는다. */
       if (!r.ok) return json(res, 403, { ok: false, reason: DENY });
