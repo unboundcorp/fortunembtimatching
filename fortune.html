@@ -11579,9 +11579,37 @@ function forgetGroup(id){
 }
 function groupLink(id){ return location.href.split('#')[0] + '#g=' + id; }
 
-/* 지금 화면에 세워진 사람들을 서버에 보낼 한 줄로 만든다(그룹 링크와 같은 형식). */
+/* 값 객체를 다시 한 줄로 되돌린다(inviteRowToObj의 반대). 받은 명단을 다시 저장할 때 쓴다. */
+function inviteObjToRow(o){
+  return INVITE_FIELDS.map(function(f){
+    var v = o[f.k];
+    if(v===null || v===undefined) return '';
+    if(f.k==='n') return encodeURIComponent(String(v).slice(0,20));
+    if(f.k==='lo') return String(Math.round(Number(v)*100)/100);
+    if(f.k==='ts') return v ? '1' : '0';
+    return String(v);
+  }).join(',');
+}
+
+/* =====================================================================
+   지금 화면에 세워진 사람들을 서버에 보낼 한 줄로 만든다(그룹 링크와 같은 형식).
+   ---------------------------------------------------------------------
+   ★ gcMembers()가 돌려주는 것은 "화면에 그리기 위한 객체"({id,name,mbti,elementIdx,person})이지
+     프로필이 아니다. 처음에 그걸 그대로 gcMeetRow()에 넘겼더니 생년월일 자리가 전부 비어
+     저장은 되는데 다시 열면 명단을 못 읽었다(실측으로 잡았다).
+     그래서 원본을 쓴다 — 내 프로필이면 프로필을, 링크로 받은 명단이면 읽어 둔 값 객체를.
+===================================================================== */
 function currentGroupMembersText(){
-  return gcMembers().map(function(m){ return gcMeetRow(m.profile || m); }).join(';');
+  if(GC_SOURCE==='link' && PENDING_MEET){
+    return PENDING_MEET.slice(0, GC_MAX).map(inviteObjToRow).join(';');
+  }
+  var list = gcUsableProfiles();
+  if(GC_PICK){
+    var set={}; GC_PICK.forEach(function(id){ set[id]=1; });
+    var picked = list.filter(function(p){ return set[p.id]; });
+    if(picked.length>=2) list = picked;
+  }
+  return list.slice(0, GC_MAX).map(gcMeetRow).join(';');
 }
 
 /* ---- 저장하기 ---- */
