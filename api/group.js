@@ -11,7 +11,7 @@
    ★ PIN은 서버도 모른다(해시만 보관). 잊으면 복구할 수 없고, 그건 설계된 결과다.
 ===================================================================== */
 import { json, methodGuard, readBody } from './_lib/http.js';
-import { createGroup, getGroup, updateGroup, deleteGroup, tooManyPinTries, notePinTry, GROUP_TTL_DAYS } from './_lib/groups.js';
+import { createGroup, getGroup, joinGroup, updateGroup, deleteGroup, tooManyPinTries, notePinTry, GROUP_TTL_DAYS, GROUP_MAX_MEMBERS } from './_lib/groups.js';
 
 const MAX_MEMBERS_TEXT = 8000;   /* 30명 × 한 줄 여유 */
 const DENY = '그룹을 찾을 수 없거나 PIN이 맞지 않아요.';
@@ -38,6 +38,22 @@ export default async function handler(req, res) {
       const g = await getGroup(body.groupId);
       if (!g) return json(res, 404, { error: 'not_found' });
       return json(res, 200, { name: g.name, members: g.members, updatedAt: g.updated_at, ttlDays: GROUP_TTL_DAYS });
+    }
+
+    /* 접수 주소로 들어온 사람이 스스로 참여한다. PIN을 요구하지 않는다. */
+    if (body.action === 'join') {
+      if (typeof body.groupId !== 'string' || !body.groupId) return json(res, 400, { error: 'bad_group' });
+      if (typeof body.member !== 'string' || !body.member || body.member.length > 400) {
+        return json(res, 400, { error: 'bad_member' });
+      }
+      const r = await joinGroup(body.groupId, body.member);
+      if (!r.ok) {
+        if (r.reason === 'full') {
+          return json(res, 409, { ok: false, reason: '이 그룹은 정원('+GROUP_MAX_MEMBERS+'명)이 다 찼어요.' });
+        }
+        return json(res, 404, { ok: false, reason: '그룹을 찾을 수 없거나 기간이 지났어요.' });
+      }
+      return json(res, 200, { ok: true, already: !!r.already, name: r.name, members: r.members });
     }
 
     if (body.action === 'update' || body.action === 'delete') {

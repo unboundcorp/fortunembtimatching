@@ -3266,13 +3266,17 @@ var PENDING_INVITE = null;
 /* R33 — 방 번호로 들어온 경우(#r=). 뜻 없는 번호라 주소에 남의 생년월일이 없다. */
 var PENDING_ROOM = (/[#&]r=([A-Za-z0-9_-]{10,})/.exec(INVITE_HASH_RAW) || [])[1] || null;
 /* R34 — 저장된 그룹 주소(#g=). 주소에는 뜻 없는 번호만 들어간다. */
-var PENDING_GROUP = (/[#&]g=([A-Za-z0-9_-]{8,})/.exec(INVITE_HASH_RAW) || [])[1] || null;
+/* R35 — 접수 주소(#gj=)를 먼저 본다. #gj= 는 '[#&]g=' 에는 걸리지 않지만(g 앞이 #이 아니라 j),
+   순서를 분명히 해 두어야 나중에 정규식을 손댈 때 헷갈리지 않는다. */
+var PENDING_GROUP_JOIN = (/[#&]gj=([A-Za-z0-9_-]{8,})/.exec(INVITE_HASH_RAW) || [])[1] || null;
+var PENDING_GROUP = PENDING_GROUP_JOIN ? null
+  : ((/[#&]g=([A-Za-z0-9_-]{8,})/.exec(INVITE_HASH_RAW) || [])[1] || null);
 /* ★ 초대 링크에도 남의 생년월일시·출생지가 들어 있다. 예전에는 "확인하고 궁합 입력하기"를
    누른 뒤에야 주소에서 지웠는데, 그때까지는 주소창·방문 기록에 그대로 남아 있었다.
    위에서 이미 메모리로 읽어 두었으므로(location.hash를 다시 읽는 곳은 이 파일에 없다)
    여기서 바로 지워도 흐름에 영향이 없다. 읽기에 실패한 링크도 함께 지운다 —
    파싱이 안 됐다고 주소에서 사라지는 게 아니기 때문이다. (그룹 링크와 같은 규칙) */
-if(/[#&](invite|i1|r|g)=/.test(INVITE_HASH_RAW)){
+if(/[#&](invite|i1|r|g|gj)=/.test(INVITE_HASH_RAW)){
   try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
 }
 var INVITE_CONSUMED = false;
@@ -9325,7 +9329,14 @@ function renderSetupStep3(){
     var goInvite = !wasEdit && PENDING_INVITE && !INVITE_CONSUMED;
     var goMeet   = !wasEdit && PENDING_MEET;
     var goRoom   = !wasEdit && PENDING_ROOM;
+    var goGroupJoin = !wasEdit && PENDING_GROUP_JOIN;
     var goGroup  = !wasEdit && PENDING_GROUP;
+    if(goGroupJoin){
+      ROUTE='groupJoin';
+      showToast('프로필을 저장했어요. 그룹 참여를 이어갈게요.');
+      render();
+      return;
+    }
     if(goGroup){
       var gid = PENDING_GROUP; PENDING_GROUP=null;
       showToast('프로필을 저장했어요. 받은 그룹을 열어볼게요.');
@@ -11737,6 +11748,102 @@ function confirmDeleteGroup(){
   ]);
 }
 
+/* =====================================================================
+   R35 — 접수 주소: 각자 스스로 그룹에 참여한다 (대표님 지시)
+   ---------------------------------------------------------------------
+   지금까지 그룹 명단은 "저장하는 사람"이 자기 프로필에서 골라 채웠다. 즉 남의 생년월일을
+   그 사람 대신 올리는 구조였다. 접수 주소는 방향을 뒤집는다 — 각자 자기 정보를 스스로 올린다.
+   동의가 본인에게서 나오므로 개인정보 면에서도 낫다.
+
+   ★ 참여에는 PIN을 요구하지 않는다. 요구하면 접수라는 말이 성립하지 않는다.
+     대신 참여 전에 "무엇이 올라가고 누가 볼 수 있는지"를 반드시 보여주고 동의를 받는다.
+===================================================================== */
+function groupJoinLink(id){ return location.href.split('#')[0] + '#gj=' + id; }
+
+var GROUP_JOIN_STATE = {busy:false, error:null, done:false, name:null};
+
+function renderGroupJoin(){
+  var main=$('#main'); main.innerHTML='';
+  var wrap=el('div',{class:'envelope-wrap view'});
+  wrap.appendChild(el('div',{class:'envelope'},[
+    el('div',{class:'body'}), el('div',{class:'flap'}), el('div',{class:'seal'},['緣'])
+  ]));
+
+  if(GROUP_JOIN_STATE.error){
+    wrap.appendChild(pageHead('그룹 참여', '참여하지 못했어요'));
+    wrap.appendChild(el('p',{class:'section-sub'},[GROUP_JOIN_STATE.error]));
+    wrap.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){
+      PENDING_GROUP_JOIN=null; GROUP_JOIN_STATE={busy:false,error:null,done:false,name:null};
+      ROUTE='home'; render();
+    }},['홈으로']));
+    main.appendChild(autoTermify(wrap));
+    return;
+  }
+
+  var me = activeProfile();
+  wrap.appendChild(pageHead('그룹 참여', GROUP_JOIN_STATE.name ? (GROUP_JOIN_STATE.name+' 그룹에 참여할까요?') : '그룹에 참여할까요?'));
+  wrap.appendChild(el('p',{class:'section-sub'},[
+    me ? (me.name+'님으로 참여해요. 다른 프로필로 하시려면 화면 위에서 프로필을 바꿔주세요.') : ''
+  ]));
+  /* ★ 무엇이 올라가고 누가 볼 수 있는지를 참여 "전에" 보여준다. 누른 뒤에 알리면 늦다. */
+  wrap.appendChild(el('p',{class:'warn-box'},[
+    '참여하면 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 이 그룹에 저장되고, 그룹 주소를 아는 사람은 볼 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관되고, 언제든 그룹을 만든 분께 빼달라고 하실 수 있어요.'
+  ]));
+  wrap.appendChild(el('button',{class:'btn btn-primary', disabled: GROUP_JOIN_STATE.busy?'disabled':null, onclick:function(){
+    doGroupJoin();
+  }},[GROUP_JOIN_STATE.busy ? '참여하는 중…' : '동의하고 참여하기']));
+  wrap.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:10px;', onclick:function(){
+    PENDING_GROUP_JOIN=null; ROUTE='home'; render();
+  }},['참여하지 않기']));
+  main.appendChild(autoTermify(wrap));
+}
+
+function doGroupJoin(){
+  var me = activeProfile();
+  if(!me || !PENDING_GROUP_JOIN) return;
+  GROUP_JOIN_STATE.busy = true; render();
+  var gid = PENDING_GROUP_JOIN;
+  groupFetch({action:'join', groupId:gid, member: gcMeetRow(me)})
+    .then(function(d){
+      GROUP_JOIN_STATE.busy = false;
+      PENDING_GROUP_JOIN = null;
+      showToast(d && d.already ? '이미 참여하고 계셨어요.' : '그룹에 참여했어요.');
+      openSavedGroup(gid);
+    })
+    .catch(function(err){
+      GROUP_JOIN_STATE.busy = false;
+      GROUP_JOIN_STATE.error = String(err && err.message || '지금은 참여할 수 없어요.');
+      render();
+    });
+}
+
+/* 그룹 화면에 두는 접수 주소 카드 */
+function buildGroupJoinCard(){
+  if(!GROUP_VIEW) return null;
+  var card = el('div',{class:'scroll-card'});
+  card.appendChild(el('h3',{},['사람 더 받기 (접수 주소)']));
+  card.appendChild(el('p',{class:'biz-hint'},[
+    '이 주소를 보내면 받은 분이 자기 정보를 직접 넣고 이 그룹에 들어와요. 최대 '+GC_MAX+'명까지 받을 수 있어요.'
+  ]));
+  card.appendChild(el('div',{class:'field'},[
+    el('input',{type:'text', value:groupJoinLink(GROUP_VIEW.id), readOnly:'readonly', id:'groupJoinLink'})
+  ]));
+  var row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;'});
+  row.appendChild(el('button',{class:'btn btn-primary btn-sm', onclick:function(){
+    var lk = groupJoinLink(GROUP_VIEW.id);
+    if(navigator.share){ navigator.share({title:COMPANY.serviceName+' · '+(GROUP_VIEW.name||'그룹')+'에 참여하기', url:lk}).catch(function(){}); }
+    else { copyText(lk); }
+  }},['접수 주소 보내기']));
+  row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+    openSavedGroup(GROUP_VIEW.id);
+  }},['새로 들어온 사람 확인']));
+  card.appendChild(row);
+  card.appendChild(el('p',{class:'biz-hint'},[
+    '접수 주소는 그룹 주소와 달라요. 접수 주소를 받은 분은 참여만 하고, 그룹을 고치거나 지우려면 PIN이 필요해요.'
+  ]));
+  return card;
+}
+
 /* 궁합 화면에 두는 "저장한 그룹" 목록 */
 function buildSavedGroupsCard(){
   var list = savedGroups();
@@ -11896,12 +12003,19 @@ function renderGroupCompat(){
     gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:openGroupManageModal},['그룹 관리']));
     gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:confirmDeleteGroup},['그룹 지우기']));
     gsCard.appendChild(gRow);
+    view.appendChild(gsCard);
+    var joinCard = buildGroupJoinCard();
+    if(joinCard) view.appendChild(joinCard);
+    gsCard = null;
   } else {
     gsCard.appendChild(el('h3',{},['이 그룹 저장하기']));
     gsCard.appendChild(el('p',{class:'biz-hint'},['이름을 붙여 저장하면 주소가 생겨요. 새로고침하거나 나중에 다시 와도 그 주소로 같은 그룹이 열려요.']));
     gsCard.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:10px;', onclick:openGroupSaveModal},['이름 붙여 저장하기']));
+    gsCard.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
+      '저장하면 "접수 주소"도 함께 생겨요. 그 주소를 보내면 다른 분들이 스스로 참여할 수 있어요.'
+    ]));
   }
-  view.appendChild(gsCard);
+  if(gsCard) view.appendChild(gsCard);
   view.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, MBTI 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
   main.appendChild(autoTermify(view));
 }
@@ -12875,6 +12989,7 @@ function render(){
   if(!STATE.onboarded && STATE.profiles.length===0){ renderOnboarding(); return; }
   if(ROUTE==='setup' && SETUP){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderSetup(); return; }
   if(STATE.profiles.length===0){ startSetupWizard(null); renderSetup(); return; }
+  if(ROUTE==='groupJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderGroupJoin(); return; }
   if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
   if(ROUTE==='inviteAccept'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderInviteAccept(); return; }
 
@@ -12973,6 +13088,8 @@ if(MEET_HASH_PRESENT){
 }
 if(PENDING_MEET && STATE.profiles.length>0){
   GC_SOURCE='link'; ROUTE='groupCompat';
+} else if(PENDING_GROUP_JOIN && STATE.profiles.length>0){
+  ROUTE='groupJoin';
 } else if(PENDING_GROUP && STATE.profiles.length>0){
   /* 그룹 주소로 들어왔다. 명단은 서버에서 받아온다. */
   ROUTE='compat';

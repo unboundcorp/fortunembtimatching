@@ -132,6 +132,39 @@ async function getGroupWithPin(groupId) {
   return rows && rows[0] ? rows[0] : null;
 }
 
+/* =====================================================================
+   ★ R35 — 접수 주소로 들어온 사람이 스스로 참여한다
+   ---------------------------------------------------------------------
+   지금까지 그룹 명단은 "저장하는 사람"이 자기 프로필에서 골라 채웠다. 그래서 남의 생년월일을
+   그 사람 대신 올리는 구조였다. 접수 주소는 그 방향을 뒤집는다 —
+   각자 자기 정보를 스스로 올리므로, 동의가 본인에게서 나온다. 개인정보 면에서 더 낫다.
+
+   ★ PIN을 요구하지 않는다. 요구하면 접수의 뜻이 사라진다(주소만 알면 참여할 수 있어야 한다).
+     대신 세 가지로 막는다 — 정원(GROUP_MAX_MEMBERS), 같은 줄 중복 거부, 그룹이 없으면 거부.
+===================================================================== */
+export const GROUP_MAX_MEMBERS = 30;
+
+export async function joinGroup(groupId, memberRow) {
+  const row = await getGroupWithPin(groupId);
+  if (!row) return { ok: false, reason: 'not_found' };
+
+  const rows = String(row.members || '').split(';').filter(Boolean);
+  /* 이미 똑같은 줄이 있으면 다시 넣지 않는다 — 새로고침이나 두 번 누름으로 늘어나면 안 된다. */
+  if (rows.indexOf(memberRow) >= 0) {
+    return { ok: true, already: true, name: row.name, members: row.members };
+  }
+  if (rows.length >= GROUP_MAX_MEMBERS) {
+    return { ok: false, reason: 'full' };
+  }
+  rows.push(memberRow);
+  const next = rows.join(';');
+  await rest(`groups?group_id=eq.${encodeURIComponent(groupId)}`, {
+    method: 'PATCH', headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ members: next, updated_at: new Date().toISOString(), expires_at: expiryISO() }),
+  });
+  return { ok: true, name: row.name, members: next };
+}
+
 export async function updateGroup(groupId, pin, patch) {
   const row = await getGroupWithPin(groupId);
   if (!row) return { ok: false, reason: 'not_found' };
