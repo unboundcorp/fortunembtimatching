@@ -13195,16 +13195,17 @@ function buildInviteWatchCard(){
   return card;
 }
 
+function watchLineText(n){
+  return (n > 1)
+    ? (n + '명이 들어왔어요. 지금 바로 보실 수 있어요.')
+    : '아직 아무도 안 들어왔어요. 링크를 받은 분이 정보를 넣으면 여기에 표시됩니다.';
+}
+/* ★ isConnected를 보지 않는다. 카드를 만들 때는 아직 화면에 붙기 전이라 늘 false다 —
+   그것 때문에 처음에는 이 줄이 비어 있었다(실측으로 잡음). */
 function paintInviteWatch(){
   var w = INVITE_WATCH;
-  if(!w || !w.el || !w.el.isConnected) return;
-  w.el.textContent = (w.n > 1)
-    ? (w.n + '명이 들어왔어요. 지금 바로 보실 수 있어요.')
-    : '아직 아무도 안 들어왔어요. 링크를 받은 분이 정보를 넣으면 여기에 표시됩니다.';
-  /* 목록의 인원 수도 같이 맞춰 둔다 */
-  var row = [].slice.call(document.querySelectorAll('.settings-row .sr-label'))
-    .filter(function(x){ return x.textContent.indexOf(w.name) === 0; })[0];
-  if(row && w.n > 1) row.textContent = w.name + ' · ' + w.n + '명';
+  if(!w || !w.el) return;
+  w.el.textContent = watchLineText(w.n);
 }
 
 function scheduleInviteWatch(){
@@ -13228,10 +13229,14 @@ function tickInviteWatch(byHand){
     .then(function(d){
       if(!INVITE_WATCH || INVITE_WATCH.id !== w.id) return;
       var n = String((d && d.members) || '').split(';').filter(Boolean).length;
+      var changed = (n !== INVITE_WATCH.n);
       INVITE_WATCH.n = n;
       INVITE_WATCH.name = (d && d.name) || w.name;
       rememberGroup(w.id, INVITE_WATCH.name, null, n);
-      paintInviteWatch();
+      /* ★ 인원이 바뀐 때만 화면을 다시 그린다. 그래야 아래 '저장한 그룹' 목록의
+         인원 수도 같이 맞는다. 안 바뀌었으면 글자만 갈아 끼워, 보고 있는 화면을 흔들지 않는다. */
+      if(changed && ROUTE === 'compat'){ render(); }
+      else { paintInviteWatch(); }
     })
     .catch(function(){ if(byHand) paintInviteWatch(); })
     .then(function(){ scheduleInviteWatch(); });
