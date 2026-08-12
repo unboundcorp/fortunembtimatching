@@ -13022,6 +13022,9 @@ function renderGroupCompat(){
   }
   if(gsCard) view.appendChild(gsCard);
   view.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, MBTI 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
+  /* R50 — 그룹으로 들어온 분에게도 다른 서비스를 권한다.
+     1:1 궁합에만 붙이면, 링크로 그룹에 들어온 사람은 이 앱에 사주 풀이가 있는 줄도 모른다. */
+  view.appendChild(crossSell('toSelf'));
   main.appendChild(autoTermify(view));
 }
 
