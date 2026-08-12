@@ -311,8 +311,14 @@ main{flex:1;padding:28px 20px 96px;}
 .btn-circle-label{font-size:.82rem;color:var(--ink-dim);letter-spacing:.03em;}
 
 /* ===================== v4-A 신규: row + chevron 리스트 (설정·입력 화면 공용) ===================== */
+/* ★ R44 — 한 줄에 다 안 들어가면 값을 아랫줄로 내린다.
+   라벨과 값을 억지로 한 줄에 밀어 넣느라 양쪽이 다 잘리고 있었다
+   ('테스트 (…' 와 'ENTJ · 남 · 9202…'). 어느 한쪽을 더 줄이는 것으로는 못 고친다 —
+   320px에서는 둘을 합친 길이 자체가 줄 폭을 넘기 때문이다.
+   flex-wrap 을 켜면 들어가는 줄은 그대로 한 줄로 두고, 안 들어가는 줄만 두 줄이 된다.
+   줄마다 따로 정해 줄 필요가 없어 새로 만드는 화면에도 그대로 적용된다. */
 .settings-row{
-  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
   padding:16px 18px;min-height:60px;background:var(--panel);border:1px solid rgba(88,68,22,.12);
   border-radius:var(--r-lg);margin-bottom:12px;width:100%;text-align:left;
   box-shadow:var(--shadow-soft);
@@ -326,12 +332,12 @@ main{flex:1;padding:28px 20px 96px;}
    라벨은 길어도 앞부분만 봐도 무엇인지 아는 쪽이다. */
 .settings-row .sr-label{color:var(--ink-dim);font-size:.88rem;flex:1 1 auto;min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.settings-row .sr-value-wrap{display:flex;align-items:center;gap:8px;min-width:0;}
-.settings-row .sr-value{color:var(--ink);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw;text-align:right;
-  /* ★ R44 — flex:0 0 auto 였다. 값이 절대 줄지 않아, 값이 길면 라벨을 밀어내고 자기도 화살표를 넘었다.
-     이제 값도 줄어든다. 라벨과 값이 같이 조금씩 양보하므로 어느 한쪽이 통째로 사라지지 않는다.
-     (줄어드는 쪽을 라벨로 정한 R33의 판단은 유지한다 — 라벨이 먼저, 값이 나중에 줄어든다.) */
-  flex:0 1 auto;min-width:0;}
+.settings-row .sr-value-wrap{display:flex;align-items:center;gap:8px;min-width:0;
+  /* 아랫줄로 내려갔을 때 왼쪽에 붙지 않고 오른쪽 화살표 자리에 그대로 서 있게 한다. */
+  margin-left:auto;}
+.settings-row .sr-value{color:var(--ink);font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  /* 아랫줄로 내려가면 그 줄을 다 쓸 수 있어야 한다. 62vw로 묶어 두면 내려가서도 잘린다. */
+  max-width:100%;text-align:right;flex:0 1 auto;min-width:0;}
 .settings-row .sr-chevron{color:var(--gold);flex:none;font-size:1.1rem;line-height:1;opacity:.8;}
 .settings-row[disabled],.settings-row.sr-static{cursor:default;}
 .sheet-body{display:flex;flex-direction:column;gap:4px;}
