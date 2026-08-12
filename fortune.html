@@ -4111,7 +4111,12 @@ function lockedBlock(product, teaserHtml, sectionTitle){
   var cta = el('div',{class:'locked-cta'});
   cta.appendChild(el('div',{class:'locked-icon'},[lockIcon('잠김')]));
   /* '내면 부터는'처럼 조사가 띄어써지지 않도록 붙여 쓴다. */
-  cta.appendChild(el('div',{class:'locked-title'},[sectionTitle ? '‘'+sectionTitle+'’부터는 유료예요' : '여기부터는 유료예요']));
+  /* ★ R52 — '유료예요'를 먼저 말하지 않는다(대표님 지시).
+     여기까지 읽은 사람은 이미 이 풀이가 마음에 든 사람이다. 그 사람에게 첫마디로
+     '돈을 내라'고 하면 닫는다. 무엇이 더 있는지를 먼저 말하고 값은 버튼에서 밝힌다.
+     ★ 값을 감추는 것이 아니다 — 버튼에 금액이 그대로 적혀 있고, 결제 화면에서
+       무엇이 열리는지 다시 보여준다. 순서를 바꾼 것이다. */
+  cta.appendChild(el('div',{class:'locked-title'},[sectionTitle ? '‘'+sectionTitle+'’부터 더 깊이 이어져요' : '여기서부터 더 깊이 이어져요']));
   cta.appendChild(el('div',{class:'locked-desc'},[product.desc]));
   var btn = el('button',{class:'btn btn-primary', onclick:function(){ openPaywall(product); }},
     ['더보기 · '+formatWon(product.price)]);
@@ -10281,6 +10286,11 @@ function renderLanding(){
     var ul=el('ul',{class:'svc-list'});
     bullets.forEach(function(t){ ul.appendChild(el('li',{},[t])); });
     c.appendChild(ul);
+    /* ★ R52 — 여기서 가격 이야기를 하지 않는다(대표님 지시).
+       고르기도 전에 '유료'라는 말이 먼저 보이면 들어와 보기도 전에 값을 재게 된다.
+       이 자리에는 '들어오는 데 드는 것이 없다'는 말만 둔다.
+       유료 이야기는 무료 부분을 다 보고 '더 보고 싶다'가 된 다음에 한다
+       (사주 풀이 4번째 섹션·궁합 결과 아래). */
     c.appendChild(el('div',{class:'svc-price'},[price]));
     /* ★ R51 — 카드 안의 '시작하기' 줄을 뺐다(대표님 지시).
        카드 전체가 이미 버튼이라, 그 안에 또 버튼처럼 생긴 것을 두면
@@ -10293,7 +10303,7 @@ function renderLanding(){
     '내 MBTI × 사주 분석',
     '타고난 여덟 글자와 성격 유형을 함께 읽어드려요.',
     ['오늘의 운세 · 만세력 사주팔자', '오행·십성·대운 흐름', 'MBTI 성향 리포트'],
-    '기본 풀이 무료 · 깊은 해석은 유료',
+    '회원가입 없이 바로',
     function(){ startService('self'); }
   ));
 
@@ -10301,7 +10311,7 @@ function renderLanding(){
     '타인과 궁합 보기',
     '링크 하나만 보내면 상대가 직접 넣고 바로 결과가 나와요.',
     ['둘이서 보는 1:1 궁합', '링크로 최대 '+GC_MAX+'명까지 그룹 궁합', '무엇이 맞고 어긋나는지 항목별로'],
-    '기본 궁합 무료 · 상세 궁합은 유료',
+    '상대는 앱 설치 없이 링크만',
     function(){ startService('compat'); }
   ));
 
@@ -11633,7 +11643,7 @@ function renderCompatSummary(p, draft){
     /* 무료로 어디까지 본 것인지, 결제하면 무엇이 더 열리는지 요약 화면에서 바로 알려준다.
        ★ 여기도 용어를 쓰지 않는다 — 무엇을 사는 건지는 "무엇을 알게 되는지"로 적는다. */
     var upsell = el('div',{class:'compat-upsell'});
-    upsell.appendChild(el('p',{},['여기까지가 무료 기본 궁합이에요. 두 사람의 기운이 어디서 맞물리고 어디서 부딪히는지, 왜 그런지까지 문장으로 풀어주는 상세 해석은 유료로 열려요.']));
+    upsell.appendChild(el('p',{},['두 사람의 기운이 어디서 맞물리고 어디서 부딪히는지, 왜 그런지까지 문장으로 풀어드리는 상세 해석이 따로 있어요. 지금 보신 점수가 어떻게 나왔는지도 항목별로 다 나옵니다.']));
     upsell.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ openPaywall(PRODUCTS.compat_full); }},['궁합 상세 열기 · '+formatWon(PRODUCTS.compat_full.price)]));
     box.appendChild(upsell);
   }
