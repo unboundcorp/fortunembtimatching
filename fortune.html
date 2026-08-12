@@ -1141,7 +1141,7 @@ main{flex:1;padding:28px 20px 96px;}
     <button class="tab-btn" data-route="home" aria-controls="main">홈</button>
     <button class="tab-btn" data-route="today" data-mode="self" aria-controls="main">오늘의 운세</button>
     <button class="tab-btn" data-route="saju" data-mode="self" aria-controls="main">내 사주</button>
-    <button class="tab-btn" data-route="report" data-mode="self" aria-controls="main">MBTI 리포트</button>
+    <button class="tab-btn" data-route="report" data-mode="self" aria-controls="main">성격유형 리포트</button>
     <button class="tab-btn" data-route="chars" data-mode="self" aria-controls="main">캐릭터 도감</button>
     <button class="tab-btn" data-route="compat" data-mode="compat" aria-controls="main">궁합 보기</button>
     <button class="tab-btn" data-route="history" aria-controls="main">히스토리</button>
@@ -1197,7 +1197,9 @@ var COMPANY = {
   bizRegNo:     '581-88-04065',
   corpRegNo:    '120111-0153083',
   /* ★ 행정구역 표기 확인 필요 (2026-08-11 기록).
-     대표님이 두 번에 걸쳐 "서해구"로 확인해 주셨기에 그대로 둔다.
+     대표님이 세 번에 걸쳐 확인해 주셨다(2026-08-12: "그게 맞다, 앞으로 무시하라").
+     주소의 '서해구'와 통신판매 신고번호의 '인천서구'가 달라 보이지만 둘 다 맞는 값이다.
+     ★ 다시 지적하지 말 것. 확인 끝난 사안이다.
      다만 아래 통신판매업 신고번호가 `2026-인천서구-2262`로 **서구**를 가리킨다.
      신고번호의 지역명은 신고를 수리한 관청 이름이므로, 둘 중 하나는 틀렸을 가능성이 높다.
      전자상거래법 제13조 표시의무 항목이라 틀리면 문제가 되므로 대표님께 재확인 요청해 둔 상태다.
@@ -1249,13 +1251,13 @@ var PROCESSORS = [
   { name:'Vercel Inc.',        task:'앱 화면과 서버 기능의 호스팅',        region:'미국',    items:'접속 요청 정보' },
   /* 대표님이 프로젝트를 서울(ap-northeast-2) 지역으로 만드셨다고 확인해 주셨다(2026-08-11). */
   /* ★ R48 — 맡긴 일이 늘었는데 문구가 그대로였다. 그룹·AI 해석 글·이용 기록도 여기 저장된다. */
-  { name:'Supabase Inc.',      task:'궁합 방·그룹·AI 해석 글·결제 기록 저장', region:'대한민국', items:'닉네임·MBTI·생년월일·태어난 시각·성별·출생지, 생성된 해석 글, 주문·결제 기록' },
+  { name:'Supabase Inc.',      task:'궁합 방·그룹·AI 해석 글·결제 기록 저장', region:'대한민국', items:'닉네임·성격유형·생년월일·태어난 시각·성별·출생지, 생성된 해석 글, 주문·결제 기록' },
   { name:'토스페이먼츠 주식회사', task:'결제 처리 및 결제수단 인증',         region:'대한민국', items:'주문번호·결제금액·결제수단 정보' },
   /* ★ 2026-08-12 — AI 해석을 붙이면서 추가. 결제하신 분의 사주 계산 결과가 미국으로 나간다.
      처리위탁·국외이전은 미리 알리지 않으면 그 자체가 위반이다. 기능을 켜기 전에 여기 적는다.
      내보내는 것은 '계산 결과'다 — 이름은 호칭으로만 쓰이고, 연락처나 결제수단은 보내지 않는다. */
   { name:'Anthropic PBC',      task:'유료 상세 해석 문장 생성(AI)',        region:'미국',
-    items:'닉네임·성별·생년월일·태어난 시각, 사주 계산 결과(여덟 글자·오행·십성·대운), MBTI 유형' }
+    items:'닉네임·성별·생년월일·태어난 시각, 사주 계산 결과(여덟 글자·오행·십성·대운), 성격유형' }
 ];
 function processorRegion(x){ return companyValue(x.region); }
 function processorsMissing(){ return PROCESSORS.some(function(x){ return companyMissing(x.region); }); }
@@ -3591,10 +3593,10 @@ var PRODUCTS = {
      범위만 넓히고 설명을 그대로 두면 그것도 문구와 동작의 불일치다. */
   saju_full:    { id:'saju_full',    name:'사주 풀이 전체 해석', price:1900, kind:'once',
                   desc:'풀이 13개 섹션 + 올해 월별 운세 상세 + 대운 구간별 상세 — 성격·재물·직업·관계·건강·흐름까지' },
-  mbti_full:    { id:'mbti_full',    name:'MBTI 풀이 전체 해석', price:1900, kind:'once',
+  mbti_full:    { id:'mbti_full',    name:'성격유형 풀이 전체 해석', price:1900, kind:'once',
                   desc:'13개 섹션 전체 — 강점·그림자·관계 패턴·성장 방향까지' },
   compat_full:  { id:'compat_full',  name:'궁합 상세 전체', price:1900, kind:'once',
-                  desc:'사주 궁합 상세 · MBTI 궁합 상세 · 궁합 시각화' },
+                  desc:'사주 궁합 상세 · 성격유형 궁합 상세 · 궁합 시각화' },
   premium_pass: { id:'premium_pass', name:'전체 이용권 7일', price:4900, kind:'pass', days:7,
                   desc:'위 모든 상세 해석을 7일간' }
 };
@@ -4647,7 +4649,7 @@ function openTermsModal(){
 
   h('제4조 (서비스의 제공)');
   ul([
-    '서비스는 만세력 사주 계산, 사주·MBTI 해석, 궁합 콘텐츠를 제공합니다. 구체적인 기능은 서비스 화면에서 안내합니다.',
+    '서비스는 만세력 사주 계산, 사주·성격유형 해석, 궁합 콘텐츠를 제공합니다. 구체적인 기능은 서비스 화면에서 안내합니다.',
     '서비스는 별도의 회원가입 없이 이용할 수 있습니다.',
     '서비스는 광고를 게재하지 않으며, 광고·분석 도구를 사용하지 않습니다.'
   ]);
@@ -4743,7 +4745,7 @@ function openPrivacyModal(){
   h('제1조 (수집 항목과 이용 목적)');
   ul([
     '필수 — 닉네임, 생년월일, 성별. 사주 계산과 결과 제공에 씁니다.',
-    '선택 (없어도 이용에 불이익 없음) — 태어난 시각, 출생지와 태어난 시각 보정 사용 여부, MBTI 유형. 더 정확한 계산과 궁합에 씁니다.',
+    '선택 (없어도 이용에 불이익 없음) — 태어난 시각, 출생지와 태어난 시각 보정 사용 여부, 성격유형. 더 정확한 계산과 궁합에 씁니다.',
     '그룹을 쓰실 때 — 그룹 이름, 관리용 PIN(설정하신 경우).',
     '결제하실 때 — 주문·결제 기록. 카드번호 등 결제수단 정보는 결제대행사가 직접 처리하며 회사는 받지도, 보관하지도 않습니다. 휴대폰 번호는 수집하지 않습니다.'
   ]);
@@ -4770,7 +4772,7 @@ function openPrivacyModal(){
     ]));
   });
   ul([
-    'AI 해석은 유료 상세 해석을 결제하신 경우에만 이용되며, 그때 닉네임·성별·생년월일·태어난 시각과 사주 계산 결과, MBTI 유형이 전송됩니다. 결제하지 않으시면 전송되지 않습니다.',
+    'AI 해석은 유료 상세 해석을 결제하신 경우에만 이용되며, 그때 닉네임·성별·생년월일·태어난 시각과 사주 계산 결과, 성격유형이 전송됩니다. 결제하지 않으시면 전송되지 않습니다.',
     '처리 국가가 대한민국이 아닌 곳으로는 개인정보가 국외로 이전됩니다. 이전 시점은 해당 기능을 쓰는 때이고, 방법은 정보통신망을 통한 전송입니다.',
     '국외 이전을 원하지 않으시면 해당 기능(궁합 링크, 유료 AI 해석)을 이용하지 않는 방법으로 거부하실 수 있습니다. 그 경우에도 무료 기본 풀이는 그대로 이용하실 수 있습니다.'
   ]);
@@ -4828,7 +4830,7 @@ function openPrivacyModal(){
 var FOOTER_PAGES = [
   ['about',   '서비스 소개'],
   ['guideSaju', '사주 가이드'],
-  ['guideMbti', 'MBTI 가이드'],
+  ['guideMbti', '성격유형 가이드'],
   ['faq',     '자주 묻는 질문']
 ];
 /* 안내 페이지들은 스스로 푸터를 붙이므로 여기서 또 붙이지 않는다. */
@@ -4889,12 +4891,12 @@ function infoCard(view, title, paras){
 function renderAbout(){
   buildInfoPage('서비스 소개', COMPANY.serviceName+'가 하는 일', function(view){
     infoCard(view, null, [
-      'MBTI와 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 편하게 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.'
+      '성격유형과 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 편하게 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.'
     ]);
     infoCard(view, '무엇을 볼 수 있나요', [
       '내 사주 — 태어난 날과 시각으로 여덟 글자(사주팔자)를 계산하고, 오행과 십성, 10년 단위 흐름(대운)까지 보여드려요.',
       '오늘의 운세 — 그날의 기운과 내 사주를 견주어 총운·금전운·애정운·건강운·학업직장운을 짚어드려요.',
-      '궁합 — 두 사람의 MBTI와 사주를 함께 봅니다. 링크를 보내면 상대방 화면과 내 화면에 같은 결과가 나타나요.',
+      '궁합 — 두 사람의 성격유형과 사주를 함께 봅니다. 링크를 보내면 상대방 화면과 내 화면에 같은 결과가 나타나요.',
       '그룹 궁합 — 최대 '+GC_MAX+'명까지 한 그림으로 모아 서로의 결을 한눈에 볼 수 있어요.'
     ]);
     infoCard(view, '이런 점이 다릅니다', [
@@ -4932,8 +4934,8 @@ function renderGuideSaju(){
 }
 
 function renderGuideMbti(){
-  buildInfoPage('MBTI 가이드', '네 글자가 말해주는 것', function(view){
-    infoCard(view, 'MBTI가 뭔가요', [
+  buildInfoPage('성격유형 가이드', '네 글자가 말해주는 것', function(view){
+    infoCard(view, '성격유형이 뭔가요', [
       '사람이 세상을 받아들이고 결정하는 방식을 네 가지 축으로 나눈 성격 유형 분류입니다. 각 축에서 한쪽을 골라 네 글자가 만들어져요.'
     ]);
     infoCard(view, '네 가지 축', [
@@ -4947,11 +4949,11 @@ function renderGuideMbti(){
       '이 테스트는 정식 검사가 아니라 간단한 참고용입니다. 이미 알고 계신 유형이 있다면 그걸 고르시는 편이 정확해요.'
     ]);
     infoCard(view, '사주와 함께 보면', [
-      'MBTI는 지금의 나를 설명하고, 사주는 타고난 결과 흐름을 봅니다. 두 가지가 같은 이야기를 할 때도 있고 다른 이야기를 할 때도 있어요.',
-      '궁합에서는 MBTI 40% · 사주 40% · 오행 10% · 띠 10%로 합쳐 하나의 점수로 보여드립니다.'
+      '성격유형은 지금의 나를 설명하고, 사주는 타고난 결과 흐름을 봅니다. 두 가지가 같은 이야기를 할 때도 있고 다른 이야기를 할 때도 있어요.',
+      '궁합에서는 성격유형 40% · 사주 40% · 오행 10% · 띠 10%로 합쳐 하나의 점수로 보여드립니다.'
     ]);
     infoCard(view, '참고해 주세요', [
-      'MBTI는 사람을 가두는 틀이 아닙니다. 같은 유형이어도 실제 모습은 저마다 다릅니다. 나를 이해하는 하나의 언어 정도로 봐주세요.'
+      '성격유형은 사람을 가두는 틀이 아닙니다. 같은 유형이어도 실제 모습은 저마다 다릅니다. 나를 이해하는 하나의 언어 정도로 봐주세요.'
     ]);
   });
 }
@@ -4975,11 +4977,11 @@ function renderFaq(){
         ['\'내 사주\'는 무엇인가요?',
          '태어난 날과 시각으로 사주 여덟 글자를 계산해, 타고난 기운(오행)과 10년 단위 흐름(대운)까지 보여드리는 화면이에요. 절기와 진태양시까지 따져서 뽑습니다.'],
         ['\'상세 해석\'은 무엇인가요?',
-         '기본 풀이보다 더 깊이 들어간 유료 콘텐츠예요. 사주 풀이는 13개 섹션 전체와 올해 월별 흐름·대운 구간별 상세가 열리고, 궁합은 사주 궁합·MBTI 궁합 상세가 열립니다. 무엇이 열리는지는 결제 전에 화면에 적어드려요.'],
+         '기본 풀이보다 더 깊이 들어간 유료 콘텐츠예요. 사주 풀이는 13개 섹션 전체와 올해 월별 흐름·대운 구간별 상세가 열리고, 궁합은 사주 궁합·성격유형 궁합 상세가 열립니다. 무엇이 열리는지는 결제 전에 화면에 적어드려요.'],
         ['생시(태어난 시간)는 꼭 넣어야 하나요?',
          '아니요, 선택이에요. 모르시면 "시간 모름"을 고르시면 됩니다. 그러면 시주를 뺀 여섯 글자로 계산하고, 그 사실을 화면에 함께 적어드려요. 다만 시각을 아시면 결과가 더 정확해집니다.'],
         ['결과에 나오는 캐릭터가 제 띠와 달라요',
-         '케미체크의 캐릭터는 띠가 아니에요. 화면에 따라 MBTI 유형을 그림으로 옮긴 캐릭터, 또는 태어난 날의 기운(일간의 오행)을 옮긴 캐릭터가 나옵니다. 띠는 궁합 점수를 낼 때 참고 항목으로만 쓰여요.'],
+         '케미체크의 캐릭터는 띠가 아니에요. 화면에 따라 성격유형을 그림으로 옮긴 캐릭터, 또는 태어난 날의 기운(일간의 오행)을 옮긴 캐릭터가 나옵니다. 띠는 궁합 점수를 낼 때 참고 항목으로만 쓰여요.'],
         ['사주 결과가 다른 곳과 달라요',
          '절기 시각을 계산하는 방법과 진태양시를 쓰는지에 따라 결과가 달라질 수 있어요. 케미체크가 어떻게 계산했는지는 내 사주 화면에서 펼쳐 보실 수 있습니다.']
       ]],
@@ -4987,7 +4989,7 @@ function renderFaq(){
         ['다른 사람이 우리 그룹을 볼 수 있나요?',
          '그룹 주소를 아는 사람만 볼 수 있어요. 주소는 뜻 없는 무작위 번호라 찍어서 맞힐 수 없습니다. 다만 주소를 받은 사람은 누구나 열 수 있으니, 보내실 분을 정해서 보내주세요.'],
         ['1:1 궁합에서 친구가 볼 수 있는 정보는?',
-         '링크에 담긴 사람의 닉네임·MBTI·생년월일·태어난 시각·성별·출생지가 상대방 화면에 나타납니다. 궁합을 계산하는 데 필요한 값이에요. 링크를 만들기 전에 화면에서 같은 내용을 알려드립니다.'],
+         '링크에 담긴 사람의 닉네임·성격유형·생년월일·태어난 시각·성별·출생지가 상대방 화면에 나타납니다. 궁합을 계산하는 데 필요한 값이에요. 링크를 만들기 전에 화면에서 같은 내용을 알려드립니다.'],
         ['그룹이나 멤버를 삭제·수정하고 싶어요',
          '그룹 화면 아래 [그룹 관리]를 눌러주세요. 그룹을 만드신 기기에서는 PIN 없이 바로 이름을 바꾸거나, 지금 화면에 있는 사람들로 명단을 다시 저장하거나, 그룹을 지우실 수 있어요. 다른 기기에서도 관리하시려면 [그룹 관리]에서 관리용 PIN을 정해 두시면 됩니다.'],
         ['그룹 PIN을 잊어버렸어요',
@@ -4997,7 +4999,7 @@ function renderFaq(){
         ['저장한 그룹은 얼마나 남아 있나요?',
          GROUP_TTL_PHRASE+' 동안 남아 있어요. 자주 여시든 안 여시든 이 기간은 달라지지 않고, 지나면 지워집니다. 1:1 궁합은 '+ROOM_TTL_PHRASE+'이에요.'],
         ['두 사람 화면의 점수가 조금 달라요',
-         '사주에서 서로를 북돋는 관계는 방향에 따라 다르게 봅니다. 그래서 보는 사람 기준으로 1~2점 차이가 날 수 있어요. MBTI·오행·띠 점수는 양쪽이 같습니다.']
+         '사주에서 서로를 북돋는 관계는 방향에 따라 다르게 봅니다. 그래서 보는 사람 기준으로 1~2점 차이가 날 수 있어요. 성격유형·오행·띠 점수는 양쪽이 같습니다.']
       ]],
       ['계정과 기록', [
         ['회원가입을 해야 하나요?',
@@ -5740,7 +5742,7 @@ function openAdminConsole(){
         saveState(); showToast('프로필을 초기화했습니다.'); render(); openAdminConsole();
       }));
     row.appendChild(danger('히스토리만 비우기',
-      '오늘의 운세 · 사주풀이 · MBTI 풀이 · 궁합 기록을 전부 지웁니다. 프로필과 이용권은 남습니다. 되돌릴 수 없습니다. 진행할까요?',
+      '오늘의 운세 · 사주풀이 · 성격유형 풀이 · 궁합 기록을 전부 지웁니다. 프로필과 이용권은 남습니다. 되돌릴 수 없습니다. 진행할까요?',
       function(){
         STATE.fortuneHistory = []; STATE.compatHistory = [];
         STATE.sajuHistory = []; STATE.mbtiReportHistory = [];
@@ -8224,7 +8226,7 @@ function buildMbtiReport16(profile){
   add('m1','오프닝 · 한 문장 요약', MBTI_ICONS.star,
     '<p>'+josa(safeName,'은','는')+' <strong>'+sym.img+'</strong> 같은 사람이에요. '+TYPE_TAGLINE[mbti]+' — 이게 '+mbti+'인 '+josa(safeName,'을','를')+' 한 문장으로 요약한 말이에요.</p>'+
     '<p>'+T(MBTI_OPENING_INTENSITY[intensity])+'</p>'+
-    '<p>지금부터 '+safeName+'의 MBTI 네 글자 안에 담긴 결을 하나씩 같이 짚어볼게.</p>');
+    '<p>지금부터 '+safeName+'의 성격유형 네 글자 안에 담긴 결을 하나씩 같이 짚어볼게.</p>');
 
   // 2. 핵심 성향 (4지표 각 한 줄, 기존 INDICATOR 재사용 + v4-B: 인지기능 스택으로 "왜 이런 순서로 행동하는지" 한 줄 추가)
   var indHtml = mbti.split('').map(function(l){ return '<p><strong>'+INDICATOR[l].title+'</strong> — '+INDICATOR[l].strength+'</p>'; }).join('');
@@ -8797,7 +8799,7 @@ function buildCompatWhyPanel(p, r){
     panel.appendChild(el('div',{class:'why-row'},[
       el('span',{class:'why-k'},[kv[0]]), el('span',{class:'why-v'},[kv[1]]) ]));
   });
-  panel.appendChild(el('p',{class:'why-note'},['종합 점수는 성격(MBTI) 40% · 사주 40% · 다섯 기운 10% · 띠 10%로 합쳐요. 사주 점수는 태어난 날 윗글자끼리의 관계 60%와 아랫글자끼리의 관계 40%를 합한 값이에요.']));
+  panel.appendChild(el('p',{class:'why-note'},['종합 점수는 성격(성격유형) 40% · 사주 40% · 다섯 기운 10% · 띠 10%로 합쳐요. 사주 점수는 태어난 날 윗글자끼리의 관계 60%와 아랫글자끼리의 관계 40%를 합한 값이에요.']));
 
   panel.appendChild(el('h4',{},['사주 용어로 보면']));
   panel.appendChild(el('p',{class:'why-note', style:'margin-top:2px;'},[r.res.saju.elemRel]));
@@ -9605,7 +9607,7 @@ function renderOnboarding(){
      ('만세력'·'사주팔자'는 내 사주 화면과 용어 사전에 그대로 있다 — 없앤 게 아니라 뒤로 미뤘다.)
      고지도 짧은 한 문장만 둔다. 아직 아무 계산도 보여주기 전이라 여기서 접이식까지 놓으면
      "시작하기" 버튼 앞에 눌러야 할 것이 하나 더 생긴다. 자세한 설명은 결과 화면마다 붙는다. */
-  wrap.appendChild(el('p',{},['MBTI와 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 편하게 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.']));
+  wrap.appendChild(el('p',{},['성격유형과 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 편하게 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.']));
   /* =====================================================================
      R49 — 만 14세 이상 확인 (대표님 지시)
      ---------------------------------------------------------------------
@@ -9748,7 +9750,7 @@ function renderSetup(){
 }
 function renderSetupStep1(){
   var box=el('div',{});
-  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 1/3':'프로필 만들기 · 1/3', '1. MBTI 선택',
+  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 1/3':'프로필 만들기 · 1/3', '1. 성격유형 선택',
     '알고 있다면 바로 선택하고, 모른다면 간단 테스트로 알아보세요.'));
 
   if(!SETUP.testMode){
@@ -9790,7 +9792,7 @@ function renderSetupStep1(){
   }
 
   var nav=el('div',{style:'display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-top:18px;'});
-  if(!SETUP.mbti){ nav.appendChild(el('p',{class:'section-sub', style:'margin:0;'},['MBTI 유형을 선택하면 다음으로 넘어갈 수 있어요.'])); }
+  if(!SETUP.mbti){ nav.appendChild(el('p',{class:'section-sub', style:'margin:0;'},['성격유형을 선택하면 다음으로 넘어갈 수 있어요.'])); }
   nav.appendChild(el('button',{class:'btn btn-primary', disabled: SETUP.mbti?null:'disabled', onclick:function(){
     if(!SETUP.mbti) return; SETUP.step=2; render();
   }},['다음']));
@@ -10031,7 +10033,7 @@ function renderSetupStep3(){
   card.appendChild(el('h3',{},['사주 요약']));
   card.appendChild(buildPillarTable(saju));
   var grid=el('div',{class:'grid2'});
-  grid.appendChild(statMini('MBTI', SETUP.mbti));
+  grid.appendChild(statMini('성격유형', SETUP.mbti));
   grid.appendChild(statMini('성별', SETUP.gender==='F'?'여자':'남자'));
   card.appendChild(grid);
   card.appendChild(el('p',{class:'section-sub', style:'margin-top:12px;'},[
@@ -10472,7 +10474,7 @@ function renderLanding(){
 
   view.appendChild(brandTop());
   view.appendChild(el('p',{class:'landing-intro'},[
-    'MBTI와 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.'
+    '성격유형과 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.'
   ]));
 
   /* ★ R55 — 카드 아래 배지('회원가입 없이 바로' 등)를 없앴다(대표님 지시).
@@ -10497,9 +10499,9 @@ function renderLanding(){
      재물운·건강운처럼 사람들이 실제로 궁금해하는 말이 먼저 와야 한다.
      (용어 자체는 화면 안에 그대로 있고 눌러서 뜻도 볼 수 있다. 첫인사에서만 뒤로 뺀 것이다.) */
   view.appendChild(svc(
-    '내 MBTI × 사주 분석',
+    '내 성격유형 × 사주 분석',
     '내가 어떤 사람이고 어떤 흐름을 지나고 있는지, 타고난 사주와 성격 유형을 함께 읽어드려요.',
-    ['오늘의 운세와 내 사주팔자', '재물운 · 건강운 · 인생 대운 흐름', '내 성격의 강점과 약점 (MBTI)'],
+    ['오늘의 운세와 내 사주팔자', '재물운 · 건강운 · 인생 대운 흐름', '내 성격의 강점과 약점 (성격유형)'],
     function(){ startService('self'); }
   ));
 
@@ -10541,7 +10543,7 @@ function crossSell(kind){
   var card = el('div',{class:'cross-sell'});
   card.appendChild(el('div',{class:'cs-mark','aria-hidden':'true'},[brandMark(40)]));
   card.appendChild(el('div',{class:'cs-title'},[
-    toCompat ? '다른 사람과 궁합도 볼까요?' : '내 사주와 MBTI도 깊게 볼까요?'
+    toCompat ? '다른 사람과 궁합도 볼까요?' : '내 사주와 성격유형도 깊게 볼까요?'
   ]));
   card.appendChild(el('p',{class:'cs-desc'},[
     toCompat
@@ -10636,19 +10638,19 @@ function buildStars(n){
 function renderReport(){
   var main=$('#main'); main.innerHTML='';
   var p=activeProfile();
-  if(!p){ main.appendChild(emptyState('프로필이 필요합니다','MBTI 리포트를 보려면 프로필을 먼저 만들어주세요.', function(){ startSetupWizard(null); render(); })); return; }
+  if(!p){ main.appendChild(emptyState('프로필이 필요합니다','성격유형 리포트를 보려면 프로필을 먼저 만들어주세요.', function(){ startSetupWizard(null); render(); })); return; }
   var view=el('div',{class:'view'});
   /* ★ R49 — 실사용자 피드백: "눌러보니 ISTJ가 나오네, 이게 MBTI인가?"
      이름만 보고는 무엇을 보여주는 화면인지 알 수 없었다. 화면 이름과 근거를 함께 적는다. */
-  view.appendChild(pageHead('MBTI 리포트', '나의 성향 리포트', p.mbti+' · '+TYPE_TAGLINE[p.mbti]));
-  view.appendChild(basisChip(['MBTI']));
+  view.appendChild(pageHead('성격유형 리포트', '나의 성향 리포트', p.mbti+' · '+TYPE_TAGLINE[p.mbti]));
+  view.appendChild(basisChip(['성격유형']));
 
   /* R19 — MBTI 캐릭터. 16종은 서로 다른 상징을 쓰고, 도감에서 한자리에 볼 수 있다. */
   var mbtiCharKey = charKeyForMbti(p.mbti);
   if(mbtiCharKey){ view.appendChild(buildCharHero(mbtiCharKey, 118, '21종 전체는 캐릭터 도감에서 볼 수 있어요.')); }
 
   var indCard=el('div',{class:'scroll-card'});
-  indCard.appendChild(el('h3',{},['MBTI 4지표 해설']));
+  indCard.appendChild(el('h3',{},['성격유형 4지표 해설']));
   var grid=el('div',{class:'grid2'});
   p.mbti.split('').forEach(function(letter){
     var info=INDICATOR[letter];
@@ -10678,7 +10680,7 @@ function renderReport(){
   report.appendChild(reportCol('추천 행동', advice));
   view.appendChild(report);
 
-  view.appendChild(circleCTA(CTA_ICON.arrow, '내 MBTI 풀이 읽어보기', function(){ ROUTE='mbtiReport'; render(); }));
+  view.appendChild(circleCTA(CTA_ICON.arrow, '내 성격유형 풀이 읽어보기', function(){ ROUTE='mbtiReport'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('report', p, null); }},['리포트 요약 공유하기']));
   /* R50 — 여기까지 본 사람에게 다른 서비스를 권한다. 두 서비스가 서로를 모르면 한쪽만 쓰고 끝난다. */
   view.appendChild(crossSell('toCompat'));
@@ -11094,13 +11096,13 @@ function renderReport13(){
 function renderMbtiReport13(){
   var main=$('#main'); main.innerHTML='';
   var p=activeProfile();
-  if(!p){ main.appendChild(emptyState('프로필이 필요합니다','MBTI 풀이를 보려면 프로필을 먼저 만들어주세요.', function(){ startSetupWizard(null); render(); })); return; }
+  if(!p){ main.appendChild(emptyState('프로필이 필요합니다','성격유형 풀이를 보려면 프로필을 먼저 만들어주세요.', function(){ startSetupWizard(null); render(); })); return; }
   var report = buildMbtiReport16(p);
   /* 사주 풀이와 같은 규칙 — 열람 시점에 기록하고, 같은 날 같은 프로필이면 갱신만 한다. */
   recordMbtiReportHistory(p, report);
   var view=el('div',{class:'view'});
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='report'; render(); }},[dirIcon('left'), '성향 리포트로 돌아가기']));
-  view.appendChild(pageHead('MBTI 리포트 · MBTI 풀이', p.name+'님의 MBTI 풀이',
+  view.appendChild(pageHead('성격유형 리포트 · 성격유형 풀이', p.name+'님의 성격유형 풀이',
     '13개 이야기로 이어지는 '+p.mbti+' 풀이예요. 목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.', {marginTop:'14px'}));
 
   /* R19 — 이 화면의 주인공 캐릭터. 그림과 한 줄은 무료이고, 아래 13섹션 본문의 잠금 규칙은 그대로다. */
@@ -11109,7 +11111,7 @@ function renderMbtiReport13(){
 
   var mbtiHost = el('div',{});
   view.appendChild(mbtiHost);
-  paintReportInto(mbtiHost, report.sections, PRODUCTS.mbti_full, 'MBTI 풀이 목차',
+  paintReportInto(mbtiHost, report.sections, PRODUCTS.mbti_full, '성격유형 풀이 목차',
     function(){ return { kind:'mbti', person:{name:p.name, mbti:p.mbti, gender:p.gender==='M'?'남':'여'},
       requested:{sections:13, tone:'따뜻한 반말체', language:'ko'} }; }, p.name);
 
@@ -11123,7 +11125,7 @@ function renderMbtiReport13(){
   view.appendChild(badgeCard);
 
   view.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openShareModal('mbtiReport', p, null); }},['이 풀이 요약 카드로 저장하기']));
-  view.appendChild(el('p',{class:'disclaimer'},['MBTI는 사람을 가두는 틀이 아니라 자신을 이해하는 참고 자료예요. 여기 담긴 문구는 유형별 경향을 조합해 만든 콘텐츠라, 사람마다 실제 모습은 다를 수 있어요.']));
+  view.appendChild(el('p',{class:'disclaimer'},['성격유형은 사람을 가두는 틀이 아니라 자신을 이해하는 참고 자료예요. 여기 담긴 문구는 유형별 경향을 조합해 만든 콘텐츠라, 사람마다 실제 모습은 다를 수 있어요.']));
   main.appendChild(autoTermify(view));
 }
 
@@ -11148,7 +11150,7 @@ function openCharDetail(key){
   body.appendChild(el('p',{class:'section-sub', style:'margin-top:12px;margin-bottom:0;'},[
     spec.kind==='element'
       ? '태어난 날의 나를 가리키는 글자(일간)가 이 기운(오행)일 때 만나는 캐릭터예요.'
-      : 'MBTI 16유형 중 '+spec.mbti+'의 캐릭터예요.'
+      : '성격유형 16유형 중 '+spec.mbti+'의 캐릭터예요.'
   ]));
   body.appendChild(el('p',{class:'section-sub', style:'margin-top:6px;margin-bottom:0;'},[
     CHAR_DETAIL_NOTE[spec.kind==='element' ? 'element' : 'mbti']
@@ -11181,19 +11183,19 @@ function renderCharDex(){
   }
   var view=el('div',{class:'view'});
   view.appendChild(pageHead('모아보기 · 21종', '캐릭터 도감',
-    '오행 5종과 MBTI 16종, 모두 21종이에요. 그림도 설명도 전부 무료로 열려 있어요. 하나를 누르면 크게 보면서 자세한 설명까지 읽을 수 있습니다.'));
+    '오행 5종과 성격유형 16종, 모두 21종이에요. 그림도 설명도 전부 무료로 열려 있어요. 하나를 누르면 크게 보면서 자세한 설명까지 읽을 수 있습니다.'));
 
   if(myKeys.length){
     var mineCard=el('div',{class:'scroll-card'});
     mineCard.appendChild(el('h3',{},['내 캐릭터']));
-    mineCard.appendChild(el('p',{class:'section-sub'},[p.name+'님의 태어난 날 글자(일간)의 기운과 MBTI에 해당하는 두 종이에요.']));
+    mineCard.appendChild(el('p',{class:'section-sub'},[p.name+'님의 태어난 날 글자(일간)의 기운과 성격유형에 해당하는 두 종이에요.']));
     var mineRow=el('div',{class:'char-pair'});
     myKeys.forEach(function(k){
       var s=CHARACTERS[k];
       var side=el('div',{class:'cp-side'});
       side.appendChild(buildCharSvg(k, 104));
       side.appendChild(el('div',{class:'cp-name'},[s.name.split(' · ')[0]]));
-      side.appendChild(el('div',{class:'cp-sub'},[s.kind==='element' ? '태어난 날의 기운 · 일간' : 'MBTI']));
+      side.appendChild(el('div',{class:'cp-sub'},[s.kind==='element' ? '태어난 날의 기운 · 일간' : '성격유형']));
       mineRow.appendChild(side);
     });
     mineCard.appendChild(mineRow);
@@ -11209,12 +11211,12 @@ function renderCharDex(){
   view.appendChild(elemCard);
 
   var mbtiCard=el('div',{class:'scroll-card'});
-  mbtiCard.appendChild(el('h3',{},['MBTI 16종']));
+  mbtiCard.appendChild(el('h3',{},['성격유형 16종']));
   mbtiCard.appendChild(el('p',{class:'section-sub'},['16유형 각각의 캐릭터예요. 머리 위 상징이 유형마다 다릅니다.']));
   mbtiCard.appendChild(buildCharDexGrid(MBTI_TYPES.map(function(t){ return 'm'+t; }), myKeys));
   view.appendChild(mbtiCard);
 
-  view.appendChild(el('p',{class:'disclaimer'},['캐릭터는 오행의 성질과 MBTI 유형의 경향을 그림으로 옮긴 것이에요. 사람을 한 가지 모습으로 규정하려는 것이 아니라, 자기 결을 편하게 부르기 위한 이름 정도로 봐주세요.']));
+  view.appendChild(el('p',{class:'disclaimer'},['캐릭터는 오행의 성질과 성격유형의 경향을 그림으로 옮긴 것이에요. 사람을 한 가지 모습으로 규정하려는 것이 아니라, 자기 결을 편하게 부르기 위한 이름 정도로 봐주세요.']));
   main.appendChild(autoTermify(view));
 }
 
@@ -11402,11 +11404,11 @@ function renderCompat(){
     /* R32 — 초대 링크로 들어온 화면에서는 칸이 이미 채워져 있다. "입력하면"이라고 말하면
        무엇을 더 넣으라는 건지 알 수 없고, 채워진 값이 자기 정보라고 오해하게 된다.
        그래서 그 경우에는 누구 정보가 채워졌는지와 다음에 누를 것을 그대로 적는다. */
-    view.appendChild(basisChip(['사주','MBTI']));
+    view.appendChild(basisChip(['사주','성격유형']));
     view.appendChild(pageHead('두 사람', '궁합 보기',
       (COMPAT_DRAFT.fromInvite && COMPAT_DRAFT.name)
-        ? (COMPAT_DRAFT.name+'님이 보낸 정보는 링크에 담겨 와서 이미 채워져 있어요. 아래 [궁합 풀어보기]를 누르면 '+p.name+'님과의 MBTI 궁합 + 사주 궁합을 함께 풀어드려요.')
-        : ('상대방의 정보를 입력하면 '+p.name+'님과의 MBTI 궁합 + 사주 궁합을 함께 풀어드려요.')));
+        ? (COMPAT_DRAFT.name+'님이 보낸 정보는 링크에 담겨 와서 이미 채워져 있어요. 아래 [궁합 풀어보기]를 누르면 '+p.name+'님과의 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.')
+        : ('상대방의 정보를 입력하면 '+p.name+'님과의 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.')));
     /* ★ R56 — 버튼 이름을 '누가 넣는지'로 바꿨다(대표님 지시).
        '초대 링크 만들기'는 만드는 사람 입장의 말이고, 정작 고민되는 건
        '상대 정보를 내가 넣어야 하나, 상대가 넣나'다. 그 갈림을 그대로 이름에 담는다. */
@@ -11459,8 +11461,8 @@ function renderCompatForm(){
   }));
 
   /* row 2: 상대방 MBTI */
-  box.appendChild(settingsRow((PL+' MBTI'), COMPAT_DRAFT.mbti || '선택 안 함', function(){
-    openValueSheet((PL+' MBTI'),
+  box.appendChild(settingsRow((PL+' 성격유형'), COMPAT_DRAFT.mbti || '선택 안 함', function(){
+    openValueSheet((PL+' 성격유형'),
       function(){ return {mbti:COMPAT_DRAFT.mbti, testMode:false, testAnswers:[], testQIdx:0}; },
       function(d, redraw){
         var body=el('div',{});
@@ -11492,7 +11494,7 @@ function renderCompatForm(){
         return body;
       },
       function(d){ COMPAT_DRAFT.mbti = d.mbti; },
-      {savedToast:(PL+' MBTI를 저장했어요.')});
+      {savedToast:(PL+' 성격유형을 저장했어요.')});
   }));
 
   /* row 3: 상대방 양력/음력 */
@@ -11617,7 +11619,7 @@ function renderCompatForm(){
      기본값(2000-01-01, 여자)으로 사주 궁합이 나왔다. 화면에는 그 사실이 안 적혀 있어
      받아든 사람은 자기가 넣은 값으로 나온 결과라고 믿는다. 안 고른 게 있으면 막는다. */
   var missing = [];
-  if(!COMPAT_DRAFT.mbti)        missing.push('MBTI');
+  if(!COMPAT_DRAFT.mbti)        missing.push('성격유형');
   if(!COMPAT_DRAFT._set.date)   missing.push('생년월일');
   if(!COMPAT_DRAFT._set.time)   missing.push('태어난 시각');
   if(!COMPAT_DRAFT._set.gender) missing.push('성별');
@@ -11718,7 +11720,7 @@ function compatHistoryChemistry(c){
 function renderCompatBody(p, draft){
   /* 기본 궁합(점수·한 줄 요약)은 무료, 상세 3종은 유료.
      잠긴 상태로 상세 화면에 들어오면 빈 화면 대신 무엇이 잠겼는지 보여준다. */
-  var detailSubs = {saju:'사주 궁합 상세', mbti:'MBTI 궁합 상세', visual:'궁합 시각화'};
+  var detailSubs = {saju:'사주 궁합 상세', mbti:'성격유형 궁합 상세', visual:'궁합 시각화'};
   if(COMPAT_SUB && detailSubs[COMPAT_SUB] && !hasAccess(PRODUCTS.compat_full.id)){
     var box = el('div',{});
     box.appendChild(compatBackNav());
@@ -11852,7 +11854,7 @@ function renderCompatSummary(p, draft){
   var mbtiCol=el('div',{class:'scroll-card'});
   mbtiCol.appendChild(el('h3',{},['성격으로 더 보기']));
   mbtiCol.appendChild(el('p',{},[r.res.categories.chemistry]));
-  mbtiCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='mbti'; render(); }},[compatLockMark(), 'MBTI 궁합 자세히 보기', dirIcon('right')]));
+  mbtiCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='mbti'; render(); }},[compatLockMark(), '성격유형 궁합 자세히 보기', dirIcon('right')]));
   sumGrid.appendChild(sajuCol); sumGrid.appendChild(mbtiCol);
   box.appendChild(sumGrid);
 
@@ -11872,7 +11874,7 @@ function renderCompatSummary(p, draft){
   actions.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ openShareModal('compatSummary', p, r); }},['궁합 결과 공유하기']));
   actions.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ COMPAT_DRAFT=null; COMPAT_SUB=null; render(); }},['다시 보기']));
   box.appendChild(actions);
-  box.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, MBTI 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
+  box.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, 성격유형 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
   box.appendChild(crossSell('toSelf'));
   return box;
 }
@@ -11919,9 +11921,9 @@ function renderCompatMbtiDetail(p, draft){
   var box=el('div',{});
   var r=draft.result;
   box.appendChild(compatBackNav());
-  box.appendChild(pageHead('궁합 상세', 'MBTI 궁합 상세 — '+p.mbti+' × '+r.pB.mbti, null, {marginTop:'14px'}));
+  box.appendChild(pageHead('궁합 상세', '성격유형 궁합 상세 — '+p.mbti+' × '+r.pB.mbti, null, {marginTop:'14px'}));
   var scoreGrid=el('div',{class:'grid3', style:'margin:16px 0;'});
-  scoreGrid.appendChild(statMini('MBTI 궁합', r.res.mbtiScore+'점'));
+  scoreGrid.appendChild(statMini('성격유형 궁합', r.res.mbtiScore+'점'));
   scoreGrid.appendChild(statMini('기운 궁합', r.res.elemScore+'점'));
   scoreGrid.appendChild(statMini('띠 궁합', r.res.zodScore+'점'));
   box.appendChild(scoreGrid);
@@ -12567,7 +12569,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
     head.appendChild(el('h3',{style:'margin-bottom:0;'},[m.name]));
     head.appendChild(el('span',{class:'badge', style:'border-color:'+GC_TIER_COLORS[tier]+';color:'+GC_TIER_COLORS[tier]+';'},[tier]));
     card.appendChild(head);
-    card.appendChild(el('p',{class:'section-sub', style:'margin-top:8px;'},['사주로는 '+elemPhrase+', MBTI로는 '+mbtiPhrase]));
+    card.appendChild(el('p',{class:'section-sub', style:'margin-top:8px;'},['사주로는 '+elemPhrase+', 성격유형으로는 '+mbtiPhrase]));
     /* 사람별 "나와 제일 잘 맞는 사람 / 제일 부딪히는 사람" — 점수와 등급까지가 무료다. */
     card.appendChild(el('p',{class:'section-sub', style:'margin-top:6px;'},
       ['제일 잘 맞는 사람: '+bestOther.name+' ('+best.res.combined+'점 · '+gcPlain(best.res.combinedTier)+')']));
@@ -12595,7 +12597,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
         ]);
         var right=el('div',{style:'text-align:right;flex:none;'},[
           el('div',{},[pr.res.combined+'점 · '+pr.res.combinedTier]),
-          el('div',{class:'section-sub', style:'margin-top:2px;'},['사주 '+pr.res.saju.score+'점 · MBTI '+pr.res.mbtiScore+'점'])
+          el('div',{class:'section-sub', style:'margin-top:2px;'},['사주 '+pr.res.saju.score+'점 · 성격유형 '+pr.res.mbtiScore+'점'])
         ]);
         row.appendChild(left); row.appendChild(right);
         detail.appendChild(row);
@@ -13200,7 +13202,7 @@ function renderGroupCompat(){
 
   var usable = gcUsableProfiles();
   if(!fromLink && usable.length<2){
-    view.appendChild(emptyState('프로필이 2명 이상 필요합니다','그룹 궁합을 보려면 생년월일과 MBTI가 채워진 프로필이 2명 이상 필요합니다.', function(){ startSetupWizard(null); render(); }, '새 프로필 추가하기'));
+    view.appendChild(emptyState('프로필이 2명 이상 필요합니다','그룹 궁합을 보려면 생년월일과 성격유형이 채워진 프로필이 2명 이상 필요합니다.', function(){ startSetupWizard(null); render(); }, '새 프로필 추가하기'));
     main.appendChild(view);
     return;
   }
@@ -13234,7 +13236,7 @@ function renderGroupCompat(){
 
   var members = gcMembers();
   if(members.length<2){
-    view.appendChild(emptyState('그룹을 만들 수 없어요','생년월일과 MBTI가 모두 채워진 사람이 2명 이상 필요합니다.', function(){ ROUTE='compat'; render(); }, '궁합 보기로 돌아가기'));
+    view.appendChild(emptyState('그룹을 만들 수 없어요','생년월일과 성격유형이 모두 채워진 사람이 2명 이상 필요합니다.', function(){ ROUTE='compat'; render(); }, '궁합 보기로 돌아가기'));
     main.appendChild(view);
     return;
   }
@@ -13276,7 +13278,7 @@ function renderGroupCompat(){
   if(!groupUnlocked){
     var gBlock = lockedBlock(PRODUCTS.compat_full, '', '모두의 궁합 상세');
     gBlock.insertBefore(el('div',{class:'locked-count'},
-      [pairs.length+'쌍의 사주·MBTI 상세 점수가 잠겨 있어요']), gBlock.firstChild);
+      [pairs.length+'쌍의 사주·성격유형 상세 점수가 잠겨 있어요']), gBlock.firstChild);
     view.appendChild(gBlock);
   }
   if(!fromLink){
@@ -13323,7 +13325,7 @@ function renderGroupCompat(){
     ]));
   }
   if(gsCard) view.appendChild(gsCard);
-  view.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, MBTI 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
+  view.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, 성격유형 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
   /* R50 — 그룹으로 들어온 분에게도 다른 서비스를 권한다.
      1:1 궁합에만 붙이면, 링크로 그룹에 들어온 사람은 이 앱에 사주 풀이가 있는 줄도 모른다. */
   view.appendChild(crossSell('toSelf'));
@@ -13345,7 +13347,7 @@ function renderGroupCompat(){
 ===================================================================== */
 var INVITE_FIELDS = [
   {k:'n',  label:'닉네임',                  get:function(p){ return p.name; }},
-  {k:'m',  label:'MBTI',                    get:function(p){ return p.mbti; }},
+  {k:'m',  label:'성격유형',                    get:function(p){ return p.mbti; }},
   {k:'y',  label:'생년월일',                get:function(p){ return p.year; }},
   {k:'mo', label:'생년월일',                get:function(p){ return p.month; }},
   {k:'d',  label:'생년월일',                get:function(p){ return p.day; }},
@@ -13866,7 +13868,7 @@ function renderInviteAccept(){
 /* =====================================================================
    렌더: 히스토리 (기능13 — 운세/궁합/사주풀이 3탭)
 ===================================================================== */
-var HIST_TABS = [['fortune','운세 기록'],['compat','궁합 기록'],['saju','사주풀이 기록'],['mbtiReport','MBTI풀이 기록']];
+var HIST_TABS = [['fortune','운세 기록'],['compat','궁합 기록'],['saju','사주풀이 기록'],['mbtiReport','성격유형 풀이 기록']];
 /* 탭을 바꾸면 화면이 통째로 다시 그려지므로, 키보드로 옮긴 경우에는 새로 그려진 같은 탭으로 포커스를 되돌린다. */
 function histTabSelect(key, moveFocus){
   HIST_TAB = key;
@@ -14001,7 +14003,7 @@ function renderHistory(){
   } else {
     var mlist = STATE.mbtiReportHistory.filter(function(m){ return !p || m.profileId===p.id; });
     if(mlist.length===0){
-      panel.appendChild(el('div',{class:'empty-state'},[el('p',{},['아직 저장된 MBTI풀이 기록이 없습니다. \'성향 리포트\' 탭에서 MBTI 풀이를 읽으면 자동으로 기록돼요.'])]));
+      panel.appendChild(el('div',{class:'empty-state'},[el('p',{},['아직 저장된 성격유형 풀이 기록이 없습니다. \'성향 리포트\' 탭에서 성격유형 풀이를 읽으면 자동으로 기록돼요.'])]));
     } else {
       mlist.forEach(function(m){
         var item=el('div',{class:'hist-item'});
@@ -14023,9 +14025,9 @@ function renderHistory(){
         panel.appendChild(item);
       });
       panel.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:10px;', onclick:function(){
-        confirmModal('MBTI풀이 기록을 모두 삭제할까요?', function(){
+        confirmModal('성격유형 풀이 기록을 모두 삭제할까요?', function(){
           STATE.mbtiReportHistory = STATE.mbtiReportHistory.filter(function(m2){ return p && m2.profileId!==p.id; });
-          saveState(); render(); showToast('MBTI풀이 기록을 초기화했습니다.');
+          saveState(); render(); showToast('성격유형 풀이 기록을 초기화했습니다.');
         });
       }},['전체 삭제']));
     }
@@ -14085,7 +14087,7 @@ function openMbtiReportDetailModal(m){
   var body=el('div',{});
   body.appendChild(el('p',{},[m.summary]));
   body.appendChild(el('p',{class:'section-sub', style:'margin-top:8px;'},['전체 풀이는 \'MBTI 리포트\'에서 다시 볼 수 있어요.']));
-  openModal('MBTI 풀이 · '+m.mbti+' · '+m.date, autoTermify(body), [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
+  openModal('성격유형 풀이 · '+m.mbti+' · '+m.date, autoTermify(body), [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
 }
 /* yesLabel을 받지 않으면 예전과 똑같이 '삭제'다(기존 호출부는 전부 삭제·초기화 확인이라 그대로 둔다).
    R20에서 "저장 안 하고 나가기" 확인이 생기면서, 버튼에 '삭제'라고 적혀 있으면 안 되는 자리가 생겼다. */
@@ -14221,16 +14223,16 @@ function buildShareText(kind, profile, data){
       FORTUNE_CATS.map(function(c){ return c.label+': '+f.items[c.key].text; }).join('\n')+
       '\n행운 아이템: '+f.luckyItem+' / 행운 색상: '+f.luckyColor;
   } else if(kind==='report'){
-    return '['+COMPANY.serviceName+'] '+profile.name+'님의 성향 리포트\nMBTI: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n오행: '+profile.element+' — '+ELEMENT_TRAIT[profile.element];
+    return '['+COMPANY.serviceName+'] '+profile.name+'님의 성향 리포트\n성격유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n오행: '+profile.element+' — '+ELEMENT_TRAIT[profile.element];
   } else if(kind==='saju'){
     var s=data;
     return '['+COMPANY.serviceName+'] '+profile.name+'님의 사주팔자\n연주 '+s.year.text+'('+s.year.textH+') · 월주 '+s.month.text+'('+s.month.textH+') · 일주 '+s.day.text+'('+s.day.textH+')'+(s.hour?(' · 시주 '+s.hour.text+'('+s.hour.textH+')'):' · 시주 모름');
   } else if(kind==='mbtiReport'){
     var rpt=buildMbtiReport16(profile);
-    return '['+COMPANY.serviceName+'] '+profile.name+'님의 MBTI 풀이\n유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n'+rpt.sections[0].body.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+    return '['+COMPANY.serviceName+'] '+profile.name+'님의 성격유형 풀이\n유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n'+rpt.sections[0].body.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
   } else {
     var r=data;
-    return '['+COMPANY.serviceName+'] '+profile.name+' × '+r.pB.name+' 궁합 결과\n종합 점수: '+r.res.combined+'점 ('+r.res.combinedTier+')\n사주: '+r.res.saju.elemRel+'\nMBTI: '+r.res.categories.chemistry;
+    return '['+COMPANY.serviceName+'] '+profile.name+' × '+r.pB.name+' 궁합 결과\n종합 점수: '+r.res.combined+'점 ('+r.res.combinedTier+')\n사주: '+r.res.saju.elemRel+'\n성격유형: '+r.res.categories.chemistry;
   }
 }
 function copyText(text){
@@ -14353,7 +14355,7 @@ function drawShareCard(canvas, kind, profile, data){
        ★ 되살릴 때는 이 자리에 wrapCanvasText로 DISCLAIM_SHORT 한 줄을 다시 넣으면 된다. */
   } else if(kind==='mbtiReport'){
     var rpt = buildMbtiReport16(profile);
-    ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+'님의 MBTI 풀이', 50, y); y+=40;
+    ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+'님의 성격유형 풀이', 50, y); y+=40;
     ctx.font='700 30px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText(profile.mbti, 50, y); y+=8;
     ctx.font='400 16px '+CARD_SANS; ctx.fillStyle='#231F18'; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=64;
     ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('오프닝', 50, y); y+=22;
@@ -14372,7 +14374,7 @@ function drawShareCard(canvas, kind, profile, data){
     ctx.textAlign='left';
     ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('사주 관점', 50, y); y+=22;
     ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18'; y=wrapCanvasText(ctx, r.res.saju.elemRel, 50, y, w-100, 21); y+=16;
-    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('MBTI 관점', 50, y); y+=22;
+    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('성격유형 관점', 50, y); y+=22;
     ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18'; y=wrapCanvasText(ctx, r.res.categories.chemistry, 50, y, w-100, 21);
   }
 
