@@ -878,6 +878,11 @@ main{flex:1;padding:28px 20px 96px;}
   display:flex;align-items:center;justify-content:center;flex:none;}
 .brand-top-name{font-family:var(--sans);font-size:1.18rem;font-weight:800;letter-spacing:-.03em;color:var(--gold);}
 
+/* R56 — '또는 내가 직접 입력하기' 가름줄 */
+.manual-head{display:flex;align-items:center;gap:10px;margin:6px 0 14px;}
+.manual-head .manual-line{flex:1;height:1px;background:var(--gold-line);}
+.manual-head .manual-text{font-size:.8rem;color:var(--ink-faint);white-space:nowrap;}
+
 /* R54 — 운영 현황판의 숫자 격자 */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
 .stat-cell{background:var(--panel-2);border:1px solid var(--gold-line);border-radius:12px;padding:12px 13px;}
@@ -11383,19 +11388,33 @@ function renderCompat(){
       (COMPAT_DRAFT.fromInvite && COMPAT_DRAFT.name)
         ? (COMPAT_DRAFT.name+'님이 보낸 정보는 링크에 담겨 와서 이미 채워져 있어요. 아래 [궁합 풀어보기]를 누르면 '+p.name+'님과의 MBTI 궁합 + 사주 궁합을 함께 풀어드려요.')
         : ('상대방의 정보를 입력하면 '+p.name+'님과의 MBTI 궁합 + 사주 궁합을 함께 풀어드려요.')));
-    view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '링크로 궁합 보기 (초대 링크 만들기)']));
+    /* ★ R56 — 버튼 이름을 '누가 넣는지'로 바꿨다(대표님 지시).
+       '초대 링크 만들기'는 만드는 사람 입장의 말이고, 정작 고민되는 건
+       '상대 정보를 내가 넣어야 하나, 상대가 넣나'다. 그 갈림을 그대로 이름에 담는다. */
+    view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '상대방이 직접 입력하기 (링크 보내기)']));
     if(STATE.profiles.length>=2){
       view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){
         GC_SOURCE='profiles'; GC_SEL=null; GC_RANK={order:'best', shown:GC_RANK_STEP};
         ROUTE='groupCompat'; render();
       }},[svgIcon('M10 3 L16 7 L14 15 L6 15 L4 7 Z M10 3 L10 15 M4 7 L14 15 M16 7 L6 15','btn-lead-icon'), '모두의 궁합 보기 (그룹 · 최대 '+GC_MAX+'명)']));
     }
+    /* ★ R56 — 아래 입력 칸에 이름을 붙인다(대표님 지시). 위 버튼(상대가 넣기)과
+       아래 칸(내가 넣기)이 같은 일을 다른 방법으로 하는 것인데, 아래에는 이름이 없어
+       둘의 관계가 안 보였다. */
+    view.appendChild(compatManualHead());
     view.appendChild(renderCompatForm());
   } else {
     view.appendChild(renderCompatBody(p, COMPAT_DRAFT));
     view.appendChild(glossaryLinkButton());
   }
   main.appendChild(autoTermify(view));
+}
+function compatManualHead(){
+  var box = el('div',{class:'manual-head'});
+  box.appendChild(el('span',{class:'manual-line'}));
+  box.appendChild(el('span',{class:'manual-text'},['또는 내가 직접 입력하기']));
+  box.appendChild(el('span',{class:'manual-line'}));
+  return box;
 }
 function renderCompatForm(){
   var box=el('div',{});
@@ -14269,10 +14288,14 @@ function render(){
   if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
   if(ROUTE==='inviteAccept'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderInviteAccept(); return; }
 
-  /* R50 — 고른 서비스의 탭만 보여준다. 아직 안 골랐으면 홈·히스토리·설정만 남는다. */
+  /* R50 — 고른 서비스의 탭만 보여준다. 아직 안 골랐으면 홈·히스토리·설정만 남는다.
+     ★ R56 — 홈에서는 서비스 탭을 아예 감춘다(대표님 지적).
+       홈은 '무엇을 볼지 고르는 자리'인데, 직전에 무엇을 눌렀느냐에 따라 탭이 달라 보였다.
+       고르러 온 화면의 메뉴가 매번 바뀌면 그게 더 헷갈린다. 홈은 늘 같은 모습이어야 한다. */
+  var tabMode = (ROUTE==='home') ? null : modeOf();
   $all('.tab-btn').forEach(function(b){
     var m = b.dataset.mode;
-    b.hidden = !!(m && m !== modeOf());
+    b.hidden = !!(m && m !== tabMode);
     var on=b.dataset.route===ROUTE;
     if(on && !b.hidden){ b.setAttribute('aria-current','page'); b.scrollIntoView({inline:'nearest', block:'nearest'}); }
     else b.removeAttribute('aria-current');
