@@ -878,6 +878,11 @@ main{flex:1;padding:28px 20px 96px;}
   display:flex;align-items:center;justify-content:center;flex:none;}
 .brand-top-name{font-family:var(--sans);font-size:1.18rem;font-weight:800;letter-spacing:-.03em;color:var(--gold);}
 
+/* R68 — 링크 보낸 뒤 기다리는 카드 */
+.watch-card{border:1px solid var(--gold-line);background:var(--gold-soft);}
+.watch-card h3{color:var(--gold);}
+.watch-line{color:var(--ink);font-size:.9rem;font-weight:600;line-height:1.6;margin:4px 0 0;word-break:keep-all;}
+
 /* R65 — 초대 링크 안내의 점 목록 */
 .invite-note{margin:6px 0 0;padding-left:18px;}
 .invite-note li{color:var(--ink-dim);font-size:.78rem;line-height:1.8;word-break:keep-all;}
@@ -11420,6 +11425,8 @@ function renderCompat(){
   var view=el('div',{class:'view'});
   /* R33 — 상대를 기다리는 중이면 그 안내를 맨 위에 둔다. 결과가 나오면 자동으로 사라진다. */
   if(ROOM_WAIT && !COMPAT_DRAFT.result) view.appendChild(buildRoomWaitCard());
+  /* R68 — 링크를 보낸 뒤 '기다리는 중' 카드. 아래 입력칸은 그대로 두어 다른 일을 할 수 있다. */
+  if(!COMPAT_DRAFT.result){ var iw = buildInviteWatchCard(); if(iw) view.appendChild(iw); }
   /* R34 — 전에 본 궁합을 다시 열 수 있게 목록을 준다. 새로고침해도 사라지지 않는다. */
   if(!COMPAT_DRAFT.result){
     var recent = buildRecentRoomsCard();
@@ -12784,13 +12791,16 @@ function groupFetch(payload){
 
 /* 이 기기가 기억하는 저장된 그룹 목록 — 주소와 이름뿐이다. */
 function savedGroups(){ return Array.isArray(STATE.savedGroups) ? STATE.savedGroups : []; }
-function rememberGroup(id, name, token){
+function rememberGroup(id, name, token, count){
   var prev = savedGroups().filter(function(x){ return x && x.id === id; })[0];
   var list = savedGroups().filter(function(x){ return x && x.id !== id; });
   /* ★ R39 — 소유자 토큰을 함께 기억한다. 이 기기에서는 PIN 없이 그룹을 고치고 지울 수 있다.
-     토큰은 이 기기 밖으로 나가지 않는다(링크에도, 화면에도 넣지 않는다). */
+     토큰은 이 기기 밖으로 나가지 않는다(링크에도, 화면에도 넣지 않는다).
+     ★ R68 — 인원 수도 함께 기억한다. 목록에서 열어보기 전에는 몇 명이 들어왔는지
+       알 수 없었다(대표님 지적). 서버에 다시 묻지 않고 보여주려면 여기 적어 두어야 한다. */
   list.unshift({id:id, name:(name||'').slice(0,40), at:Date.now(),
-                token: token || (prev && prev.token) || null});
+                token: token || (prev && prev.token) || null,
+                n: (typeof count === 'number') ? count : (prev && prev.n) || null});
   STATE.savedGroups = list.slice(0, 20);
   saveState();
 }
@@ -12940,7 +12950,7 @@ function openSavedGroup(id){
     PENDING_MEET = rows.map(function(r){ return inviteRowToObj(r); }).filter(inviteObjValid);
     if(!PENDING_MEET.length) throw new Error('명단을 읽지 못했어요.');
     GROUP_VIEW = {id:id, name:d.name};
-    rememberGroup(id, d.name);
+    rememberGroup(id, d.name, null, PENDING_MEET.length);
     clearPendingInviteIfJoined(id, PENDING_MEET.length);
     GC_SOURCE='link'; GC_SEL=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0};
     ROUTE='groupCompat'; render(); window.scrollTo(0,0);
@@ -13136,6 +13146,97 @@ function buildGroupJoinCard(){
   return card;
 }
 
+/* =====================================================================
+   R68 — 링크를 보낸 뒤 기다리는 동안 (대표님 지시)
+   ---------------------------------------------------------------------
+   링크를 보내고 나면 화면에 아무 흔적이 없었다. 상대가 들어와도 저절로 바뀌지 않아,
+   보낸 사람이 결과를 못 보고 그냥 나갈 수 있었다.
+   (예전에 쓰던 기다림 카드는 초대 링크를 그룹으로 바꿀 때 길이 끊겨 죽은 코드로 남아 있었다.)
+
+   ★ 기다리는 동안 아무것도 못 하게 막지 않는다(대표님 지시). 이 카드는 화면 맨 위에
+     한 칸 차지할 뿐이고, 아래 입력칸도 탭도 그대로다. 다른 화면으로 갔다 와도 된다.
+   ★ 화면을 통째로 다시 그리지 않는다. 글자만 갈아 끼운다 —
+     다시 그리면 아래에서 입력하던 것이 흔들린다.
+   ★ 궁합 화면을 떠나면 확인을 멈춘다. 안 보는 화면을 계속 물어볼 이유가 없다.
+===================================================================== */
+var INVITE_WATCH = null;   /* {id, name, n, timer, el} */
+var INVITE_WATCH_MS = 8000;
+
+function buildInviteWatchCard(){
+  var id = STATE.pendingInviteGroup;
+  if(!id) return null;
+  var saved = savedGroups().filter(function(x){ return x && x.id === id; })[0];
+  var name = (saved && saved.name) || '내 궁합';
+  var n = (saved && saved.n) || 1;
+
+  var card = el('div',{class:'scroll-card watch-card'});
+  card.appendChild(el('h3',{},[name]));
+  var line = el('p',{class:'watch-line'});
+  card.appendChild(line);
+  card.appendChild(el('p',{class:'biz-hint'},[
+    '기다리는 동안 다른 것을 보셔도 돼요. 나가셨다 오셔도 그대로 있고, 들어오시면 여기에 표시됩니다.'
+  ]));
+  var row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;'});
+  row.appendChild(el('button',{class:'btn btn-primary btn-sm', onclick:function(){ openSavedGroup(id); }},['궁합 보기']));
+  row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+    var lk = groupJoinLink(id);
+    if(navigator.share){ navigator.share({title:COMPANY.serviceName+' 궁합 초대', url:lk}).catch(function(){}); }
+    else { copyText(lk); }
+  }},['링크 다시 보내기']));
+  row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ tickInviteWatch(true); }},['지금 확인']));
+  card.appendChild(row);
+
+  INVITE_WATCH = INVITE_WATCH && INVITE_WATCH.id === id
+    ? INVITE_WATCH : {id:id, name:name, n:n, timer:null, el:null};
+  INVITE_WATCH.el = line;
+  INVITE_WATCH.n = n;
+  paintInviteWatch();
+  scheduleInviteWatch();
+  return card;
+}
+
+function paintInviteWatch(){
+  var w = INVITE_WATCH;
+  if(!w || !w.el || !w.el.isConnected) return;
+  w.el.textContent = (w.n > 1)
+    ? (w.n + '명이 들어왔어요. 지금 바로 보실 수 있어요.')
+    : '아직 아무도 안 들어왔어요. 링크를 받은 분이 정보를 넣으면 여기에 표시됩니다.';
+  /* 목록의 인원 수도 같이 맞춰 둔다 */
+  var row = [].slice.call(document.querySelectorAll('.settings-row .sr-label'))
+    .filter(function(x){ return x.textContent.indexOf(w.name) === 0; })[0];
+  if(row && w.n > 1) row.textContent = w.name + ' · ' + w.n + '명';
+}
+
+function scheduleInviteWatch(){
+  var w = INVITE_WATCH;
+  if(!w) return;
+  if(w.timer) clearTimeout(w.timer);
+  w.timer = setTimeout(function(){ tickInviteWatch(false); }, INVITE_WATCH_MS);
+}
+
+function tickInviteWatch(byHand){
+  var w = INVITE_WATCH;
+  if(!w) return;
+  /* 궁합 화면을 떠났거나 카드가 사라졌으면 멈춘다. */
+  if(!w.el || !w.el.isConnected || ROUTE !== 'compat'){
+    if(w.timer) clearTimeout(w.timer);
+    INVITE_WATCH = null;
+    return;
+  }
+  if(byHand) w.el.textContent = '확인하는 중이에요…';
+  groupFetch({action:'get', groupId:w.id})
+    .then(function(d){
+      if(!INVITE_WATCH || INVITE_WATCH.id !== w.id) return;
+      var n = String((d && d.members) || '').split(';').filter(Boolean).length;
+      INVITE_WATCH.n = n;
+      INVITE_WATCH.name = (d && d.name) || w.name;
+      rememberGroup(w.id, INVITE_WATCH.name, null, n);
+      paintInviteWatch();
+    })
+    .catch(function(){ if(byHand) paintInviteWatch(); })
+    .then(function(){ scheduleInviteWatch(); });
+}
+
 /* 궁합 화면에 두는 "저장한 그룹" 목록 */
 function buildSavedGroupsCard(){
   var list = savedGroups();
@@ -13144,7 +13245,9 @@ function buildSavedGroupsCard(){
   card.appendChild(el('h3',{},['저장한 그룹']));
   card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 열 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관돼요.']));
   list.forEach(function(g){
-    card.appendChild(settingsRow(g.name || '이름 없는 그룹', '열기', function(){ openSavedGroup(g.id); }));
+    card.appendChild(settingsRow(
+      (g.name || '이름 없는 그룹') + (g.n ? ' · ' + g.n + '명' : ''),
+      '열기', function(){ openSavedGroup(g.id); }));
   });
   /* ★ R60 — 눌러만 보고 안 보낸 링크가 쌓였을 때 한 번에 치운다.
      내가 만든 것 중 '아직 아무도 안 들어온 것'만 지운다 — 이 두 조건을 다 만족해야
