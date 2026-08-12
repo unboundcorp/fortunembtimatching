@@ -6686,7 +6686,13 @@ function charKeyForDayStem(saju){
    ★ 원본 시트가 1280×853이라 캐릭터 한 종이 90~150px이다. 224px로 키워 두었지만
      없던 선명함이 생기지는 않는다. 디자이너에게 낱장 원본을 받으면 더 깨끗해진다.
 ===================================================================== */
-function charImgSrc(key){ return 'char/' + key + '.webp'; }
+/* ★ R67 — 반드시 '/'로 시작해야 한다 (8명 점검에서 찾음).
+   'char/e0.webp' 처럼 상대 경로로 두면, 짧은 주소(/j/…, /g/…)로 들어온 화면에서
+   /j/char/e0.webp 를 부르게 된다. 그런데 그 주소는 /j/:id/:name 규칙에 걸려
+   404가 아니라 앱 HTML을 200으로 돌려준다 — 브라우저는 그림인 줄 알고 받았다가
+   그림이 아니라서 깨진 아이콘을 띄운다. 실패 요청 검사에도 안 걸린다(200이니까).
+   링크로 들어온 사람 화면에서 캐릭터가 전부 깨져 있었다. */
+function charImgSrc(key){ return '/char/' + key + '.webp'; }
 
 function buildCharSvg(key, size, opts){
   opts = opts || {};
