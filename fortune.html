@@ -878,6 +878,12 @@ main{flex:1;padding:28px 20px 96px;}
   display:flex;align-items:center;justify-content:center;flex:none;}
 .brand-top-name{font-family:var(--sans);font-size:1.18rem;font-weight:800;letter-spacing:-.03em;color:var(--gold);}
 
+/* R54 — 운영 현황판의 숫자 격자 */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.stat-cell{background:var(--panel-2);border:1px solid var(--gold-line);border-radius:12px;padding:12px 13px;}
+.stat-k{font-size:.74rem;color:var(--ink-faint);}
+.stat-v{font-family:var(--sans);font-size:1.16rem;font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-top:3px;}
+
 /* R50 — 홈: 서비스 고르는 카드 */
 .landing{padding-top:8px;}
 .landing-intro{color:var(--ink-dim);font-size:.9rem;line-height:1.7;text-align:center;margin:2px 0 18px;word-break:keep-all;}
@@ -10276,6 +10282,167 @@ function relationBadges(rel){
      무엇을 받는지 모르는 채로 생년월일부터 넣으라고 하지 않는다.
    ★ 무료·유료 경계를 여기서 미리 말한다. 결제 화면에 가서야 알게 되면 안 된다.
 ===================================================================== */
+/* =====================================================================
+   R54 — 운영 현황판 (대표님 요청)
+   ---------------------------------------------------------------------
+   주소 끝에 #stats 를 붙여야 열린다. 화면 어디에도 이 문으로 가는 버튼은 없고,
+   서버는 테스트 허가를 받은 세션에만 답한다(그 허가는 #unlock 코드로만 받는다).
+
+   ★ 방문자 수는 없다. 이 앱은 광고·분석 도구를 하나도 쓰지 않으며
+     개인정보처리방침에도 그렇게 적어 두었다. 세려면 추적을 붙여야 하고,
+     그 순간 그 문장이 거짓이 된다. 없는 것을 있는 척하지 않는다.
+   ★ 대신 이미 쌓여 있는 기록으로 알 수 있는 것을 보여준다 —
+     링크를 몇 개 만들었고 그중 몇 개에 상대가 실제로 들어왔는지 같은 것.
+     이게 방문자 수보다 서비스 상태를 더 잘 말해 준다.
+===================================================================== */
+var STATS_DATA = null, STATS_ERR = null, STATS_RANGE = 'd7';
+function renderStats(){
+  var main=$('#main'); main.innerHTML='';
+  var view=el('div',{class:'view'});
+  view.appendChild(pageHead('운영 현황판', '서비스가 어떻게 쓰이고 있나요',
+    '대표님만 보시는 화면이에요. 새로 모으는 정보는 없고, 이미 쌓인 기록을 세어 보여드려요.'));
+
+  if(STATS_ERR){
+    view.appendChild(el('p',{class:'section-sub', style:'color:var(--red-hi);'},[STATS_ERR]));
+    view.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ STATS_ERR=null; loadStats(); }},['다시 시도']));
+    main.appendChild(view); return;
+  }
+  if(!STATS_DATA){
+    view.appendChild(el('p',{class:'section-sub'},['불러오는 중이에요…']));
+    main.appendChild(view); return;
+  }
+  var D = STATS_DATA, R = STATS_RANGE;
+
+  /* 기간 고르기 */
+  var seg=el('div',{class:'seg-toggle', style:'margin-bottom:16px;'});
+  [['d1','오늘'],['d7','7일'],['d30','30일']].forEach(function(pair){
+    seg.appendChild(el('button',{type:'button','aria-pressed':R===pair[0]?'true':'false',
+      onclick:(function(k){ return function(){ STATS_RANGE=k; render(); }; })(pair[0])},[pair[1]]));
+  });
+  view.appendChild(seg);
+
+  function card(title, rows, note){
+    var c=el('div',{class:'scroll-card'});
+    c.appendChild(el('h3',{},[title]));
+    var t=el('div',{class:'stat-grid'});
+    rows.forEach(function(r){
+      t.appendChild(el('div',{class:'stat-cell'},[
+        el('div',{class:'stat-k'},[r[0]]),
+        el('div',{class:'stat-v'},[String(r[1])])
+      ]));
+    });
+    c.appendChild(t);
+    if(note) c.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[note]));
+    return c;
+  }
+
+  var rm = D.rooms[R], gp = D.groups[R], od = D.orders[R], ai = D.ai[R];
+
+  view.appendChild(card('궁합 링크', [
+    ['만든 링크', rm.made+'개'],
+    ['상대가 들어옴', rm.joined+'개'],
+    ['들어온 비율', rm.rate+'%']
+  ], '링크를 보냈는데 상대가 안 열면 이 비율이 떨어져요. 서비스가 실제로 퍼지고 있는지 가장 잘 보여주는 숫자입니다. (전체 누적 '+D.rooms.all+'개)'));
+
+  view.appendChild(card('그룹', [
+    ['만든 그룹', gp.made+'개'],
+    ['참여한 사람', gp.people+'명'],
+    ['그룹당 평균', gp.avg+'명'],
+    ['가장 큰 그룹', gp.max+'명']
+  ], '전체 누적 '+D.groups.all+'개'));
+
+  var prodRows = [];
+  for(var k in od.byProduct){ prodRows.push([k, od.byProduct[k].count+'건 · '+formatWon(od.byProduct[k].amount)]); }
+  view.appendChild(card('결제', [
+    ['결제 완료', od.paid+'건'],
+    ['매출', formatWon(od.revenue)],
+    ['시도했다 실패', od.failed+'건'],
+    ['결제창까지 감', od.created+'건']
+  ], prodRows.length ? null : '아직 결제가 없어요. 토스 키를 넣으시면 여기에 쌓입니다.'));
+  if(prodRows.length) view.appendChild(card('상품별', prodRows));
+
+  view.appendChild(card('AI 해석', [
+    ['새로 만든 글', ai.generated+'건'],
+    ['추정 원가', formatWon(ai.costKrw)],
+    ['저장된 글', D.ai.cached+'건'],
+    ['다시 쓴 횟수', D.ai.reuse+'회']
+  ], '원가는 1건 '+formatWon(D.ai.costPerKrw)+'로 잡은 추정이에요. 실제 청구액은 Anthropic 콘솔에서 보셔야 정확합니다. ‘다시 쓴 횟수’는 저장해 둔 글을 그대로 내어준 횟수로, 그만큼 돈이 안 나갔다는 뜻이에요.'));
+
+  /* 최근 주문 — 환불 문의가 오면 여기서 영수증 번호를 찾는다. */
+  var recent=el('div',{class:'scroll-card'});
+  recent.appendChild(el('h3',{},['최근 주문']));
+  if(!D.recent.length) recent.appendChild(el('p',{class:'biz-hint'},['아직 주문이 없어요.']));
+  else D.recent.forEach(function(o){
+    recent.appendChild(settingsRow(o.name+' · '+({paid:'결제완료',created:'미완료',failed:'실패'}[o.status]||o.status),
+      formatWon(o.amount), (function(id){ return function(){ openOrderLookup(id); }; })(o.receiptId)));
+  });
+  view.appendChild(recent);
+
+  /* 영수증 번호로 찾기 */
+  var find=el('div',{class:'scroll-card'});
+  find.appendChild(el('h3',{},['환불 문의 확인']));
+  find.appendChild(el('p',{class:'biz-hint'},['손님이 보낸 영수증 번호를 넣으면 결제 내용과 열람 여부를 보여드려요. 약관 제4조의2에 따라 이미 열람한 콘텐츠는 청약철회가 제한되므로, 그 판단에 쓰시면 됩니다.']));
+  var inp=el('input',{class:'biz-input', type:'text', placeholder:'영수증 번호', id:'statsReceipt', autocomplete:'off'});
+  find.appendChild(inp);
+  find.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:10px;', onclick:function(){
+    var v=(inp.value||'').trim(); if(v) openOrderLookup(v);
+  }},['찾기']));
+  view.appendChild(find);
+
+  view.appendChild(el('p',{class:'biz-hint', style:'margin-top:14px;'},[
+    '방문자 수는 여기에 없어요. 이 앱은 광고·분석 도구를 하나도 쓰지 않고 개인정보처리방침에도 그렇게 적어 두었습니다. 세려면 추적을 붙여야 하는데, 그러면 그 문장이 거짓이 됩니다.'
+  ]));
+  main.appendChild(view);
+}
+
+function loadStats(){
+  STATS_DATA=null; STATS_ERR=null; render();
+  fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'},
+    credentials:'include', body:JSON.stringify({action:'summary'})})
+    .then(function(r){ return r.json().catch(function(){return null;}).then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(r){
+      if(!r.ok || !r.d) throw new Error((r.d && r.d.reason) || '불러오지 못했어요.');
+      STATS_DATA = r.d; render();
+    })
+    .catch(function(e){ STATS_ERR = e.message || '불러오지 못했어요.'; render(); });
+}
+
+/* 주문 하나 — 환불 판단용 */
+function openOrderLookup(receiptId){
+  var body=el('div',{class:'sheet-body'});
+  var status=el('p',{class:'biz-hint'},['찾는 중이에요…']);
+  body.appendChild(status);
+  openModal('주문 확인', body, [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
+  fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'},
+    credentials:'include', body:JSON.stringify({action:'order', receiptId:receiptId})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      body.innerHTML='';
+      if(!d || !d.found){ body.appendChild(el('p',{class:'biz-hint'},['그 번호로 된 주문이 없어요.'])); return; }
+      var o=d.order;
+      function row(k,v){ body.appendChild(el('p',{class:'legal-row'},[el('strong',{},[k]),' — ',String(v)])); }
+      row('상품', o.productName);
+      row('금액', formatWon(o.amount));
+      row('상태', {paid:'결제완료', created:'미완료', failed:'실패'}[o.status] || o.status);
+      row('영수증 번호', o.receiptId);
+      row('결제 시각', o.paidAt ? new Date(o.paidAt).toLocaleString('ko-KR') : '—');
+      if(d.passUntil) row('이용권 만료', new Date(d.passUntil).toLocaleString('ko-KR'));
+      body.appendChild(el('h4',{style:'margin-top:14px;'},['열람 여부']));
+      if(d.aiUses > 0){
+        body.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[
+          'AI 해석을 '+d.aiUses+'회 만들었어요 (한도 '+d.aiQuota+'회). 처음 만든 때: '
+          + (d.firstAiAt ? new Date(d.firstAiAt).toLocaleString('ko-KR') : '—')
+        ]));
+        body.appendChild(el('p',{class:'biz-hint'},['약관 제4조의2에 따라 이미 열람한 콘텐츠는 청약철회가 제한됩니다. 다만 회사 귀책(결제 오류·콘텐츠 미제공)이면 열람 여부와 관계없이 전액 환불입니다.']));
+      } else {
+        body.appendChild(el('p',{class:'biz-hint'},['AI 해석을 만든 기록이 없어요.']));
+      }
+      body.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},[d.note]));
+      body.appendChild(el('p',{class:'biz-hint'},['환불은 토스페이먼츠 관리자 화면에서 직접 해주셔야 해요. 이 앱에는 아직 환불 기능이 없습니다.']));
+    })
+    .catch(function(){ body.innerHTML=''; body.appendChild(el('p',{class:'biz-hint'},['불러오지 못했어요.'])); });
+}
+
 function renderLanding(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view landing'});
@@ -14097,7 +14264,7 @@ function render(){
      예전에는 프로필이 없으면 무조건 마법사로 보냈다. 그래서 새로 온 사람은
      이 앱이 무엇을 해 주는지 보기도 전에 생년월일부터 넣어야 했다.
      나머지 화면(사주·궁합 등)은 계산할 값이 없으므로 여전히 마법사로 보낸다. */
-  var NO_PROFILE_OK = {home:1, about:1, guideSaju:1, guideMbti:1, faq:1, glossary:1, settings:1};
+  var NO_PROFILE_OK = {home:1, about:1, guideSaju:1, guideMbti:1, faq:1, glossary:1, settings:1, stats:1};
   if(STATE.profiles.length===0 && !NO_PROFILE_OK[ROUTE]){ startSetupWizard(null); renderSetup(); return; }
   if(ROUTE==='groupJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderGroupJoin(); return; }
   if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
@@ -14112,7 +14279,8 @@ function render(){
     else b.removeAttribute('aria-current');
   });
 
-  if(ROUTE==='home') renderLanding();
+  if(ROUTE==='stats') renderStats();
+  else if(ROUTE==='home') renderLanding();
   else if(ROUTE==='today') renderHome();
   else if(ROUTE==='saju') renderSaju();
   else if(ROUTE==='monthlyFortune') renderMonthlyFortune();
@@ -14295,11 +14463,15 @@ function grantAllForTest(){
 window.addEventListener('hashchange', function(){
   var h = String(location.hash || '').replace(/^#/, '');
   if(h === 'unlock'){ openTestUnlockModal(); return; }
+  if(h === 'stats'){ ROUTE='stats'; loadStats(); return; }
   if(/^(gj|g|r|meet|invite|i1)=/.test(h)){ location.reload(); }
 });
 /* 처음 열 때 #unlock 이 붙어 있으면 — hashchange는 '바뀔 때'만 오므로 여기서도 본다. */
 if(String(location.hash||'').replace(/^#/,'') === 'unlock'){
   setTimeout(function(){ openTestUnlockModal(); }, 0);
+}
+if(String(location.hash||'').replace(/^#/,'') === 'stats'){
+  setTimeout(function(){ ROUTE='stats'; loadStats(); }, 0);
 }
 
 /* ★ R50 — 링크로 바로 들어온 사람은 '궁합을 하러 온' 것이다. 탭도 그쪽으로 맞춘다. */
