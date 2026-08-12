@@ -26,7 +26,7 @@ import { productOf, aiQuotaOf } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import {
   paidOrdersOf, testAccessOf,
-  getAiCache, putAiCache, aiUsedCount, aiAlreadyUsed, noteAiUse,
+  getAiCache, putAiCache, aiUsedCount, aiAlreadyUsed, noteAiUse, sweepAiOld,
 } from './_lib/store.js';
 
 const MODEL = 'claude-sonnet-5';
@@ -236,6 +236,8 @@ export default async function handler(req, res) {
 
     await putAiCache({ cacheKey, productId, body: full, model: MODEL });
     await noteAiUse(sessionId, cacheKey);
+    /* 새로 만들 때 곁들여 오래된 기록을 지운다. 따로 도는 청소 작업이 없어도 쌓이지 않는다. */
+    await sweepAiOld();
     send(res, { type: 'done', cached: false });
     return res.end();
 

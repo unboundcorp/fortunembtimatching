@@ -254,3 +254,38 @@ export async function noteUnlockTry(sessionId) {
     body: JSON.stringify({ session_id: sessionId }),
   });
 }
+
+/* =====================================================================
+   R48 — AI 관련 기록도 기한이 지나면 지운다
+   ---------------------------------------------------------------------
+   방(rooms)과 그룹(groups)에는 정리 코드가 있었는데, AI를 붙이면서 만든 네 표에는 없었다.
+   그대로 두면 사주 풀이·이용 기록이 무기한 쌓인다. 개인정보처리방침에
+   "기간이 지나면 지운다"고 적어 놓고 실제로는 안 지우면 그 자체가 어긋남이다.
+
+   ★ 기준은 '만든 날'이다(대표님 지시). 다시 열어도 기간이 늘어나지 않는다.
+   ★ 해석 글이 지워져도 산 사람이 손해 보지 않는다 — 이미 만든 적 있는 해석은
+     다시 만들 때 횟수를 쓰지 않게 돼 있다(api/interpret.js의 aiAlreadyUsed).
+   ★ 따로 도는 청소 작업을 두지 않는다. 새로 만들 때 곁들여 부른다.
+     실패해도 본래 일은 계속한다 — 청소가 안 됐다고 기능을 멈출 이유가 없다.
+===================================================================== */
+export const AI_KEEP_DAYS = 365;
+
+export async function sweepAiOld() {
+  const cut = new Date(Date.now() - AI_KEEP_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const now = new Date().toISOString();
+  const jobs = [
+    `ai_cache?created_at=lt.${cut}`,
+    `ai_usage?created_at=lt.${cut}`,
+    `test_grants?expires_at=lt.${now}`,
+    /* 코드 시도 기록은 한 시간만 쓰인다. 하루 지난 것은 남길 이유가 없다. */
+    `unlock_attempts?tried_at=lt.${dayAgo}`,
+  ];
+  for (const path of jobs) {
+    try {
+      await rest(path, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    } catch (err) {
+      console.warn('오래된 AI 기록 정리 실패(무시하고 계속):', path.split('?')[0], err?.message);
+    }
+  }
+}
