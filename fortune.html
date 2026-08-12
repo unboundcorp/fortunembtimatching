@@ -13117,7 +13117,8 @@ function buildSavedGroupsCard(){
   /* ★ R60 — 눌러만 보고 안 보낸 링크가 쌓였을 때 한 번에 치운다.
      내가 만든 것 중 '아직 아무도 안 들어온 것'만 지운다 — 이 두 조건을 다 만족해야
      지워도 아무도 잃는 게 없다. 사람이 들어와 있는 그룹은 건드리지 않는다. */
-  if(list.length > 1){
+  /* 하나만 있어도 보여준다 — 그 하나가 눌러만 보고 안 보낸 링크일 수 있다. */
+  if(list.length >= 1){
     card.appendChild(el('button',{class:'btn btn-ghost btn-sm btn-block', style:'margin-top:10px;',
       onclick:function(){ tidyEmptyGroups(); }},['아무도 안 들어온 링크 정리하기']));
   }
