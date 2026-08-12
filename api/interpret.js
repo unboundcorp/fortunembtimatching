@@ -24,6 +24,7 @@ import { readBody, json } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
 import { productOf, aiQuotaOf } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
+import { KNOWLEDGE, KNOWLEDGE_CHARS } from './_lib/knowledge.js';
 import {
   paidOrdersOf, testAccessOf,
   getAiCache, putAiCache, aiUsedCount, aiAlreadyUsed, noteAiUse, sweepAiOld,
@@ -45,6 +46,7 @@ const AI_PRODUCTS = { saju_full: 'saju', mbti_full: 'mbti', compat_full: 'compat
        그 말과 실제 내용이 어긋나면 고지가 무의미해진다.
 ===================================================================== */
 const SYSTEM = `당신은 한국 사주명리와 MBTI를 함께 읽는 상담가입니다. 주어진 계산 결과를 바탕으로 그 사람에게만 해당하는 풀이를 씁니다.
+앞서 주어진 해석 지식 문서를 따르세요. 그 문서에 없는 개념(신살·공망·격국 등)은 언급하지 마세요.
 
 [절대 규칙]
 1. 주어진 사주 여덟 글자·오행 개수·십성·대운 값을 절대 바꾸거나 새로 계산하지 마세요. 이미 확정된 값입니다. 주어지지 않은 간지나 신살을 지어내지 마세요.
@@ -117,8 +119,14 @@ export default async function handler(req, res) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
     /* 아직 열쇠를 안 넣은 상태. 조용히 실패하지 않고 이유를 말한다 —
-       화면은 이 말을 받아 "기본 풀이로 보여드리는 중"이라고 안내한다. */
-    return json(res, 503, { error: 'not_configured', reason: 'AI 해석이 아직 연결되지 않았어요.' });
+       화면은 이 말을 받아 "기본 풀이로 보여드리는 중"이라고 안내한다.
+       ★ knowledgeChars를 함께 내려보낸다. 지식 문서가 서버에 제대로 실렸는지
+         밖에서 확인할 방법이 이것뿐이다(열쇠가 없으면 실제 호출을 못 해 보므로). */
+    return json(res, 503, {
+      error: 'not_configured',
+      reason: 'AI 해석이 아직 연결되지 않았어요.',
+      knowledgeChars: KNOWLEDGE_CHARS,
+    });
   }
 
   const body = readBody(req);
@@ -183,7 +191,16 @@ export default async function handler(req, res) {
         model: MODEL,
         max_tokens: MAX_TOKENS,
         stream: true,
-        system: SYSTEM,
+        /* ★ 지식 문서를 시스템 프롬프트 앞에 둔다.
+           앞에 두고 cache_control을 걸면 그 부분이 캐시된다 — 같은 지식을 매번
+           새로 읽히면 그만큼 돈이 나간다. 캐시에서 읽으면 입력값의 10분의 1이다.
+           (지식이 없으면 그 블록 자체를 넣지 않는다.) */
+        system: KNOWLEDGE
+          ? [
+              { type: 'text', text: KNOWLEDGE, cache_control: { type: 'ephemeral' } },
+              { type: 'text', text: SYSTEM },
+            ]
+          : SYSTEM,
         messages: [{ role: 'user', content: userPrompt(payload) }],
       }),
     });
