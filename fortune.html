@@ -14039,7 +14039,12 @@ function render(){
   updateHeader();
   if(!STATE.onboarded && STATE.profiles.length===0){ renderOnboarding(); return; }
   if(ROUTE==='setup' && SETUP){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderSetup(); return; }
-  if(STATE.profiles.length===0){ startSetupWizard(null); renderSetup(); return; }
+  /* ★ R50 — 프로필이 없어도 홈(고르는 화면)과 안내 문서는 열려야 한다.
+     예전에는 프로필이 없으면 무조건 마법사로 보냈다. 그래서 새로 온 사람은
+     이 앱이 무엇을 해 주는지 보기도 전에 생년월일부터 넣어야 했다.
+     나머지 화면(사주·궁합 등)은 계산할 값이 없으므로 여전히 마법사로 보낸다. */
+  var NO_PROFILE_OK = {home:1, about:1, guideSaju:1, guideMbti:1, faq:1, glossary:1, settings:1};
+  if(STATE.profiles.length===0 && !NO_PROFILE_OK[ROUTE]){ startSetupWizard(null); renderSetup(); return; }
   if(ROUTE==='groupJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderGroupJoin(); return; }
   if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
   if(ROUTE==='inviteAccept'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderInviteAccept(); return; }
