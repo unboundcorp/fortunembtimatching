@@ -1,16 +1,42 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/pay", "destination": "/api/pay" }
+    {
+      "source": "/pay",
+      "destination": "/api/pay"
+    },
+    {
+      "source": "/g/:id",
+      "destination": "/fortune.html"
+    },
+    {
+      "source": "/g/:id/:name",
+      "destination": "/fortune.html"
+    },
+    {
+      "source": "/j/:id",
+      "destination": "/fortune.html"
+    },
+    {
+      "source": "/j/:id/:name",
+      "destination": "/fortune.html"
+    }
   ],
   "redirects": [
-    { "source": "/", "destination": "/fortune.html", "permanent": false }
+    {
+      "source": "/",
+      "destination": "/fortune.html",
+      "permanent": false
+    }
   ],
   "headers": [
     {
       "source": "/fortune.html",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
       ]
     }
   ]
