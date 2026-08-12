@@ -4235,7 +4235,9 @@ function openPaywall(product){
     }
     var upsell = el('div',{class:'pay-upsell'});
     upsell.appendChild(el('span',{},[upsellText]));
-    upsell.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ closeModal(); openPaywall(PRODUCTS.premium_pass); }},['이용권 보기']));
+    upsell.appendChild(el('button',{class:'btn btn-ghost btn-sm', /* ★ R59 이후로는 closeModal()을 먼저 부르면 안 된다 — 방문 기록을 되돌리는 일이
+         한 박자 뒤에 도착해 방금 연 창을 닫는다. openModal이 알아서 자리를 비운다. */
+      onclick:function(){ openPaywall(PRODUCTS.premium_pass); }},['이용권 보기']));
     body.appendChild(upsell);
   }
 
@@ -13688,7 +13690,10 @@ function showInviteModal(profile, link, live, ttlHours){
        만들 때 PIN을 꼭 받지는 않는다 — 링크 하나 뽑자고 비밀번호부터 정하라고 하면
        정작 링크를 안 보내게 된다(R39에서 그래서 선택으로 바꿨다). */
     body.appendChild(el('button',{class:'btn btn-ghost btn-sm btn-block', style:'margin-top:10px;',
-      onclick:function(){ closeModal(); openGroupManageModal(); }},
+      /* ★ closeModal()을 먼저 부르면 안 된다. 그건 '사람이 닫은 것'으로 보고 방문 기록을
+         한 칸 되돌리는데(R59), 그 되돌림이 한 박자 뒤에 도착해 방금 연 그룹 관리 창을
+         닫아 버린다. openModal이 어차피 자리를 비우므로 그냥 열면 된다. */
+      onclick:function(){ openGroupManageModal(); }},
       ['다른 기기에서도 관리하려면 PIN 정하기 (선택)']));
   } else {
     body.appendChild(el('p',{},['이 링크를 열면 '+profile.name+'님과의 궁합 결과가 상대방 화면에 나와요. 상대방이 이 앱을 처음 쓰는 경우에는 자기 프로필을 먼저 만들고, 그다음 결과로 이어져요.']));
