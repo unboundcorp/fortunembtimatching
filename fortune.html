@@ -969,7 +969,7 @@ main{flex:1;padding:28px 20px 96px;}
 
 /* ===================== 2D 캐릭터 (오행 5종 + MBTI 16종 = 21종) — R19 신규 ===================== */
 /* 그림 자체는 전부 인라인 SVG다(아래 CHARACTERS). 여기 있는 건 그 SVG를 앉히는 자리뿐이다. */
-.char-svg{display:block;flex:none;}
+.char-svg{display:block;flex:none;object-fit:contain;}
 /* R22 — 캐릭터를 "옅은 원 안에" 앉힌다. 레퍼런스의 동그란 아이콘 배경과 같은 규칙이고,
    덕분에 어두운 배경에서 캐릭터 실루엣이 훨씬 또렷하게 떠오른다. 색은 --gold-soft/--gold-line뿐. */
 .char-hero{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
@@ -6643,52 +6643,47 @@ function charKeyForDayStem(saju){
   if(!saju || !saju.day) return null;
   return charKeyForElementIdx(SajuEngine.STEM_ELEM[saju.day.stemIdx]);
 }
-function charParts(spec, mini){
-  var parts = [];
-  if(!mini){ parts.push(['ring', CH_BASE.ring]); parts = parts.concat(spec.aura || []); }
-  parts.push(['strokeInk', CH_BASE.armL]);
-  parts.push(['strokeInk', CH_BASE.armR]);
-  parts.push(['outlineDeep', CH_BASE.body]);
-  parts.push(['outline', CH_BASE.head]);
-  parts = parts.concat(spec.crown || []);
-  if(!mini) parts = parts.concat(spec.mark || []);
-  parts = parts.concat(CH_EYES[spec.eyes] || CH_EYES.dot);
-  parts = parts.concat(CH_MOUTH[spec.mouth] || CH_MOUTH.smile);
-  return parts;
-}
 /* 인라인 SVG 한 장. 바깥 <svg>만 role='img' + aria-label이고,
    안쪽 도형은 전부 장식이라 <g aria-hidden>으로 묶어 낭독에서 뺀다. */
+/* =====================================================================
+   R62 — 캐릭터를 스타일 가이드 그림으로 바꾼다 (대표님 지시)
+   ---------------------------------------------------------------------
+   예전에는 좌표로 그린 SVG였다. 대표님이 주신 스타일 가이드 시트에서 21종을
+   한 종씩 떼어내고 배경을 지워 파일로 두었다(char 폴더의 webp, 224px, 한 장 16KB).
+
+   ★ 배경을 지울 때 '흰색을 전부 지우기'가 아니라 '가장자리에서 이어진 것만 지우기'로 했다.
+     캐릭터 얼굴과 몸이 흰색이라, 흰색을 다 지우면 그 안에 구멍이 뚫린다.
+   ★ 이름표 글자('INTJ 전략가')가 캐릭터 바로 옆에 있어서, 칸마다 캐릭터와 글자 사이의
+     빈 세로줄을 찾아 그 자리에서 잘랐다. 고정 폭으로 자르면 어떤 칸은 글자가 딸려 왔다.
+   ★ 원본 시트가 1280×853이라 캐릭터 한 종이 90~150px이다. 224px로 키워 두었지만
+     없던 선명함이 생기지는 않는다. 디자이너에게 낱장 원본을 받으면 더 깨끗해진다.
+===================================================================== */
+function charImgSrc(key){ return 'char/' + key + '.webp'; }
+
 function buildCharSvg(key, size, opts){
   opts = opts || {};
-  var ns='http://www.w3.org/2000/svg';
   var spec = CHARACTERS[key];
-  var svg=document.createElementNS(ns,'svg');
-  svg.setAttribute('viewBox','0 0 100 100');
-  svg.setAttribute('width', size||120); svg.setAttribute('height', size||120);
-  svg.setAttribute('class','char-svg'+(opts.cls?' '+opts.cls:''));
-  svg.setAttribute('role','img');
-  svg.setAttribute('aria-label', opts.label || ((spec?spec.name:'')+' 캐릭터'));
-  if(!spec) return svg;
-  var g=document.createElementNS(ns,'g');
-  g.setAttribute('aria-hidden','true');
-  var wMul = opts.mini ? 1.35 : 1;
-  charParts(spec, !!opts.mini).forEach(function(pt){
-    var st = CH_STYLE[pt[0]] || CH_STYLE.strokeInk;
-    var p=document.createElementNS(ns,'path');
-    p.setAttribute('d', pt[1]);
-    p.setAttribute('fill', st.fill ? (st.fill==='ink' ? 'currentColor' : (st.fillAlpha!=null ? chTint(spec.color, st.fillAlpha) : spec.color)) : 'none');
-    if(st.stroke){
-      p.setAttribute('stroke', st.stroke==='ink' ? 'currentColor' : spec.color);
-      p.setAttribute('stroke-width', String(Math.round(st.w*wMul*100)/100));
-      p.setAttribute('stroke-linecap','round');
-      p.setAttribute('stroke-linejoin','round');
-      if(st.alpha!=null) p.setAttribute('stroke-opacity', String(st.alpha));
-      if(st.dash) p.setAttribute('stroke-dasharray', st.dash);
-    }
-    g.appendChild(p);
+  var px = size || 120;
+  return el('img', {
+    src: charImgSrc(key),
+    width: String(px), height: String(px),
+    alt: opts.label || ((spec ? spec.name : '') + ' 캐릭터'),
+    loading: 'lazy', decoding: 'async',
+    class: 'char-svg' + (opts.cls ? ' ' + opts.cls : '')
   });
-  svg.appendChild(g);
-  return svg;
+}
+
+/* 공유 카드(캔버스)용 — 그림이 도착해야 그릴 수 있으므로 받아 두고 알려준다. */
+var CHAR_IMG_CACHE = {};
+function charImage(key, onReady){
+  var im = CHAR_IMG_CACHE[key];
+  if(im) { if(im._ok && onReady) onReady(); return im; }
+  im = new Image();
+  im.onload = function(){ im._ok = true; if(onReady) onReady(); };
+  im.onerror = function(){ im._ok = false; };
+  im.src = charImgSrc(key);
+  CHAR_IMG_CACHE[key] = im;
+  return im;
 }
 /* 목록·행에 붙이는 작은 칩. 인장 테·무늬·주변 장식을 빼고 실루엣만 남겨 34px에서도 읽힌다. */
 function buildCharChip(key, size, label){
@@ -6728,29 +6723,11 @@ function buildCompatCharPair(nameA, pA, pB){
 /* 공유 카드(Canvas)에도 같은 좌표로 그린다 — SVG를 이미지로 굽지 않는다.
    (외부 요청 0건 원칙 + data: URI 금지 + toBlob 오염 위험을 한 번에 피하는 방법이다.) */
 function drawCharOnCanvas(ctx, key, x, y, size, inkColor){
-  var spec = CHARACTERS[key];
-  if(!spec || typeof Path2D === 'undefined') return;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(size/100, size/100);
-  ctx.lineCap='round'; ctx.lineJoin='round';
-  charParts(spec, false).forEach(function(pt){
-    var st = CH_STYLE[pt[0]] || CH_STYLE.strokeInk;
-    var path;
-    try{ path = new Path2D(pt[1]); }catch(e){ return; }
-    if(st.fill){
-      ctx.fillStyle = st.fill==='ink' ? inkColor : (st.fillAlpha!=null ? chTint(spec.color, st.fillAlpha) : spec.color);
-      ctx.fill(path);
-    }
-    if(st.stroke){
-      ctx.strokeStyle = st.stroke==='ink' ? inkColor : (st.alpha!=null ? chTint(spec.color, st.alpha) : spec.color);
-      ctx.lineWidth = st.w;
-      ctx.setLineDash(st.dash ? st.dash.split(' ').map(Number) : []);
-      ctx.stroke(path);
-    }
-  });
-  ctx.setLineDash([]);
-  ctx.restore();
+  /* ★ 그림이 아직 안 왔으면 그냥 건너뛴다. 카드의 나머지는 그대로 나온다 —
+     그림 하나 때문에 카드 전체를 못 만들면 그게 더 나쁘다.
+     (도착하면 openShareModal이 다시 그린다.) */
+  var im = CHAR_IMG_CACHE[key];
+  if(im && im._ok){ try{ ctx.drawImage(im, x, y, size, size); }catch(e){} }
 }
 
 var STAR_SIGNS = [
@@ -14160,6 +14137,10 @@ function openShareModal(kind, profile, data){
      '오늘의 운세' 카드는 본문(4개 영역 × 여러 줄)이 이미 아래까지 차서 그림을 넣지 않는다. */
   canvas.width=640; canvas.height = SHARE_CARD_WITH_CHAR[kind] ? 860 : 800;
   drawShareCard(canvas, kind, profile, data);
+  /* R62 — 캐릭터 그림은 파일이라 늦게 도착할 수 있다. 오면 카드를 다시 그린다. */
+  shareCardCharKeys(kind, profile, data).forEach(function(ck){
+    charImage(ck, function(){ drawShareCard(canvas, kind, profile, data); });
+  });
   var preview=el('div',{class:'share-preview'},[canvas]);
   body.appendChild(preview);
   var btnRow=el('div',{style:'display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px;'});
@@ -14239,6 +14220,21 @@ function wrapCanvasText(ctx, text, x, yy, maxWidth, lineHeight){
 }
 /* 캐릭터를 얹는 카드 종류. openShareModal(캔버스 높이)과 drawShareCard(그리는 자리)가 같은 표를 본다. */
 var SHARE_CARD_WITH_CHAR = { saju:1, report:1, mbtiReport:1, compatSummary:1 };
+/* R62 — 이 카드에 어떤 캐릭터가 들어가는지. 그림을 미리 받아 두려고 쓴다.
+   ★ 아래 drawShareCard가 고르는 규칙과 같아야 한다. 다르면 엉뚱한 그림을 받아 놓고
+     정작 필요한 그림은 없어서 카드에 캐릭터가 빈다. */
+function shareCardCharKeys(kind, profile, data){
+  if(!SHARE_CARD_WITH_CHAR[kind] || !profile) return [];
+  if(kind === 'compatSummary'){
+    var kA = charKeyForMbti(profile.mbti);
+    var kB = (data && data.pB) ? charKeyForMbti(data.pB.mbti) : null;
+    return [kA, kB].filter(Boolean);
+  }
+  var k = (kind === 'saju')
+    ? charKeyForDayStem(data && data.year ? data : getSajuResult(profile))
+    : charKeyForMbti(profile.mbti);
+  return k ? [k] : [];
+}
 /* R29 — 공유 카드도 함께 밝은 톤으로 뒤집었다. 앱만 밝히고 내보내는 그림만 어두우면
    "저장하기"를 누른 순간 다른 서비스의 카드가 나온다. 글꼴도 화면과 같은 규칙을 쓴다:
    본문·제목·숫자는 고딕(CARD_SANS), 인장 '緣'과 사주 간지만 명조(CARD_SERIF). */
