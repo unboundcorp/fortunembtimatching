@@ -908,7 +908,14 @@ main{flex:1;padding:28px 20px 96px;}
 .svc-list li{color:var(--ink-dim);font-size:.8rem;line-height:1.9;word-break:keep-all;}
 .svc-price{margin-top:10px;font-size:.76rem;font-weight:700;color:var(--gold);
   background:var(--gold-soft);border-radius:999px;padding:5px 11px;display:inline-block;}
-.cross-sell{border-style:dashed;}
+.cross-sell{margin-top:20px;padding:20px 18px;border-radius:var(--r-lg);
+  background:var(--gold-soft);border:1px solid var(--gold-line);text-align:center;}
+.cross-sell .cs-mark{display:flex;justify-content:center;margin-bottom:6px;}
+.cross-sell .cs-title{font-family:var(--sans);font-size:1.06rem;font-weight:800;
+  letter-spacing:-.02em;color:var(--gold);}
+.cross-sell .cs-desc{color:var(--ink-dim);font-size:.84rem;line-height:1.7;
+  margin:6px 0 14px;word-break:keep-all;}
+.cross-sell .btn{display:flex;align-items:center;justify-content:center;gap:4px;}
 
 /* R49 — '무엇으로 봤나요' 한 줄 */
 .basis-chip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-4px 0 14px;}
@@ -10338,21 +10345,26 @@ function startService(mode){
 var PENDING_SERVICE = null;
 
 /* 다 본 뒤 다른 쪽을 권한다. 두 서비스가 서로를 모르면 한쪽만 쓰고 끝난다. */
+/* ★ R53 — 눈에 잘 띄어야 한다(대표님 지시).
+   점선 카드는 '덤'처럼 보여서 그냥 지나친다. 브랜드 색을 깔고 아이콘을 세워
+   화면에서 한 덩어리로 보이게 한다. 버튼도 화면 폭을 다 쓴다. */
 function crossSell(kind){
-  var card = el('div',{class:'scroll-card cross-sell'});
-  if(kind==='toCompat'){
-    card.appendChild(el('h3',{},['다른 사람과 궁합도 볼까요?']));
-    card.appendChild(el('p',{class:'biz-hint'},['링크 하나만 보내면 상대가 직접 넣고 바로 결과가 나와요. 최대 '+GC_MAX+'명까지 함께 볼 수 있어요.']));
-    card.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
-      setMode('compat'); ROUTE='compat'; render(); window.scrollTo(0,0);
-    }},['궁합 보러 가기']));
-  } else {
-    card.appendChild(el('h3',{},['내 사주와 MBTI도 깊게 볼까요?']));
-    card.appendChild(el('p',{class:'biz-hint'},['타고난 여덟 글자와 성격 유형을 함께 읽어드려요. 기본 풀이는 무료예요.']));
-    card.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
-      setMode('self'); ROUTE='saju'; render(); window.scrollTo(0,0);
-    }},['내 사주 보러 가기']));
-  }
+  var toCompat = (kind==='toCompat');
+  var card = el('div',{class:'cross-sell'});
+  card.appendChild(el('div',{class:'cs-mark','aria-hidden':'true'},[brandMark(40)]));
+  card.appendChild(el('div',{class:'cs-title'},[
+    toCompat ? '다른 사람과 궁합도 볼까요?' : '내 사주와 MBTI도 깊게 볼까요?'
+  ]));
+  card.appendChild(el('p',{class:'cs-desc'},[
+    toCompat
+      ? '링크 하나만 보내면 상대가 직접 넣고 바로 결과가 나와요. 최대 '+GC_MAX+'명까지 함께 볼 수 있어요.'
+      : '타고난 여덟 글자와 성격 유형을 함께 읽어드려요. 생년월일만 있으면 바로 나와요.'
+  ]));
+  card.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
+    if(toCompat){ setMode('compat'); ROUTE='compat'; }
+    else { setMode('self'); ROUTE='saju'; }
+    render(); window.scrollTo(0,0);
+  }},[toCompat ? '궁합 보러 가기' : '내 사주 보러 가기', dirIcon('right')]));
   return card;
 }
 
@@ -10662,6 +10674,9 @@ function renderSaju(){
   view.appendChild(circleCTA(CTA_ICON.arrow, '내 사주 풀이 읽어보기', function(){ ROUTE='report13'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ ROUTE='monthlyFortune'; render(); }},['올해 월별 운세 보기']));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('saju', p, saju); }},['사주 요약 카드 저장하기']));
+  /* ★ R53 — 내 사주에도 궁합 권유를 넣는다(대표님 지적: MBTI에만 있었다).
+     이 화면이 사주 쪽에서 가장 오래 머무는 자리인데 여기가 비어 있었다. */
+  view.appendChild(crossSell('toCompat'));
   view.appendChild(glossaryLinkButton());
   main.appendChild(autoTermify(view));
 }
