@@ -10612,7 +10612,7 @@ function renderSaju(){
   var dwUnlocked = sajuDetailUnlocked();
   dwCard.appendChild(el('p',{class:'section-sub', style:'margin-top:14px;'},[ dwUnlocked
     ? '구간을 탭하면 그 시기의 흐름·금전운·건강운을 자세히 볼 수 있어요.'
-    : '구간마다의 두 글자와 나에게 어떤 자리인지, 기운 강도는 모두 무료예요. 구간을 눌렀을 때 나오는 자세한 풀이는 지금 지나는 구간만 미리 열어두었고, 나머지 구간은 유료예요.' ]));
+    : '구간마다의 두 글자와 나에게 어떤 자리인지, 기운 강도는 모두 볼 수 있어요. 구간을 눌렀을 때 나오는 자세한 풀이는 지금 지나는 구간을 열어두었어요.' ]));
   var scroll=el('div',{class:'daewoon-scroll'});
   dw.list.forEach(function(item,i){
     var sipName = SajuEngine.sipseongOf(saju.day.stemIdx, SajuEngine.STEM_ELEM[item.ganji.stemIdx], SajuEngine.STEM_YY[item.ganji.stemIdx]);
@@ -12412,7 +12412,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
     } else {
       /* 잠긴 상태에서는 쌍별 상세를 만들지 않는다. 무엇이 잠겼는지만 알린다. */
       card.appendChild(el('p',{class:'biz-hint', style:'margin-top:6px;'},
-        [compatLockMark(), related.length+'명과의 쌍별 상세는 유료예요']));
+        [compatLockMark(), related.length+'명과의 자세한 궁합이 더 있어요']));
     }
     wrap.appendChild(card);
   });
