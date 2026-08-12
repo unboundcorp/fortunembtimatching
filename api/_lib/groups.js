@@ -117,31 +117,18 @@ export async function createGroup({ name, pin, members }) {
 }
 
 /* =====================================================================
-   ★ R34 — 그룹도 "마지막으로 연 지 1년"으로 센다 (밀어내기 만료, 대표님 승인)
+   ★ R47 — 기한은 '만든 날'부터 센다 (대표님 지시, 2026-08-12)
    ---------------------------------------------------------------------
-   1:1 궁합과 같은 규칙이다. 계속 쓰는 그룹은 계속 살아 있고, 아무도 안 여는 그룹만
-   조용히 사라진다. 그룹에는 최대 30명분 생년월일이 들어가므로,
-   쓰지도 않는 명단을 이유 없이 계속 쥐고 있지 않겠다는 뜻이다.
+   예전에는 열 때마다 다시 밀었다. 이제는 그룹을 만든 날로부터 1년이 지나면 지운다.
+   매일 쓰는 그룹도 1년이 되면 사라진다 — 부작용이 아니라 정한 규칙이다.
+   대신 "언제까지 남는지"를 처음부터 한 문장으로 말할 수 있다.
 ===================================================================== */
-async function touchGroup(groupId) {
-  try {
-    await rest(`groups?group_id=eq.${encodeURIComponent(groupId)}`, {
-      method: 'PATCH', headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ expires_at: expiryISO() }),
-    });
-  } catch (err) {
-    console.warn('그룹 기한 연장 실패(무시하고 계속):', err?.message);
-  }
-}
-
-/* 열람 — PIN 없이 된다. 링크를 아는 사람만 올 수 있다. 열었으니 기한을 다시 센다. */
+/* 열람 — PIN 없이 된다. 링크를 아는 사람만 올 수 있다. 기한은 밀지 않는다. */
 export async function getGroup(groupId) {
   const rows = await rest(
     `groups?group_id=eq.${encodeURIComponent(groupId)}&expires_at=gt.${new Date().toISOString()}&select=group_id,name,members,created_at,updated_at&limit=1`
   );
-  const row = rows && rows[0] ? rows[0] : null;
-  if (row) await touchGroup(groupId);
-  return row;
+  return rows && rows[0] ? rows[0] : null;
 }
 
 /* 고치기·지우기 — PIN이 맞아야 한다. */
@@ -180,7 +167,8 @@ export async function joinGroup(groupId, memberRow) {
   const next = rows.join(';');
   await rest(`groups?group_id=eq.${encodeURIComponent(groupId)}`, {
     method: 'PATCH', headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({ members: next, updated_at: new Date().toISOString(), expires_at: expiryISO() }),
+    /* ★ 사람이 새로 들어와도 기한은 안 민다. 기준은 어디까지나 '만든 날'이다. */
+    body: JSON.stringify({ members: next, updated_at: new Date().toISOString() }),
   });
   return { ok: true, name: row.name, members: next };
 }

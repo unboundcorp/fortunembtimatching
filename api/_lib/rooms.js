@@ -101,24 +101,18 @@ export async function getRoom(roomId) {
 
    ★ 실패해도 조회 자체는 계속한다. 기한 연장에 실패했다고 못 보게 만들 이유는 없다.
 ===================================================================== */
-async function touchRoom(roomId) {
-  try {
-    await rest(`rooms?room_id=eq.${encodeURIComponent(roomId)}`, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ expires_at: expiryISO() }),
-    });
-  } catch (err) {
-    console.warn('방 기한 연장 실패(무시하고 계속):', err?.message);
-  }
-}
+/* =====================================================================
+   R47 — 기한은 '만든 날'부터 센다 (대표님 지시, 2026-08-12)
+   ---------------------------------------------------------------------
+   예전에는 열 때마다 기한을 다시 밀었다(밀어내기). 계속 쓰는 것은 안 지운다는 뜻이었다.
+   이제는 만든 날로부터 정해진 기간이 지나면 지운다. 미는 일을 하지 않는다.
 
-/* 조회하면서 기한도 함께 밀어준다. 화면에서 부르는 조회는 전부 이쪽을 쓴다. */
-export async function getRoomAndTouch(roomId) {
-  const row = await getRoom(roomId);
-  if (row) await touchRoom(roomId);
-  return row;
-}
+   ★ 그래서 매일 쓰는 방·그룹도 기한이 되면 사라진다. 이건 부작용이 아니라 정한 규칙이다.
+     대신 "언제까지 남는지"를 처음부터 한 문장으로 말할 수 있다 —
+     밀어내기는 이용자가 자기 정보가 언제 지워지는지 알 수 없게 만든다.
+   ★ 화면·약관·개인정보처리방침의 문구도 같이 '만든 날 기준'으로 고쳤다.
+     서버와 문구 중 하나만 바꾸면 그 순간 앱이 거짓말을 하게 된다.
+===================================================================== */
 
 /* 들어온 사람의 정보를 놓는다.
    ★ b 자리가 비어 있을 때만 채운다. 이미 누가 들어와 있으면 덮어쓰지 않는다 —
@@ -132,7 +126,7 @@ export async function joinRoom(roomId, payload) {
       body: JSON.stringify({ b_payload: payload, joined_at: new Date().toISOString() }),
     }
   );
-  if (rows && rows[0]) { await touchRoom(roomId); return rows[0]; }
+  if (rows && rows[0]) return rows[0];
   /* 못 채웠으면 두 경우다 — 방이 없거나(기한 지남 포함), 이미 누가 들어와 있거나.
      후자는 그 사람의 결과를 그대로 보여주면 되므로, 현재 상태를 읽어서 돌려준다. */
   return await getRoomAndTouch(roomId);
