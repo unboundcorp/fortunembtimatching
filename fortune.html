@@ -875,6 +875,23 @@ main{flex:1;padding:28px 20px 96px;}
   display:flex;align-items:center;justify-content:center;flex:none;}
 .brand-top-name{font-family:var(--sans);font-size:1.18rem;font-weight:800;letter-spacing:-.03em;color:var(--gold);}
 
+/* R50 — 홈: 서비스 고르는 카드 */
+.landing{padding-top:8px;}
+.landing-intro{color:var(--ink-dim);font-size:.9rem;line-height:1.7;text-align:center;margin:2px 0 18px;word-break:keep-all;}
+.svc-card{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--gold-line);
+  border-radius:var(--r-lg);padding:18px 18px 16px;margin-bottom:14px;box-shadow:var(--shadow-soft);
+  transition:border-color .15s,transform .15s;}
+.svc-card:hover{border-color:var(--gold);}
+.svc-card:active{transform:scale(.99);}
+.svc-title{font-family:var(--sans);font-size:1.1rem;font-weight:800;letter-spacing:-.02em;color:var(--gold);}
+.svc-desc{color:var(--ink-dim);font-size:.86rem;margin-top:4px;line-height:1.6;word-break:keep-all;}
+.svc-list{margin:10px 0 0;padding-left:16px;}
+.svc-list li{color:var(--ink-dim);font-size:.8rem;line-height:1.9;word-break:keep-all;}
+.svc-price{margin-top:10px;font-size:.76rem;font-weight:700;color:var(--gold);
+  background:var(--gold-soft);border-radius:999px;padding:5px 11px;display:inline-block;}
+.svc-go{margin-top:12px;display:flex;align-items:center;gap:4px;font-size:.86rem;font-weight:700;color:var(--gold);}
+.cross-sell{border-style:dashed;}
+
 /* R49 — '무엇으로 봤나요' 한 줄 */
 .basis-chip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-4px 0 14px;}
 .basis-chip .basis-k{font-size:.72rem;color:var(--ink-faint);}
@@ -1077,11 +1094,15 @@ main{flex:1;padding:28px 20px 96px;}
        role="tab"을 쓰지 않는 이유: 이건 탭 위젯이 아니라 화면 이동이라서,
        현재 위치는 aria-current="page"로 알리는 쪽이 맞다. -->
   <nav class="tabbar" id="tabbar" aria-label="주요 메뉴">
-    <button class="tab-btn" data-route="home" aria-controls="main">오늘의 운세</button>
-    <button class="tab-btn" data-route="saju" aria-controls="main">내 사주</button>
-    <button class="tab-btn" data-route="report" aria-controls="main">MBTI 리포트</button>
-    <button class="tab-btn" data-route="compat" aria-controls="main">궁합 보기</button>
-    <button class="tab-btn" data-route="chars" aria-controls="main">캐릭터 도감</button>
+    <!-- R50 — 서비스를 고른 뒤 그 서비스의 탭만 보여준다(대표님 지시).
+         data-mode 가 붙은 탭은 지금 고른 서비스와 같을 때만 나온다.
+         홈·히스토리·설정은 어느 쪽에서도 필요하므로 표시가 없다. -->
+    <button class="tab-btn" data-route="home" aria-controls="main">홈</button>
+    <button class="tab-btn" data-route="today" data-mode="self" aria-controls="main">오늘의 운세</button>
+    <button class="tab-btn" data-route="saju" data-mode="self" aria-controls="main">내 사주</button>
+    <button class="tab-btn" data-route="report" data-mode="self" aria-controls="main">MBTI 리포트</button>
+    <button class="tab-btn" data-route="chars" data-mode="self" aria-controls="main">캐릭터 도감</button>
+    <button class="tab-btn" data-route="compat" data-mode="compat" aria-controls="main">궁합 보기</button>
     <button class="tab-btn" data-route="history" aria-controls="main">히스토리</button>
     <button class="tab-btn" data-route="settings" aria-controls="main">설정</button>
   </nav>
@@ -3228,7 +3249,7 @@ function sajuOptsOf(p){
 }
 /* ★ 캐시 열쇠에 자오선을 넣어야 한다. 안 넣으면 출생지를 해외로 바꿔도 옛 결과가 그대로 나온다. */
 function sajuOptsKey(o){ return SAJU_ENGINE_REV+'|'+o.lon+'|'+(o.adjust?'1':'0')+'|'+(typeof o.meridian==='number'?o.meridian:'kr'); }
-function defaultState(){ return {onboarded:false, profiles:[], activeId:null, fortuneHistory:[], compatHistory:[], sajuHistory:[], mbtiReportHistory:[],
+function defaultState(){ return {onboarded:false, mode:null, profiles:[], activeId:null, fortuneHistory:[], compatHistory:[], sajuHistory:[], mbtiReportHistory:[],
   /* 상용화 v4: 구매한 이용권 / 결제 설정 / AI 해석 설정. 없으면 기존 사용자도 자연스럽게 무료 상태로 시작한다. */
   entitlements:{items:{}, pass:null, purchases:[]}, billingConfig:null, interpreterConfig:null,
   /* 이 브라우저가 알고 있는 영수증(복원) 번호. 권한의 근거가 아니라 "메모"다 —
@@ -3399,6 +3420,21 @@ if(STORAGE_SCRUBBED){
   catch(e){ console.warn('저장소 정리 결과를 저장하지 못했습니다.', e); }
 }
 var ROUTE = 'home';
+/* =====================================================================
+   R50 — 서비스 두 갈래 (대표님 지시, 2026-08-12)
+   ---------------------------------------------------------------------
+   홈은 '오늘의 운세'가 아니라 '무엇을 볼지 고르는 자리'가 된다.
+     'self'   내 MBTI × 사주 분석
+     'compat' 타인과 궁합 보기
+   고른 뒤에는 그 서비스의 탭만 보여주고, 다 본 뒤에는 다른 쪽을 권한다.
+
+   ★ 화면(ROUTE)과 따로 둔다. 링크로 바로 들어오는 경우(#g=, #gj=)가 있어서
+     '어떤 화면인가'와 '무엇을 하러 왔는가'가 늘 같지는 않다.
+   ★ 저장한다. 새로고침할 때마다 다시 고르게 하면 그게 더 번거롭다.
+===================================================================== */
+var MODE = (STATE && (STATE.mode==='self' || STATE.mode==='compat')) ? STATE.mode : null;
+function setMode(m){ MODE = m; STATE.mode = m; saveState(); }
+function modeOf(){ return MODE; }
 var SETUP = null; /* 임시 프로필 작성 상태 */
 var COMPAT_DRAFT = null;
 var HIST_TAB='fortune';
@@ -9524,7 +9560,9 @@ function renderOnboarding(){
   var ageOk = false;
   var startBtn = el('button',{class:'btn btn-primary', disabled:'disabled', onclick:function(){
     if(!ageOk) return;
-    STATE.onboarded=true; saveState(); startSetupWizard(null); render();
+    /* ★ R50 — 곧바로 프로필 마법사로 보내지 않는다. 무엇을 받는지 모른 채
+       생년월일부터 넣으라고 하지 않기 위해, 먼저 홈에서 무엇을 볼지 고르게 한다. */
+    STATE.onboarded=true; saveState(); ROUTE='home'; render();
   }},['시작하기']);
   var chk = el('input',{type:'checkbox', id:'ageOk14'});
   chk.addEventListener('change', function(e){
@@ -10045,6 +10083,13 @@ function renderSetupStep3(){
     } else if(goInvite){
       ROUTE='inviteAccept';
       showToast('프로필을 저장했어요. 받은 초대장을 보여드릴게요.');
+    } else if(PENDING_SERVICE){
+      /* ★ R50 — 홈에서 서비스를 고르다가 프로필을 만들게 된 경우다.
+         여기서 홈으로 떨어뜨리면 방금 고른 것이 없던 일이 된다. */
+      var m = PENDING_SERVICE; PENDING_SERVICE = null;
+      setMode(m);
+      ROUTE = (m==='compat') ? 'compat' : 'today';
+      showToast('프로필이 저장되었습니다.');
     } else {
       ROUTE='home';
       showToast('프로필이 저장되었습니다.');
@@ -10187,6 +10232,96 @@ function relationBadges(rel){
 /* =====================================================================
    렌더: 홈 (오늘의 운세)
 ===================================================================== */
+/* =====================================================================
+   R50 — 홈: 무엇을 볼지 고르는 자리 (대표님 지시)
+   ---------------------------------------------------------------------
+   예전 홈은 곧바로 '오늘의 운세'였다. 처음 온 사람은 이 앱이 무엇을 해 주는지
+   모른 채 운세부터 보게 됐고, 궁합이 있다는 것도 탭을 눌러 봐야 알았다.
+   이제 홈에서 두 가지 중 하나를 고르고, 고른 쪽 화면만 보여준다.
+
+   ★ 프로필이 없어도 이 화면은 열린다. 고른 다음에 필요한 정보를 받는다 —
+     무엇을 받는지 모르는 채로 생년월일부터 넣으라고 하지 않는다.
+   ★ 무료·유료 경계를 여기서 미리 말한다. 결제 화면에 가서야 알게 되면 안 된다.
+===================================================================== */
+function renderLanding(){
+  var main=$('#main'); main.innerHTML='';
+  var view=el('div',{class:'view landing'});
+  var p=activeProfile();
+
+  view.appendChild(brandTop());
+  view.appendChild(el('p',{class:'landing-intro'},[
+    'MBTI와 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.'
+  ]));
+
+  function svc(title, desc, bullets, price, go){
+    var c = el('button',{class:'svc-card', type:'button', onclick:go});
+    c.appendChild(el('div',{class:'svc-title'},[title]));
+    c.appendChild(el('div',{class:'svc-desc'},[desc]));
+    var ul=el('ul',{class:'svc-list'});
+    bullets.forEach(function(t){ ul.appendChild(el('li',{},[t])); });
+    c.appendChild(ul);
+    c.appendChild(el('div',{class:'svc-price'},[price]));
+    c.appendChild(el('div',{class:'svc-go'},['시작하기', dirIcon('right')]));
+    return c;
+  }
+
+  view.appendChild(svc(
+    '내 MBTI × 사주 분석',
+    '타고난 여덟 글자와 성격 유형을 함께 읽어드려요.',
+    ['오늘의 운세 · 만세력 사주팔자', '오행·십성·대운 흐름', 'MBTI 성향 리포트'],
+    '기본 풀이 무료 · 깊은 해석은 유료',
+    function(){ startService('self'); }
+  ));
+
+  view.appendChild(svc(
+    '타인과 궁합 보기',
+    '링크 하나만 보내면 상대가 직접 넣고 바로 결과가 나와요.',
+    ['둘이서 보는 1:1 궁합', '링크로 최대 '+GC_MAX+'명까지 그룹 궁합', '무엇이 맞고 어긋나는지 항목별로'],
+    '기본 궁합 무료 · 상세 궁합은 유료',
+    function(){ startService('compat'); }
+  ));
+
+  /* 이미 쓰던 분에게는 오늘의 운세로 가는 짧은 길을 남긴다. 고르는 화면이 매번 관문이 되면 번거롭다. */
+  if(p){
+    view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:14px;', onclick:function(){
+      setMode('self'); ROUTE='today'; render();
+    }},[p.name+'님의 오늘의 운세 바로 보기']));
+  }
+  main.appendChild(autoTermify(view));
+}
+
+/* 서비스를 고르면 — 프로필이 없으면 먼저 받고, 있으면 바로 결과로 간다. */
+function startService(mode){
+  setMode(mode);
+  if(!activeProfile()){
+    /* ★ 어디로 가려다 프로필을 만들게 됐는지 기억해 둔다. 안 그러면 만들고 나서 홈으로 떨어진다. */
+    PENDING_SERVICE = mode;
+    startSetupWizard(null); render(); return;
+  }
+  ROUTE = (mode==='compat') ? 'compat' : 'today';
+  render();
+}
+var PENDING_SERVICE = null;
+
+/* 다 본 뒤 다른 쪽을 권한다. 두 서비스가 서로를 모르면 한쪽만 쓰고 끝난다. */
+function crossSell(kind){
+  var card = el('div',{class:'scroll-card cross-sell'});
+  if(kind==='toCompat'){
+    card.appendChild(el('h3',{},['다른 사람과 궁합도 볼까요?']));
+    card.appendChild(el('p',{class:'biz-hint'},['링크 하나만 보내면 상대가 직접 넣고 바로 결과가 나와요. 최대 '+GC_MAX+'명까지 함께 볼 수 있어요.']));
+    card.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
+      setMode('compat'); ROUTE='compat'; render(); window.scrollTo(0,0);
+    }},['궁합 보러 가기']));
+  } else {
+    card.appendChild(el('h3',{},['내 사주와 MBTI도 깊게 볼까요?']));
+    card.appendChild(el('p',{class:'biz-hint'},['타고난 여덟 글자와 성격 유형을 함께 읽어드려요. 기본 풀이는 무료예요.']));
+    card.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
+      setMode('self'); ROUTE='saju'; render(); window.scrollTo(0,0);
+    }},['내 사주 보러 가기']));
+  }
+  return card;
+}
+
 function renderHome(){
   var main=$('#main'); main.innerHTML='';
   var p = activeProfile();
@@ -10311,6 +10446,8 @@ function renderReport(){
 
   view.appendChild(circleCTA(CTA_ICON.arrow, '내 MBTI 풀이 읽어보기', function(){ ROUTE='mbtiReport'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('report', p, null); }},['리포트 요약 공유하기']));
+  /* R50 — 여기까지 본 사람에게 다른 서비스를 권한다. 두 서비스가 서로를 모르면 한쪽만 쓰고 끝난다. */
+  view.appendChild(crossSell('toCompat'));
   view.appendChild(glossaryLinkButton());
   main.appendChild(autoTermify(view));
 }
@@ -11482,6 +11619,7 @@ function renderCompatSummary(p, draft){
   actions.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ COMPAT_DRAFT=null; COMPAT_SUB=null; render(); }},['다시 보기']));
   box.appendChild(actions);
   box.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, MBTI 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
+  box.appendChild(crossSell('toSelf'));
   return box;
 }
 function compatBackNav(){
@@ -13906,13 +14044,17 @@ function render(){
   if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
   if(ROUTE==='inviteAccept'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderInviteAccept(); return; }
 
+  /* R50 — 고른 서비스의 탭만 보여준다. 아직 안 골랐으면 홈·히스토리·설정만 남는다. */
   $all('.tab-btn').forEach(function(b){
+    var m = b.dataset.mode;
+    b.hidden = !!(m && m !== modeOf());
     var on=b.dataset.route===ROUTE;
-    if(on){ b.setAttribute('aria-current','page'); b.scrollIntoView({inline:'nearest', block:'nearest'}); }
+    if(on && !b.hidden){ b.setAttribute('aria-current','page'); b.scrollIntoView({inline:'nearest', block:'nearest'}); }
     else b.removeAttribute('aria-current');
   });
 
-  if(ROUTE==='home') renderHome();
+  if(ROUTE==='home') renderLanding();
+  else if(ROUTE==='today') renderHome();
   else if(ROUTE==='saju') renderSaju();
   else if(ROUTE==='monthlyFortune') renderMonthlyFortune();
   else if(ROUTE==='report13') renderReport13();
@@ -14092,6 +14234,9 @@ window.addEventListener('hashchange', function(){
 if(String(location.hash||'').replace(/^#/,'') === 'unlock'){
   setTimeout(function(){ openTestUnlockModal(); }, 0);
 }
+
+/* ★ R50 — 링크로 바로 들어온 사람은 '궁합을 하러 온' 것이다. 탭도 그쪽으로 맞춘다. */
+if(PENDING_MEET || PENDING_GROUP || PENDING_GROUP_JOIN || PENDING_ROOM || PENDING_INVITE){ MODE = 'compat'; }
 
 if(PENDING_MEET && STATE.profiles.length>0){
   GC_SOURCE='link'; ROUTE='groupCompat';
