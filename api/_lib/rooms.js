@@ -114,6 +114,16 @@ export async function getRoom(roomId) {
      서버와 문구 중 하나만 바꾸면 그 순간 앱이 거짓말을 하게 된다.
 ===================================================================== */
 
+/* 조회. 이름은 옛 호출부(api/room.js)가 그대로 쓰도록 남겨 두었고, 이제 기한을 밀지 않는다.
+   ★ R47에서 밀어내기를 걷어낼 때 이 함수를 통째로 지워 버렸다.
+     api/room.js 가 이 이름을 import 하고 있어서, 배포되자마자 /api/room 이
+     'does not provide an export named getRoomAndTouch' 로 통째로 죽었다.
+     1:1 궁합 링크가 두 시간 동안 하나도 열리지 않았다.
+     지운 것이 어디서 쓰이는지 확인하지 않은 탓이다. */
+export async function getRoomAndTouch(roomId) {
+  return await getRoom(roomId);
+}
+
 /* 들어온 사람의 정보를 놓는다.
    ★ b 자리가 비어 있을 때만 채운다. 이미 누가 들어와 있으면 덮어쓰지 않는다 —
      링크가 여러 사람에게 퍼졌을 때 먼저 연 사람의 결과가 나중 사람에게 밀려나면 안 된다. */
