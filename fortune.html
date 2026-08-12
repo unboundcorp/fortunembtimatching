@@ -3514,8 +3514,12 @@ var COMPAT_SUB = null; /* null=요약, 'saju'=사주궁합 상세, 'mbti'=MBTI�
    ★ 번호는 뜻이 없는 무작위 값이라 주소에 개인정보가 들어가지 않는다.
      다만 그룹 이름을 붙이면 그 이름은 주소에 드러난다.
 ===================================================================== */
-var PATH_GROUP = (/^\/g\/([A-Za-z0-9_-]{8,})(?:\/|$)/.exec(location.pathname) || [])[1] || null;
-var PATH_GROUP_JOIN = (/^\/j\/([A-Za-z0-9_-]{8,})(?:\/|$)/.exec(location.pathname) || [])[1] || null;
+/* ★ R57 — 번호 뒤에 무엇이 붙어 와도 번호는 읽어낸다.
+   메신저가 주소 뒤에 문구를 이어 붙이거나(공백=%20), 문장 끝의 마침표까지
+   주소로 잡아가는 일이 실제로 있었다. 그럴 때 통째로 못 읽으면 링크가 죽는다.
+   번호에 쓰이는 글자(A-Za-z0-9_-)만 앞에서부터 집어 오면 뒤에 뭐가 붙든 상관없다. */
+var PATH_GROUP = (/^\/g\/([A-Za-z0-9_-]{8,})/.exec(location.pathname) || [])[1] || null;
+var PATH_GROUP_JOIN = (/^\/j\/([A-Za-z0-9_-]{8,})/.exec(location.pathname) || [])[1] || null;
 
 var INVITE_HASH_RAW = location.hash || '';
 var PENDING_INVITE = null;
@@ -13593,8 +13597,16 @@ function showInviteModal(profile, link, live, ttlHours){
   openModal('궁합 초대 링크', body, [
     {label:'닫기', cls:'btn-ghost', onclick:closeModal},
     {label:'공유하기', cls:'btn-primary', onclick:function(){
+      /* ★ R57 — text와 url을 같이 넘기지 않는다 (대표님 제보로 찾은 사고).
+         카카오톡 등 일부 앱은 둘을 한 줄로 이어 붙여 보내고, 받는 쪽에서
+         그 줄 전체가 주소로 잡힌다. 실제로 이렇게 망가진 링크가 나갔다:
+           /j/CtZF5T15dVzEH_E4%20TS%EB%8B%98%EC%9D%B4%20…   (= 주소 + " " + 문구)
+         받은 사람이 눌러도 그룹 번호를 못 읽어 입력 화면이 뜨지 않았다.
+         이 파일의 다른 공유 네 곳은 이미 url만 넘기고 있었고, 여기만 달랐다.
+         받는 사람은 링크를 열면 "○○ 그룹에 참여할까요?"를 보게 되므로
+         문구를 빼도 무슨 링크인지 모를 일은 없다. */
       if(navigator.share){
-        navigator.share({title:COMPANY.serviceName+' 궁합 초대', text:profile.name+'님이 궁합을 보자고 초대했어요.', url:link}).catch(function(){});
+        navigator.share({title:COMPANY.serviceName+' 궁합 초대', url:link}).catch(function(){});
       } else {
         copyText(link);
       }
