@@ -2211,6 +2211,8 @@ function clearModalStack(dropOpen){
   if(dropOpen && $('#activeModal')) closeModal(true);
 }
 function openModal(title, bodyNode, actions, opts){
+  /* R59 — 뒤로가기로 창을 닫을 수 있게 기록을 한 칸 쌓는다. */
+  pushModalHistory();
   /* 모달 위에 모달을 여는 흐름(결제 → 이용권 등)에서도 "원래 있던 자리"를 잃지 않도록,
      이미 열린 모달이 있으면 그 모달의 복귀 대상을 그대로 물려받는다. */
   opts = opts || {};
@@ -2272,6 +2274,12 @@ function closeModal(force){
   if(MODAL_GUARD && force!==true){ var g=MODAL_GUARD; g(); return; }
   MODAL_GUARD = null;
   var m=$('#activeModal'); if(m) m.remove();
+  /* ★ R59 — [닫기]로 창을 닫았으면 그때 쌓아 둔 기록도 한 칸 되돌린다.
+     안 그러면 그다음 뒤로가기가 그 칸을 먹느라 아무 일도 안 일어나 헛눌린 것처럼 보인다.
+     뒤로가기로 닫는 중(POPPING)에는 이미 되돌아가는 중이므로 다시 부르지 않는다. */
+  if(!POPPING && !MODAL_STACK.length){
+    try{ if(history.state && history.state.modal) history.back(); }catch(e){}
+  }
   document.removeEventListener('keydown', modalKeyHandler);
   var back = openModal._trigger;
   openModal._trigger = null;
@@ -8813,6 +8821,51 @@ function buildCompatWhyPanel(p, r){
 /* =====================================================================
    렌더: 공통
 ===================================================================== */
+/* =====================================================================
+   R59 — 브라우저 뒤로가기 (대표님 지시)
+   ---------------------------------------------------------------------
+   이 앱은 화면을 옮겨도 주소가 그대로라, 뒤로가기를 누르면 앱 안에서 한 칸
+   돌아가는 게 아니라 앱 자체를 나가 버렸다. 폰에서는 화면 가장자리를 쓸어도
+   같은 일이 생긴다 — 궁합을 다 보고 뒤로가기 한 번에 밖으로 나가는 셈이다.
+
+   ★ 주소는 건드리지 않는다. 화면 이름을 방문 기록에만 얹는다.
+     주소에 #saju 같은 것을 붙이면 링크(#g=, #gj=)를 읽는 코드와 부딪히고,
+     손님이 주소를 복사해 보낼 때도 엉뚱한 화면이 열린다.
+   ★ 모달이 떠 있으면 뒤로가기는 '모달 닫기'다. 화면을 옮기지 않는다.
+     폰에서 창을 닫는 가장 익숙한 동작이 뒤로가기이기 때문이다.
+   ★ 되돌아갈 때는 다시 기록을 쌓지 않는다. 안 그러면 앞뒤로 오가며 무한히 쌓인다.
+===================================================================== */
+var HISTORY_ON = false;      /* 첫 화면을 그린 뒤부터 기록을 쌓는다 */
+var POPPING = false;         /* 뒤로가기로 되돌아가는 중 — 이때는 기록을 쌓지 않는다 */
+
+var LAST_ROUTE = null;
+/* ★ 화면 전환은 setRoute() 말고도 코드 곳곳에서 ROUTE='...'; render(); 로 일어난다.
+   setRoute 한 군데만 잡으면 절반은 놓친다. 그래서 실제로 그려지는 자리에서 잡는다. */
+function pushRouteHistory(route){
+  if(!HISTORY_ON || POPPING) return;
+  if(route === LAST_ROUTE) return;
+  try{ history.pushState({app:1, route:route}, '', location.pathname + location.search); }catch(e){}
+}
+function pushModalHistory(){
+  if(!HISTORY_ON) return;
+  try{ history.pushState({app:1, modal:1, route:ROUTE}, '', location.pathname + location.search); }catch(e){}
+}
+
+window.addEventListener('popstate', function(e){
+  var st = e.state;
+  /* 우리가 얹은 기록이 아니면(앱에 들어오기 전 페이지) 브라우저가 하던 대로 둔다. */
+  if(!st || !st.app){
+    if($('#activeModal')){ closeModal(true); }
+    return;
+  }
+  POPPING = true;
+  try{
+    /* 모달이 떠 있으면 그것부터 닫는다. */
+    if($('#activeModal')){ closeModal(true); }
+    else if(st.route && st.route !== ROUTE){ ROUTE = st.route; render(); window.scrollTo(0,0); }
+  } finally { POPPING = false; }
+});
+
 function setRoute(route){
   ROUTE = route;
   /* R24 — 화면을 옮기면 돌아갈 모달도 없다. 남겨두면 엉뚱한 때 되살아난다.
@@ -14241,6 +14294,9 @@ function drawShareCard(canvas, kind, profile, data){
    메인 렌더 디스패치
 ===================================================================== */
 function render(){
+  /* R59 — 화면이 바뀌었으면 방문 기록에 한 칸 얹는다(뒤로가기용). */
+  pushRouteHistory(ROUTE);
+  LAST_ROUTE = ROUTE;
   /* R25 — 그리기 전에 대표 오행 사본을 계산 결과에 맞춘다(위 syncAllProfileElements 주석 참고). */
   syncAllProfileElements();
   updateHeader();
@@ -14483,6 +14539,12 @@ if(PENDING_MEET && STATE.profiles.length>0){
   ROUTE='inviteAccept';
 }
 render();
+/* R59 — 첫 화면을 그린 뒤부터 방문 기록을 쌓는다.
+   ★ 맨 처음 상태를 기록에 심어 둔다. 안 그러면 앱 안에서 한 번 움직인 뒤
+     뒤로가기를 눌렀을 때 되돌아갈 '앱의 첫 화면'이 기록에 없어 그대로 밖으로 나간다. */
+try{ history.replaceState({app:1, route:ROUTE}, '', location.pathname + location.search); }catch(e){}
+LAST_ROUTE = ROUTE;
+HISTORY_ON = true;
 
 /* 서버가 붙어 있으면 권한을 서버에 다시 물어보고, 받은 값으로 화면을 다시 그린다.
    결제창에서 ?receipt=... 를 달고 돌아온 경우에는 영수증 검증을 먼저 통과시킨다.
