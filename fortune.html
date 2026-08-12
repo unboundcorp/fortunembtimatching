@@ -4586,37 +4586,6 @@ function legalRow(k, v){
     el('span',{class:'v', style: missing ? 'color:var(--red-hi);font-weight:400;' : ''},[companyValue(v)])
   ]);
 }
-function openCompanyInfoModal(){
-  var body = el('div',{class:'legal-body'});
-  body.appendChild(legalRow('상호', COMPANY.legalName));
-  body.appendChild(legalRow('영문 상호', COMPANY.legalNameEn));
-  body.appendChild(legalRow('대표자', COMPANY.ceo));
-  body.appendChild(legalRow('사업자등록번호', COMPANY.bizRegNo));
-  body.appendChild(legalRow('법인등록번호', COMPANY.corpRegNo));
-  body.appendChild(legalRow('사업장 소재지', COMPANY.address));
-  body.appendChild(legalRow('통신판매업 신고번호', COMPANY.mailOrderNo));
-  body.appendChild(legalRow('호스팅서비스 제공자', COMPANY.hostingProvider));
-  body.appendChild(legalRow('고객센터 전화', COMPANY.supportPhone));
-  body.appendChild(legalRow('고객센터 이메일', COMPANY.supportEmail));
-  body.appendChild(legalRow('개인정보 보호책임자', COMPANY.privacyOfficer));
-  /* 결제수단 종류 — 전자상거래법 제13조 제2항(대금의 지급방법). PG 미확정이면 "확인 중". */
-  body.appendChild(legalRow('결제수단', paymentMethodsMissing() ? null : paymentMethodsText()));
-  if(companyMissing(COMPANY.mailOrderNo) || companyMissing(COMPANY.supportPhone) || companyMissing(COMPANY.hostingProvider) || paymentMethodsMissing()){
-    body.appendChild(el('p',{class:'biz-hint', style:'margin-top:12px;'},[
-      '"확인 중"으로 표시된 항목은 아직 확정되지 않아 비워둔 값입니다. 확정되는 대로 이 화면에 그대로 반영됩니다.'
-    ]));
-  }
-  var gInfo = paywallGate();
-  if(gInfo.missingLegal.length){
-    body.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[
-      '전자상거래법 제13조 표시의무 항목('+gInfo.missingLegal.join(' · ')+')이 비어 있어, 이 항목이 채워지기 전까지 유료 결제 버튼은 열리지 않습니다.'
-    ]));
-  }
-  body.appendChild(el('p',{class:'biz-hint'},[
-    COMPANY.legalName+josaOnly(COMPANY.legalName,'은','는')+' 통신판매 당사자로서 상품 정보 및 거래에 대한 책임을 집니다. 결제 처리는 결제대행사가 대행합니다.'
-  ]));
-  openModal('사업자 정보', body, [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
-}
 function openTermsModal(){
   var body = el('div',{class:'legal-body'});
   function h(t){ body.appendChild(el('h4',{},[t])); }
@@ -5047,22 +5016,6 @@ function renderFaq(){
   });
 }
 
-function buildLegalPanel(){
-  var card = el('div',{class:'scroll-card'});
-  card.appendChild(el('h3',{},['약관 · 사업자 정보']));
-  card.appendChild(settingsRow('이용약관', '보기', openTermsModal));
-  card.appendChild(settingsRow('개인정보처리방침', '보기', openPrivacyModal));
-  /* 환불 안내는 자주 묻는 질문으로 옮겼다(R38). */
-  card.appendChild(settingsRow('사업자 정보', COMPANY.legalName, openCompanyInfoModal));
-  card.appendChild(el('p',{class:'biz-hint'},[
-    COMPANY.legalName+' · 대표 '+COMPANY.ceo+' · 사업자등록번호 '+COMPANY.bizRegNo
-  ]));
-  card.appendChild(el('p',{class:'biz-hint'},[COMPANY.address]));
-  card.appendChild(el('p',{class:'biz-hint'},[
-    '통신판매업 신고번호 '+companyValue(COMPANY.mailOrderNo)+' · 고객센터 '+companyValue(COMPANY.supportPhone)+' · '+companyValue(COMPANY.supportEmail)
-  ]));
-  return card;
-}
 
 /* =====================================================================
    AI 해석 연결 — 운영자용. 관리자 테스트 콘솔 안에만 있다.
@@ -14049,8 +14002,13 @@ function renderSettings(){
   view.appendChild(circleCTA(CTA_ICON.plus, '새 프로필 추가', function(){ startSetupWizard(null); }));
   /* R23 — 용어 사전 입구. 무료이고, 여기서도 바로 갈 수 있어야 "이 앱이 처음인 사람이 갈 곳"이 된다. */
   view.appendChild(settingsRow('사주 용어 사전', '어려운 말을 쉬운 말로', function(){ openGlossary(null); }));
-  /* 전자상거래법 표시의무 — 이용약관 / 개인정보처리방침 / 환불·청약철회 / 사업자정보 */
-  view.appendChild(buildLegalPanel());
+  /* ★ R58 — '약관 · 사업자 정보' 카드를 뺐다(대표님 지시).
+     같은 내용이 모든 화면 맨 아래(buildSiteFooter)에 이미 있다 —
+     이용약관·개인정보처리방침 버튼과 법인명·대표·사업자등록번호·통신판매업신고·
+     주소·연락처가 전부 거기 들어 있다. 설정에만 한 번 더 두면 같은 말을 두 번 하는 셈이고,
+     전자상거래법 제13조 표시의무는 푸터 쪽만으로도 충족된다.
+     ★ 지운 것은 '중복된 자리'이지 '내용'이 아니다. 하나라도 빠졌으면 위반이 되므로
+       푸터에 무엇이 들어 있는지 확인한 뒤에 뺐다. */
   main.appendChild(autoTermify(view));
 }
 
