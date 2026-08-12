@@ -12251,12 +12251,16 @@ function forgetGroup(id){
   saveState();
 }
 /* ★ location.href 로 만들면 안 된다. 짧은 주소(/g/…)로 들어온 화면에서는
-   그 주소가 다시 붙어 …/g/AAA/g/BBB 같은 것이 나온다. origin에서 새로 만든다. */
-function groupSlug(name){
-  var t = String(name || '').trim().replace(/\s+/g,'-').slice(0, 20);
-  return t ? '/' + encodeURIComponent(t) : '';
-}
-function groupLink(id, name){ return location.origin + '/g/' + id + groupSlug(name); }
+   그 주소가 다시 붙어 …/g/AAA/g/BBB 같은 것이 나온다. origin에서 새로 만든다.
+
+   ★ R45 — 주소 뒤에 그룹 이름을 붙이지 않는다 (대표님 결정).
+     한글은 주소에 들어가면 한 글자가 아홉 자로 늘어난다
+     (민준님의-궁합 → %EB%AF%BC%EC%A4%80…). 이름을 붙이면 57자짜리가 113자가 되어,
+     짧게 만들려던 것보다 옛 주소(71자)보다도 길어졌다.
+     이름을 안 붙여도 받는 사람은 링크를 열면 "○○ 그룹에 참여할까요?"를 보게 되므로
+     무슨 그룹인지 모르는 일은 생기지 않는다.
+   ★ 이름이 붙은 주소도 계속 받는다(/g/<번호>/이름). 이미 그렇게 보낸 링크가 있을 수 있다. */
+function groupLink(id){ return location.origin + '/g/' + id; }
 
 /* 궁합 입력의 상대 정보를 링크 한 줄로 만든다(그룹에 넣을 때 쓴다). */
 function compatDraftRow(d){
@@ -12354,7 +12358,7 @@ function openGroupSaveModal(){
 }
 
 function openGroupSavedModal(id, name){
-  var link = groupLink(id, (GROUP_VIEW && GROUP_VIEW.id===id) ? GROUP_VIEW.name : null);
+  var link = groupLink(id);
   var body = el('div',{});
   body.appendChild(el('p',{},['"'+name+'" 그룹을 저장했어요. 아래 주소로 언제든 다시 열 수 있어요.']));
   body.appendChild(el('div',{class:'field'},[ el('input',{type:'text', value:link, readOnly:'readonly', id:'grpLink'}) ]));
@@ -12469,7 +12473,7 @@ function confirmDeleteGroup(){
    ★ 참여에는 PIN을 요구하지 않는다. 요구하면 접수라는 말이 성립하지 않는다.
      대신 참여 전에 "무엇이 올라가고 누가 볼 수 있는지"를 반드시 보여주고 동의를 받는다.
 ===================================================================== */
-function groupJoinLink(id, name){ return location.origin + '/j/' + id + groupSlug(name); }
+function groupJoinLink(id){ return location.origin + '/j/' + id; }
 
 var GROUP_JOIN_STATE = {busy:false, error:null, done:false, name:null, lookedUp:false};
 
@@ -12551,11 +12555,11 @@ function buildGroupJoinCard(){
     '이 주소를 보내면 받은 분이 자기 정보를 직접 넣고 이 그룹에 들어와요. 최대 '+GC_MAX+'명까지 받을 수 있어요.'
   ]));
   card.appendChild(el('div',{class:'field'},[
-    el('input',{type:'text', value:groupJoinLink(GROUP_VIEW.id, GROUP_VIEW.name), readOnly:'readonly', id:'groupJoinLink'})
+    el('input',{type:'text', value:groupJoinLink(GROUP_VIEW.id), readOnly:'readonly', id:'groupJoinLink'})
   ]));
   var row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;'});
   row.appendChild(el('button',{class:'btn btn-primary btn-sm', onclick:function(){
-    var lk = groupJoinLink(GROUP_VIEW.id, GROUP_VIEW.name);
+    var lk = groupJoinLink(GROUP_VIEW.id);
     if(navigator.share){ navigator.share({title:COMPANY.serviceName+' · '+(GROUP_VIEW.name||'그룹')+'에 참여하기', url:lk}).catch(function(){}); }
     else { copyText(lk); }
   }},['접수 주소 보내기']));
@@ -12721,11 +12725,11 @@ function renderGroupCompat(){
     gsCard.appendChild(el('h3',{},['이 그룹 주소']));
     gsCard.appendChild(el('p',{class:'biz-hint'},['이 주소로 언제든 다시 열 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관되고, 열 때마다 기간이 다시 시작돼요.']));
     gsCard.appendChild(el('div',{class:'field'},[
-      el('input',{type:'text', value:groupLink(GROUP_VIEW.id, GROUP_VIEW.name), readOnly:'readonly', id:'groupViewLink'})
+      el('input',{type:'text', value:groupLink(GROUP_VIEW.id), readOnly:'readonly', id:'groupViewLink'})
     ]));
     var gRow = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;'});
     gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
-      var lk = groupLink(GROUP_VIEW.id, GROUP_VIEW.name);
+      var lk = groupLink(GROUP_VIEW.id);
       if(navigator.share){ navigator.share({title:COMPANY.serviceName+' 그룹 · '+(GROUP_VIEW.name||''), url:lk}).catch(function(){}); }
       else { copyText(lk); }
     }},['주소 공유']));
@@ -13047,7 +13051,7 @@ function openInviteLinkModal(profile){
       if(!d || !d.groupId) throw new Error('groupId 없음');
       rememberGroup(d.groupId, autoName, d.ownerToken);
       GROUP_VIEW = {id:d.groupId, name:autoName};
-      showInviteModal(profile, groupJoinLink(d.groupId, autoName), true, d.ttlDays);
+      showInviteModal(profile, groupJoinLink(d.groupId), true, d.ttlDays);
     })
     .catch(function(){
       showInviteModal(profile, fallback, false, 0);
