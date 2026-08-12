@@ -869,6 +869,12 @@ main{flex:1;padding:28px 20px 96px;}
 .gc-rank-row .gr-plain{display:block;font-size:.72rem;margin-top:2px;}
 @media (max-width:480px){.gc-cards{grid-template-columns:1fr;}}
 
+/* R46 — 링크로 들어온 화면 맨 위의 로고. 움직임 없이도 처음부터 보인다. */
+.brand-top{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:4px;}
+.brand-top-mark{width:96px;height:96px;border-radius:50%;background:var(--gold-soft);
+  display:flex;align-items:center;justify-content:center;flex:none;}
+.brand-top-name{font-family:var(--sans);font-size:1.18rem;font-weight:800;letter-spacing:-.03em;color:var(--gold);}
+
 /* 봉투 애니메이션 */
 .envelope-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding:30px 20px;text-align:center;}
 .envelope{width:180px;height:120px;position:relative;}
@@ -8834,6 +8840,52 @@ function emptyState(title, sub, onAction, actionLabel){
    ★ SPEC_v2의 최우선 원칙("계산에 자신 없는 부분을 명시적으로 고지한다")과는 어긋나는 방향이다.
      그 사실을 감추지 않고 여기 적어 둔다 — 판단은 대표님이 하셨고, 근거는 약관에 고지가 남는다는 것이다.
 ===================================================================== */
+/* =====================================================================
+   R46 — 링크로 들어온 화면 맨 위에 로고를 놓는다 (대표님 지시)
+   ---------------------------------------------------------------------
+   여기에는 봉투 그림이 있었다. 그런데 그 그림은 '봉인이 풀리며 사라지는' 애니메이션이라
+   끝나면 테두리만 남은 빈 상자가 됐다(인장의 마지막 키프레임이 opacity:0이다).
+   손님이 링크를 눌러 처음 보는 화면이 빈 네모였다 — 실측으로 확인했다.
+
+   ★ 로고는 애니메이션에 기대지 않는다. 움직임 없이도 처음부터 보인다.
+     '움직여야 보이는 것'은 움직임을 줄여 쓰는 분(prefers-reduced-motion)에게는 영영 안 보인다.
+   ★ 외부 파일을 부르지 않는다. 이 앱은 바깥으로 나가는 요청이 0인 것을 원칙으로 한다.
+     머리말(header)의 로고와 같은 그림을 같은 좌표로 그린다.
+===================================================================== */
+var BRAND_MARK_PATHS = [
+  {d:'M24 40.5C24 40.5 6.5 30.2 6.5 18.8c0-5.4 4.2-9.3 9-9.3 3.4 0 6.4 1.9 8.5 5 2.1-3.1 5.1-5 8.5-5 4.8 0 9 3.9 9 9.3 0 4.2-2.4 8.2-5.4 11.5', fill:false},
+  {d:'M16.5 23.5 22 29l10.5-10.5', fill:false},
+  {d:'M40.5 6.5c.4 2.1.9 2.6 3 3-2.1.4-2.6.9-3 3-.4-2.1-.9-2.6-3-3 2.1-.4 2.6-.9 3-3Z', fill:true}
+];
+function brandMark(px){
+  var ns='http://www.w3.org/2000/svg';
+  var svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox','0 0 48 48');
+  svg.setAttribute('width', String(px||72));
+  svg.setAttribute('height', String(px||72));
+  svg.setAttribute('aria-hidden','true');
+  BRAND_MARK_PATHS.forEach(function(o){
+    var pth=document.createElementNS(ns,'path');
+    pth.setAttribute('d', o.d);
+    if(o.fill){ pth.setAttribute('fill','var(--brand)'); }
+    else {
+      pth.setAttribute('fill','none');
+      pth.setAttribute('stroke','var(--brand)');
+      pth.setAttribute('stroke-width','3.4');
+      pth.setAttribute('stroke-linecap','round');
+      pth.setAttribute('stroke-linejoin','round');
+    }
+    svg.appendChild(pth);
+  });
+  return svg;
+}
+/* 링크로 들어온 화면 맨 위 — 로고 + 서비스 이름. 이름은 낭독기도 읽는다. */
+function brandTop(){
+  return el('div',{class:'brand-top'},[
+    el('div',{class:'brand-top-mark'},[brandMark(66)]),
+    el('div',{class:'brand-top-name'},[COMPANY.serviceName])
+  ]);
+}
 function svgIcon(pathD, cls){
   var ns='http://www.w3.org/2000/svg';
   var svg=document.createElementNS(ns,'svg'); svg.setAttribute('viewBox','0 0 20 20'); svg.setAttribute('class',cls||'sec-icon'); svg.setAttribute('aria-hidden','true');
@@ -12480,9 +12532,7 @@ var GROUP_JOIN_STATE = {busy:false, error:null, done:false, name:null, lookedUp:
 function renderGroupJoin(){
   var main=$('#main'); main.innerHTML='';
   var wrap=el('div',{class:'envelope-wrap view'});
-  wrap.appendChild(el('div',{class:'envelope'},[
-    el('div',{class:'body'}), el('div',{class:'flap'}), el('div',{class:'seal'},['緣'])
-  ]));
+  wrap.appendChild(brandTop());
 
   if(GROUP_JOIN_STATE.error){
     wrap.appendChild(pageHead('그룹 참여', '참여하지 못했어요'));
@@ -13099,9 +13149,7 @@ var ROOM_JOIN_STATE = {busy:false, error:null};
 function renderRoomJoin(){
   var main=$('#main'); main.innerHTML='';
   var wrap=el('div',{class:'envelope-wrap view'});
-  wrap.appendChild(el('div',{class:'envelope'},[
-    el('div',{class:'body'}), el('div',{class:'flap'}), el('div',{class:'seal'},['緣'])
-  ]));
+  wrap.appendChild(brandTop());
 
   if(ROOM_JOIN_STATE.error){
     wrap.appendChild(pageHead('초대장', '초대장을 열지 못했어요'));
@@ -13182,9 +13230,7 @@ function buildRoomWaitCard(){
 function renderInviteAccept(){
   var main=$('#main'); main.innerHTML='';
   var wrap=el('div',{class:'envelope-wrap view'});
-  wrap.appendChild(el('div',{class:'envelope'},[
-    el('div',{class:'body'}), el('div',{class:'flap'}), el('div',{class:'seal'},['緣'])
-  ]));
+  wrap.appendChild(brandTop());
   wrap.appendChild(pageHead('초대장', (PENDING_INVITE&&PENDING_INVITE.n?PENDING_INVITE.n:'친구')+'님이 궁합을 보자고 초대했어요'));
   /* R33 — 문구가 실제 동작과 같아야 한다. 이제는 입력 화면이 아니라 결과가 바로 뜬다. */
   wrap.appendChild(el('p',{class:'section-sub'},['봉인이 풀리는 동안 잠시만 기다려주세요. 확인을 누르면 두 사람의 궁합 결과가 바로 나와요.']));
