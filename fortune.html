@@ -14258,7 +14258,9 @@ function render(){
   /* R25 — 그리기 전에 대표 오행 사본을 계산 결과에 맞춘다(위 syncAllProfileElements 주석 참고). */
   syncAllProfileElements();
   updateHeader();
-  if(!STATE.onboarded && STATE.profiles.length===0){ renderOnboarding(); return; }
+  /* ★ R54 — 운영 현황판은 온보딩보다 먼저다. 대표님이 새 브라우저에서 #stats 를 열면
+     '만 14세 이상입니다' 화면이 먼저 떠서 현황판에 닿을 수가 없었다(실측). */
+  if(!STATE.onboarded && STATE.profiles.length===0 && ROUTE!=='stats'){ renderOnboarding(); return; }
   if(ROUTE==='setup' && SETUP){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderSetup(); return; }
   /* ★ R50 — 프로필이 없어도 홈(고르는 화면)과 안내 문서는 열려야 한다.
      예전에는 프로필이 없으면 무조건 마법사로 보냈다. 그래서 새로 온 사람은
