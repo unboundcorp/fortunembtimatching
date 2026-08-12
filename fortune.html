@@ -878,6 +878,10 @@ main{flex:1;padding:28px 20px 96px;}
   display:flex;align-items:center;justify-content:center;flex:none;}
 .brand-top-name{font-family:var(--sans);font-size:1.18rem;font-weight:800;letter-spacing:-.03em;color:var(--gold);}
 
+/* R65 — 초대 링크 안내의 점 목록 */
+.invite-note{margin:6px 0 0;padding-left:18px;}
+.invite-note li{color:var(--ink-dim);font-size:.78rem;line-height:1.8;word-break:keep-all;}
+
 /* R56 — '또는 내가 직접 입력하기' 가름줄 */
 .manual-head{display:flex;align-items:center;gap:10px;margin:6px 0 14px;}
 .manual-head .manual-line{flex:1;height:1px;background:var(--gold-line);}
@@ -13668,12 +13672,24 @@ function showInviteModal(profile, link, live, ttlHours){
   /* ★ 이 문장은 실제 동작과 정확히 같아야 한다. 방이 만들어졌을 때와 아닐 때가 다르다. */
   if(live){
     body.appendChild(el('p',{},['이 링크를 보내주세요. 받은 분이 자기 정보를 넣으면 바로 궁합이 나오고, '+profile.name+'님 화면에도 함께 나타나요. 두 명이든 '+GC_MAX+'명이든 이 링크 하나로 됩니다.']));
+    /* ★ R65 — 대표님이 주신 문장으로. 항목을 하나하나 나열하니 아무도 안 읽었다.
+       읽히지 않는 고지는 고지가 아니다. 자세한 항목은 개인정보처리방침에 그대로 있다. */
     body.appendChild(el('p',{class:'biz-hint'},[
-      '들어온 분들의 '+inviteFieldsText()+'가 이 궁합을 잇기 위해 서버에 저장돼요. '+GROUP_TTL_PHRASE+' 동안 보관됩니다. 링크 주소에는 생년월일이 들어 있지 않아요.'
+      '초대받은 분이 입력한 정보가 궁합을 확인하기 위한 목적으로 서버에 저장돼요.'
     ]));
-    body.appendChild(el('p',{class:'biz-hint'},[
-      '이름을 바꾸거나 사람을 빼고 싶으시면 궁합 화면의 [그룹 관리]에서 하실 수 있어요. 이 기기에서는 PIN 없이 바로 되고, 다른 기기에서도 관리하시려면 거기서 PIN을 정하시면 돼요.'
-    ]));
+    var noteList = el('ul',{class:'invite-note'});
+    [ '그룹을 처음 만든 날로부터 ' + GROUP_TTL_TEXT + ' 동안 보관됩니다.',
+      '이름을 바꾸거나 사람을 제외하고 싶으시면 궁합 화면의 [그룹 관리]에서 하실 수 있어요.'
+    ].forEach(function(t){ noteList.appendChild(el('li',{},[t])); });
+    body.appendChild(noteList);
+
+    /* ★ 다른 기기에서도 관리하려면 PIN이 있어야 한다. 그 사실을 [그룹 관리] 안에 묻어 두면
+       기기를 잃고 나서야 알게 된다. 링크를 만든 바로 이 자리에서 한 번 권한다.
+       만들 때 PIN을 꼭 받지는 않는다 — 링크 하나 뽑자고 비밀번호부터 정하라고 하면
+       정작 링크를 안 보내게 된다(R39에서 그래서 선택으로 바꿨다). */
+    body.appendChild(el('button',{class:'btn btn-ghost btn-sm btn-block', style:'margin-top:10px;',
+      onclick:function(){ closeModal(); openGroupManageModal(); }},
+      ['다른 기기에서도 관리하려면 PIN 정하기 (선택)']));
   } else {
     body.appendChild(el('p',{},['이 링크를 열면 '+profile.name+'님과의 궁합 결과가 상대방 화면에 나와요. 상대방이 이 앱을 처음 쓰는 경우에는 자기 프로필을 먼저 만들고, 그다음 결과로 이어져요.']));
     body.appendChild(el('p',{class:'biz-hint'},[
