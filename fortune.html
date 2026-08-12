@@ -3300,7 +3300,7 @@ function sajuOptsOf(p){
 }
 /* ★ 캐시 열쇠에 자오선을 넣어야 한다. 안 넣으면 출생지를 해외로 바꿔도 옛 결과가 그대로 나온다. */
 function sajuOptsKey(o){ return SAJU_ENGINE_REV+'|'+o.lon+'|'+(o.adjust?'1':'0')+'|'+(typeof o.meridian==='number'?o.meridian:'kr'); }
-function defaultState(){ return {onboarded:false, mode:null, profiles:[], activeId:null, fortuneHistory:[], compatHistory:[], sajuHistory:[], mbtiReportHistory:[],
+function defaultState(){ return {onboarded:false, mode:null, pendingInviteGroup:null, profiles:[], activeId:null, fortuneHistory:[], compatHistory:[], sajuHistory:[], mbtiReportHistory:[],
   /* 상용화 v4: 구매한 이용권 / 결제 설정 / AI 해석 설정. 없으면 기존 사용자도 자연스럽게 무료 상태로 시작한다. */
   entitlements:{items:{}, pass:null, purchases:[]}, billingConfig:null, interpreterConfig:null,
   /* 이 브라우저가 알고 있는 영수증(복원) 번호. 권한의 근거가 아니라 "메모"다 —
@@ -12892,6 +12892,13 @@ function openGroupSavedModal(id, name){
 }
 
 /* ---- 열기 ---- */
+/* 누가 들어온 그룹은 더 이상 '아직 비어 있는 링크'가 아니다. 다음에 [링크 보내기]를 누르면
+   새로 만들어야 한다 — 이미 쓰고 있는 그룹에 다른 사람을 끌어들이면 안 된다. */
+function clearPendingInviteIfJoined(id, memberCount){
+  if(STATE.pendingInviteGroup === id && memberCount > 1){
+    STATE.pendingInviteGroup = null; saveState();
+  }
+}
 function openSavedGroup(id){
   showToast('그룹을 불러오는 중이에요…');
   groupFetch({action:'get', groupId:id}).then(function(d){
@@ -12901,6 +12908,7 @@ function openSavedGroup(id){
     if(!PENDING_MEET.length) throw new Error('명단을 읽지 못했어요.');
     GROUP_VIEW = {id:id, name:d.name};
     rememberGroup(id, d.name);
+    clearPendingInviteIfJoined(id, PENDING_MEET.length);
     GC_SOURCE='link'; GC_SEL=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0};
     ROUTE='groupCompat'; render(); window.scrollTo(0,0);
   }).catch(function(err){
@@ -13105,7 +13113,46 @@ function buildSavedGroupsCard(){
   list.forEach(function(g){
     card.appendChild(settingsRow(g.name || '이름 없는 그룹', '열기', function(){ openSavedGroup(g.id); }));
   });
+  /* ★ R60 — 눌러만 보고 안 보낸 링크가 쌓였을 때 한 번에 치운다.
+     내가 만든 것 중 '아직 아무도 안 들어온 것'만 지운다 — 이 두 조건을 다 만족해야
+     지워도 아무도 잃는 게 없다. 사람이 들어와 있는 그룹은 건드리지 않는다. */
+  if(list.length > 1){
+    card.appendChild(el('button',{class:'btn btn-ghost btn-sm btn-block', style:'margin-top:10px;',
+      onclick:function(){ tidyEmptyGroups(); }},['아무도 안 들어온 링크 정리하기']));
+  }
   return card;
+}
+
+function tidyEmptyGroups(){
+  var mine = savedGroups().filter(function(g){ return g && g.token; });
+  if(!mine.length){ showToast('정리할 것이 없어요.'); return; }
+  showToast('확인하는 중이에요…');
+  var removed = 0, done = 0;
+  mine.forEach(function(g){
+    groupFetch({action:'get', groupId:g.id})
+      .then(function(d){
+        var n = String((d && d.members) || '').split(';').filter(Boolean).length;
+        /* 나 혼자만 있는 것 = 링크를 만들었지만 아무도 안 들어온 것 */
+        if(n === 1){
+          return groupFetch({action:'delete', groupId:g.id, ownerToken:g.token})
+            .then(function(){ forgetGroup(g.id); removed++; });
+        }
+      })
+      .catch(function(err){
+        /* 이미 없는 그룹(404)이면 목록에서만 지운다. 서버에 없는 것을 계속 들고 있을 이유가 없다. */
+        if(err && err.status === 404){ forgetGroup(g.id); removed++; }
+      })
+      .then(function(){
+        done++;
+        if(done === mine.length){
+          if(STATE.pendingInviteGroup && !savedGroups().some(function(x){ return x.id===STATE.pendingInviteGroup; })){
+            STATE.pendingInviteGroup = null; saveState();
+          }
+          showToast(removed ? (removed+'개를 정리했어요.') : '정리할 것이 없어요.');
+          render();
+        }
+      });
+  });
 }
 
 var GC_SOURCE = 'profiles';  /* 'profiles' = 내 저장 프로필 / 'link' = 그룹 링크로 받은 명단 */
@@ -13571,20 +13618,50 @@ function startRoomWait(roomId, link, ttlHours){
    ★ 서버가 죽어 있으면 예전처럼 링크에 정보를 담아 보낸다(그때는 1:1이다).
      서버가 안 된다고 공유 자체가 막히면 안 된다.
 ===================================================================== */
+/* =====================================================================
+   R60 — 누를 때마다 새 그룹이 생기던 문제 (대표님 지적)
+   ---------------------------------------------------------------------
+   R39에서 '링크를 만드는 순간 그룹이 된다'로 바꿨는데, 버튼을 누를 때마다
+   꼬박꼬박 새 그룹을 만들었다. 그래서 저장한 그룹에 'TS님의 궁합'이 다섯 줄 쌓였다.
+   대표님은 저장한 적이 없는데 목록이 늘어난 것으로 보였다 — 맞는 말이다.
+
+   ★ 아직 아무도 안 들어온 링크가 있으면 그것을 다시 쓴다. 링크를 새로 뽑을 이유가 없다.
+     한 사람이 여러 링크를 들고 있으면 어느 것을 보냈는지도 헷갈린다.
+   ★ 누가 들어온 뒤에 다시 누르면 그때는 새로 만든다. 이미 쓰고 있는 그룹에
+     다른 사람을 끌어들이면 안 되기 때문이다.
+   ★ 서버 쪽 쓰레기도 같이 준다. 눌러 보기만 해도 그룹이 쌓이던 것을 막는다.
+===================================================================== */
 function openInviteLinkModal(profile){
   var base = location.href.split('#')[0];
   var fallback = base + '#' + INVITE_VER + '=' + encodeInvite(profile);
-  showToast('궁합 링크를 만드는 중이에요…');
   var autoName = (profile.name || '나') + '님의 궁합';
-  groupFetch({action:'create', name:autoName, members: gcMeetRow(profile)})
+  var pending = STATE.pendingInviteGroup;
+
+  function makeNew(){
+    showToast('궁합 링크를 만드는 중이에요…');
+    return groupFetch({action:'create', name:autoName, members: gcMeetRow(profile)})
+      .then(function(d){
+        if(!d || !d.groupId) throw new Error('groupId 없음');
+        rememberGroup(d.groupId, autoName, d.ownerToken);
+        STATE.pendingInviteGroup = d.groupId; saveState();
+        GROUP_VIEW = {id:d.groupId, name:autoName};
+        showInviteModal(profile, groupJoinLink(d.groupId), true, d.ttlDays);
+      });
+  }
+
+  if(!pending){ makeNew().catch(function(){ showInviteModal(profile, fallback, false, 0); }); return; }
+
+  /* 만들어 둔 링크가 아직 비어 있으면(나 혼자면) 그것을 그대로 쓴다. */
+  groupFetch({action:'get', groupId:pending})
     .then(function(d){
-      if(!d || !d.groupId) throw new Error('groupId 없음');
-      rememberGroup(d.groupId, autoName, d.ownerToken);
-      GROUP_VIEW = {id:d.groupId, name:autoName};
-      showInviteModal(profile, groupJoinLink(d.groupId), true, d.ttlDays);
+      var n = String((d && d.members) || '').split(';').filter(Boolean).length;
+      if(!d || n !== 1) throw new Error('다시 만들어야 함');
+      GROUP_VIEW = {id:pending, name:(d.name || autoName)};
+      showInviteModal(profile, groupJoinLink(pending), true, d.ttlDays);
     })
     .catch(function(){
-      showInviteModal(profile, fallback, false, 0);
+      STATE.pendingInviteGroup = null; saveState();
+      makeNew().catch(function(){ showInviteModal(profile, fallback, false, 0); });
     });
 }
 function showInviteModal(profile, link, live, ttlHours){
