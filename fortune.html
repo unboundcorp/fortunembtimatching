@@ -2276,8 +2276,14 @@ function closeModal(force){
   var m=$('#activeModal'); if(m) m.remove();
   /* ★ R59 — [닫기]로 창을 닫았으면 그때 쌓아 둔 기록도 한 칸 되돌린다.
      안 그러면 그다음 뒤로가기가 그 칸을 먹느라 아무 일도 안 일어나 헛눌린 것처럼 보인다.
-     뒤로가기로 닫는 중(POPPING)에는 이미 되돌아가는 중이므로 다시 부르지 않는다. */
-  if(!POPPING && !MODAL_STACK.length){
+
+     ★ force===true 일 때는 하지 않는다. 그건 사람이 닫은 게 아니라 코드가 정리하는 경우다.
+       특히 openModal()은 새 창을 띄우기 직전에 closeModal(true)로 자리를 비우는데,
+       거기서 history.back()을 부르면 back이 한 박자 뒤에 처리되는 사이 새 창이 다 그려지고,
+       그제서야 도착한 popstate가 방금 연 창을 닫아 버린다.
+       실제로 이것 때문에 약관·개인정보처리방침 창이 아예 안 열렸다(실측으로 잡음).
+     ★ 뒤로가기로 닫는 중(POPPING)에도 하지 않는다. 이미 되돌아가는 중이다. */
+  if(force !== true && !POPPING && !MODAL_STACK.length){
     try{ if(history.state && history.state.modal) history.back(); }catch(e){}
   }
   document.removeEventListener('keydown', modalKeyHandler);
