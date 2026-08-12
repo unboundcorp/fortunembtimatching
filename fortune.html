@@ -909,11 +909,9 @@ main{flex:1;padding:28px 20px 96px;}
 .svc-arrow{position:absolute;top:18px;right:16px;color:var(--gold);opacity:.75;display:flex;}
 .svc-arrow svg{width:20px;height:20px;}
 .svc-title{font-family:var(--sans);font-size:1.1rem;font-weight:800;letter-spacing:-.02em;color:var(--gold);}
-.svc-desc{color:var(--ink-dim);font-size:.86rem;margin-top:4px;line-height:1.6;word-break:keep-all;}
-.svc-list{margin:10px 0 0;padding-left:16px;}
-.svc-list li{color:var(--ink-dim);font-size:.8rem;line-height:1.9;word-break:keep-all;}
-.svc-price{margin-top:10px;font-size:.76rem;font-weight:700;color:var(--gold);
-  background:var(--gold-soft);border-radius:999px;padding:5px 11px;display:inline-block;}
+.svc-desc{color:var(--ink);font-size:.94rem;font-weight:600;margin-top:6px;line-height:1.65;word-break:keep-all;}
+.svc-list{margin:12px 0 0;padding-left:16px;}
+.svc-list li{color:var(--ink-dim);font-size:.82rem;line-height:1.95;word-break:keep-all;}
 .cross-sell{margin-top:20px;padding:20px 18px;border-radius:var(--r-lg);
   background:var(--gold-soft);border:1px solid var(--gold-line);text-align:center;}
 .cross-sell .cs-mark{display:flex;justify-content:center;margin-bottom:6px;}
@@ -10453,39 +10451,38 @@ function renderLanding(){
     'MBTI와 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.'
   ]));
 
-  function svc(title, desc, bullets, price, go){
+  /* ★ R55 — 카드 아래 배지('회원가입 없이 바로' 등)를 없앴다(대표님 지시).
+     읽는 순서상 마지막에 오는데 정작 내용과 상관없는 말이라, 눈길만 뺏고 알맹이는 없었다.
+     대신 무엇을 해 주는지 적은 설명 줄을 키운다 — 사람들이 실제로 읽는 것은 그 줄이다.
+     ★ R52 — 가격 이야기는 여기서 하지 않는다. 무료 부분을 다 보고 '더 보고 싶다'가
+       된 다음에 한다(사주 풀이 4번째 섹션·궁합 결과 아래).
+     ★ R51 — '시작하기' 줄도 없다. 카드 전체가 버튼이라 화살표만 오른쪽 위에 둔다. */
+  function svc(title, desc, bullets, go){
     var c = el('button',{class:'svc-card', type:'button', onclick:go});
     c.appendChild(el('div',{class:'svc-title'},[title]));
     c.appendChild(el('div',{class:'svc-desc'},[desc]));
     var ul=el('ul',{class:'svc-list'});
     bullets.forEach(function(t){ ul.appendChild(el('li',{},[t])); });
     c.appendChild(ul);
-    /* ★ R52 — 여기서 가격 이야기를 하지 않는다(대표님 지시).
-       고르기도 전에 '유료'라는 말이 먼저 보이면 들어와 보기도 전에 값을 재게 된다.
-       이 자리에는 '들어오는 데 드는 것이 없다'는 말만 둔다.
-       유료 이야기는 무료 부분을 다 보고 '더 보고 싶다'가 된 다음에 한다
-       (사주 풀이 4번째 섹션·궁합 결과 아래). */
-    c.appendChild(el('div',{class:'svc-price'},[price]));
-    /* ★ R51 — 카드 안의 '시작하기' 줄을 뺐다(대표님 지시).
-       카드 전체가 이미 버튼이라, 그 안에 또 버튼처럼 생긴 것을 두면
-       "저기만 눌러야 하나" 싶어진다. 대신 화살표만 오른쪽 위에 둔다. */
     c.appendChild(el('span',{class:'svc-arrow','aria-hidden':'true'},[dirIcon('right')]));
     return c;
   }
 
+  /* ★ R55 — 명리 용어를 앞세우지 않는다(대표님 지시).
+     '오행·십성'은 아는 사람만 아는 말이다. 그 값으로 무엇을 알게 되는지로 바꾼다 —
+     재물운·건강운처럼 사람들이 실제로 궁금해하는 말이 먼저 와야 한다.
+     (용어 자체는 화면 안에 그대로 있고 눌러서 뜻도 볼 수 있다. 첫인사에서만 뒤로 뺀 것이다.) */
   view.appendChild(svc(
     '내 MBTI × 사주 분석',
-    '타고난 여덟 글자와 성격 유형을 함께 읽어드려요.',
-    ['오늘의 운세 · 만세력 사주팔자', '오행·십성·대운 흐름', 'MBTI 성향 리포트'],
-    '회원가입 없이 바로',
+    '내가 어떤 사람이고 어떤 흐름을 지나고 있는지, 타고난 사주와 성격 유형을 함께 읽어드려요.',
+    ['오늘의 운세와 내 사주팔자', '재물운 · 건강운 · 인생 대운 흐름', '내 성격의 강점과 약점 (MBTI)'],
     function(){ startService('self'); }
   ));
 
   view.appendChild(svc(
     '타인과 궁합 보기',
-    '링크 하나만 보내면 상대가 직접 넣고 바로 결과가 나와요.',
-    ['둘이서 보는 1:1 궁합', '링크로 최대 '+GC_MAX+'명까지 그룹 궁합', '무엇이 맞고 어긋나는지 항목별로'],
-    '상대는 앱 설치 없이 링크만',
+    '링크 하나만 보내면 상대가 직접 넣고 바로 결과가 나와요. 앱을 깔 필요도, 가입할 필요도 없어요.',
+    ['가족 · 친구 · 연인 · 직장동료 궁합', '둘이서 보는 1:1 궁합', '한 번에 최대 '+GC_MAX+'명까지 모임 궁합'],
     function(){ startService('compat'); }
   ));
 
