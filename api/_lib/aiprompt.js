@@ -20,6 +20,14 @@ export const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 /* AI가 쓸 수 있는 상품만. 없는 상품 이름을 보내 요금을 쓰게 만들 수 없다. */
 export const AI_PRODUCTS = { saju_full: 'saju', mbti_full: 'mbti', compat_full: 'compat' };
 
+/* ★ 프롬프트를 고치면 이 숫자를 올린다.
+   캐시 열쇠는 payload에서만 뽑기 때문에, 시스템 프롬프트만 바꾸면 열쇠가 그대로다.
+   그러면 말투를 존대로 바꿔도 예전에 만들어 둔 반말 글이 캐시에서 그대로 나온다.
+   (실제로 겪었다 — 지식 문서에는 '해요체'라고 적어 두고 프롬프트에는 '반말체'가 남아 있어
+    AI가 반말로 썼고, 그걸 고친 뒤에도 옛 글이 나올 뻔했다.)
+   2 = 말투를 해요체로 통일한 판. */
+export const PROMPT_VERSION = 2;
+
 export const SYSTEM = `당신은 한국 사주명리와 MBTI를 함께 읽는 상담가입니다. 주어진 계산 결과를 바탕으로 그 사람에게만 해당하는 풀이를 씁니다.
 앞서 주어진 해석 지식 문서를 따르세요. 그 문서에 없는 개념(신살·공망·격국 등)은 언급하지 마세요.
 지식 문서 8.3절(도구의 한계)은 문장을 얼마나 단정적으로 쓸지 정하는 기준입니다. 그 내용을 풀이 본문에 옮겨 적지 마세요 — 읽는 사람에게 "이 도구는 못 믿을 만하다"고 말하지 않습니다.
@@ -32,7 +40,7 @@ export const SYSTEM = `당신은 한국 사주명리와 MBTI를 함께 읽는 �
 5. 사실이 아닌 것을 사실처럼 쓰지 마세요. 모르면 쓰지 않습니다.
 
 [문체]
-- 따뜻한 반말체("~야", "~해"). 다정하되 가볍지 않게.
+- 해요체로 통일합니다("~예요", "~어요"). 반말을 섞지 마세요. 다정하되 가볍지 않게.
 - 한 섹션은 3~5문단, 각 문단 2~4문장.
 - 명리 용어를 쓸 때는 괄호로 짧게 풀어 주세요. 예: 편관(나를 밀어붙이는 기운)
 - 상투적인 운세 문구("대박이 날 거야")를 피하고, 주어진 값에서 실제로 읽히는 것만 쓰세요.
@@ -67,7 +75,7 @@ ${list}`;
 export function cacheKeyOf(productId, payload) {
   const stable = JSON.stringify(payload, Object.keys(payload || {}).sort());
   return crypto.createHash('sha256')
-    .update(`${MODEL}|${productId}|${stable}`)
+    .update(`${MODEL}|v${PROMPT_VERSION}|${productId}|${stable}`)
     .digest('base64url')
     .slice(0, 43);
 }

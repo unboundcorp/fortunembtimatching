@@ -1294,7 +1294,7 @@ function paymentMethodsText(){ return paymentMethodsMissing() ? '확인 중' : P
       요청 : { "productId":"saju_full", "sectionFrom":3, "payload": {
                 "kind":"saju", "gender":"여",
                 "pillars":{...}, "elements":{...}, "dayMasterStrength":"weak", "sipseong":{...},
-                "requested":{"sections":13,"tone":"따뜻한 반말체","language":"ko"} } }
+                "requested":{"sections":13,"tone":"해요체","language":"ko"} } }
              ★ payload에는 "본문을 쓰는 데 실제로 필요한 것"만 담는다(허용 목록 방식).
                닉네임과 생년월일·태어난 시각 원본은 보내지 않는다(contentPayloadFrom() 참조).
                본문에 이름을 넣고 싶으면 응답에 {{name}} 이라고 적어라 —
@@ -5536,7 +5536,7 @@ function showBillingContract(){
       pillars:{year:{stem:'경',branch:'오'}, month:{stem:'임',branch:'오'}, day:{stem:'신',branch:'해'}, hour:{stem:'계',branch:'사'}},
       elements:{목:0,화:3,토:0,금:3,수:2}, dayMasterStrength:'weak',
       sipseong:{비견:1,겁재:1,식신:1,상관:1,편재:0,정재:0,편관:1,정관:2,편인:0,정인:0},
-      requested:{sections:13, tone:'따뜻한 반말체', language:'ko'}}},
+      requested:{sections:13, tone:'해요체', language:'ko'}}},
     {sections:[{id:'s4', title:'내면 · 겉과 속의 차이', icon:'M4 18 L10 6 L16 18', paragraphs:['{{name}}는 …','문단2']}]},
     '결제 여부를 서버에서 먼저 확인하고, 미결제자에게는 403으로 본문을 주지 마세요. paragraphs(평문 배열) 권장 — 앱이 글자로만 넣으므로 스크립트가 실행될 수 없습니다. 요청 payload에는 닉네임과 생년월일·태어난 시각 원본이 들어가지 않습니다(개인정보 최소 전송). 본문에 이름을 넣으려면 {{name}} 이라고 쓰면 앱이 화면에 그릴 때 닉네임으로 바꿔 넣습니다. icon은 SVG path의 d 값(viewBox 0 0 20 20)이고, M/m으로 시작하지 않으면 앱이 기본 아이콘으로 대체합니다.');
   block('3) 영수증 검증 · 구매 복원 (verifyEndpoint)',
@@ -6308,7 +6308,7 @@ var Interpreter = {
       sipseong: sipseongCounts(saju),
       /* ★ 제목 목록을 함께 보낸다. 이게 없으면 AI가 제목을 제멋대로 지어,
          화면의 목차(로컬에서 만든 것)와 본문이 서로 다른 이름을 갖게 된다. */
-      requested: { sections: 13, tone: '따뜻한 반말체', language: 'ko', sectionTitles: null }
+      requested: { sections: 13, tone: '해요체', language: 'ko', sectionTitles: null }
     };
   },
 
@@ -6318,7 +6318,7 @@ var Interpreter = {
       a: { name:pA.name, mbti:pA.mbti, pillars: pA.saju ? this.buildSajuPayload(pA, pA.saju).pillars : null },
       b: { name:pB.name, mbti:pB.mbti, pillars: pB.saju ? this.buildSajuPayload(pB, pB.saju).pillars : null },
       computed: { combined:res.combined, tier:res.combinedTier, sajuScore:res.saju.score, mbtiScore:res.mbtiScore },
-      requested: { language:'ko', tone:'따뜻한 반말체' }
+      requested: { language:'ko', tone:'해요체' }
     };
   },
 
@@ -11346,7 +11346,7 @@ function renderMbtiReport13(){
   view.appendChild(mbtiHost);
   paintReportInto(mbtiHost, report.sections, PRODUCTS.mbti_full, '성격유형 풀이 목차',
     function(){ return { kind:'mbti', person:{name:p.name, mbti:p.mbti, gender:p.gender==='M'?'남':'여'},
-      requested:{sections:13, tone:'따뜻한 반말체', language:'ko'} }; }, p.name);
+      requested:{sections:13, tone:'해요체', language:'ko'} }; }, p.name);
 
   var badgeCard=el('div',{class:'scroll-card'});
   badgeCard.appendChild(el('h3',{},['4지표 요약']));
