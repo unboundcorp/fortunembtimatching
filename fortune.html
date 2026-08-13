@@ -4571,19 +4571,20 @@ function openReceiptSavedModal(receiptId, opts){
   opts = opts || {};
   var body = el('div',{class:'sheet-body'});
   body.appendChild(el('p',{},[opts.title || '결제가 완료되었습니다. 유료 해석이 열렸어요.']));
-  body.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;color:var(--gold);'},['영수증 번호 (복원 코드)']));
-  var codeBox = el('div',{class:'receipt-code'});
-  codeBox.appendChild(el('code',{},[String(receiptId)]));
-  body.appendChild(codeBox);
-  body.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;',
-    onclick:function(){ copyText(String(receiptId)); }},['번호 복사']));
+
+  /* ★ R77 — "영수증 번호를 저장해 두세요"라는 당부를 뺐다 (대표님 지시).
+     결제를 마친 기쁨 위에 숙제를 하나 얹는 문구였고, 3040 손님이 결제 직후에 번호를
+     메모장에 옮겨 적을 확률은 낮다. 못 하면 죄책감만 남는다.
+     번호는 접어서 조용히 두고 [복사]만 남긴다 — 필요한 사람은 그것으로 충분하다.
+     되찾는 길은 설정 → 이용권 → "구매 내역 복원"에 그대로 있다. */
+
   /* ★ R72 — 여기가 카카오 연결을 권하는 유일한 자리다. 결제를 마친 분에게만 보인다.
      서버가 '쓸 수 없다'고 하면(설정 안 됨) 아예 만들지 않는다 — 눌러도 안 되는 버튼은 두지 않는다. */
   if(KAKAO.ready && !KAKAO.linked){
     var kbox = el('div',{class:'scroll-card', style:'margin-top:14px;'});
     kbox.appendChild(el('p',{style:'font-weight:700;margin:0 0 6px;'},['폰을 바꿔도 그대로 보시려면']));
     kbox.appendChild(el('p',{class:'biz-hint', style:'margin:0 0 10px;'},[
-      '카카오로 저장해 두시면 번호를 적어두지 않아도 됩니다. 다른 기기에서 카카오로 들어오시면 그대로 열려요.'
+      '카카오로 저장해 두시면 다른 기기에서 카카오로 들어오셔도 그대로 열려요.'
     ]));
     kbox.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:kakaoStart},
       ['카카오로 저장해두기']));
@@ -4596,20 +4597,26 @@ function openReceiptSavedModal(receiptId, opts){
       '카카오에 저장돼 있어요. 다른 기기에서도 카카오로 들어오시면 그대로 보실 수 있습니다.'
     ]));
   }
-  body.appendChild(el('p',{class:'biz-hint', style:'margin-top:12px;'},[
-    '이 서비스는 회원가입이 없어서, 결제한 이용권은 지금 쓰고 계신 브라우저의 쿠키로만 연결돼 있습니다. 브라우저 데이터를 지우거나 다른 기기·시크릿 창에서 열면 이용권이 보이지 않습니다.'
+
+  var receiptBox = el('div',{});
+  var codeBox = el('div',{class:'receipt-code'});
+  codeBox.appendChild(el('code',{},[String(receiptId)]));
+  receiptBox.appendChild(codeBox);
+  receiptBox.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;',
+    onclick:function(){ copyText(String(receiptId)); }},['번호 복사']));
+  receiptBox.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
+    '기기를 바꾸거나 브라우저 기록을 지우셨을 때, 설정 → 이용권 → "구매 내역 복원"에서 이 번호로 되살릴 수 있어요.'
   ]));
-  body.appendChild(el('p',{class:'biz-hint'},[
-    '그때는 설정 화면 이용권 항목의 "구매 내역 복원"에서 위 번호를 넣으면 다시 열립니다. 메모장이나 메일 등 브라우저 밖에도 꼭 적어 두세요.'
-  ]));
-  body.appendChild(el('p',{class:'biz-hint'},[
-    '이 번호는 이 브라우저에도 함께 저장해 두지만, 브라우저 데이터를 지우면 그 기록도 같이 사라집니다.'
-  ]));
+  body.appendChild(buildFoldPanel({
+    label:'영수증 번호 보기', openLabel:'영수증 번호 접기',
+    regionLabel:'영수증 번호', btnStyle:'margin-top:14px;',
+    children:[receiptBox]
+  }).wrap);
+
   /* 이 모달은 결제 성공 콜백에서 저절로 뜨므로 "열기 전에 눌렀던 버튼"이 없다.
      복귀 지점을 본문 영역으로 명시해, 닫았을 때 포커스가 <body>로 떨어지지 않게 한다. */
-  openModal('영수증 번호를 저장해 주세요', body, [
-    {label:'번호 복사', cls:'btn-primary', onclick:function(){ copyText(String(receiptId)); }},
-    {label:'닫기', cls:'btn-ghost', onclick:closeModal}
+  openModal('결제가 완료되었어요', body, [
+    {label:'확인', cls:'btn-primary', onclick:closeModal}
   ], {returnFocusTo: $('#main')});
 }
 

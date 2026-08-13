@@ -210,6 +210,38 @@ export async function aiUsedCount(sessionId) {
   return Array.isArray(rows) ? rows.length : 0;
 }
 
+/* =====================================================================
+   이 세션이 지금까지 '만들어 본' 상품들 (R76)
+   ---------------------------------------------------------------------
+   ★ 왜 필요한가: 이용권(7일)이 끝나면 그 기간에 만든 해석까지 다시 못 보는 상태였다.
+     대표님은 "재열람은 무제한"이라고 알고 계셨는데 코드가 그렇지 않았다(외부 실사에서도
+     '상위 상품이 하위 상품보다 불리하다'고 지적된 부분이다).
+
+     한 번 만든 글은 계속 볼 수 있어야 한다. 그래서 만든 적이 있는 상품은
+     기간이 끝난 뒤에도 열어 둔다.
+
+   ★ 새로 만드는 것은 여전히 막힌다. 이용권이 끝나면 viaPass 가 아니게 되어
+     횟수 상한이 단품 기준(1회)으로 내려가고, 이미 그만큼 썼으므로 새 생성은 거절된다.
+     즉 '만료 뒤에는 새로 못 만들고, 이미 만든 건 계속 본다'가 된다.
+
+   ai_usage(무엇을 썼나) → ai_cache(그게 어느 상품인가) 두 걸음으로 찾는다.
+===================================================================== */
+export async function aiUsedProductIds(sessionId) {
+  const used = await rest(
+    `ai_usage?session_id=eq.${encodeURIComponent(sessionId)}&select=cache_key`
+  );
+  const keys = (used || []).map((r) => r.cache_key).filter(Boolean);
+  if (!keys.length) return [];
+  /* PostgREST 의 in.(...) 목록. 열쇠는 base64url 이라 따옴표가 필요 없지만,
+     값에 콤마가 섞이면 목록이 깨지므로 혹시 몰라 걸러 둔다. */
+  const safe = keys.filter((k) => !/[,()"']/.test(k)).slice(0, 200);
+  if (!safe.length) return [];
+  const rows = await rest(
+    `ai_cache?cache_key=in.(${safe.map(encodeURIComponent).join(',')})&select=product_id`
+  );
+  return [...new Set((rows || []).map((r) => r.product_id).filter(Boolean))];
+}
+
 export async function noteAiUse(sessionId, cacheKey) {
   await rest('ai_usage?on_conflict=session_id,cache_key', {
     method: 'POST',

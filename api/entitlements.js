@@ -10,7 +10,7 @@
 ===================================================================== */
 import { json, methodGuard } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { paidOrdersOf, testAccessOf } from './_lib/store.js';
+import { paidOrdersOf, testAccessOf, aiUsedProductIds } from './_lib/store.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import { productOf } from './_lib/products.js';
 import { isTossTestKey } from './_lib/company.js';
@@ -37,6 +37,31 @@ export default async function handler(req, res) {
        권한 판정(hasAiAccess)도 테스트 허가를 이용권으로 취급하므로 앞뒤가 맞는다.
        ★ 이 허가는 TEST_UNLOCK_CODE를 아는 사람만 받을 수 있다(api/testunlock.js).
     ===================================================================== */
+    /* =====================================================================
+       ★ R76 — 한 번 만든 해석은 이용권이 끝나도 계속 볼 수 있게 한다 (대표님 승인).
+       ---------------------------------------------------------------------
+       이용권은 7일인데 단품은 영구라, 상위 상품이 하위 상품보다 불리했다.
+       게다가 대표님은 "재열람은 무제한"이라고 알고 계셨는데 코드가 그렇지 않았다 —
+       7일이 지나면 그동안 만든 해석까지 잠겼다.
+
+       만든 적이 있는 상품은 영구 항목으로 넣어 준다. 그러면
+       '7일 동안 열 개까지 만들 수 있고, 만든 건 영원히 내 것'이 되어 앞뒤가 맞는다.
+
+       ★ 새로 만드는 것은 여전히 막힌다 — 이용권이 끝나면 횟수 상한이 단품 기준(1회)으로
+         내려가고 이미 그만큼 썼으므로 새 생성은 거절된다.
+    ===================================================================== */
+    try {
+      const madeBefore = await aiUsedProductIds(sessionId);
+      for (const pid of madeBefore) {
+        const p = productOf(pid);
+        if (!p || p.kind === 'pass') continue;   /* 이용권 자체를 영구로 만들지는 않는다 */
+        if (!ent.items[p.id]) ent.items[p.id] = { purchasedAt: Date.now() };
+      }
+    } catch (err) {
+      /* 못 읽어도 앱은 그대로 돌아간다. 다만 만료된 이용권의 옛 해석이 잠길 뿐이다. */
+      console.warn('이미 만든 해석 조회 실패(무시하고 진행):', err && err.message);
+    }
+
     const test = await testAccessOf(sessionId);
     if (test) {
       const until = test.expires_at ? new Date(test.expires_at).getTime() : Date.now() + 86400000;

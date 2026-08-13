@@ -1,10 +1,16 @@
 /* =====================================================================
-   결제창 페이지 — /pay?order=<주문번호>
+   결제 화면 — /pay?order=<주문번호>
    ---------------------------------------------------------------------
    토스 결제창은 브라우저에서 SDK로 열어야 한다(카드사 앱·인증 창 때문에 서버가 대신 못 연다).
    그래서 이 페이지가 필요하다. 하는 일은 셋뿐이다.
      ① 주문번호로 서버에 물어 상품명·금액을 가져온다 (브라우저가 보낸 값을 쓰지 않는다)
-     ② 토스 SDK로 결제창을 연다
+     ② 토스 결제위젯을 그린다
+
+   ★ R75 — '결제창'에서 '결제위젯'으로 바꿨다 (대표님 지시).
+     예전에는 requestPayment({method:'CARD'})로 카드 결제창만 열었다. 그래서 손님은
+     카드번호를 직접 치는 것 말고는 방법이 없었다. 위젯은 카카오페이·토스페이 같은
+     간편결제와 카드사 선택을 한 화면에 펼쳐 준다 — 3040 손님에게 카카오페이는
+     사실상 기본 결제수단이라, 이 차이가 곧 결제 성공률이다.
      ③ 결과는 successUrl(/api/confirm) 이 받아서 서버가 승인한다
 
    ★ 여기 들어가는 것은 클라이언트 키(TOSS_CLIENT_KEY)뿐이다. 원래 브라우저에 공개되는 값이라
@@ -49,7 +55,11 @@ function page({ body, title }) {
     font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;}
   button:disabled{opacity:.45;cursor:default;}
   .ghost{background:none;color:var(--ink-dim);font-weight:400;font-size:.85rem;margin-top:10px;text-decoration:underline;}
-  .err{color:#8F2413;font-size:.88rem;margin-top:14px;}
+  .err{color:#8F2413;font-size:.88rem;margin-top:12px;text-align:left;}
+  /* 위젯이 그려지는 자리 — 토스가 이 안을 채운다 */
+  #payment-method{margin-top:6px;}
+  #agreement{margin-bottom:12px;}
+  .loading{font-size:.86rem;color:var(--ink-dim);padding:26px 0;}
   .note{font-size:.76rem;color:var(--ink-dim);margin-top:18px;}
   /* 브랜드 — 여기가 우리 화면이라는 것을 한눈에 알리는 자리 */
   .brand{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:14px;}
@@ -150,36 +160,59 @@ export default async function handler(req, res) {
       <p class="sub">결제가 끝나면 앱으로 자동으로 돌아옵니다.</p>
       <div class="row"><span>상품</span><span>${esc(product.name)}</span></div>
       <div class="row"><span>결제 금액</span><span class="v">${amount.toLocaleString('ko-KR')}원</span></div>
-      <button id="payBtn">${amount.toLocaleString('ko-KR')}원 결제하기</button>
+      <div id="payment-method"><p class="loading">결제 수단을 불러오는 중이에요…</p></div>
+      <div id="agreement"></div>
+
+      <button id="payBtn" disabled>${amount.toLocaleString('ko-KR')}원 결제하기</button>
       <button class="ghost" onclick="location.href='/fortune.html'">취소하고 돌아가기</button>
       <p class="err" id="err" hidden></p>
-      <p class="note">결제 후 나오는 <b>영수증 번호</b>를 저장해 두세요. 브라우저 데이터를 지우거나 기기를 바꿨을 때 그 번호로 이용권을 되살릴 수 있습니다.</p>
       ${LEGAL}
       <script src="https://js.tosspayments.com/v2/standard"></script>
       <script>
         (function(){
           var btn = document.getElementById('payBtn');
           var errBox = document.getElementById('err');
-          function showErr(m){ errBox.textContent = m; errBox.hidden = false; btn.disabled = false; }
-          var payment;
+          var slot = document.getElementById('payment-method');
+          function showErr(m){ errBox.textContent = m; errBox.hidden = false; }
+
+          var widgets;
           try{
             /* 로그인이 없는 앱이라 비회원 결제로 연다. */
-            payment = TossPayments(${JSON.stringify(clientKey)}).payment({ customerKey: TossPayments.ANONYMOUS });
-          }catch(e){ showErr('결제 모듈을 불러오지 못했어요. 새로고침해 주세요.'); return; }
+            widgets = TossPayments(${JSON.stringify(clientKey)})
+              .widgets({ customerKey: TossPayments.ANONYMOUS });
+          }catch(e){
+            slot.innerHTML = '';
+            showErr('결제 모듈을 불러오지 못했어요. 새로고침해 주세요.');
+            return;
+          }
+
+          /* ★ 금액을 먼저 정하고 나서 결제수단을 그린다. 순서가 바뀌면 위젯이 뜨지 않는다. */
+          Promise.resolve(widgets.setAmount({ currency: 'KRW', value: ${amount} }))
+            .then(function(){
+              return Promise.all([
+                widgets.renderPaymentMethods({ selector: '#payment-method' }),
+                /* 약관 동의 위젯은 없어도 결제는 된다. 실패해도 전체를 막지 않는다. */
+                Promise.resolve(widgets.renderAgreement({ selector: '#agreement' }))
+                  .catch(function(){ return null; })
+              ]);
+            })
+            .then(function(){ btn.disabled = false; })
+            .catch(function(e){
+              slot.innerHTML = '';
+              showErr('결제 수단을 불러오지 못했어요. 새로고침해 주세요.');
+            });
 
           btn.addEventListener('click', function(){
             btn.disabled = true; errBox.hidden = true;
-            payment.requestPayment({
-              method: 'CARD',
-              amount: { currency: 'KRW', value: ${amount} },
+            Promise.resolve(widgets.requestPayment({
               orderId: ${JSON.stringify(orderId)},
               orderName: ${JSON.stringify(product.name)},
               successUrl: window.location.origin + '/api/confirm',
-              failUrl: window.location.origin + '/api/payfail',
-              card: { useEscrow: false, flowMode: 'DEFAULT', useCardPoint: false, useAppCardOnly: false }
-            }).catch(function(err){
+              failUrl: window.location.origin + '/api/payfail'
+            })).catch(function(err){
+              btn.disabled = false;
               /* 사용자가 창을 닫은 경우도 여기로 온다 — 그건 오류가 아니므로 조용히 되돌린다. */
-              if(err && (err.code === 'USER_CANCEL' || err.code === 'PAY_PROCESS_CANCELED')){ btn.disabled = false; return; }
+              if(err && (err.code === 'USER_CANCEL' || err.code === 'PAY_PROCESS_CANCELED')) return;
               showErr((err && err.message) || '결제를 시작하지 못했어요.');
             });
           });
