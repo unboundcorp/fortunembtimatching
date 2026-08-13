@@ -2319,7 +2319,20 @@ function closeModal(force){
        실제로 이것 때문에 약관·개인정보처리방침 창이 아예 안 열렸다(실측으로 잡음).
      ★ 뒤로가기로 닫는 중(POPPING)에도 하지 않는다. 이미 되돌아가는 중이다. */
   if(force !== true && !POPPING && !MODAL_STACK.length){
-    try{ if(history.state && history.state.modal) history.back(); }catch(e){}
+    try{
+      if(history.state && history.state.modal){
+        /* ★ R82 — 되돌림을 우리가 불렀다는 표시를 남긴다.
+           history.back()은 한 박자 뒤에 처리된다. 그 사이에 [정보 수정]처럼
+           화면을 옮기는 코드가 먼저 돌면, 뒤늦게 도착한 popstate가 방금 연 화면을
+           옛 화면으로 되돌려 버린다 — 눌러도 아무 일이 안 일어난 것처럼 보인다.
+           (프로필 '정보 수정'과 '삭제'가 실제로 이것 때문에 죽어 있었다.) */
+        MODAL_BACK_PENDING = true;
+        history.back();
+        /* popstate가 오지 않는 경우에 대비해 스스로 걷는다.
+           안 그러면 이 깃발이 남아 다음 뒤로가기를 한 번 먹는다. */
+        setTimeout(function(){ MODAL_BACK_PENDING = false; }, 400);
+      }
+    }catch(e){}
   }
   document.removeEventListener('keydown', modalKeyHandler);
   var back = openModal._trigger;
@@ -9105,6 +9118,8 @@ function buildCompatWhyPanel(p, r){
 ===================================================================== */
 var HISTORY_ON = false;      /* 첫 화면을 그린 뒤부터 기록을 쌓는다 */
 var POPPING = false;         /* 뒤로가기로 되돌아가는 중 — 이때는 기록을 쌓지 않는다 */
+/* R82 — '창을 닫으며 우리가 부른 되돌림'인지 표시한다. 아래 popstate에서 쓴다. */
+var MODAL_BACK_PENDING = false;
 
 var LAST_ROUTE = null;
 /* ★ 화면 전환은 setRoute() 말고도 코드 곳곳에서 ROUTE='...'; render(); 로 일어난다.
@@ -9126,10 +9141,19 @@ window.addEventListener('popstate', function(e){
     if($('#activeModal')){ closeModal(true); }
     return;
   }
+  /* ★ R82 — 이 되돌림이 '창을 닫으며 우리가 부른 것'인지 먼저 확인하고 깃발을 걷는다. */
+  var fromModalClose = MODAL_BACK_PENDING;
+  MODAL_BACK_PENDING = false;
+
   POPPING = true;
   try{
     /* 모달이 떠 있으면 그것부터 닫는다. */
     if($('#activeModal')){ closeModal(true); }
+    else if(fromModalClose){
+      /* ★ 창을 닫으면서 우리가 부른 되돌림이다. 그 사이 앱이 다른 화면으로 옮겨 갔다면
+         여기서 옛 화면으로 되돌리면 안 된다 — 방금 연 화면이 그대로 닫힌다.
+         닫기만 한 경우에는 화면이 그대로이므로 어차피 할 일이 없다. */
+    }
     else if(st.route && st.route !== ROUTE){ ROUTE = st.route; render(); window.scrollTo(0,0); }
   } finally { POPPING = false; }
 });
