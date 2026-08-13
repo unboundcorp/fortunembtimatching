@@ -13,6 +13,7 @@ import { ensureSession } from './_lib/session.js';
 import { paidOrdersOf, testAccessOf } from './_lib/store.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import { productOf } from './_lib/products.js';
+import { isTossTestKey } from './_lib/company.js';
 
 export default async function handler(req, res) {
   if (!methodGuard(req, res, 'POST')) return;
@@ -48,6 +49,13 @@ export default async function handler(req, res) {
         };
       }
     }
+
+    /* ★ 지금 붙어 있는 토스 키가 테스트 키인지 알려준다 (외부 실사 지적).
+       화면은 이 값을 보고 결제창에 "실제로 결제되지 않습니다"를 띄운다.
+       이게 없으면 손님은 토스 결제창에 들어가서야 알게 되고, 그 전까지
+       진짜 결제인 줄 알고 카드번호와 주민등록번호를 입력한다.
+       ★ 키 값 자체는 절대 내려보내지 않는다. '테스트인가 아닌가'만 보낸다. */
+    ent.testPayment = isTossTestKey();
 
     json(res, 200, ent);
   } catch (err) {

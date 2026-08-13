@@ -878,6 +878,11 @@ main{flex:1;padding:28px 20px 96px;}
   display:flex;align-items:center;justify-content:center;flex:none;}
 .brand-top-name{font-family:var(--sans);font-size:1.18rem;font-weight:800;letter-spacing:-.03em;color:var(--gold);}
 
+/* R74 — 테스트 키일 때 결제창 맨 위에 뜨는 띠 */
+.pay-testbar{background:#8F2413;color:#fff;border-radius:12px;padding:12px 14px;margin-bottom:14px;}
+.pay-testbar strong{display:block;font-size:.95rem;font-weight:800;margin-bottom:4px;}
+.pay-testbar p{font-size:.82rem;line-height:1.6;margin:0;color:#fff;word-break:keep-all;}
+
 /* R68 — 링크 보낸 뒤 기다리는 카드 */
 .watch-card{border:1px solid var(--gold-line);background:var(--gold-soft);}
 .watch-card h3{color:var(--gold);}
@@ -3679,6 +3684,10 @@ function localTrialEntitlements(){
   return e;
 }
 /* 서버 응답을 앱이 쓰는 모양으로 맞춘다. 모르는 필드는 버리고, 빠진 필드는 잠금 쪽 기본값으로 채운다. */
+/* ★ R74 — 서버가 '지금 붙은 토스 키가 테스트 키다'라고 알려주면 여기 담는다 (외부 실사 지적).
+   이게 없으면 손님은 토스 결제창에 들어가서야 테스트인 걸 알게 되고,
+   그 전까지 진짜 결제인 줄 알고 카드번호와 주민등록번호를 입력한다. */
+var PAY_IS_TEST = false;
 function normalizeEntitlements(raw){
   var out = defaultEntitlements();
   if(!raw || typeof raw !== 'object') return out;
@@ -3844,6 +3853,9 @@ async function fetchEntitlements(){
   try{
     var data = await billingFetchJson(BILLING.entitlementEndpoint, { kind:'entitlements' });
     ENT.data = normalizeEntitlements(data);
+    /* ★ R74 — 서버가 알려준 '테스트 키인가'를 기억한다. 키 값 자체는 오지 않는다.
+       실패했을 때는 건드리지 않는다 — 못 물어봤다고 '진짜 결제'라고 단정하면 안 된다. */
+    try{ PAY_IS_TEST = !!(data && data.testPayment); }catch(e){}
     ENT.error = null;
   }catch(err){
     /* 서버가 답하지 않으면 잠근다. 열어주는 쪽으로 실패하지 않는다. */
@@ -4233,6 +4245,19 @@ function lockedBlock(product, teaserHtml, sectionTitle){
    진짜처럼 생긴 결제창은 그 자체로 사용자를 속이는 물건이 되기 때문이다. */
 function openPaywall(product){
   var body = el('div',{});
+
+  /* ★ R74 — 테스트 키면 결제창 맨 위에 크게 알린다 (외부 실사 지적).
+     "결제하기"를 누르기 전에 알아야 의미가 있다. 토스 결제창까지 가서 알게 되면
+     이미 카드번호를 넣을 마음으로 들어간 뒤다. */
+  if(PAY_IS_TEST){
+    var tb = el('div',{class:'pay-testbar'});
+    tb.appendChild(el('strong',{},['테스트 결제입니다 — 실제로 결제되지 않습니다']));
+    tb.appendChild(el('p',{},[
+      '실제 카드로는 결제가 되지 않아요. 카드번호나 주민등록번호를 넣지 마세요. ' +
+      '판매 준비 중이며, 정식으로 열리면 이 안내가 사라집니다.'
+    ]));
+    body.appendChild(tb);
+  }
 
   var head = el('div',{class:'pay-product'});
   head.appendChild(el('div',{class:'pay-name'},[product.name]));
