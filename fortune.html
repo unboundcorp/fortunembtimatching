@@ -441,7 +441,12 @@ main{flex:1;padding:28px 20px 96px;}
 
 /* 온보딩 */
 .onboard{min-height:calc(100vh - 0px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px;gap:22px;}
-.constellation{width:min(320px,80vw);height:min(320px,80vw);}
+/* ★ R79 — 320px이던 것을 화면 높이에 따라 줄인다 (외부 실사 지적).
+   iPhone SE(375×667)에서 [시작하기] 버튼 상단이 747px이라 첫 화면 밖으로 나가 있었다.
+   스크롤해야 시작할 수 있는 첫 화면은 그 자체로 이탈이다.
+   이 그래픽은 아무 말도 하지 않는 자리이므로, 좁은 화면에서 먼저 양보시킨다.
+   (실측: 이 값을 줄여 SE에서 버튼이 첫 화면 안으로 들어오는 것을 확인했다.) */
+.constellation{width:min(320px,80vw,34vh);height:min(320px,80vw,34vh);}
 .constellation line{stroke:var(--gold);stroke-width:1;opacity:.55;stroke-dasharray:60;stroke-dashoffset:60;animation:drawLine 1.8s ease forwards;}
 .constellation circle{fill:var(--gold);opacity:0;animation:popDot .4s cubic-bezier(.2,1.4,.4,1) forwards;}
 @keyframes drawLine{to{stroke-dashoffset:0;}}
@@ -877,6 +882,12 @@ main{flex:1;padding:28px 20px 96px;}
 .brand-top-mark{width:96px;height:96px;border-radius:50%;background:var(--gold-soft);
   display:flex;align-items:center;justify-content:center;flex:none;}
 .brand-top-name{font-family:var(--sans);font-size:1.18rem;font-weight:800;letter-spacing:-.03em;color:var(--gold);}
+
+/* R79 — 프로필 만들기에서 카드 안에 바로 두는 선택칸 (시트를 열지 않는다) */
+.inline-pick{padding:12px 0;border-top:1px solid var(--line);}
+.inline-pick-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;}
+.inline-pick-label{font-weight:600;font-size:.95rem;color:var(--ink);}
+.inline-pick-val{font-size:.86rem;color:var(--ink-dim);}
 
 /* R74 — 테스트 키일 때 결제창 맨 위에 뜨는 띠 */
 .pay-testbar{background:#8F2413;color:#fff;border-radius:12px;padding:12px 14px;margin-bottom:14px;}
@@ -6092,6 +6103,28 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
       if(paidNeeded) loadPaidBody();
     });
 }
+/* =====================================================================
+   R79 — 이름이 없을 때 "나님"이라고 부르지 않는다 (외부 실사 지적)
+   ---------------------------------------------------------------------
+   닉네임은 선택 입력이다. 안 넣으면 예전에는 '나'가 기본값으로 붙어
+   "나님과의 성격유형 궁합"이 됐다 — 손님이 자기를 '나님'이라고 부르는 화면이다.
+
+   이름이 있으면 "민준님과의", 없으면 "나와의"처럼 호칭 없이 자연스럽게 쓴다.
+===================================================================== */
+function ownerLabel(name){
+  var n = String(name == null ? '' : name).trim();
+  return n ? (n + '님의') : '내';
+}
+function nameOr(name, fallback){
+  var n = String(name == null ? '' : name).trim();
+  return n || (fallback || '나');
+}
+function personLabel(name, fallback){
+  var n = String(name == null ? '' : name).trim();
+  if(n) return n + '님과의';
+  return (fallback || '나') + '와의';
+}
+
 /* 유료 구간의 본문만 비운다(제목·아이콘은 목차와 잠금 카드에 필요하므로 남긴다). */
 function stripPaidBodies(sections){
   return sections.map(function(s, i){
@@ -9928,7 +9961,10 @@ function startSetupWizard(editProfile){
     testMode:false, testAnswers:[], testQIdx:0,
     calendarType: editProfile? editProfile.calendarType : 'solar',
     lunarLeap: editProfile? !!editProfile.lunarLeap : false,
-    year: editProfile? editProfile.year : 2000,
+    /* ★ R79 — 2000년에서 열리던 것을 1990년으로 (외부 실사 지적).
+       손님이 30~40대라 1985~1995년생이 많은데, 2000년에서 열리면 열몇 칸을 거슬러
+       올라가야 한다. 첫 입력에서 손이 많이 가면 그 자리에서 그만둔다. */
+    year: editProfile? editProfile.year : 1990,
     month: editProfile? editProfile.month : 1,
     day: editProfile? editProfile.day : 1,
     timeUnknown: editProfile? !bt : false,
@@ -10192,30 +10228,27 @@ function renderSetupStep2(){
       {savedToast:'출생지·보정 설정을 저장했어요.', alwaysConfirm:true});
   }));
 
-  /* row 5: 성별 */
-  /* R33 — 라벨이 길어 값(남자/여자)이 밀려 잘렸다(대표님 제보). 이름은 짧게 두고
-     "왜 필요한지"는 시트를 열었을 때 안에서 설명한다. */
-  box.appendChild(settingsRow('성별',
-    SETUP._set.gender ? (SETUP.gender==='F'?'여자':'남자') : '선택 안 함', function(){
-    openValueSheet('성별',
-      function(){ return {gender:SETUP.gender}; },
-      function(d, redraw){
-        var body=el('div',{});
-        var gseg=el('div',{class:'seg-toggle'});
-        [['F','여자'],['M','남자']].forEach(function(pair){
-          gseg.appendChild(el('button',{type:'button','aria-pressed':d.gender===pair[0]?'true':'false',
-            onclick:function(){ d.gender=pair[0]; redraw(); }},[pair[1]]));
-        });
-        body.appendChild(gseg);
-        /* 라벨에서 뺀 설명을 여기로 옮겼다(줄이 길어 값이 잘렸다).
-           고를 때 읽으면 되는 내용이라 오히려 이 자리가 맞다. */
-        body.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},
-          ['10년 단위 흐름(대운)이 어느 방향으로 도는지를 정할 때 쓰여요. 잘못 고르면 흐름이 반대로 나옵니다.']));
-        return body;
-      },
-      function(d){ SETUP.gender=d.gender; SETUP._set.gender=true; },
-      {savedToast:'성별을 저장했어요.', alwaysConfirm:true});
-  }));
+  /* row 5: 성별 — 카드 안에서 바로 고른다 (R79, 외부 실사 지적)
+     ---------------------------------------------------------------------
+     예전에는 이것도 시트를 열어 고르고 [확인]을 눌러야 했다. 프로필 하나 만드는 데
+     최소 열다섯 번을 눌러야 했고, 그것도 아직 아무 결과를 못 본 상태에서였다.
+     고를 것이 둘뿐인 값을 시트에 넣을 이유가 없다 — 여기서 한 번에 고르게 한다.
+     (생년월일·태어난 시각·출생지는 고를 것이 많고 미리보기가 붙어 시트가 맞다.) */
+  var gWrap = el('div',{class:'inline-pick'});
+  gWrap.appendChild(el('div',{class:'inline-pick-head'},[
+    el('span',{class:'inline-pick-label'},['성별']),
+    el('span',{class:'inline-pick-val'},[SETUP._set.gender ? (SETUP.gender==='F'?'여자':'남자') : '선택 안 함'])
+  ]));
+  var gseg = el('div',{class:'seg-toggle'});
+  [['F','여자'],['M','남자']].forEach(function(pair){
+    gseg.appendChild(el('button',{type:'button',
+      'aria-pressed': (SETUP._set.gender && SETUP.gender===pair[0]) ? 'true' : 'false',
+      onclick:function(){ SETUP.gender=pair[0]; SETUP._set.gender=true; render(); }},[pair[1]]));
+  });
+  gWrap.appendChild(gseg);
+  gWrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},
+    ['10년 단위 흐름(대운)이 어느 방향으로 도는지를 정할 때 쓰여요. 잘못 고르면 흐름이 반대로 나옵니다.']));
+  box.appendChild(gWrap);
 
   /* =====================================================================
      R33 — 안 고른 채로 넘어가지 못하게 한다.
@@ -10327,7 +10360,10 @@ function renderSetupStep3(){
   box.appendChild(nav);
   box.appendChild(circleCTA(CTA_ICON.check, SETUP.editId?'수정 완료':'저장하고 시작하기', function(){
     var nameInput = $('#profName');
-    var name = (nameInput?nameInput.value:SETUP.name).trim() || '나';
+    /* ★ R79 — 닉네임을 안 넣으면 '나'가 그대로 붙어 "나님과의 궁합"이 됐다(외부 실사 지적).
+       손님이 자기를 '나님'이라고 부르는 화면이 된다. 빈 이름으로 두고,
+       화면에 쓸 때 이름이 없으면 호칭을 아예 빼는 쪽으로 처리한다(personLabel). */
+    var name = (nameInput?nameInput.value:SETUP.name).trim();
     var recompute = computeSetupSaju();
     var legacyZ = calcZodiac(SETUP.year), legacyYY = calcYinYang(SETUP.year), legacyStar = calcStarSign(recompute.solarM, recompute.solarD);
     var elemInfo = dominantElementIdx(recompute.saju);
@@ -10781,7 +10817,7 @@ function renderLanding(){
   if(p){
     view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:14px;', onclick:function(){
       setMode('self'); ROUTE='today'; render();
-    }},[p.name+'님의 오늘의 운세 바로 보기']));
+    }},[ownerLabel(p.name)+' 오늘의 운세 바로 보기']));
   }
   main.appendChild(autoTermify(view));
 }
@@ -10834,7 +10870,7 @@ function renderHome(){
      둘 다 맞는 값이지만 앞의 것을 그냥 "○ 기운"이라고만 쓰면
      같은 화면에서 두 줄이 서로 다른 오행을 말하는 것처럼 읽힌다(실제로 그렇게 보였다).
      그래서 값은 그대로 두고 무엇을 센 값인지 문장에 밝힌다. */
-  view.appendChild(pageHead(todayStr(), p.name+'님의 오늘의 운세',
+  view.appendChild(pageHead(todayStr(), ownerLabel(p.name)+' 오늘의 운세',
     p.mbti+' ('+TYPE_TAGLINE[p.mbti]+') · 사주 '+charCountWord(p)+' 글자 중 '+p.element+josaOnly(p.element,'이','가')+' 가장 많아요'));
   /* ★ R49 — 오늘의 운세는 그날의 간지(일진)와 내 사주를 맞대어 본다. MBTI는 쓰지 않는다.
      쓰지 않는 것을 안 밝히면 "MBTI를 넣었는데 뭐가 달라졌는지 모르겠다"가 된다. */
@@ -10973,7 +11009,7 @@ function renderSaju(){
   if(!p){ main.appendChild(emptyState('프로필이 필요합니다','내 사주를 보려면 프로필을 먼저 만들어주세요.', function(){ startSetupWizard(null); render(); })); return; }
   var saju = getSajuResult(p);
   var view=el('div',{class:'view'});
-  view.appendChild(pageHead('내 사주 · 만세력', p.name+'님의 사주팔자',
+  view.appendChild(pageHead('내 사주 · 만세력', ownerLabel(p.name)+' 사주팔자',
     '양력 '+p.year+'-'+pad2(p.month)+'-'+pad2(p.day)+(p.birthTime?(' '+pad2(p.birthTime.hour)+':'+pad2(p.birthTime.minute)):' · 시간 모름')+' · '+(p.gender==='F'?'여자':'남자')));
   view.appendChild(basisChip(['사주']));
 
@@ -11168,7 +11204,7 @@ function renderMonthlyFortune(){
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='saju'; render(); }},[dirIcon('left'), '내 사주로 돌아가기']));
   /* 안내 문구는 실제 열려 있는 범위를 그대로 말한다. 잠긴 상태에서 "한 달을 탭하면 다섯 가지를
      볼 수 있어요"라고 적으면 그 문장이 곧바로 거짓이 된다. */
-  view.appendChild(pageHead('내 사주 · 올해 월별', p.name+'님의 '+year+'년 월별 운세', ( unlocked
+  view.appendChild(pageHead('내 사주 · 올해 월별', ownerLabel(p.name)+' '+year+'년 월별 운세', ( unlocked
     ? '한 달을 탭하면 총운·애정운·금전운·학업·직장운·건강운 다섯 가지를 자세히 볼 수 있어요.'
     : (previewMonth>0
         /* ★ R52 — '무료/유료'로 나눠 말하지 않는다(대표님 지시). 값은 버튼에 적혀 있어 다들 안다.
@@ -11337,7 +11373,7 @@ function renderReport13(){
   recordSajuReportHistory(p, report);
   var view=el('div',{class:'view'});
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='saju'; render(); }},[dirIcon('left'), '내 사주로 돌아가기']));
-  view.appendChild(pageHead('내 사주 · 사주 풀이', p.name+'님의 사주 풀이',
+  view.appendChild(pageHead('내 사주 · 사주 풀이', ownerLabel(p.name)+' 사주 풀이',
     '13개 이야기로 이어지는 긴 풀이예요. 목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.', {marginTop:'14px'}));
 
   var sajuHost = el('div',{});
@@ -11367,7 +11403,7 @@ function renderMbtiReport13(){
   recordMbtiReportHistory(p, report);
   var view=el('div',{class:'view'});
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='report'; render(); }},[dirIcon('left'), '성향 리포트로 돌아가기']));
-  view.appendChild(pageHead('성격유형 리포트 · 성격유형 풀이', p.name+'님의 성격유형 풀이',
+  view.appendChild(pageHead('성격유형 리포트 · 성격유형 풀이', ownerLabel(p.name)+' 성격유형 풀이',
     '13개 이야기로 이어지는 '+p.mbti+' 풀이예요. 목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.', {marginTop:'14px'}));
 
   /* R19 — 이 화면의 주인공 캐릭터. 그림과 한 줄은 무료이고, 아래 13섹션 본문의 잠금 규칙은 그대로다. */
@@ -11453,7 +11489,7 @@ function renderCharDex(){
   if(myKeys.length){
     var mineCard=el('div',{class:'scroll-card'});
     mineCard.appendChild(el('h3',{},['내 캐릭터']));
-    mineCard.appendChild(el('p',{class:'section-sub'},[p.name+'님의 태어난 날 글자(일간)의 기운과 성격유형에 해당하는 두 종이에요.']));
+    mineCard.appendChild(el('p',{class:'section-sub'},[ownerLabel(p.name)+' 태어난 날 글자(일간)의 기운과 성격유형에 해당하는 두 종이에요.']));
     var mineRow=el('div',{class:'char-pair'});
     myKeys.forEach(function(k){
       var s=CHARACTERS[k];
@@ -11674,8 +11710,8 @@ function renderCompat(){
     view.appendChild(basisChip(['사주','성격유형']));
     view.appendChild(pageHead('두 사람', '궁합 보기',
       (COMPAT_DRAFT.fromInvite && COMPAT_DRAFT.name)
-        ? (COMPAT_DRAFT.name+'님이 보낸 정보는 링크에 담겨 와서 이미 채워져 있어요. 아래 [궁합 풀어보기]를 누르면 '+p.name+'님과의 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.')
-        : ('상대방의 정보를 입력하면 '+p.name+'님과의 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.')));
+        ? (nameOr(COMPAT_DRAFT.name,'상대방')+'님이 보낸 정보는 링크에 담겨 와서 이미 채워져 있어요. 아래 [궁합 풀어보기]를 누르면 '+p.name+'님과의 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.')
+        : ('상대방의 정보를 입력하면 '+personLabel(p.name, '나')+' 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.')));
     /* ★ R56 — 버튼 이름을 '누가 넣는지'로 바꿨다(대표님 지시).
        '초대 링크 만들기'는 만드는 사람 입장의 말이고, 정작 고민되는 건
        '상대 정보를 내가 넣어야 하나, 상대가 넣나'다. 그 갈림을 그대로 이름에 담는다. */
@@ -12016,7 +12052,7 @@ function renderCompatBody(p, draft){
 function renderCompatSummary(p, draft){
   var box=el('div',{});
   var r=draft.result;
-  box.appendChild(pageHead('궁합 결과', p.name+' × '+r.pB.name+' 궁합'));
+  box.appendChild(pageHead('궁합 결과', nameOr(p.name)+' × '+nameOr(r.pB.name,'상대')+' 궁합'));
 
   /* ① 종합 점수 하나를 크게 */
   box.appendChild(el('div',{class:'gauge-label'},['종합 궁합 점수']));
@@ -12035,7 +12071,7 @@ function renderCompatSummary(p, draft){
        (실시간 연결로 두 화면에 동시에 결과가 뜨게 되면서 실제로 보이게 된 자리다.) */
   if(r.res.saju && r.res.saju.elemTerm && /상생/.test(r.res.saju.elemTerm)){
     box.appendChild(el('p',{class:'biz-hint', style:'text-align:center;margin-top:6px;'},[
-      '이 점수는 '+p.name+'님 기준이에요. 사주에서 서로를 북돋는 관계는 방향에 따라 조금 다르게 보기 때문에, 상대방 화면에는 1~2점 다르게 나올 수 있어요.'
+      '이 점수는 '+nameOr(p.name)+'님 기준이에요. 사주에서 서로를 북돋는 관계는 방향에 따라 조금 다르게 보기 때문에, 상대방 화면에는 1~2점 다르게 나올 수 있어요.'
     ]));
   }
 
@@ -12175,7 +12211,7 @@ function renderCompatSajuDetail(p, draft){
     var loveSec = loveReport.sections.filter(function(s){return s.id==='s5';})[0];
     if(loveSec){
       var c4=el('div',{class:'scroll-card'});
-      c4.appendChild(el('h3',{},[p.name+'님의 연애 성향 (사주로 본 결)']));
+      c4.appendChild(el('h3',{},[ownerLabel(p.name)+' 연애 성향 (사주로 본 결)']));
       c4.appendChild(el('div',{html:loveSec.body}));
       box.appendChild(c4);
     }
@@ -12516,10 +12552,10 @@ function buildGroupCompatGraph(members, pairs, onSelect){
     var pt = pos[i];
     var btn = el('button',{type:'button', class:'gc-node',
       style:'left:'+pt.x.toFixed(2)+'%;top:'+pt.y.toFixed(2)+'%;',
-      'aria-pressed':'false', 'aria-label':m.name+'님 기준으로 궁합 보기'});
+      'aria-pressed':'false', 'aria-label':nameOr(m.name,'이 사람')+' 기준으로 궁합 보기'});
     var av = el('div',{class:'gc-avatar'});
     var ck = charKeyForMbti(m.mbti) || charKeyForElementIdx(m.elementIdx);
-    if(ck) av.appendChild(buildCharSvg(ck, 100, {mini:true, label:m.name+'님의 캐릭터'}));
+    if(ck) av.appendChild(buildCharSvg(ck, 100, {mini:true, label:ownerLabel(m.name)+' 캐릭터'}));
     else av.appendChild(el('span',{},[(m.name||'?').trim().slice(0,1) || '?']));
     btn.appendChild(av);
     btn.appendChild(el('div',{class:'gc-label'},[m.name]));
@@ -12705,7 +12741,7 @@ function buildGroupCompatGraph(members, pairs, onSelect){
       var mine = pairs.filter(function(pr){ return pr.ai===sel || pr.bi===sel; }).slice().sort(byScoreDesc);
       var bestOther = mine[0] ? (mine[0].ai===sel ? mine[0].b : mine[0].a) : null;
       var worstOther = mine.length ? (mine[mine.length-1].ai===sel ? mine[mine.length-1].b : mine[mine.length-1].a) : null;
-      desc = members[sel].name+'님을 가운데 두고 나머지 '+(n-1)+'명과의 선만 보이는 그림입니다.';
+      desc = nameOr(members[sel].name,'이 사람')+'을 가운데 두고 나머지 '+(n-1)+'명과의 선만 보이는 그림입니다.';
       if(bestOther) desc += ' 제일 잘 맞는 사람은 '+bestOther.name+'('+mine[0].res.combined+'점 · '+gcPlain(mine[0].res.combinedTier)+')';
       if(worstOther) desc += ', 제일 부딪히는 사람은 '+worstOther.name+'('+mine[mine.length-1].res.combined+'점 · '+gcPlain(mine[mine.length-1].res.combinedTier)+')입니다.';
     } else {
@@ -13312,7 +13348,7 @@ function renderGroupJoin(){
   var me = activeProfile();
   wrap.appendChild(pageHead('그룹 참여', GROUP_JOIN_STATE.name ? ('"'+GROUP_JOIN_STATE.name+'" 그룹에 참여할까요?') : '그룹을 확인하는 중이에요…'));
   wrap.appendChild(el('p',{class:'section-sub'},[
-    me ? (me.name+'님으로 참여해요. 다른 프로필로 하시려면 화면 위에서 프로필을 바꿔주세요.') : ''
+    me ? (nameOr(me.name)+'님으로 참여해요. 다른 프로필로 하시려면 화면 위에서 프로필을 바꿔주세요.') : ''
   ]));
   /* ★ 무엇이 올라가고 누가 볼 수 있는지를 참여 "전에" 보여준다. 누른 뒤에 알리면 늦다. */
   wrap.appendChild(el('p',{class:'warn-box'},[
@@ -13631,7 +13667,7 @@ function renderGroupCompat(){
     var mine = pairs.filter(function(pr){ return pr.ai===idx || pr.bi===idx; }).sort(function(a,b){ return b.res.combined-a.res.combined; });
     if(!mine.length){ focusBox.textContent=''; return; }
     var hi = mine[0], lo = mine[mine.length-1];
-    focusBox.textContent = members[idx].name+'님 기준 — 제일 잘 맞는 사람 '+
+    focusBox.textContent = nameOr(members[idx].name,'이 사람')+' 기준 — 제일 잘 맞는 사람 '+
       (hi.ai===idx?hi.b:hi.a).name+' ('+hi.res.combined+'점 · '+gcPlain(hi.res.combinedTier)+'), 제일 부딪히는 사람 '+
       (lo.ai===idx?lo.b:lo.a).name+' ('+lo.res.combined+'점 · '+gcPlain(lo.res.combinedTier)+')';
   }
@@ -13929,7 +13965,7 @@ function buildRecentRoomsCard(){
   card.appendChild(el('h3',{},['최근에 본 궁합']));
   card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 볼 수 있어요. '+ROOM_TTL_PHRASE+' 동안 열 수 있어요.']));
   list.forEach(function(x){
-    card.appendChild(settingsRow((x.name||'이름 없음')+'님과의 궁합', '다시 보기', function(){ reopenRoom(x.id); }));
+    card.appendChild(settingsRow(personLabel(x.name, '이름 없는 상대')+' 궁합', '다시 보기', function(){ reopenRoom(x.id); }));
   });
   return card;
 }
@@ -14009,7 +14045,7 @@ function startRoomWait(roomId, link, ttlHours){
 function openInviteLinkModal(profile){
   var base = location.href.split('#')[0];
   var fallback = base + '#' + INVITE_VER + '=' + encodeInvite(profile);
-  var autoName = (profile.name || '나') + '님의 궁합';
+  var autoName = (profile.name ? profile.name + '님의 궁합' : '내 궁합');
   var pending = STATE.pendingInviteGroup;
 
   function makeNew(){
@@ -14074,7 +14110,7 @@ function showInviteModal(profile, link, live, ttlHours){
   } else {
     body.appendChild(el('p',{},['이 링크를 열면 '+profile.name+'님과의 궁합 결과가 상대방 화면에 나와요. 상대방이 이 앱을 처음 쓰는 경우에는 자기 프로필을 먼저 만들고, 그다음 결과로 이어져요.']));
     body.appendChild(el('p',{class:'biz-hint'},[
-      '지금은 실시간 연결을 쓸 수 없어 예전 방식으로 만들었어요. 결과는 링크를 연 상대방 화면에만 나오고 '+profile.name+'님 화면은 바뀌지 않아요. 이 링크 주소 안에는 '+profile.name+'님의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 그대로 담기니 궁합을 볼 상대에게만 보내주세요.'
+      '지금은 실시간 연결을 쓸 수 없어 예전 방식으로 만들었어요. 결과는 링크를 연 상대방 화면에만 나오고 '+profile.name+'님 화면은 바뀌지 않아요. 이 링크 주소 안에는 '+ownerLabel(profile.name)+' '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 그대로 담기니 궁합을 볼 상대에게만 보내주세요.'
     ]));
   }
   var box2=el('div',{class:'field'},[ el('input',{type:'text',value:link,readOnly:'readonly', id:'inviteLinkInput'}) ]);
@@ -14593,17 +14629,17 @@ function openShareModal(kind, profile, data){
 function buildShareText(kind, profile, data){
   if(kind==='fortune'){
     var f=data;
-    return '['+COMPANY.serviceName+'] '+profile.name+'님의 오늘의 운세 ('+f.date+')\n'+
+    return '['+COMPANY.serviceName+'] '+ownerLabel(profile.name)+' 오늘의 운세 ('+f.date+')\n'+
       FORTUNE_CATS.map(function(c){ return c.label+': '+f.items[c.key].text; }).join('\n')+
       '\n행운 아이템: '+f.luckyItem+' / 행운 색상: '+f.luckyColor;
   } else if(kind==='report'){
-    return '['+COMPANY.serviceName+'] '+profile.name+'님의 성향 리포트\n성격유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n오행: '+profile.element+' — '+ELEMENT_TRAIT[profile.element];
+    return '['+COMPANY.serviceName+'] '+ownerLabel(profile.name)+' 성향 리포트\n성격유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n오행: '+profile.element+' — '+ELEMENT_TRAIT[profile.element];
   } else if(kind==='saju'){
     var s=data;
-    return '['+COMPANY.serviceName+'] '+profile.name+'님의 사주팔자\n연주 '+s.year.text+'('+s.year.textH+') · 월주 '+s.month.text+'('+s.month.textH+') · 일주 '+s.day.text+'('+s.day.textH+')'+(s.hour?(' · 시주 '+s.hour.text+'('+s.hour.textH+')'):' · 시주 모름');
+    return '['+COMPANY.serviceName+'] '+ownerLabel(profile.name)+' 사주팔자\n연주 '+s.year.text+'('+s.year.textH+') · 월주 '+s.month.text+'('+s.month.textH+') · 일주 '+s.day.text+'('+s.day.textH+')'+(s.hour?(' · 시주 '+s.hour.text+'('+s.hour.textH+')'):' · 시주 모름');
   } else if(kind==='mbtiReport'){
     var rpt=buildMbtiReport16(profile);
-    return '['+COMPANY.serviceName+'] '+profile.name+'님의 성격유형 풀이\n유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n'+rpt.sections[0].body.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+    return '['+COMPANY.serviceName+'] '+ownerLabel(profile.name)+' 성격유형 풀이\n유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n'+rpt.sections[0].body.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
   } else {
     var r=data;
     return '['+COMPANY.serviceName+'] '+profile.name+' × '+r.pB.name+' 궁합 결과\n종합 점수: '+r.res.combined+'점 ('+r.res.combinedTier+')\n사주: '+r.res.saju.elemRel+'\n성격유형: '+r.res.categories.chemistry;
@@ -14690,7 +14726,7 @@ function drawShareCard(canvas, kind, profile, data){
 
   if(kind==='fortune'){
     ctx.font='700 22px '+CARD_SANS; ctx.fillStyle='#231F18';
-    ctx.fillText(profile.name+'님의 오늘의 운세', 50, y); y+=16;
+    ctx.fillText(ownerLabel(profile.name)+' 오늘의 운세', 50, y); y+=16;
     ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#544E40';
     ctx.fillText(data.date, 50, y+18); y+=50;
     FORTUNE_CATS.forEach(function(cat){
@@ -14703,7 +14739,7 @@ function drawShareCard(canvas, kind, profile, data){
     y+=6; ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#584416';
     ctx.fillText('행운 아이템 '+data.luckyItem+' · 행운 색상 '+data.luckyColor, 50, y);
   } else if(kind==='report'){
-    ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+'님의 성향 리포트', 50, y); y+=40;
+    ctx.font='700 22px '+CARD_SANS; ctx.fillText(ownerLabel(profile.name)+' 성향 리포트', 50, y); y+=40;
     ctx.font='700 26px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText(profile.mbti, 50, y); y+=8;
     ctx.font='400 16px '+CARD_SANS; ctx.fillStyle='#231F18'; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=60;
     ctx.font='700 16px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('오행 · '+profile.element, 50, y); y+=26;
@@ -14711,7 +14747,7 @@ function drawShareCard(canvas, kind, profile, data){
     y=wrapCanvasText(ctx, ELEMENT_TRAIT[profile.element], 50, y, w-100, 21);
   } else if(kind==='saju'){
     var s=data.year?data:getSajuResult(profile);
-    ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+'님의 사주팔자', 50, y); y+=44;
+    ctx.font='700 22px '+CARD_SANS; ctx.fillText(ownerLabel(profile.name)+' 사주팔자', 50, y); y+=44;
     var cols = s.hour?['year','month','day','hour']:['year','month','day'];
     var labelMap={year:'연주',month:'월주',day:'일주',hour:'시주'};
     var colW=(w-100)/cols.length;
@@ -14729,7 +14765,7 @@ function drawShareCard(canvas, kind, profile, data){
        ★ 되살릴 때는 이 자리에 wrapCanvasText로 DISCLAIM_SHORT 한 줄을 다시 넣으면 된다. */
   } else if(kind==='mbtiReport'){
     var rpt = buildMbtiReport16(profile);
-    ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+'님의 성격유형 풀이', 50, y); y+=40;
+    ctx.font='700 22px '+CARD_SANS; ctx.fillText(ownerLabel(profile.name)+' 성격유형 풀이', 50, y); y+=40;
     ctx.font='700 30px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText(profile.mbti, 50, y); y+=8;
     ctx.font='400 16px '+CARD_SANS; ctx.fillStyle='#231F18'; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=64;
     ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('오프닝', 50, y); y+=22;
