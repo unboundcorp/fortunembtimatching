@@ -47,10 +47,15 @@ function sseHead(res) {
   res.setHeader('X-Accel-Buffering', 'no');
 }
 
-/* ★ 오래 도는 함수다. 유료 열 섹션이면 1~3분 걸린다.
-   기본 제한(10초)으로 두면 글이 다 써지기 전에 함수가 잘려 손님은 반쪽만 본다.
-   60은 Hobby 요금제의 상한이라 더 크게 적으면 배포가 실패한다. */
-export const config = { maxDuration: 60 };
+/* ★ 오래 도는 함수다. 유료 열세 섹션이면 1~3분 걸린다.
+   기본 제한(10초)으로 두면 글이 다 써지기 전에 함수가 잘린다.
+
+   ★ 60이 아니라 300이다. 처음에 Hobby라고 단정하고 60을 박았는데, 실제로는 Pro였다.
+     그 60 때문에 실제로 두 번 잘렸다 —
+       "Vercel Runtime Timeout Error: Task timed out after 60 seconds"
+     손님은 'HTTP 504'를 봤고, 미완성 글은 저장하지 않으므로 돈만 나가고 남는 게 없었다.
+     요금제를 확인하지 않고 상한을 스스로 좁혀 놓은 것이 원인이다. */
+export const config = { maxDuration: 300 };
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

@@ -32,10 +32,9 @@ import {
 } from './_lib/store.js';
 
 /* 스트리밍이 아니라 다 만들어서 한 번에 준다. 그만큼 함수가 오래 돌아야 한다.
-   ★ 60은 Hobby 요금제의 상한이다. 더 큰 값을 적으면 배포 자체가 실패한다.
-     유료 섹션 열 개를 한 번에 쓰면 60초를 넘길 수 있다 — 그때는 502가 나고 손님은
-     '다시 시도해 주세요'를 본다. 실제로 팔기 전에 Pro로 올려야 하는 이유가 이것이다. */
-export const config = { maxDuration: 60 };
+   ★ 60이 아니라 300이다. 처음에 Hobby라고 단정하고 60을 박았는데 실제로는 Pro였다.
+     흘려보내지 않고 한 번에 주는 쪽이라 스트리밍보다 더 오래 붙들고 있어야 한다. */
+export const config = { maxDuration: 300 };
 
 export default async function handler(req, res) {
   if (!methodGuard(req, res, 'POST')) return;
