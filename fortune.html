@@ -6719,13 +6719,58 @@ function buildCharSvg(key, size, opts){
     src: charImgSrc(key),
     width: String(px), height: String(px),
     alt: opts.label || ((spec ? spec.name : '') + ' 캐릭터'),
-    loading: 'lazy', decoding: 'async',
+    /* ★ R70 — loading:'lazy'를 뗐다(대표님 지적: 탭 누르면 캐릭터가 1~2초 뒤에 뜬다).
+       lazy는 '화면에 나타날 때 비로소 받는' 방식이라 탭을 누른 그 순간부터 내려받기가 시작된다.
+       캐릭터는 16KB짜리 작은 그림이고 대개 화면 안에 있으므로 미룰 이유가 없다.
+       아래 warmCharCache()가 앱을 켤 때 미리 받아 두므로 대부분은 이미 손에 있다. */
+    decoding: 'async', fetchpriority: 'high',
     class: 'char-svg' + (opts.cls ? ' ' + opts.cls : '')
   });
 }
 
 /* 공유 카드(캔버스)용 — 그림이 도착해야 그릴 수 있으므로 받아 두고 알려준다. */
 var CHAR_IMG_CACHE = {};
+/* =====================================================================
+   R70 — 캐릭터를 미리 받아 둔다 (대표님 지적)
+   ---------------------------------------------------------------------
+   "각 탭 누르고 캐릭터가 바로 안 뜨고 1~2초 뒤에 나옴 (맨 처음에만)"
+
+   재 봤더니 앱을 켠 직후에는 캐릭터 파일을 하나도 안 받아 두고 있었다.
+   탭을 누른 그 순간부터 내려받기가 시작되니 그만큼 늦게 뜬다.
+   두 번째부터 빠른 건 브라우저에 남아 있어서다 — "맨 처음에만" 느린 이유가 이것이다.
+   (느린 4G에서 실측: 첫 캐릭터까지 440ms, 파일 하나 받는 데 362ms.
+    실제 폰에서는 지연이 더 크고 여러 장이면 더 늦다.)
+
+   ★ 첫 화면을 그리는 일과 다투지 않게, 한가해진 뒤에 시작한다.
+     캐릭터보다 지금 눈앞의 화면이 먼저다.
+   ★ 21장 전부 합쳐 약 340KB다. 한 번 받아 두면 그 뒤로는 안 받는다.
+   ★ 실패해도 아무 일도 없다. 그때는 예전처럼 그 자리에서 받으면 된다.
+===================================================================== */
+var CHAR_WARMED = false;
+function warmCharCache(){
+  if(CHAR_WARMED) return;
+  CHAR_WARMED = true;
+  var keys = Object.keys(CHARACTERS || {});
+  var i = 0;
+  function next(){
+    if(i >= keys.length) return;
+    var k = keys[i++];
+    var im = new Image();
+    im.decoding = 'async';
+    /* 다 받든 실패하든 다음 것으로 넘어간다. 한 장 때문에 멈추지 않는다. */
+    im.onload = im.onerror = next;
+    im.src = charImgSrc(k);
+    if(!CHAR_IMG_CACHE[k]) CHAR_IMG_CACHE[k] = im;
+  }
+  /* 한 번에 네 개씩만 물린다. 스물한 개를 한꺼번에 요청하면
+     정작 지금 보고 있는 화면이 쓸 것들과 회선을 다툰다. */
+  for(var n = 0; n < 4; n++) next();
+}
+function scheduleCharWarm(){
+  var go = function(){ try{ warmCharCache(); }catch(e){} };
+  if(window.requestIdleCallback) requestIdleCallback(go, {timeout:3000});
+  else setTimeout(go, 1200);
+}
 function charImage(key, onReady){
   var im = CHAR_IMG_CACHE[key];
   if(im) { if(im._ok && onReady) onReady(); return im; }
@@ -14822,6 +14867,10 @@ render();
 try{ history.replaceState({app:1, route:ROUTE}, '', location.pathname + location.search); }catch(e){}
 LAST_ROUTE = ROUTE;
 HISTORY_ON = true;
+
+/* R70 — 첫 화면을 다 그린 뒤, 한가해지면 캐릭터를 미리 받아 둔다.
+   여기(첫 render 뒤)에 두는 것이 중요하다. 더 앞에 두면 지금 그리는 화면과 회선을 다툰다. */
+scheduleCharWarm();
 
 /* 서버가 붙어 있으면 권한을 서버에 다시 물어보고, 받은 값으로 화면을 다시 그린다.
    결제창에서 ?receipt=... 를 달고 돌아온 경우에는 영수증 검증을 먼저 통과시킨다.
