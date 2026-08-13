@@ -4563,7 +4563,9 @@ function buildPurchasePanel(){
   var memos = receiptMemos();
   if(memos.length){
     card.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;color:var(--gold);'},[
-      '이 브라우저에 기록된 영수증 번호 — 다른 곳에도 적어 두세요. 브라우저 데이터를 지우면 이 목록도 함께 사라집니다.'
+      /* ★ R83 — '다른 곳에도 적어 두세요'라는 당부를 뺐다 (대표님 지시).
+         숙제를 얹는 말이었다. 무엇에 쓰는 번호인지만 담담히 적는다. */
+      '이 브라우저에 기록된 영수증 번호예요. 기기를 바꾸셨을 때 이 번호로 이용권을 되살릴 수 있어요.'
     ]));
     memos.forEach(function(mm){
       var row = el('div',{class:'biz-row'});
@@ -4627,20 +4629,15 @@ function openReceiptSavedModal(receiptId, opts){
     ]));
   }
 
-  var receiptBox = el('div',{});
-  var codeBox = el('div',{class:'receipt-code'});
-  codeBox.appendChild(el('code',{},[String(receiptId)]));
-  receiptBox.appendChild(codeBox);
-  receiptBox.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;',
-    onclick:function(){ copyText(String(receiptId)); }},['번호 복사']));
-  receiptBox.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
-    '기기를 바꾸거나 브라우저 기록을 지우셨을 때, 설정 → 이용권 → "구매 내역 복원"에서 이 번호로 되살릴 수 있어요.'
+  /* ★ R83 — 영수증 번호를 결제 완료 창에서 아예 뺐다 (대표님 지시).
+     접어 두는 것으로도 부족했다. 결제를 막 마친 사람에게 번호는 아무 의미가 없고,
+     보이는 순간 "이걸 어떻게 해야 하나" 하는 숙제가 된다.
+     번호는 설정 → 이용권에 그대로 남아 있고, 되찾을 일이 생겼을 때 거기서 보면 된다.
+     ★ 기능을 없앤 게 아니다 — 약관 제7조가 '영수증 번호로 복원할 수 있다'고 약속하고 있고,
+       환불할 때 어느 주문인지 찾는 열쇠도 이 번호다. 자리만 뒤로 옮겼다. */
+  body.appendChild(el('p',{class:'biz-hint', style:'margin-top:14px;'},[
+    '영수증 번호는 설정 → 이용권에서 언제든 보실 수 있어요.'
   ]));
-  body.appendChild(buildFoldPanel({
-    label:'영수증 번호 보기', openLabel:'영수증 번호 접기',
-    regionLabel:'영수증 번호', btnStyle:'margin-top:14px;',
-    children:[receiptBox]
-  }).wrap);
 
   /* 이 모달은 결제 성공 콜백에서 저절로 뜨므로 "열기 전에 눌렀던 버튼"이 없다.
      복귀 지점을 본문 영역으로 명시해, 닫았을 때 포커스가 <body>로 떨어지지 않게 한다. */
