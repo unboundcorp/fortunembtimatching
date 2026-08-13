@@ -24,7 +24,7 @@
 ===================================================================== */
 import { getOrder } from './_lib/store.js';
 import { productOf } from './_lib/products.js';
-import { COMPANY, isTossTestKey } from './_lib/company.js';
+import { COMPANY, isTossTestKey, tossKeyKind } from './_lib/company.js';
 
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -142,6 +142,16 @@ export default async function handler(req, res) {
   /* ★ 테스트 키면 그 사실을 맨 위에 크게 알린다 (외부 실사 지적).
      이 안내가 없으면 손님은 토스 결제창에 들어가서야 테스트인 걸 알게 되고,
      그 전까지 카드번호와 주민등록번호를 진짜 결제인 줄 알고 입력한다. */
+  /* ★ 키 종류에 따라 화면이 갈린다 (R78).
+     결제위젯 키(test_gck_…)면 카카오페이·토스페이가 펼쳐지는 위젯을,
+     API 개별 키(test_ck_…)면 예전처럼 카드 결제창을 연다.
+     어느 키가 들어와도 결제는 된다 — 위젯 키로 바꾸시면 그 순간부터 저절로 위젯이 뜬다. */
+  const useWidget = tossKeyKind() === 'widget';
+  const methodSlots = useWidget
+    ? `<div id="payment-method"><p class="loading">결제 수단을 불러오는 중이에요…</p></div>
+       <div id="agreement"></div>`
+    : '<div id="payment-method"></div>';
+
   const testBar = isTossTestKey()
     ? `<div class="testbar"><b>테스트 결제입니다 — 실제로 결제되지 않습니다</b>
        실제 카드로는 결제가 되지 않습니다. <u>카드번호나 주민등록번호를 넣지 마세요.</u>
@@ -160,8 +170,7 @@ export default async function handler(req, res) {
       <p class="sub">결제가 끝나면 앱으로 자동으로 돌아옵니다.</p>
       <div class="row"><span>상품</span><span>${esc(product.name)}</span></div>
       <div class="row"><span>결제 금액</span><span class="v">${amount.toLocaleString('ko-KR')}원</span></div>
-      <div id="payment-method"><p class="loading">결제 수단을 불러오는 중이에요…</p></div>
-      <div id="agreement"></div>
+      ${methodSlots}
 
       <button id="payBtn" disabled>${amount.toLocaleString('ko-KR')}원 결제하기</button>
       <button class="ghost" onclick="location.href='/fortune.html'">취소하고 돌아가기</button>
@@ -173,49 +182,79 @@ export default async function handler(req, res) {
           var btn = document.getElementById('payBtn');
           var errBox = document.getElementById('err');
           var slot = document.getElementById('payment-method');
+          var USE_WIDGET = ${useWidget};
           function showErr(m){ errBox.textContent = m; errBox.hidden = false; }
+          function clearSlot(){ if(slot) slot.innerHTML = ''; }
 
-          var widgets;
-          try{
-            /* 로그인이 없는 앱이라 비회원 결제로 연다. */
-            widgets = TossPayments(${JSON.stringify(clientKey)})
-              .widgets({ customerKey: TossPayments.ANONYMOUS });
-          }catch(e){
-            slot.innerHTML = '';
-            showErr('결제 모듈을 불러오지 못했어요. 새로고침해 주세요.');
-            return;
+          var tp;
+          try{ tp = TossPayments(${JSON.stringify(clientKey)}); }
+          catch(e){ clearSlot(); showErr('결제 모듈을 불러오지 못했어요. 새로고침해 주세요.'); return; }
+
+          var COMMON = {
+            orderId: ${JSON.stringify(orderId)},
+            orderName: ${JSON.stringify(product.name)},
+            successUrl: window.location.origin + '/api/confirm',
+            failUrl: window.location.origin + '/api/payfail'
+          };
+          function onPayError(err){
+            btn.disabled = false;
+            /* 사용자가 창을 닫은 경우도 여기로 온다 — 그건 오류가 아니므로 조용히 되돌린다. */
+            if(err && (err.code === 'USER_CANCEL' || err.code === 'PAY_PROCESS_CANCELED')) return;
+            showErr((err && err.message) || '결제를 시작하지 못했어요.');
           }
 
-          /* ★ 금액을 먼저 정하고 나서 결제수단을 그린다. 순서가 바뀌면 위젯이 뜨지 않는다. */
-          Promise.resolve(widgets.setAmount({ currency: 'KRW', value: ${amount} }))
-            .then(function(){
-              return Promise.all([
-                widgets.renderPaymentMethods({ selector: '#payment-method' }),
-                /* 약관 동의 위젯은 없어도 결제는 된다. 실패해도 전체를 막지 않는다. */
-                Promise.resolve(widgets.renderAgreement({ selector: '#agreement' }))
-                  .catch(function(){ return null; })
-              ]);
-            })
-            .then(function(){ btn.disabled = false; })
-            .catch(function(e){
-              slot.innerHTML = '';
-              showErr('결제 수단을 불러오지 못했어요. 새로고침해 주세요.');
-            });
+          /* ── 결제창(카드) — API 개별 연동 키일 때 ─────────────────────── */
+          function startWindowMode(){
+            USE_WIDGET = false;
+            clearSlot();
+            var payment;
+            try{
+              /* 로그인이 없는 앱이라 비회원 결제로 연다. */
+              payment = tp.payment({ customerKey: TossPayments.ANONYMOUS });
+            }catch(e){ showErr('결제 모듈을 불러오지 못했어요. 새로고침해 주세요.'); return; }
+            btn.disabled = false;
+            btn._go = function(){
+              var req = Object.assign({
+                method: 'CARD',
+                amount: { currency: 'KRW', value: ${amount} },
+                card: { useEscrow:false, flowMode:'DEFAULT', useCardPoint:false, useAppCardOnly:false }
+              }, COMMON);
+              Promise.resolve(payment.requestPayment(req)).catch(onPayError);
+            };
+          }
+
+          /* ── 결제위젯 — 결제위젯 연동 키일 때 ─────────────────────────── */
+          function startWidgetMode(){
+            var widgets;
+            try{ widgets = tp.widgets({ customerKey: TossPayments.ANONYMOUS }); }
+            catch(e){
+              /* ★ 위젯용이 아닌 키면 여기서 걸린다(NOT_SUPPORTED_API_INDIVIDUAL_KEY).
+                 그때는 조용히 카드 결제창으로 내려간다 — 손님에게는 결제가 되는 게 먼저다. */
+              startWindowMode(); return;
+            }
+            /* ★ 금액을 먼저 정하고 나서 결제수단을 그린다. 순서가 바뀌면 위젯이 뜨지 않는다. */
+            Promise.resolve(widgets.setAmount({ currency:'KRW', value: ${amount} }))
+              .then(function(){
+                return Promise.all([
+                  widgets.renderPaymentMethods({ selector:'#payment-method' }),
+                  /* 약관 동의 위젯은 없어도 결제는 된다. 실패해도 전체를 막지 않는다. */
+                  Promise.resolve(widgets.renderAgreement({ selector:'#agreement' })).catch(function(){ return null; })
+                ]);
+              })
+              .then(function(){
+                btn.disabled = false;
+                btn._go = function(){ Promise.resolve(widgets.requestPayment(COMMON)).catch(onPayError); };
+              })
+              .catch(function(){ startWindowMode(); });
+          }
 
           btn.addEventListener('click', function(){
+            if(!btn._go) return;
             btn.disabled = true; errBox.hidden = true;
-            Promise.resolve(widgets.requestPayment({
-              orderId: ${JSON.stringify(orderId)},
-              orderName: ${JSON.stringify(product.name)},
-              successUrl: window.location.origin + '/api/confirm',
-              failUrl: window.location.origin + '/api/payfail'
-            })).catch(function(err){
-              btn.disabled = false;
-              /* 사용자가 창을 닫은 경우도 여기로 온다 — 그건 오류가 아니므로 조용히 되돌린다. */
-              if(err && (err.code === 'USER_CANCEL' || err.code === 'PAY_PROCESS_CANCELED')) return;
-              showErr((err && err.message) || '결제를 시작하지 못했어요.');
-            });
+            btn._go();
           });
+
+          if(USE_WIDGET) startWidgetMode(); else startWindowMode();
         })();
       </script>`,
   }));
