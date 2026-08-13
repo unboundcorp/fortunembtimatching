@@ -1378,10 +1378,13 @@ function paymentMethodsText(){ return paymentMethodsMissing() ? '확인 중' : P
    (설정 화면 저장본은 localStorage에 있어 개발자도구 한 줄이면 지워진다 —
     그것을 권한의 근거로 삼으면 "서버 권위"라는 말 자체가 성립하지 않는다.) */
 var BILLING_SOURCE = {
-  entitlementEndpoint: null,
-  contentEndpoint:     null,
-  verifyEndpoint:      null,
-  checkoutEndpoint:    null
+  /* ★ R69 — 우리 서버 함수를 가리킨다. 같은 도메인 안의 경로라 https 여부가 페이지와 같고,
+     세션 쿠키도 그대로 따라간다(다른 도메인이면 쿠키가 안 붙어 권한 조회가 매번 빈손이 된다).
+     이 네 칸이 다 차야 결제 버튼이 열린다 — 하나라도 비면 '연동 미완료'로 잠긴다. */
+  entitlementEndpoint: '/api/entitlements',
+  contentEndpoint:     '/api/content',
+  verifyEndpoint:      '/api/verify',
+  checkoutEndpoint:    '/api/checkout'
 };
 /* 외부 요청 주소 검증 — 개인정보처리방침 §6에 "https만 허용한다"고 적었으므로 코드도 그래야 한다.
    평문 http를 통과시키면 사주 데이터가 중간에서 그대로 읽히고, 무엇보다 화면에 적힌 말이 거짓이 된다.
@@ -5867,8 +5870,17 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     });
   }
 
+  /* ★ R69 — 목차 제목을 payload에 '먼저' 담는다.
+     예전에는 아래 스트리밍 구간에서 담았는데, 그때는 loadPaidBody가 이미 떠난 뒤라
+     유료 본문 요청에는 제목이 빠져 나갔다. 제목 없이 만들면 AI가 이름을 새로 지어
+     목차와 본문이 서로 다른 이름을 갖는다 — 목차를 눌러도 그 자리로 안 간다. */
+  var titles = baseSections.map(function(x){ return x.title; });
+  try{ payload.requested = payload.requested || {}; payload.requested.sectionTitles = titles; }catch(e){}
+
   paint();
-  if(paidNeeded) loadPaidBody();
+  /* ★ 스트리밍이 돌 참이면 유료 본문을 따로 부르지 않는다. 같은 글을 두 번 만들면
+     돈도 두 번 나간다. 스트리밍이 실패하면 그때 이쪽으로 넘어온다(아래 catch). */
+  if(paidNeeded && !willAsk) loadPaidBody();
 
   if(!Interpreter.isApiReady()) return;
   /* ★ 잠긴 사람에게는 AI 해석을 부르지 않는다.
@@ -5887,9 +5899,6 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
      ★ 글자가 올 때마다 다시 그리면 화면이 떨린다. 0.4초에 한 번만 그린다.
      ★ 실패하면 원래 풀이로 되돌린다. 반쯤 쓰다 만 글을 남겨 두면 그게 결과인 줄 안다.
   ===================================================================== */
-  var titles = baseSections.map(function(x){ return x.title; });
-  try{ payload.requested = payload.requested || {}; payload.requested.sectionTitles = titles; }catch(e){}
-
   var lastPaint = 0, pendingPaint = null;
   function applyText(text, force){
     var secs = Interpreter.parseSections(text, titles);
@@ -5927,6 +5936,9 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
       state.loading = false;
       state.error = (err && err.message) || '해석 서버 호출에 실패했습니다.';
       paint();
+      /* ★ R69 — 스트리밍이 죽었다고 결제한 사람을 빈 화면에 두지 않는다.
+         유료 본문 주소로 한 번 더 시도한다. 여기가 그 주소가 실제로 쓰이는 자리다. */
+      if(paidNeeded) loadPaidBody();
     });
 }
 /* 유료 구간의 본문만 비운다(제목·아이콘은 목차와 잠금 카드에 필요하므로 남긴다). */

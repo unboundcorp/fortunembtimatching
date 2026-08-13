@@ -19,83 +19,19 @@
      결제한 사람을 3분 동안 빈 화면 앞에 두면 그건 고장으로 보인다.
      써지는 대로 흘려보내면 3초 만에 첫 문장이 뜨고, 읽는 동안 나머지가 채워진다.
 ===================================================================== */
-import crypto from 'node:crypto';
 import { readBody, json } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
 import { productOf, aiQuotaOf } from './_lib/products.js';
-import { buildEntitlements } from './_lib/entitlements.js';
 import { KNOWLEDGE, KNOWLEDGE_CHARS } from './_lib/knowledge.js';
+/* ★ 프롬프트·캐시 열쇠·권한은 api/content.js 와 함께 쓴다. 복사해 두면 언젠가 둘이 달라진다. */
+import {
+  MODEL, MAX_TOKENS, ANTHROPIC_URL, AI_PRODUCTS,
+  userPrompt, cacheKeyOf, hasAiAccess, systemFor,
+} from './_lib/aiprompt.js';
 import {
   paidOrdersOf, testAccessOf,
   getAiCache, putAiCache, aiUsedCount, aiAlreadyUsed, noteAiUse, sweepAiOld,
 } from './_lib/store.js';
-
-const MODEL = 'claude-sonnet-5';
-const MAX_TOKENS = 12000;
-const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-
-/* AI가 쓸 수 있는 상품만. 없는 상품 이름을 보내 요금을 쓰게 만들 수 없다. */
-const AI_PRODUCTS = { saju_full: 'saju', mbti_full: 'mbti', compat_full: 'compat' };
-
-/* =====================================================================
-   시스템 프롬프트
-   ---------------------------------------------------------------------
-   ★ 여기 적는 규칙이 곧 상품의 품질이다. 특히 아래 두 가지는 반드시 지켜져야 한다.
-     · 주어진 값을 바꾸지 말 것 — 앱 화면에 표시된 사주와 풀이가 어긋나면 손님이 즉시 알아챈다.
-     · 의료·법률·투자 조언으로 읽힐 말을 쓰지 말 것 — 약관에 "오락 및 참고 목적"이라 적어 두었다.
-       그 말과 실제 내용이 어긋나면 고지가 무의미해진다.
-===================================================================== */
-const SYSTEM = `당신은 한국 사주명리와 MBTI를 함께 읽는 상담가입니다. 주어진 계산 결과를 바탕으로 그 사람에게만 해당하는 풀이를 씁니다.
-앞서 주어진 해석 지식 문서를 따르세요. 그 문서에 없는 개념(신살·공망·격국 등)은 언급하지 마세요.
-지식 문서 8.3절(도구의 한계)은 문장을 얼마나 단정적으로 쓸지 정하는 기준입니다. 그 내용을 풀이 본문에 옮겨 적지 마세요 — 읽는 사람에게 "이 도구는 못 믿을 만하다"고 말하지 않습니다.
-
-[절대 규칙]
-1. 주어진 사주 여덟 글자·오행 개수·십성·대운 값을 절대 바꾸거나 새로 계산하지 마세요. 이미 확정된 값입니다. 주어지지 않은 간지나 신살을 지어내지 마세요.
-2. 태어난 시각이 없으면(hour가 null) 시주는 없는 것입니다. 시주를 언급하지 말고, 여섯 글자로만 읽으세요.
-3. 의료·법률·투자 조언으로 읽힐 문장을 쓰지 마세요. "병원에 가라", "이 주식을 사라", "이혼하라" 같은 지시는 금지입니다. 생활 태도 수준에서 멈추세요.
-4. 단정하지 마세요. "반드시 그렇다"가 아니라 "그런 경향이 있다"로 씁니다. 죽음·중병·사고를 예언하지 마세요.
-5. 사실이 아닌 것을 사실처럼 쓰지 마세요. 모르면 쓰지 않습니다.
-
-[문체]
-- 따뜻한 반말체("~야", "~해"). 다정하되 가볍지 않게.
-- 한 섹션은 3~5문단, 각 문단 2~4문장.
-- 명리 용어를 쓸 때는 괄호로 짧게 풀어 주세요. 예: 편관(나를 밀어붙이는 기운)
-- 상투적인 운세 문구("대박이 날 거야")를 피하고, 주어진 값에서 실제로 읽히는 것만 쓰세요.
-
-[출력 형식]
-각 섹션을 아래 형식으로 순서대로 씁니다. 이 형식을 정확히 지키세요.
-
-##제목
-본문
-
-- "##"은 반드시 줄 맨 앞에 오고, 그 줄에는 제목만 씁니다.
-- 요청받은 섹션 제목을 그대로 쓰고, 순서를 바꾸거나 빼먹지 마세요.
-- 머리말·맺음말·설명을 덧붙이지 마세요. 첫 글자는 "##"으로 시작합니다.`;
-
-function userPrompt(payload) {
-  const sections = Array.isArray(payload?.requested?.sectionTitles) ? payload.requested.sectionTitles : [];
-  const list = sections.length
-    ? sections.map((t, i) => `${i + 1}. ${t}`).join('\n')
-    : '(섹션 제목이 전달되지 않았습니다. 아래 계산 결과를 바탕으로 자유롭게 나누어 쓰세요.)';
-  return `아래는 앱이 계산해 둔 결과입니다. 이 값만 사용하세요.
-
-${JSON.stringify(payload, null, 2)}
-
-아래 섹션을 이 순서 그대로, 빠짐없이 써 주세요.
-
-${list}`;
-}
-
-/* 캐시 열쇠는 서버가 만든다.
-   ★ 브라우저가 보낸 열쇠를 믿으면, 매번 다른 열쇠를 보내 캐시를 피하고 횟수를 무한히 쓸 수 있다.
-     그래서 payload 자체에서 뽑는다. 같은 사람·같은 상품이면 반드시 같은 값이 나온다. */
-function cacheKeyOf(productId, payload) {
-  const stable = JSON.stringify(payload, Object.keys(payload || {}).sort());
-  return crypto.createHash('sha256')
-    .update(`${MODEL}|${productId}|${stable}`)
-    .digest('base64url')
-    .slice(0, 43);
-}
 
 /* SSE 한 줄. 앱은 이걸 받아 화면에 바로 얹는다. */
 function send(res, obj) {
@@ -110,6 +46,11 @@ function sseHead(res) {
   /* Vercel이 중간에서 모아 두었다가 한꺼번에 보내면 스트리밍이 의미가 없어진다. */
   res.setHeader('X-Accel-Buffering', 'no');
 }
+
+/* ★ 오래 도는 함수다. 유료 열 섹션이면 1~3분 걸린다.
+   기본 제한(10초)으로 두면 글이 다 써지기 전에 함수가 잘려 손님은 반쪽만 본다.
+   60은 Hobby 요금제의 상한이라 더 크게 적으면 배포가 실패한다. */
+export const config = { maxDuration: 60 };
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -192,16 +133,7 @@ export default async function handler(req, res) {
         model: MODEL,
         max_tokens: MAX_TOKENS,
         stream: true,
-        /* ★ 지식 문서를 시스템 프롬프트 앞에 둔다.
-           앞에 두고 cache_control을 걸면 그 부분이 캐시된다 — 같은 지식을 매번
-           새로 읽히면 그만큼 돈이 나간다. 캐시에서 읽으면 입력값의 10분의 1이다.
-           (지식이 없으면 그 블록 자체를 넣지 않는다.) */
-        system: KNOWLEDGE
-          ? [
-              { type: 'text', text: KNOWLEDGE, cache_control: { type: 'ephemeral' } },
-              { type: 'text', text: SYSTEM },
-            ]
-          : SYSTEM,
+        system: systemFor(KNOWLEDGE),
         messages: [{ role: 'user', content: userPrompt(payload) }],
       }),
     });
@@ -272,18 +204,4 @@ export default async function handler(req, res) {
     }
     return json(res, 500, { error: 'server_error', reason: '지금은 해석을 만들 수 없어요.' });
   }
-}
-
-/* 결제했거나 테스트 허가를 받았는가.
-   ★ 이용권으로 열렸는지(viaPass)를 함께 돌려준다 — 횟수 상한이 다르기 때문이다. */
-async function hasAiAccess(sessionId, productId) {
-  const test = await testAccessOf(sessionId);
-  if (test) return { ok: true, viaPass: true, test: true };
-
-  const orders = await paidOrdersOf(sessionId);
-  const ent = buildEntitlements(orders);
-  if (ent.pass && ent.pass.expiresAt > Date.now()) return { ok: true, viaPass: true };
-  if (ent.items[productId]) return { ok: true, viaPass: false };
-
-  return { ok: false, reason: '이 해석은 결제하신 뒤에 보실 수 있어요.' };
 }
