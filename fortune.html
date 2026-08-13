@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>연 · 사주 × 성격유형 궁합</title>
+<title>인연점 · 사주 × 성격유형 궁합</title>
 <!-- 파비콘 — 외부 파일을 부르지 않고 SVG를 주소 안에 담는다(요청 0건 원칙 유지).
      인장 모티프의 緣 한 글자. 없으면 브라우저가 /favicon.ico 를 찾다가 404를 낸다. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%23FFF7F9'/%3E%3Cpath d='M24 39C24 39 7.5 29.3 7.5 18.6c0-5.1 3.9-8.8 8.5-8.8 3.2 0 6 1.8 8 4.7 2-2.9 4.8-4.7 8-4.7 4.6 0 8.5 3.7 8.5 8.8 0 4-2.3 7.7-5.1 10.8' stroke='%23F76391' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M17 23l5 5 10-10' stroke='%23F76391' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -883,10 +883,6 @@ main{flex:1;padding:28px 20px 96px;}
   display:flex;align-items:center;justify-content:center;flex:none;}
 .brand-top-name{font-family:var(--sans);font-size:1.18rem;font-weight:800;letter-spacing:-.03em;color:var(--gold);}
 
-/* R80 — 로고 옆 한자. 이름은 '연'이고 緣은 곁들이는 글자다.
-   작고 흐리게 두어 읽는 흐름을 끊지 않는다. 화면 낭독기는 읽지 않는다(aria-hidden). */
-.brand-han{font-style:normal;font-size:.62em;font-weight:600;opacity:.5;margin-left:2px;letter-spacing:0;}
-
 /* R79 — 프로필 만들기에서 카드 안에 바로 두는 선택칸 (시트를 열지 않는다) */
 .inline-pick{padding:12px 0;border-top:1px solid var(--line);}
 .inline-pick-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;}
@@ -1149,7 +1145,7 @@ main{flex:1;padding:28px 20px 96px;}
          키보드로도 닿고 화면 낭독기도 "버튼"이라고 읽는다. -->
     <button class="brand" id="brandHome" type="button" aria-label="홈으로">
       <div class="brand-seal" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M24 40.5C24 40.5 6.5 30.2 6.5 18.8c0-5.4 4.2-9.3 9-9.3 3.4 0 6.4 1.9 8.5 5 2.1-3.1 5.1-5 8.5-5 4.8 0 9 3.9 9 9.3 0 4.2-2.4 8.2-5.4 11.5" stroke="var(--brand)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 23.5 22 29l10.5-10.5" stroke="var(--brand)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M40.5 6.5c.4 2.1.9 2.6 3 3-2.1.4-2.6.9-3 3-.4-2.1-.9-2.6-3-3 2.1-.4 2.6-.9 3-3Z" fill="var(--brand)"/></svg></div>
-      <span class="brand-name">연<i class="brand-han" aria-hidden="true">緣</i></span>
+      <span class="brand-name">인연점</span>
     </button>
     <div class="profile-switch" id="profileSwitch"></div>
   </header>
@@ -1215,10 +1211,12 @@ main{flex:1;padding:28px 20px 96px;}
    (가격을 formatWon(PRODUCTS[...].price) 한 곳으로 모은 것과 같은 원칙)
 ===================================================================== */
 var COMPANY = {
-  /* ★ R80 — '케미체크'에서 '연(緣)'으로 (대표님 지시).
-     화면 글에는 '연'만 쓴다. 한자 緣은 머리말 로고에서만 곁들인다 —
-     문장 안에서 '연緣의 캐릭터는' 처럼 읽히면 오히려 걸린다. */
-  serviceName:  '연',
+  /* ★ R81 — 처음 이름인 '인연점'으로 돌아왔다 (대표님 지시).
+     '케미체크' → '연(緣)' → '인연점'. 이 앱의 저장소 열쇠가 처음부터
+     inyeonjeom.v2 였으니 오히려 앞뒤가 맞는다.
+     ★ 이름을 바꿀 일이 또 생기면 이 한 줄만 고치면 된다 —
+       화면에 나가는 스무 곳이 전부 이 값을 보고 있다. */
+  serviceName:  '인연점',
   legalName:    '주식회사 언바운드',
   legalNameEn:  'Unbound',
   ceo:          '박정인',
