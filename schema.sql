@@ -148,3 +148,19 @@ alter table ai_cache        enable row level security;
 alter table ai_usage        enable row level security;
 alter table test_grants     enable row level security;
 alter table unlock_attempts enable row level security;
+
+-- =====================================================================
+-- 카카오 연결 (R72) — 기기를 바꿔도 산 것을 되찾기 위한 유일한 목적
+-- ★ 담는 것은 '카카오 회원번호' 하나뿐이다. 이름·이메일·전화번호는 받지 않는다.
+--   이 번호는 우리 앱 전용이라 그 값만으로는 누구인지 알 수 없다.
+-- =====================================================================
+create table if not exists kakao_links (
+  kakao_id   text primary key,
+  session_id text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists kakao_session_idx on kakao_links (session_id);
+
+alter table kakao_links enable row level security;
+-- 정책을 하나도 만들지 않는다 = service_role(서버)만 읽고 쓸 수 있다.

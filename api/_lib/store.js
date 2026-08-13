@@ -27,6 +27,17 @@
      tried_at   timestamptz not null default now()
    );
    create index if not exists restore_session_idx on restore_attempts (session_id, tried_at desc);
+
+   -- 카카오 연결 (R72) — 기기를 바꿔도 산 것을 되찾기 위한 유일한 목적
+   -- ★ 담는 것은 '카카오 회원번호' 하나뿐이다. 이름·이메일·전화번호는 받지 않는다.
+   --   이 번호는 우리 앱 전용이라 그 값만으로는 누구인지 알 수 없다.
+   create table if not exists kakao_links (
+     kakao_id   text primary key,           -- 카카오 회원번호 (우리 앱 전용 식별자)
+     session_id text not null,              -- 지금 이 사람의 세션
+     created_at timestamptz not null default now(),
+     updated_at timestamptz not null default now()
+   );
+   create index if not exists kakao_session_idx on kakao_links (session_id);
    ────────────────────────────────────────────────────────────────────────
 ===================================================================== */
 
@@ -288,4 +299,68 @@ export async function sweepAiOld() {
       console.warn('오래된 AI 기록 정리 실패(무시하고 계속):', path.split('?')[0], err?.message);
     }
   }
+}
+
+/* =====================================================================
+   카카오 연결 (R72)
+   ---------------------------------------------------------------------
+   왜 만드나: 지금은 쿠키가 곧 지갑이라, 기기를 바꾸거나 브라우저 기록을 지우면
+   산 것을 잃는다. 되찾는 열쇠가 영수증 번호뿐인데 그걸 적어두는 사람은 많지 않다.
+
+   ★ 담는 것은 카카오 회원번호 하나뿐이다. 이름·이메일·전화번호는 받지 않는다.
+     그 번호는 우리 앱에만 쓰이는 값이라, 그것만으로는 누구인지 알 수 없다.
+     전화번호를 받는 쪽보다 훨씬 가벼운 정보다.
+
+   ★ 로그인은 '결제한 분이 원할 때'만 건다. 궁합 링크로 들어오는 분은 이 경로를 밟지 않는다.
+     "회원가입 없이"라는 이 서비스의 약속은 그대로 지켜져야 한다.
+===================================================================== */
+export async function getKakaoLink(kakaoId) {
+  const rows = await rest(
+    `kakao_links?kakao_id=eq.${encodeURIComponent(kakaoId)}&select=*&limit=1`
+  );
+  return rows && rows[0] ? rows[0] : null;
+}
+
+export async function linkKakaoSession(kakaoId, sessionId) {
+  /* 있으면 갱신, 없으면 넣는다. 카카오 회원번호가 기본키라 충돌하면 갱신으로 처리된다. */
+  return rest('kakao_links?on_conflict=kakao_id', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({
+      kakao_id: String(kakaoId),
+      session_id: sessionId,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+}
+
+export async function kakaoLinkOfSession(sessionId) {
+  const rows = await rest(
+    `kakao_links?session_id=eq.${encodeURIComponent(sessionId)}&select=kakao_id,created_at&limit=1`
+  );
+  return rows && rows[0] ? rows[0] : null;
+}
+
+/* 연결 끊기 — 카카오 회원번호를 지운다.
+   ★ 주문 기록은 지우지 않는다. 전자상거래법이 대금 결제 기록을 5년 보관하라고 정하고 있어
+     지울 수 없다. 다만 그 기록에 카카오 회원번호는 애초에 들어 있지 않다. */
+export async function unlinkKakao(sessionId) {
+  return rest(`kakao_links?session_id=eq.${encodeURIComponent(sessionId)}`, { method: 'DELETE' });
+}
+
+/* 다른 기기에서 로그인했을 때 — 예전 세션에 붙어 있던 구매를 지금 세션으로 옮긴다.
+   ★ 영수증 복원(rebindOrder)과 같은 방식이다. 한 구매는 한 세션에만 붙는다.
+     옮기면 이전 기기에서는 떨어진다 — 계정을 돌려 쓰는 것을 막기 위해서다.
+   ★ 옮길 게 없으면(처음 연결) 아무 일도 하지 않는다. */
+export async function moveOrdersToSession(fromSessionId, toSessionId) {
+  if (!fromSessionId || fromSessionId === toSessionId) return 0;
+  const rows = await rest(
+    `orders?session_id=eq.${encodeURIComponent(fromSessionId)}&status=eq.paid`,
+    {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ session_id: toSessionId }),
+    }
+  );
+  return rows ? rows.length : 0;
 }
