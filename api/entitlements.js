@@ -10,8 +10,9 @@
 ===================================================================== */
 import { json, methodGuard } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { paidOrdersOf } from './_lib/store.js';
+import { paidOrdersOf, testAccessOf } from './_lib/store.js';
 import { buildEntitlements } from './_lib/entitlements.js';
+import { productOf } from './_lib/products.js';
 
 export default async function handler(req, res) {
   if (!methodGuard(req, res, 'POST')) return;
@@ -19,7 +20,36 @@ export default async function handler(req, res) {
   try {
     const sessionId = ensureSession(req, res);
     const orders = await paidOrdersOf(sessionId);
-    json(res, 200, buildEntitlements(orders));
+    const ent = buildEntitlements(orders);
+
+    /* =====================================================================
+       ★ R73 — 테스트 허가도 여기서 함께 내려준다.
+       ---------------------------------------------------------------------
+       예전에는 #unlock 으로 허가를 받으면 화면 쪽 잠금을 브라우저가 직접 열었다
+       (grantAllForTest). 그때는 BILLING_SOURCE가 비어 있어 권한이 브라우저에 있었기 때문이다.
+
+       그런데 결제를 열면서 서버 권위 모드가 됐다. 이제 앱은 잠금 판정에 이 응답만 쓴다.
+       그래서 허가를 받아도 화면은 잠긴 채였다 — 서버는 열어주는데 화면이 안 열리니,
+       유료 기능을 확인할 방법이 사라졌다(실측으로 잡음).
+
+       허가는 이용권(pass)과 같은 모양으로 내려준다. api/interpret.js·content.js의
+       권한 판정(hasAiAccess)도 테스트 허가를 이용권으로 취급하므로 앞뒤가 맞는다.
+       ★ 이 허가는 TEST_UNLOCK_CODE를 아는 사람만 받을 수 있다(api/testunlock.js).
+    ===================================================================== */
+    const test = await testAccessOf(sessionId);
+    if (test) {
+      const until = test.expires_at ? new Date(test.expires_at).getTime() : Date.now() + 86400000;
+      if (!ent.pass || until > ent.pass.expiresAt) {
+        const pass = productOf('premium_pass');
+        ent.pass = {
+          productId: pass ? pass.id : 'premium_pass',
+          purchasedAt: Date.now(),
+          expiresAt: until,
+        };
+      }
+    }
+
+    json(res, 200, ent);
   } catch (err) {
     console.error('entitlements 실패:', err?.message);
     /* 500을 준다 — 앱은 이걸 받으면 잠근다. 빈 200을 주면 "정상적으로 아무것도 없음"과
