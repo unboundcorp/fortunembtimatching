@@ -9784,10 +9784,16 @@ function startSetupWizard(editProfile){
     hour: bt? bt.hour : 12,
     minute: bt? (bt.minute||0) : 0,
     gender: editProfile? (editProfile.gender||'F') : 'F',
-    /* R20 — 출생지·진태양시 보정. 새 프로필은 기본으로 켠다(계산이 더 맞기 때문).
-       기존 프로필을 수정할 때는 그 프로필에 저장된 값을 그대로 이어받는다(말없이 켜지 않는다). */
-    birthLonKey: editProfile? (editProfile.birthLonKey||'custom') : 'seoul',
-    birthLon: editProfile? profileLon(editProfile) : SajuEngine.LON_DEFAULT,
+    /* R20 — 출생지·진태양시 보정. 새 프로필은 보정을 기본으로 켠다(계산이 더 맞기 때문).
+       기존 프로필을 수정할 때는 그 프로필에 저장된 값을 그대로 이어받는다(말없이 켜지 않는다).
+       ★ R71 — 출생지는 이제 비워 둔 채로 시작한다(대표님 지시).
+         예전에는 서울·경기가 골라진 채로 시작했다. 화면에는 이미 고른 것처럼 보이니
+         지방에서 태어난 분도 그냥 넘어갔고, 그러면 서울 기준으로 계산됐다.
+         서울(126.98)과 부산(129.08)은 약 8분 차이라, 시주 경계 근처에 태어난 분은
+         시주가 통째로 달라진다(대략 열두 명에 한 명꼴). 틀린 사주를 보여주는 것보다
+         한 번 더 고르게 하는 편이 낫다는 판단이다. */
+    birthLonKey: editProfile? (editProfile.birthLonKey||'custom') : null,
+    birthLon: editProfile? profileLon(editProfile) : null,
     solarTimeAdjust: editProfile? !!editProfile.solarTimeAdjust : true,
     /* =====================================================================
        R33 — "내가 어디까지 채웠는지" 알 수 있게 한다 (대표님 지적, 2026-08-11)
@@ -10008,15 +10014,23 @@ function renderSetupStep2(){
   }));
 
   /* row 4: 출생지 · 진태양시 보정 (R20 신규) */
-  /* 출생지는 서울·보정 켬이 실제로 쓰이는 기본값이라 값을 감추지 않는다.
-     대신 고르지 않았다는 사실을 덧붙여, 내가 정한 값과 구분되게 한다. */
+  /* ★ R71 — 안 골랐으면 '선택 안 함'이라고 적는다. 예전에는 '서울·경기 (기본)'이라고 적었는데,
+     그러면 이미 정해진 값처럼 보여 그냥 지나친다. 성별·태어난 시각과 같은 방식으로 맞췄다.
+     태어난 시각을 모르면 보정할 시각 자체가 없으므로 '해당 없음'이다. */
   var placeValue = SETUP.timeUnknown ? '해당 없음'
-    : (placeLabelOfKey(SETUP.birthLonKey, SETUP.birthLon)
-       + (SETUP._set.place ? '' : ' (기본)'));
+    : (SETUP._set.place ? placeLabelOfKey(SETUP.birthLonKey, SETUP.birthLon) : '선택 안 함');
   box.appendChild(settingsRow('출생지', placeValue, function(){
     var solar = setupSolarDate(SETUP);
     openValueSheet('출생지 · 태어난 시각 보정(진태양시)',
-      function(){ return {birthLonKey:SETUP.birthLonKey, birthLon:SETUP.birthLon, solarTimeAdjust:SETUP.solarTimeAdjust}; },
+      /* ★ R71 — 아직 안 골랐으면 시트 안에서는 서울에서 시작한다. 어딘가에 서 있어야
+         "부산으로 바꾸면 시각이 이렇게 달라진다"는 미리보기를 보여줄 수 있다(경도가 없으면
+         계산이 NaN이 된다). 시트에서 [확인]을 눌러야 비로소 고른 것으로 친다 —
+         화면의 '선택 안 함'은 그때 바뀐다. */
+      function(){ return {
+        birthLonKey: SETUP.birthLonKey || 'seoul',
+        birthLon: (typeof SETUP.birthLon === 'number' && isFinite(SETUP.birthLon))
+                    ? SETUP.birthLon : SajuEngine.LON_DEFAULT,
+        solarTimeAdjust: SETUP.solarTimeAdjust }; },
       function(d, redraw){
         return buildPlaceAdjustSheetBody(d, redraw, solar ? {
           y:solar.year, m:solar.month, d:solar.day,
@@ -10057,15 +10071,21 @@ function renderSetupStep2(){
      ---------------------------------------------------------------------
      예전에는 아무것도 안 만지고 [다음]을 눌러도 넘어갔고, 그러면 2000-01-01 정오생 여자의
      사주가 조용히 만들어졌다. 화면에는 그 값이 내가 고른 것처럼 보이므로 틀린 줄도 모른다.
-     ★ 세 가지만 막는다 — 생년월일 · 태어난 시각 · 성별.
-       셋 다 안 고르면 결과가 통째로 달라지고, "그럴듯한 기본값"이라는 게 존재할 수 없는 값들이다.
-       양력/음력(양력)과 출생지(서울)는 대다수에게 맞는 기본값이라 막지 않는다 —
+     ★ 네 가지를 막는다 — 생년월일 · 태어난 시각 · 성별 · 출생지.
+       안 고르면 결과가 통째로 달라지고, "그럴듯한 기본값"이라는 게 존재할 수 없는 값들이다.
+       양력/음력(양력)은 대다수에게 맞는 기본값이라 막지 않는다 —
        모두를 막으면 안전해지는 게 아니라 아무도 끝까지 못 가게 된다.
+
+     ★ R71 — 출생지를 여기 넣었다(대표님 지시). 예전에는 "서울은 대다수에게 맞는 기본값"이라며
+       막지 않았는데, 지방에서 태어난 분에게는 맞지 않는 값이었다. 서울과 부산은 약 8분 차이라
+       시주 경계 근처면 시주가 통째로 달라진다. 대략 열두 명에 한 명꼴이다.
+       태어난 시각을 모르면 보정할 시각이 없으므로 그때는 묻지 않는다.
   ===================================================================== */
   var missing = [];
   if(!SETUP._set.date)   missing.push('생년월일');
   if(!SETUP._set.time)   missing.push('태어난 시각');
   if(!SETUP._set.gender) missing.push('성별');
+  if(!SETUP.timeUnknown && !SETUP._set.place) missing.push('출생지');
   var lunarOut = SETUP.calendarType==='lunar' && (SETUP.year<1900||SETUP.year>2100);
   var blocked = lunarOut || missing.length>0;
 
@@ -10171,7 +10191,12 @@ function renderSetupStep3(){
       inputYear: SETUP.year, inputMonth: SETUP.month, inputDay: SETUP.day,
       birthTime: SETUP.timeUnknown? null : {hour:SETUP.hour, minute:SETUP.minute},
       /* R20 — 출생지·진태양시 보정. 저장된 뒤에는 이 두 값이 사주 계산의 일부가 된다. */
-      birthLonKey: SETUP.birthLonKey, birthLon: SETUP.birthLon,
+      /* ★ R71 — 태어난 시각을 모르면 출생지를 묻지 않으므로 여기가 비어 있을 수 있다.
+         비운 채로 저장하면 나중에 사주를 계산할 때 경도가 없어 터진다. 기본값으로 채운다.
+         (보정할 시각 자체가 없으니 이 값이 결과를 바꾸지 않는다.) */
+      birthLonKey: SETUP.birthLonKey || 'seoul',
+      birthLon: (typeof SETUP.birthLon === 'number' && isFinite(SETUP.birthLon))
+                  ? SETUP.birthLon : SajuEngine.LON_DEFAULT,
       solarTimeAdjust: !!SETUP.solarTimeAdjust, timeAdjustMigrated: false,
       /* R24 — 지금 만드는 프로필은 처음부터 바로잡은 절기로 계산되므로 "달라졌다"고 알릴 것이 없다.
          이 줄이 없으면 다음 실행 때 migrateProfile()이 옛 프로필로 오인해 안내 상자를 띄운다. */
