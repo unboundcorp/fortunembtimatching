@@ -7,7 +7,12 @@
 <!-- 파비콘 — 외부 파일을 부르지 않고 SVG를 주소 안에 담는다(요청 0건 원칙 유지).
      인장 모티프의 緣 한 글자. 없으면 브라우저가 /favicon.ico 를 찾다가 404를 낸다. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%23FFF7F9'/%3E%3Cpath d='M24 39C24 39 7.5 29.3 7.5 18.6c0-5.1 3.9-8.8 8.5-8.8 3.2 0 6 1.8 8 4.7 2-2.9 4.8-4.7 8-4.7 4.6 0 8.5 3.7 8.5 8.8 0 4-2.3 7.7-5.1 10.8' stroke='%23F76391' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M17 23l5 5 10-10' stroke='%23F76391' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<meta name="description" content="사주와 16가지 성격유형으로 보는 운세·궁합. 만세력을 직접 계산해 오늘의 운세, 내 사주 풀이, 가족·친구·연인·직장동료 궁합을 링크 하나로 함께 봅니다. 회원가입 없이 바로.">>
+<meta name="description" content="사주와 16가지 성격유형으로 보는 운세·궁합. 만세력을 직접 계산해 오늘의 운세, 내 사주 풀이, 가족·친구·연인·직장동료 궁합을 링크 하나로 함께 봅니다. 회원가입 없이 바로.">
+<!-- ★ R84 (2026-08-14) — 이 줄 끝에 '>'가 하나 더 붙어 있었다. 60d400d에서 들어간 오타다.
+     그 한 글자 때문에 브라우저가 여기서 <head>가 끝난 것으로 보고 <body>를 열어 버렸고,
+     남은 '>'는 본문 첫 글자가 되어 화면 맨 위에 '>' 하나와 빈 줄로 그려졌다.
+     (대표님 제보 영상에서 로고 위에 보이던 그것이다. 실측: body의 첫 자식이 텍스트 '>'였다.)
+     문법 검사로는 안 걸린다 — HTML 파서는 오류를 내지 않고 조용히 넘어가기 때문이다. -->
 <style>
 /* ===================== 리셋 & 베이스 ===================== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -352,6 +357,17 @@ main{flex:1;padding:28px 20px 96px;}
   max-width:100%;text-align:right;flex:0 1 auto;min-width:0;}
 .settings-row .sr-chevron{color:var(--gold);flex:none;font-size:1.1rem;line-height:1;opacity:.8;}
 .settings-row[disabled],.settings-row.sr-static{cursor:default;}
+/* ★ R84 — '최근에 본 궁합' 한 줄 + 그 줄만 지우는 단추 (2026-08-14).
+   지우기를 줄 안에 넣지 않고 옆에 세운다 — 줄 자체가 '다시 보기'로 눌리는 단추라,
+   그 안에 또 단추를 넣으면 다시 보려다 지우는 사고가 난다. */
+.rr-row{display:flex;align-items:stretch;gap:8px;}
+.rr-row .settings-row{flex:1 1 auto;min-width:0;}
+.rr-del{flex:none;margin-bottom:12px;padding:0 14px;min-width:56px;min-height:60px;
+  border:1px solid rgba(143,36,19,.32);border-radius:var(--r-lg);background:var(--panel);
+  color:var(--red-hi);font-size:.82rem;cursor:pointer;
+  transition:border-color .15s,background .15s,transform .15s;}
+.rr-del:hover,.rr-del:focus-visible{border-color:var(--red-hi);background:rgba(143,36,19,.06);}
+.rr-del:active{transform:scale(.97);}
 .sheet-body{display:flex;flex-direction:column;gap:4px;}
 
 /* ===================== v4-A 신규: 원형 도넛 게이지 ===================== */
@@ -14430,7 +14446,17 @@ function reopenRoom(roomId){
   });
 }
 
-/* 궁합 화면 맨 위의 "최근에 본 궁합" 목록 */
+/* =====================================================================
+   궁합 화면 맨 위의 "최근에 본 궁합" 목록
+   ---------------------------------------------------------------------
+   ★ R84 — 목록에서 직접 지울 수 있게 했다 (대표님 지시, 2026-08-14).
+     이 목록은 프로필과 따로 사는 기록이라, 프로필을 지워도 그대로 남았다.
+     그게 "다 지웠는데 왜 남아 있냐"로 읽혔다 — 실제로 그렇게 물어보셨다.
+     지우는 길이 화면에 없으면, 남아 있는 것이 맞는지 틀린지 알 방법도 없다.
+   ★ 지우는 것은 이 기기의 '바로가기'뿐이다. 궁합 내용 자체는 서버의 방에 있고
+     보관 기간이 지나면 사라진다. 그 사실을 화면에도 적는다 — 지웠는데 링크를
+     받은 상대에게는 그대로 열린다면, 안 적으면 그게 배신이 된다.
+===================================================================== */
 function buildRecentRoomsCard(){
   var list = recentRooms();
   if(!list.length) return null;
@@ -14438,8 +14464,23 @@ function buildRecentRoomsCard(){
   card.appendChild(el('h3',{},['최근에 본 궁합']));
   card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 볼 수 있어요. '+ROOM_TTL_PHRASE+' 동안 열 수 있어요.']));
   list.forEach(function(x){
-    card.appendChild(settingsRow(personLabel(x.name, '이름 없는 상대')+' 궁합', '다시 보기', function(){ reopenRoom(x.id); }));
+    var who = personLabel(x.name, '이름 없는 상대')+' 궁합';
+    var row = el('div',{class:'rr-row'});
+    row.appendChild(settingsRow(who, '다시 보기', function(){ reopenRoom(x.id); }));
+    row.appendChild(el('button',{class:'rr-del', type:'button', 'aria-label':(who+' 목록에서 지우기'),
+      onclick:function(){
+        /* 조사는 앞말 받침으로 정한다 — '을(를)'을 그대로 찍지 않는다(R84에서 앱 전체를 그렇게 맞췄다). */
+        confirmModal(who+josaOnly(who,'을','를')+' 목록에서 지울까요? 이 기기의 바로가기만 없어지고, 링크를 아는 사람은 보관 기간 동안 그대로 열 수 있어요.', function(){
+          forgetRoom(x.id); render(); showToast('목록에서 지웠어요.');
+        }, '지우기');
+      }},['지우기']));
+    card.appendChild(row);
   });
+  card.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:4px;', onclick:function(){
+    confirmModal('최근에 본 궁합 목록을 전부 지울까요? 이 기기의 바로가기만 없어져요.', function(){
+      STATE.recentRooms = []; saveState(); render(); showToast('목록을 비웠어요.');
+    }, '전부 지우기');
+  }},['목록 전부 지우기']));
   return card;
 }
 
@@ -15031,9 +15072,23 @@ function renderSettings(){
       }},['정보 수정']));
       body.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;color:var(--red-hi);border-color:rgba(143,36,19,.4);', onclick:function(){
         closeModal();
-        confirmModal(p.name+' 프로필을 삭제할까요? 관련 기록은 유지됩니다.', function(){
+        /* ★ R84 — 마지막 프로필을 지우면 '최근에 본 궁합' 바로가기도 함께 비운다
+           (대표님 지시, 2026-08-14). 프로필을 다 지웠는데 궁합 목록이 남아 있으면
+           "지운 게 아닌 것처럼" 보인다 — 실제로 그렇게 물어보셨다.
+           ★ 문구도 함께 바꾼다. 지우는 것이 달라지는데 "관련 기록은 유지됩니다"를
+             그대로 두면, 화면이 하는 말과 실제 동작이 어긋난다. */
+        var isLast = STATE.profiles.length <= 1;
+        var hasRooms = recentRooms().length > 0;
+        var msg = isLast
+          ? (p.name+' 프로필을 삭제할까요? 마지막 프로필이라 '
+             + (hasRooms ? '[최근에 본 궁합] 바로가기도 함께 지워집니다. ' : '')
+             + '지난 기록(히스토리)은 남습니다.')
+          : (p.name+' 프로필을 삭제할까요? 관련 기록은 유지됩니다.');
+        confirmModal(msg, function(){
           STATE.profiles = STATE.profiles.filter(function(x){return x.id!==p.id;});
           if(STATE.activeId===p.id){ STATE.activeId = STATE.profiles.length? STATE.profiles[0].id : null; }
+          /* 지우는 것은 이 기기의 바로가기뿐이다. 궁합 내용은 서버의 방에 있고 보관 기간이 지나면 사라진다. */
+          if(!STATE.profiles.length) STATE.recentRooms = [];
           saveState(); render();
           showToast('프로필을 삭제했습니다.');
         });
