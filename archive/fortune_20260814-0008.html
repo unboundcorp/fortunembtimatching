@@ -108,15 +108,6 @@ body{
   /* 고딕(Pretendard)은 한글 자간이 넓게 느껴진다. 양수 자간을 음수로 내려야 "고딕 느낌"이 나고,
      동시에 줄 길이가 짧아져 320px에서의 넘침 위험도 함께 줄어든다. */
   letter-spacing:-.005em;
-  /* ★ R84 — 한국어 줄바꿈 (테스터 지적, 2026-08-14: "가독성 좋게 줄바꿈")
-     기본값(normal)은 한글을 글자 단위로 끊는다. 그래서 좁은 화면에서 '조심하'/'면'처럼
-     한 낱말이 두 줄로 갈라지고, 그게 문장 전체를 읽기 어렵게 만든다.
-     keep-all은 낱말 단위로 끊는다. 다만 그것만 켜면 긴 영문·주소가 화면 밖으로
-     삐져나가므로, 그런 경우에만 강제로 끊도록 overflow-wrap을 함께 둔다.
-     ★ 두 속성 모두 상속되므로 여기 한 번만 적으면 앱 전체에 걸린다. 관리자 콘솔의
-       ID·토큰처럼 일부러 break-all을 준 자리는 더 구체적인 규칙이라 그대로 남는다. */
-  word-break:keep-all;
-  overflow-wrap:break-word;
   background:var(--base);
   /* ★ R32 — 알파를 .05/.04 → .03/.025 로 낮췄다.
      검수가 화면 위쪽에서 이 두 그라데이션이 바탕을 rgb(225~230,…)까지 어둡게 만들어,
@@ -693,35 +684,12 @@ main{flex:1;padding:28px 20px 96px;}
 .locked-desc{font-size:.84rem;color:var(--ink-dim);margin-bottom:12px;line-height:1.6;}
 .compat-upsell{margin-top:20px;padding:20px 18px;border:1px solid rgba(88,68,22,.24);border-radius:var(--r-lg);background:var(--gold-soft);text-align:center;}
 .compat-upsell p{font-size:.86rem;color:var(--ink-dim);line-height:1.7;margin-bottom:12px;}
-/* ★ R84 — 결제 전 "무엇을 받는지" 목록. 가운데 정렬 카드 안이지만 목록만은 왼쪽으로 맞춘다 —
-   여러 줄짜리 항목을 가운데 정렬하면 줄머리가 들쭉날쭉해서 훑어 읽을 수가 없다. */
-.upsell-opens{list-style:none;padding:0;margin:0 0 14px;text-align:left;}
-.upsell-opens li{position:relative;padding-left:16px;font-size:.87rem;font-weight:600;
-  color:var(--ink);line-height:1.75;margin-top:6px;}
-.upsell-opens li:first-child{margin-top:0;}
-.upsell-opens li::before{content:'';position:absolute;left:2px;top:.72em;width:5px;height:5px;
-  border-radius:50%;background:var(--gold);}
 
 /* 결제 화면 */
 .pay-product{text-align:center;padding:6px 0 14px;border-bottom:1px solid rgba(88,68,22,.24);margin-bottom:14px;}
 .pay-name{font-size:1.05rem;font-weight:600;color:var(--ink);}
 .pay-price{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;color:var(--gold);margin:6px 0;}
 .pay-desc{font-size:.85rem;color:var(--ink-dim);line-height:1.6;}
-/* ★ R84 — "결제하면 무엇이 열리는가"를 따로 떼어 맨 앞에 둔다 (테스터 지적, 2026-08-14:
-   "결제 후 뭘 볼 수 있는지가 잘 안 읽혀서 어려워요").
-   예전에는 상품 한 줄 설명(pay-desc) 뒤에 곧바로 이용·보관 조건(pay-benefits)이 붙어 있었다.
-   그 목록의 첫 줄만 '결제 후 바로 열람'이고 나머지는 쿠키·복원·무료구간 이야기라,
-   눈으로 훑으면 "무엇을 받는지"가 어디에도 안 적힌 것처럼 읽힌다.
-   여기서는 받는 것부터 굵게 세 줄쯤 보여주고, 조건은 그 아래로 내린다. */
-.pay-opens{padding:12px 14px;border-radius:var(--r-md);background:var(--gold-soft);margin-bottom:14px;}
-.pay-opens h4{font-size:.86rem;font-weight:700;color:var(--ink);margin:0 0 8px;}
-.pay-opens ul{list-style:none;padding:0;margin:0;}
-.pay-opens li{position:relative;padding-left:16px;font-size:.88rem;font-weight:600;color:var(--ink);
-  line-height:1.75;margin-top:5px;}
-.pay-opens li:first-child{margin-top:0;}
-.pay-opens li::before{content:'';position:absolute;left:2px;top:.72em;width:5px;height:5px;
-  border-radius:50%;background:var(--gold);}
-.pay-cond-h{font-size:.8rem;font-weight:600;color:var(--ink-faint);margin:0 0 6px;}
 .pay-benefits{list-style:none;padding:0;margin:0 0 14px;}
 .pay-benefits li{position:relative;padding-left:20px;font-size:.87rem;color:var(--ink-dim);line-height:2;}
 /* 체크 표시를 '✓' 문자로 두면 낭독기가 항목마다 "체크 표시"를 읽는다.
@@ -776,53 +744,6 @@ main{flex:1;padding:28px 20px 96px;}
 .biz-input{width:100%;padding:12px 14px;min-height:46px;border-radius:var(--r-md);border:1px solid var(--field-line);
   background:var(--panel-2);color:var(--ink);font-size:.85rem;margin-top:6px;}
 .biz-hint{font-size:.76rem;color:var(--ink-faint);line-height:1.65;margin-top:6px;}
-
-/* =====================================================================
-   개선 의견 쓰기 (R84, 2026-08-14)
-   ---------------------------------------------------------------------
-   예전에는 mailto: 링크라 누르면 기본 메일 앱이 열렸다. 메일 앱을 안 쓰는 분은
-   거기서 그냥 포기한다. 이제 페이지 안에서 바로 쓴다.
-   ★ 세 갈래(무엇을 물어보는지)를 라디오 버튼 대신 누를 수 있는 큰 칸으로 만든다.
-     휴대폰에서 지름 20px짜리 동그라미를 정확히 누르기는 어렵다 — 칸 전체가 눌린다.
-     ★ 라디오 자체를 없애지는 않는다. 화면 낭독기와 키보드 화살표 이동이 그대로 살아야 한다.
-       눈에 안 보이게 두고(.fb-kind input) 겉모양만 우리가 그린다.
-===================================================================== */
-.fb-callout{border-left:3px solid var(--gold);background:var(--panel-3);border-radius:0 var(--r-md) var(--r-md) 0;
-  padding:14px 16px;margin-bottom:18px;}
-.fb-callout strong{display:block;font-size:.92rem;color:var(--ink);margin-bottom:6px;}
-.fb-callout p{font-size:.83rem;color:var(--ink-dim);line-height:1.7;margin:0;}
-.fb-kinds{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
-.fb-kind{position:relative;flex:1 1 auto;min-width:0;}
-.fb-kind input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none;}
-.fb-kind span{display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;cursor:pointer;
-  border:1px solid var(--field-line);border-radius:var(--r-pill);background:var(--panel-2);
-  font-size:.84rem;color:var(--ink-dim);line-height:1.4;}
-.fb-kind span::before{content:'';flex:none;width:14px;height:14px;border-radius:50%;
-  border:1.5px solid var(--field-line);background:transparent;}
-.fb-kind input:checked + span{border-color:var(--gold);background:var(--gold-soft);color:var(--ink);font-weight:600;}
-.fb-kind input:checked + span::before{border-color:var(--gold);border-width:4px;}
-/* 키보드로 옮겨 다닐 때 지금 어디에 있는지 보여야 한다 — 라디오를 숨겼으므로 테두리로 대신한다. */
-.fb-kind input:focus-visible + span{outline:2px solid var(--gold);outline-offset:2px;}
-.fb-field{margin-bottom:18px;}
-.fb-field > label{display:block;font-size:.9rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
-.fb-field .fb-sub{font-size:.78rem;color:var(--ink-faint);line-height:1.6;margin:0 0 8px;}
-.fb-area{width:100%;min-height:160px;padding:12px 14px;border-radius:var(--r-md);border:1px solid var(--field-line);
-  background:var(--panel-2);color:var(--ink);font-size:.9rem;line-height:1.7;font-family:inherit;resize:vertical;}
-.fb-area:focus,.fb-input:focus{border-color:var(--gold);outline:none;}
-.fb-input{width:100%;padding:12px 14px;min-height:46px;border-radius:var(--r-md);border:1px solid var(--field-line);
-  background:var(--panel-2);color:var(--ink);font-size:.9rem;font-family:inherit;}
-.fb-count{font-size:.74rem;color:var(--ink-faint);text-align:right;margin:6px 0 0;}
-.fb-count.over{color:var(--red-hi);font-weight:600;}
-.fb-msg{font-size:.84rem;line-height:1.7;margin:12px 0 0;}
-.fb-msg.err{color:var(--red-hi);}
-.fb-done{text-align:center;padding:26px 18px;border:1px solid rgba(88,68,22,.24);border-radius:var(--r-lg);
-  background:var(--gold-soft);}
-.fb-done h3{font-size:1.05rem;color:var(--ink);margin-bottom:8px;}
-.fb-done p{font-size:.86rem;color:var(--ink-dim);line-height:1.7;margin:0 0 14px;}
-/* 운영 현황판에서 받은 의견을 읽는 자리 */
-.fb-item{padding:12px 0;border-top:1px solid rgba(88,68,22,.16);}
-.fb-item-meta{font-size:.74rem;color:var(--ink-faint);line-height:1.6;margin:0;}
-.fb-item-body{font-size:.88rem;color:var(--ink);line-height:1.75;margin:6px 0;white-space:pre-wrap;}
 
 /* 궁합 요약 좌우 배치 */
 .compat-pair{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin:14px 0;}
@@ -2376,25 +2297,8 @@ function openModal(title, bodyNode, actions, opts){
   backdrop.addEventListener('click', function(e){ if(e.target===backdrop) closeModal(); });
   document.addEventListener('keydown', modalKeyHandler);
   $('#modalRoot').appendChild(backdrop);
-  /* =====================================================================
-     ★ R84 — 창은 반드시 맨 위부터 보여준다 (테스터 지적, 2026-08-14)
-     ---------------------------------------------------------------------
-     예전에는 창을 열자마자 "첫 번째 누를 수 있는 것"에 포커스를 줬다. 그런데 브라우저는
-     포커스를 주면 그 요소가 보이도록 자동으로 스크롤한다. 결제창처럼 내용이 긴 창에서는
-     첫 버튼이 한참 아래에 있어, **창이 열리는 순간 이미 575px이 스크롤된 상태**가 됐다.
-     실측: 결제창 높이 1290px · 보이는 높이 715px · 열자마자 scrollTop 575.
-     그래서 상품 이름·가격과 "결제하면 이게 열려요"가 통째로 화면 위로 밀려나 있었다.
-     테스터가 "결제 후 뭘 볼 수 있는지가 잘 안 읽혀서 어려워요"라고 한 것이 이것이다 —
-     글이 부족했던 게 아니라 아예 안 보이는 자리에 있었다.
-
-     이제 창 자체(box)에 포커스를 준다. box에는 role=dialog와 aria-label이 붙어 있어
-     낭독기는 창 이름을 먼저 읽고, Tab을 누르면 위에서부터 차례로 옮겨간다(WAI-ARIA 권장 방식).
-     ★ 값 편집 시트에서 첫 요소가 <select>일 때 모바일에서 선택창이 다시 열리던 문제
-       (openValueSheet 주석 참고)도 같은 이유로 사라진다.
-  ===================================================================== */
-  box.focus();
-  box.scrollTop = 0;
-  backdrop.scrollTop = 0;
+  var first = modalFocusables(box)[0];
+  (first || box).focus();
 }
 /* R20 — 저장하지 않은 변경을 조용히 버리지 않기 위한 잠금.
    값 편집 시트(openValueSheet)가 "바뀐 게 있는 동안"만 여기에 함수를 걸어 둔다.
@@ -3729,30 +3633,14 @@ var PRODUCTS = {
      가격표가 늘어나면 업셀 문구("하나씩 다 사면 …")의 계산과 화면 곳곳의 가격 표시가
      전부 흔들리기 때문이다. 설명 문구도 실제 해제 범위와 같이 움직여야 한다 —
      범위만 넓히고 설명을 그대로 두면 그것도 문구와 동작의 불일치다. */
-  /* ★ R84 — opens: "결제하면 무엇이 열리는가"를 상품마다 한 줄씩 적어 둔다 (테스터 지적, 2026-08-14).
-     desc는 한 줄에 다 욱여넣느라 가운뎃점으로 이어 붙인 긴 문장이 됐고, 그래서 눈으로 훑으면
-     무엇을 받는지가 안 읽혔다. 결제창은 이 목록을 맨 앞에 세운다.
-     ★ 이 목록은 실제 해제 범위와 반드시 같이 움직여야 한다 — 여기만 늘리면 그건 과장광고다. */
   saju_full:    { id:'saju_full',    name:'사주 풀이 전체 해석', price:1900, kind:'once',
-                  desc:'풀이 13개 섹션 + 올해 월별 운세 상세 + 대운 구간별 상세 — 성격·재물·직업·관계·건강·흐름까지',
-                  opens:['사주 풀이 13개 섹션 — 성격·재물·직업·관계·건강',
-                         '올해 1월부터 12월까지 달마다의 흐름',
-                         '10년 단위 흐름(대운)을 구간마다 풀어 쓴 글'] },
+                  desc:'풀이 13개 섹션 + 올해 월별 운세 상세 + 대운 구간별 상세 — 성격·재물·직업·관계·건강·흐름까지' },
   mbti_full:    { id:'mbti_full',    name:'성격유형 풀이 전체 해석', price:1900, kind:'once',
-                  desc:'13개 섹션 전체 — 강점·그림자·관계 패턴·성장 방향까지',
-                  opens:['성격유형 풀이 13개 섹션',
-                         '강점과 그림자, 관계에서 반복되는 패턴',
-                         '앞으로 어느 쪽으로 크면 좋을지'] },
+                  desc:'13개 섹션 전체 — 강점·그림자·관계 패턴·성장 방향까지' },
   compat_full:  { id:'compat_full',  name:'궁합 상세 전체', price:1900, kind:'once',
-                  desc:'사주 궁합 상세 · 성격유형 궁합 상세 · 궁합 시각화',
-                  opens:['두 사람의 기운이 어디서 맞물리고 어디서 부딪히는지',
-                         '연애·우정·갈등 상황별 성격유형 궁합 해석',
-                         '점수 다섯 항목이 각각 왜 그렇게 나왔는지',
-                         '그림 세 장 — 기운 균형 · 인연 매듭 · 연결선'] },
+                  desc:'사주 궁합 상세 · 성격유형 궁합 상세 · 궁합 시각화' },
   premium_pass: { id:'premium_pass', name:'전체 이용권 7일', price:4900, kind:'pass', days:7,
-                  desc:'위 모든 상세 해석을 7일간',
-                  opens:['사주 풀이 · 성격유형 풀이 · 궁합 상세 전부',
-                         '7일 동안 몇 번이든 다시 열어볼 수 있어요'] }
+                  desc:'위 모든 상세 해석을 7일간' }
 };
 
 /* =====================================================================
@@ -4406,17 +4294,6 @@ function openPaywall(product){
   head.appendChild(el('div',{class:'pay-desc'},[product.desc]));
   body.appendChild(head);
 
-  /* ★ R84 — 받는 것부터 보여준다(테스터 지적: "결제 후 뭘 볼 수 있는지가 잘 안 읽혀서 어려워요").
-     이용·보관 조건은 그대로 아래에 남기되, 그 앞에 "무엇이 열리는가"를 따로 세운다. */
-  if(product.opens && product.opens.length){
-    var opensBox = el('div',{class:'pay-opens'});
-    opensBox.appendChild(el('h4',{},['결제하면 이게 열려요']));
-    var opensList = el('ul',{});
-    product.opens.forEach(function(t){ opensList.appendChild(el('li',{},[t])); });
-    opensBox.appendChild(opensList);
-    body.appendChild(opensBox);
-  }
-
   /* ★ 혜택 문구는 상태에 따라 사실이 달라진다. 고정 3줄로 두면 반드시 어느 한쪽에서 거짓말이 된다.
        - 서버 권위 모드(live/legal/partial): 이용권은 서버에 있고 이용자는 쿠키로만 식별된다.
          "같은 기기에서 계속 보관"은 저장 위치를 잘못 말하는 것이고, 쿠키를 지우면 사라지는 사실도 숨긴다.
@@ -4445,10 +4322,6 @@ function openPaywall(product){
       : '지금은 구매 복원을 쓸 수 없습니다 — ' + restoreAvailability().reason);
     benefits.push('무료 구간은 결제 없이 계속 이용 가능');
   }
-  /* ★ R84 — 이 목록은 "무엇을 받는지"가 아니라 "어떻게 보관·열람되는지"다.
-     제목을 붙여 위의 [결제하면 이게 열려요]와 역할을 갈라 놓는다. 예전에는 둘이 붙어 있어
-     한 덩어리로 읽혔고, 그래서 받는 것이 어디에도 안 적힌 것처럼 보였다. */
-  body.appendChild(el('p',{class:'pay-cond-h'},['열람·보관 조건']));
   var list = el('ul',{class:'pay-benefits'});
   benefits.forEach(function(t){ list.appendChild(el('li',{},[t])); });
   body.appendChild(list);
@@ -5058,11 +4931,7 @@ function openPrivacyModal(){
     '선택 (없어도 이용에 불이익 없음) — 태어난 시각, 출생지와 태어난 시각 보정 사용 여부, 성격유형. 더 정확한 계산과 궁합에 씁니다.',
     '그룹을 쓰실 때 — 그룹 이름, 관리용 PIN(설정하신 경우).',
     '결제하실 때 — 주문·결제 기록. 카드번호 등 결제수단 정보는 결제대행사가 직접 처리하며 회사는 받지도, 보관하지도 않습니다. 휴대폰 번호는 수집하지 않습니다.',
-    '"카카오에 저장"을 선택하신 경우 (선택 · 없어도 이용에 불이익 없음) — 카카오 회원번호. 기기를 바꾸시거나 브라우저 기록을 지우셨을 때 결제하신 이용권을 되찾는 데에만 씁니다. 카카오 로그인으로 이름·이메일·전화번호·프로필 사진은 받지 않으며, 이 번호는 회사 서비스 전용 식별자라 그 값만으로는 개인을 알아볼 수 없습니다.',
-    /* ★ R84 — 개선 의견 창구를 앱 안에 만들면서 추가한 항목이다(2026-08-14).
-       연락처는 답을 받고 싶은 분만 스스로 적는 값이고, 형식도 따지지 않는다.
-       받는 것을 만들었으면 여기에도 반드시 적어야 한다 — 화면과 방침이 어긋나면 그게 문제다. */
-    '개선 의견을 보내실 때 (연락처는 선택 · 안 적으셔도 접수됨) — 보내주신 내용과 어느 화면에서 겪으셨는지, 그리고 적어주신 경우에 한해 연락처(메일주소·카톡 아이디·전화번호 중 적으신 것). 문의에 답을 드리는 데에만 씁니다.'
+    '"카카오에 저장"을 선택하신 경우 (선택 · 없어도 이용에 불이익 없음) — 카카오 회원번호. 기기를 바꾸시거나 브라우저 기록을 지우셨을 때 결제하신 이용권을 되찾는 데에만 씁니다. 카카오 로그인으로 이름·이메일·전화번호·프로필 사진은 받지 않으며, 이 번호는 회사 서비스 전용 식별자라 그 값만으로는 개인을 알아볼 수 없습니다.'
   ]);
   p2('입력하신 정보는 기본적으로 이용자의 브라우저에만 저장되고 회사 서버로 보내지 않습니다. 궁합 링크·그룹·유료 AI 해석·결제를 이용하실 때만 서버에 저장됩니다.');
 
@@ -5073,9 +4942,6 @@ function openPrivacyModal(){
     '그룹 — ' + GROUP_TTL_TEXT + ' (관리용 PIN은 복원할 수 없는 형태로만 보관해 회사도 알 수 없습니다)',
     '유료 AI 해석 글과 이용 횟수 기록 — 1년. 삭제된 뒤 다시 여시면 새로 만들어 드리며 생성 횟수는 차감되지 않습니다.',
     '카카오 연결 (카카오 회원번호) — 이용자가 연결을 끊으실 때까지. 설정 → 이용권 → "카카오에 저장"에서 언제든 끊으실 수 있고, 끊으시면 즉시 지웁니다.',
-    /* ★ R84 — 소비자 불만·분쟁 처리 기록은 법령상 3년 보관이라 아래 문단이 따로 정하고 있다.
-       여기 적는 3년은 그 법정 기간과 같은 값이다 — 둘이 어긋나면 어느 쪽이 맞는지 알 수 없게 된다. */
-    '개선 의견 — 3년 (소비자 불만·분쟁 처리 기록의 법정 보관 기간과 같습니다). 적어주신 연락처는 답을 드린 뒤 지웁니다.',
     '브라우저에 저장된 정보 — 이용자가 지울 때까지'
   ]);
   p2('법령에 따라 보관하는 것 — 계약·청약철회 기록 5년, 대금결제 기록 5년, 소비자 불만·분쟁 처리 기록 3년.');
@@ -5168,15 +5034,8 @@ function buildSiteFooter(){
       ROUTE = pair[0]; render(); window.scrollTo(0,0);
     }},[pair[1]]));
   });
-  /* ★ R84 — 개선 의견은 이제 앱 안에서 쓴다 (대표님 지시, 2026-08-14).
-     예전에는 mailto: 링크였다. 누르면 브라우저가 기본 메일 앱을 여는데, 맥에서는 '메일'이
-     뜨고 윈도에서는 아무 일도 안 일어나는 경우가 많다. 메일 앱을 안 쓰는 분은 거기서
-     그냥 포기한다 — 대표님이 맥북에서 직접 겪으셨다.
-     메일로 보내고 싶은 분을 위한 주소는 그 화면 안에 남겨 두었다. */
-  row.appendChild(el('button',{class:'fl', type:'button', onclick:function(){
-    FEEDBACK_FROM = ROUTE;
-    ROUTE = 'feedback'; render(); window.scrollTo(0,0);
-  }},['개선 의견']));
+  /* 개선 의견 — 서버로 받는 창구가 없으므로 메일로 연다. 없는 기능을 있는 척하지 않는다. */
+  row.appendChild(el('a',{class:'fl', href:'mailto:'+companyValue(COMPANY.supportEmail)+'?subject='+encodeURIComponent('['+COMPANY.serviceName+'] 개선 의견')},['개선 의견']));
   row.appendChild(el('button',{class:'fl', type:'button', onclick:openTermsModal},['이용약관']));
   row.appendChild(el('button',{class:'fl', type:'button', onclick:openPrivacyModal},['개인정보처리방침']));
   /* R38 — '환불 · 청약철회' 별도 메뉴는 없앴다(대표님 지시). 내용은 사라지지 않았다 —
@@ -5351,9 +5210,7 @@ function renderFaq(){
         ['환불은 어떻게 하나요?',
          '유료 콘텐츠의 환불 정책은 다음과 같습니다.'],
         ['오류가 있거나 문의하고 싶어요',
-         /* ★ R84 — [개선 의견]이 메일 앱을 여는 링크에서 앱 안의 쓰기 화면으로 바뀌었다.
-            문구가 실제 동작과 달라지면 그것도 고장이다. */
-         '화면 아래 [개선 의견]을 누르시면 그 자리에서 바로 쓰실 수 있어요. 메일 앱을 열지 않아도 되고, 연락처는 안 적으셔도 접수됩니다. 어느 화면에서 겪으셨는지는 앱이 알아서 함께 보내드려요. 메일이 편하시면 '+companyValue(COMPANY.supportEmail)+' 로 보내주셔도 됩니다.']
+         '화면 아래 [개선 의견]을 누르시면 메일 쓰기가 열려요. '+companyValue(COMPANY.supportEmail)+' 로 바로 보내주셔도 됩니다. 어떤 화면에서 무엇을 하셨을 때 그랬는지 함께 적어주시면 훨씬 빨리 찾을 수 있어요.']
       ]]
     ];
 
@@ -5386,183 +5243,6 @@ function renderFaq(){
   });
 }
 
-/* =====================================================================
-   R84 — 개선 의견 (2026-08-14, 대표님 지시)
-   ---------------------------------------------------------------------
-   예전에는 화면 아래 [개선 의견]이 mailto: 링크였다. 누르면 브라우저가 기본 메일 앱을
-   연다 — 맥에서는 '메일'이 뜨고, 윈도에서는 아무 일도 안 일어나는 경우가 많다.
-   메일 앱을 안 쓰는 사람은 거기서 그냥 포기한다.
-
-   화면 구성은 대표님이 주신 참고 페이지를 그대로 따랐다. 제목만 '개선 의견'으로 둔다(지시).
-     · 어렵게 쓰지 않아도 된다고 먼저 말한다 — 빈 칸 앞에서 멈추는 이유는 대개 "뭐라고 써야 하지"다
-     · 무엇을 물어보는지 세 갈래
-     · 무슨 일이 있었나 (여러 줄)
-     · 연락처 — 안 적어도 되고, 형식도 따지지 않는다 (전화번호·카톡 아이디·메일 무엇이든)
-
-   ★ 지금 상태는 화면 밖으로 나가지 않게 모듈 바깥 변수에 담는다. 이 앱은 값이 바뀔 때마다
-     화면을 다시 그리므로(render), 지역 변수에 담으면 다시 그릴 때 쓰던 글이 날아간다.
-   ★ 어느 화면에서 눌렀는지(FEEDBACK_FROM)를 함께 보낸다. "어디서 그랬는지"가 없으면
-     같은 증상도 찾는 데 몇 배가 걸린다. 손님이 화면 이름을 몰라도 되게 앱이 대신 적는다.
-===================================================================== */
-var FEEDBACK_FROM = null;          /* [개선 의견]을 누른 화면의 ROUTE */
-var FEEDBACK_DRAFT = null;         /* {kind, body, contact} — 다시 그려도 살아남게 밖에 둔다 */
-var FEEDBACK_STATE = 'writing';    /* writing | sending | done */
-var FEEDBACK_ERR = null;
-
-var FEEDBACK_KINDS = [
-  ['howto',  '어떻게 하는지 모르겠어요'],
-  ['broken', '안 되는 게 있어요'],
-  ['wish',   '이런 게 있으면 좋겠어요']
-];
-/* 화면 이름 — 손님이 아니라 우리가 읽을 값이다. 여기 없는 화면은 ROUTE 이름 그대로 간다. */
-var ROUTE_LABEL = {
-  home:'홈', today:'오늘 운세', saju:'내 사주', monthlyFortune:'월별 운세',
-  report13:'사주 풀이', mbtiReport:'성격유형 풀이', report:'성향 리포트',
-  compat:'궁합', groupCompat:'그룹 궁합', chars:'캐릭터', history:'기록',
-  settings:'설정', glossary:'용어 사전', about:'서비스 소개',
-  guideSaju:'사주 가이드', guideMbti:'성격유형 가이드', faq:'자주 묻는 질문',
-  feedback:'개선 의견'
-};
-function feedbackScreenLabel(){
-  var r = FEEDBACK_FROM;
-  if(!r || r === 'feedback') return '';
-  return ROUTE_LABEL[r] || String(r);
-}
-var FEEDBACK_MAX = 2000;   /* api/feedback.js 의 MAX_BODY 와 같은 값이어야 한다 */
-
-function resetFeedback(){
-  FEEDBACK_DRAFT = {kind:'howto', body:'', contact:''};
-  FEEDBACK_STATE = 'writing';
-  FEEDBACK_ERR = null;
-}
-function leaveFeedback(){
-  var back = (FEEDBACK_FROM && FEEDBACK_FROM !== 'feedback') ? FEEDBACK_FROM : 'home';
-  FEEDBACK_DRAFT = null; FEEDBACK_STATE = 'writing'; FEEDBACK_ERR = null; FEEDBACK_FROM = null;
-  ROUTE = back; render(); window.scrollTo(0,0);
-}
-function sendFeedback(){
-  var d = FEEDBACK_DRAFT || {};
-  var text = String(d.body || '').trim();
-  if(!text){ FEEDBACK_ERR = '무슨 일이 있었는지 한 줄만 적어주세요.'; render(); return; }
-  if(text.length > FEEDBACK_MAX){
-    FEEDBACK_ERR = '내용은 '+FEEDBACK_MAX+'자까지 보낼 수 있어요.'; render(); return;
-  }
-  FEEDBACK_STATE = 'sending'; FEEDBACK_ERR = null; render();
-  fetch('/api/feedback', {
-    method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
-    body: JSON.stringify({
-      action:'send', kind:d.kind || null, body:text,
-      contact: String(d.contact || '').trim(), screen: feedbackScreenLabel()
-    })
-  })
-    .then(function(r){ return r.json().catch(function(){ return null; }).then(function(j){ return {ok:r.ok, j:j}; }); })
-    .then(function(r){
-      if(!r.ok || !r.j || !r.j.ok) throw new Error((r.j && r.j.reason) || '지금은 보낼 수 없어요.');
-      FEEDBACK_STATE = 'done'; render(); window.scrollTo(0,0);
-    })
-    .catch(function(e){
-      /* ★ 실패해도 쓴 글을 지우지 않는다. 여기서 날리면 다시 쓰라는 말이 되고, 대부분 다시 안 쓴다. */
-      FEEDBACK_STATE = 'writing';
-      FEEDBACK_ERR = (e && e.message) || '지금은 보낼 수 없어요. 잠시 뒤 다시 시도해 주세요.';
-      render();
-    });
-}
-function renderFeedback(){
-  if(!FEEDBACK_DRAFT) resetFeedback();
-  var main=$('#main'); main.innerHTML='';
-  var view=el('div',{class:'view'});
-  /* ★ 제목은 '개선 의견' 한 줄만 쓴다(대표님 지시). 다른 화면은 pageHead()가 위에 작은
-     분류 글씨(eyebrow)를 하나 더 얹는데, 여기서는 그게 제목을 두 줄로 보이게 만든다. */
-  var head = el('div',{class:'page-head'});
-  head.appendChild(el('h2',{class:'section-title'},['개선 의견']));
-  head.appendChild(el('p',{class:'section-sub'},['막히면 여기서 물어보세요 — 빠르게 답을 드립니다']));
-  view.appendChild(head);
-
-  /* ── 보냈다 ─────────────────────────────────────────────────────── */
-  if(FEEDBACK_STATE === 'done'){
-    var done = el('div',{class:'fb-done'});
-    done.appendChild(el('h3',{},['잘 받았습니다']));
-    done.appendChild(el('p',{},['보내주신 내용을 확인하고 있습니다. 연락처를 적어주셨으면 그리로 답을 드릴게요.']));
-    done.appendChild(el('button',{class:'btn btn-primary', onclick:function(){
-      resetFeedback(); render(); window.scrollTo(0,0);
-    }},['하나 더 보내기']));
-    view.appendChild(done);
-    view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:14px;', onclick:leaveFeedback},
-      [dirIcon('left'), '돌아가기']));
-    main.appendChild(view);
-    return;
-  }
-
-  var sending = FEEDBACK_STATE === 'sending';
-
-  var callout = el('div',{class:'fb-callout'});
-  callout.appendChild(el('strong',{},['막히셨나요? 그냥 말씀해 주세요']));
-  callout.appendChild(el('p',{},['보내시면 빠르게 답을 드립니다. 어렵게 쓰지 않으셔도 돼요 — "이게 안 눌러져요" 한 줄이면 충분합니다.']));
-  view.appendChild(callout);
-
-  var card = el('div',{class:'scroll-card'});
-
-  /* 무엇을 물어보는지 — 라디오는 숨기고 칸 전체를 누르게 한다(위 CSS 주석 참고) */
-  var kinds = el('div',{class:'fb-kinds', role:'radiogroup', 'aria-label':'무엇을 알려주시나요'});
-  FEEDBACK_KINDS.forEach(function(pair){
-    var id = 'fbKind_'+pair[0];
-    var input = el('input',{type:'radio', name:'fbKind', id:id, value:pair[0],
-      checked: FEEDBACK_DRAFT.kind===pair[0] ? 'checked' : null,
-      disabled: sending ? 'disabled' : null,
-      onchange:function(){ FEEDBACK_DRAFT.kind = pair[0]; render(); }});
-    var wrap = el('label',{class:'fb-kind', for:id},[input, el('span',{},[pair[1]])]);
-    kinds.appendChild(wrap);
-  });
-  card.appendChild(kinds);
-
-  /* 무슨 일이 있었나 */
-  var bodyField = el('div',{class:'fb-field'});
-  bodyField.appendChild(el('label',{for:'fbBody'},['무슨 일이 있었나요']));
-  bodyField.appendChild(el('p',{class:'fb-sub'},['있는 그대로 적어주세요. 화면 이름을 몰라도 괜찮습니다.']));
-  var area = el('textarea',{class:'fb-area', id:'fbBody', maxlength:String(FEEDBACK_MAX),
-    disabled: sending ? 'disabled' : null,
-    placeholder:'예) 궁합 결과에서 상세 열기를 눌렀는데 아무것도 안 나와요'});
-  area.value = FEEDBACK_DRAFT.body || '';
-  var count = el('p',{class:'fb-count'},[(FEEDBACK_DRAFT.body||'').length + ' / ' + FEEDBACK_MAX]);
-  /* ★ 글자마다 render()를 부르면 입력칸이 다시 만들어져 커서가 튄다.
-     값은 사본에만 담고, 화면에서 바꾸는 것은 글자 수 한 줄뿐이다. */
-  area.addEventListener('input', function(){
-    FEEDBACK_DRAFT.body = area.value;
-    count.textContent = area.value.length + ' / ' + FEEDBACK_MAX;
-    count.className = 'fb-count' + (area.value.length >= FEEDBACK_MAX ? ' over' : '');
-  });
-  bodyField.appendChild(area);
-  bodyField.appendChild(count);
-  card.appendChild(bodyField);
-
-  /* 연락처 — 형식을 따지지 않는다 */
-  var contactField = el('div',{class:'fb-field'});
-  contactField.appendChild(el('label',{for:'fbContact'},['연락처 (안 적으셔도 됩니다)']));
-  contactField.appendChild(el('p',{class:'fb-sub'},['답을 어디로 드릴까요? 메일주소나 카톡 아이디, 전화번호 아무거나요.']));
-  var contact = el('input',{type:'text', class:'fb-input', id:'fbContact', maxlength:'120',
-    disabled: sending ? 'disabled' : null, placeholder:'예) 010-0000-0000'});
-  contact.value = FEEDBACK_DRAFT.contact || '';
-  contact.addEventListener('input', function(){ FEEDBACK_DRAFT.contact = contact.value; });
-  contactField.appendChild(contact);
-  /* 개인정보를 받는 자리이므로 무엇에 쓰는지 그 자리에서 밝힌다(개인정보처리방침에도 같은 내용이 있다). */
-  contactField.appendChild(el('p',{class:'biz-hint'},
-    ['적어주신 연락처는 이 문의에 답을 드리는 데에만 써요. 답을 드리고 나면 지웁니다. 안 적으셔도 의견은 그대로 전달돼요.']));
-  card.appendChild(contactField);
-
-  if(FEEDBACK_ERR) card.appendChild(el('p',{class:'fb-msg err', role:'alert'},[FEEDBACK_ERR]));
-
-  card.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:4px;',
-    disabled: sending ? 'disabled' : null, onclick:sendFeedback},[sending ? '보내는 중이에요…' : '보내기']));
-  view.appendChild(card);
-
-  /* 메일로 보내고 싶은 분을 위한 길은 남겨 둔다 — 다만 기본 길이 아니라는 것이 보이게 작게 둔다. */
-  view.appendChild(el('p',{class:'biz-hint', style:'text-align:center;margin-top:14px;'},
-    ['메일이 편하시면 '+companyValue(COMPANY.supportEmail)+' 로 보내주셔도 됩니다.']));
-
-  view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:14px;', onclick:leaveFeedback},
-    [dirIcon('left'), '돌아가기']));
-  main.appendChild(view);
-}
 
 /* =====================================================================
    AI 해석 연결 — 운영자용. 관리자 테스트 콘솔 안에만 있다.
@@ -9182,19 +8862,15 @@ function buildPairReasons(pA, pB, res){
 function buildPairReasonBlock(pA, pB, res, compact){
   var r = buildPairReasons(pA, pB, res);
   var box = el('div',{class: compact ? '' : 'scroll-card'});
-  /* ★ R84 — 말투를 읽는 사람 쪽으로 옮겼다 (테스터 지적, 2026-08-14).
-     '왜 이런 점수가 나왔을까'는 만든 사람이 자기 계산을 변호하는 말이다. 손님이 알고 싶은 건
-     점수의 출처가 아니라 "그래서 우리는 어떤 사이인가"다. 항목 이름도 명사('잘 맞는 점')에서
-     문장('이런 점이 잘 맞아요')으로 바꿨다 — 명사만 얹힌 목록은 눈으로 훑고 지나가게 된다. */
-  if(!compact) box.appendChild(el('h3',{},['두 분은 이런 사이예요']));
+  if(!compact) box.appendChild(el('h3',{},['왜 이런 점수가 나왔을까']));
   var g = el('div',{style:'margin-top:6px;'});
-  g.appendChild(el('p',{class:'cm-label', style:'margin:0 0 4px;'},['이런 점이 잘 맞아요']));
+  g.appendChild(el('p',{class:'cm-label', style:'margin:0 0 4px;'},['잘 맞는 점']));
   var gu = el('ul',{class:'reason-list'});
   r.good.slice(0,4).forEach(function(t){ gu.appendChild(el('li',{},[t])); });
   g.appendChild(gu);
   box.appendChild(g);
   var c = el('div',{style:'margin-top:12px;'});
-  c.appendChild(el('p',{class:'cm-label', style:'margin:0 0 4px;'},['이런 점은 조심해 주세요']));
+  c.appendChild(el('p',{class:'cm-label', style:'margin:0 0 4px;'},['조심하면 좋은 점']));
   var cu = el('ul',{class:'reason-list'});
   r.care.slice(0,3).forEach(function(t){ cu.appendChild(el('li',{},[t])); });
   c.appendChild(cu);
@@ -9372,13 +9048,11 @@ function buildCompatMetricBars(res){
    ★ 유료 상세 문장(elemDetail·branchRel·comment·연애/우정/갈등)은 여기에 넣지 않는다.
      여기 들어가는 것은 용어 이름과 이미 무료였던 한 줄 요약뿐이다. */
 function buildCompatWhyPanel(p, r){
-  /* ★ R84 — '왜 이런 결과가 나왔나요?'도 만든 사람 말투다(테스터 지적). 이 칸은 접혀 있는
-     선택 항목이므로, 여는 사람이 스스로 궁금해서 누르는 말로 적는다. */
-  var fold = buildFoldPanel({id:'compatWhy', label:'점수가 어떻게 나왔는지 궁금하다면', openLabel:'다시 접기',
+  var fold = buildFoldPanel({id:'compatWhy', label:'왜 이런 결과가 나왔나요?', openLabel:'근거 접기',
     regionLabel:'궁합 계산 근거'});
   var panel = fold.panel;
 
-  panel.appendChild(el('h4',{},['항목마다 무엇을 봤는지']));
+  panel.appendChild(el('h4',{},['항목마다 무엇을 계산했나요']));
   /* R30 — 한 줄에 용어 버튼이 넷까지 들어가 있었다("두 사람 일간(日干) 오행 — 비화(같은 오행)").
      값은 그대로 두고 앞머리만 일상어로 바꾼다. 뒤에 붙는 용어(비화·육합 등)는 계산 결과라 남긴다. */
   var rows = [
@@ -9739,8 +9413,7 @@ function openValueSheet(title, makeDraft, build, commit, opts){
     MODAL_GUARD=null; closeModal(true);
     commit(draft);
     showToast(opts.savedToast || (title+' 저장했어요.'));
-    /* ★ R84 — 보던 자리를 지킨다. 예전에는 render()라서 칸 하나 고칠 때마다 맨 위로 튀었다. */
-    renderKeepScroll();
+    render();
   }
   function redraw(){
     var body = el('div',{class:'sheet-body'});
@@ -10600,7 +10273,7 @@ function renderSetupStep2(){
   [['F','여자'],['M','남자']].forEach(function(pair){
     gseg.appendChild(el('button',{type:'button',
       'aria-pressed': (SETUP._set.gender && SETUP.gender===pair[0]) ? 'true' : 'false',
-      onclick:function(){ SETUP.gender=pair[0]; SETUP._set.gender=true; renderKeepScroll(); }},[pair[1]]));
+      onclick:function(){ SETUP.gender=pair[0]; SETUP._set.gender=true; render(); }},[pair[1]]));
   });
   gWrap.appendChild(gseg);
   gWrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},
@@ -11071,81 +10744,10 @@ function renderStats(){
   }},['찾기']));
   view.appendChild(find);
 
-  /* ★ R84 — 손님이 보낸 개선 의견을 읽는 자리 (2026-08-14).
-     관리자 콘솔이 아니라 여기에 둔 이유: 콘솔은 주소에 붙이는 ?admin= 하나로 열리는
-     "실수 방지용 잠금"일 뿐이라 서버에서 무엇을 꺼내오는 창구를 붙일 자리가 아니다.
-     이 화면은 서버가 발급한 허가(test_grants)를 받은 세션만 볼 수 있고,
-     /api/feedback 의 목록 조회도 정확히 같은 허가를 본다. 관문이 하나여야 새는 곳이 없다. */
-  view.appendChild(buildFeedbackInbox());
-
   view.appendChild(el('p',{class:'biz-hint', style:'margin-top:14px;'},[
     '방문자 수는 여기에 없어요. 이 앱은 광고·분석 도구를 하나도 쓰지 않고 개인정보처리방침에도 그렇게 적어 두었습니다. 세려면 추적을 붙여야 하는데, 그러면 그 문장이 거짓이 됩니다.'
   ]));
   main.appendChild(view);
-}
-
-/* 받은 개선 의견 — 최근 100건. 화면을 다시 그려도 다시 불러오지 않게 밖에 담는다. */
-var FB_INBOX = null;      /* null = 아직 안 불러옴 */
-var FB_INBOX_ERR = null;
-var FB_INBOX_LOADING = false;
-var FB_KIND_LABEL = {howto:'어떻게 하는지 모르겠어요', broken:'안 되는 게 있어요', wish:'이런 게 있으면 좋겠어요'};
-
-function loadFeedbackInbox(){
-  if(FB_INBOX_LOADING) return;
-  FB_INBOX_LOADING = true; FB_INBOX_ERR = null; render();
-  fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},
-    credentials:'include', body:JSON.stringify({action:'list'})})
-    .then(function(r){ return r.json().catch(function(){ return null; }).then(function(d){ return {ok:r.ok,d:d}; }); })
-    .then(function(r){
-      if(!r.ok || !r.d || !r.d.items) throw new Error((r.d && r.d.reason) || '불러오지 못했어요.');
-      FB_INBOX = r.d.items; FB_INBOX_LOADING = false; render();
-    })
-    .catch(function(e){
-      FB_INBOX_ERR = (e && e.message) || '불러오지 못했어요.'; FB_INBOX_LOADING = false; render();
-    });
-}
-function buildFeedbackInbox(){
-  var c = el('div',{class:'scroll-card'});
-  c.appendChild(el('h3',{},['받은 개선 의견']));
-
-  if(FB_INBOX === null && !FB_INBOX_LOADING && !FB_INBOX_ERR){
-    c.appendChild(el('p',{class:'biz-hint'},['손님이 앱 안에서 보낸 의견이에요. 최근 100건까지 보여드려요.']));
-    c.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:10px;', onclick:loadFeedbackInbox},['불러오기']));
-    return c;
-  }
-  if(FB_INBOX_LOADING){ c.appendChild(el('p',{class:'biz-hint'},['불러오는 중이에요…'])); return c; }
-  if(FB_INBOX_ERR){
-    c.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[FB_INBOX_ERR]));
-    c.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:10px;', onclick:function(){
-      FB_INBOX_ERR=null; loadFeedbackInbox();
-    }},['다시 시도']));
-    return c;
-  }
-  if(!FB_INBOX.length){
-    c.appendChild(el('p',{class:'biz-hint'},['아직 받은 의견이 없어요.']));
-    return c;
-  }
-
-  c.appendChild(el('p',{class:'biz-hint'},[FB_INBOX.length+'건 (최근 순)']));
-  FB_INBOX.forEach(function(f){
-    var item = el('div',{class:'fb-item'});
-    var meta = [new Date(f.created_at).toLocaleString('ko-KR')];
-    if(f.kind) meta.push(FB_KIND_LABEL[f.kind] || f.kind);
-    if(f.screen) meta.push(f.screen);
-    item.appendChild(el('p',{class:'fb-item-meta'},[meta.join(' · ')]));
-    /* ★ 손님이 쓴 글은 el()의 텍스트 노드로만 넣는다. innerHTML로 넣으면 남이 쓴 글이
-       우리 화면에서 태그로 살아난다 — 읽는 사람이 대표님 한 분이라도 규칙은 같다. */
-    item.appendChild(el('p',{class:'fb-item-body'},[f.body]));
-    item.appendChild(el('p',{class:'fb-item-meta'},[
-      f.contact ? ('연락처 — '+f.contact) : '연락처를 적지 않으셨어요 (답을 드릴 길이 없습니다)'
-    ]));
-    if(f.mail_error) item.appendChild(el('p',{class:'fb-item-meta', style:'color:var(--red-hi);'},['메일 발송 실패 — '+f.mail_error]));
-    c.appendChild(item);
-  });
-  c.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:12px;', onclick:function(){
-    FB_INBOX=null; loadFeedbackInbox();
-  }},['새로고침']));
-  return c;
 }
 
 function loadStats(){
@@ -11347,7 +10949,6 @@ function renderHome(){
   view.appendChild(luckyCard);
 
   view.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openShareModal('fortune', p, fortune); }},['오늘의 운세 공유하기']));
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   view.appendChild(glossaryLinkButton());
   main.appendChild(autoTermify(view));
 }
@@ -11412,7 +11013,6 @@ function renderReport(){
 
   view.appendChild(circleCTA(CTA_ICON.arrow, '내 성격유형 풀이 읽어보기', function(){ ROUTE='mbtiReport'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('report', p, null); }},['리포트 요약 공유하기']));
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   /* R50 — 여기까지 본 사람에게 다른 서비스를 권한다. 두 서비스가 서로를 모르면 한쪽만 쓰고 끝난다. */
   view.appendChild(crossSell('toCompat'));
   view.appendChild(glossaryLinkButton());
@@ -11595,7 +11195,6 @@ function renderSaju(){
   view.appendChild(circleCTA(CTA_ICON.arrow, '내 사주 풀이 읽어보기', function(){ ROUTE='report13'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ ROUTE='monthlyFortune'; render(); }},['올해 월별 운세 보기']));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('saju', p, saju); }},['사주 요약 카드 저장하기']));
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   /* ★ R53 — 내 사주에도 궁합 권유를 넣는다(대표님 지적: MBTI에만 있었다).
      이 화면이 사주 쪽에서 가장 오래 머무는 자리인데 여기가 비어 있었다. */
   view.appendChild(crossSell('toCompat'));
@@ -11695,7 +11294,6 @@ function renderMonthlyFortune(){
     view.appendChild(mBlock);
   }
 
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   view.appendChild(glossaryLinkButton());
   main.appendChild(autoTermify(view));
 }
@@ -11819,7 +11417,6 @@ function renderReport13(){
   view.appendChild(sumCard);
 
   view.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openShareModal('saju', p, saju); }},['이 풀이 요약 카드로 저장하기']));
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   view.appendChild(glossaryLinkButton());
   main.appendChild(autoTermify(view));
 }
@@ -11859,7 +11456,6 @@ function renderMbtiReport13(){
   view.appendChild(badgeCard);
 
   view.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openShareModal('mbtiReport', p, null); }},['이 풀이 요약 카드로 저장하기']));
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   view.appendChild(el('p',{class:'disclaimer'},['성격유형은 사람을 가두는 틀이 아니라 자신을 이해하는 참고 자료예요. 여기 담긴 문구는 유형별 경향을 조합해 만든 콘텐츠라, 사람마다 실제 모습은 다를 수 있어요.']));
   main.appendChild(autoTermify(view));
 }
@@ -12062,13 +11658,8 @@ function defaultCompatDraft(){
   return {mbti:null, testMode:false, testAnswers:[], testQIdx:0, name:'',
     calendarType:'solar', lunarLeap:false, year:2000, month:1, day:1,
     timeUnknown:true, hour:12, minute:0, gender:'F', result:null,
-    /* R20 — 상대방도 출생지·진태양시 보정을 따로 가진다(사람마다 태어난 곳이 다르다).
-       ★ R84 — 출생지를 비워 둔 채로 시작한다(테스터 지적, 2026-08-14).
-         내 프로필 쪽은 R71에서 이미 고쳤는데 궁합 입력에만 '서울·경기 (기본)'이 남아 있었다.
-         화면에 이미 고른 것처럼 보이니 지방에서 태어난 상대는 그냥 넘어갔고,
-         그러면 서울 기준으로 계산됐다. 서울(126.98)과 부산(129.08)은 약 8분 차이라
-         시주 경계 근처면 시주가 통째로 달라진다. */
-    birthLonKey:null, birthLon:null, solarTimeAdjust:true,
+    /* R20 — 상대방도 출생지·진태양시 보정을 따로 가진다(사람마다 태어난 곳이 다르다). */
+    birthLonKey:'seoul', birthLon:SajuEngine.LON_DEFAULT, solarTimeAdjust:true,
     /* R32 — 이 입력이 "초대 링크를 열어서 이미 채워진 것"인지. 화면 문구를 고르는 데만 쓴다. */
     fromInvite:false,
     /* =====================================================================
@@ -12319,26 +11910,15 @@ function renderCompatForm(){
   }));
 
   /* row 6: 상대방 출생지 · 진태양시 보정 (R20 신규) */
-  /* ★ R84 — 안 골랐으면 '선택 안 함'이라고 적는다. 예전에는 '서울·경기 · 보정 켬 (기본)'이라고
-     적었는데, 그러면 이미 정해진 값처럼 보여 그냥 지나친다. 내 프로필 쪽(R71)과 같은 방식이다. */
   var partnerPlaceValue = (COMPAT_DRAFT._set.time && COMPAT_DRAFT.timeUnknown) ? '시간 모름 — 해당 없음'
-    : (COMPAT_DRAFT._set.place
-        ? (placeLabelOfKey(COMPAT_DRAFT.birthLonKey, COMPAT_DRAFT.birthLon) + ' · 보정 '
-           + (COMPAT_DRAFT.solarTimeAdjust?'켬':'끔'))
-        : '선택 안 함');
+    : (placeLabelOfKey(COMPAT_DRAFT.birthLonKey, COMPAT_DRAFT.birthLon) + ' · 보정 '
+       + (COMPAT_DRAFT.solarTimeAdjust?'켬':'끔') + (COMPAT_DRAFT._set.place ? '' : ' (기본)'));
   /* ★ R44 — '상대방 출생지 · 태어난 시각 보정'은 이 줄에 안 들어간다(390px에서 23px, 320px에서 56px 잘림).
      뜻이 같으면서 짧은 말로 바꾼다. 시트를 열면 제목에 온전한 이름이 나온다. */
   box.appendChild(settingsRow((PL+' 출생지 · 시각 보정'), partnerPlaceValue, function(){
     var solar = setupSolarDate(COMPAT_DRAFT);
     openValueSheet((PL+' 출생지 · 태어난 시각 보정(진태양시)'),
-      /* ★ R84 — 아직 안 골랐으면 시트 안에서는 서울에서 시작한다. 어딘가에 서 있어야
-         "부산으로 바꾸면 시각이 이렇게 달라진다"는 미리보기를 보여줄 수 있다(경도가 없으면
-         계산이 NaN이 된다). [확인]을 눌러야 비로소 고른 것으로 친다. */
-      function(){ return {
-        birthLonKey: COMPAT_DRAFT.birthLonKey || 'seoul',
-        birthLon: (typeof COMPAT_DRAFT.birthLon === 'number' && isFinite(COMPAT_DRAFT.birthLon))
-                    ? COMPAT_DRAFT.birthLon : SajuEngine.LON_DEFAULT,
-        solarTimeAdjust: COMPAT_DRAFT.solarTimeAdjust }; },
+      function(){ return {birthLonKey:COMPAT_DRAFT.birthLonKey, birthLon:COMPAT_DRAFT.birthLon, solarTimeAdjust:COMPAT_DRAFT.solarTimeAdjust}; },
       function(d, redraw){
         return buildPlaceAdjustSheetBody(d, redraw, solar ? {
           y:solar.year, m:solar.month, d:solar.day,
@@ -12376,9 +11956,6 @@ function renderCompatForm(){
   if(!COMPAT_DRAFT._set.date)   missing.push('생년월일');
   if(!COMPAT_DRAFT._set.time)   missing.push('태어난 시각');
   if(!COMPAT_DRAFT._set.gender) missing.push('성별');
-  /* ★ R84 — 출생지도 여기 넣는다. 내 프로필 쪽(R71)에서 이미 막고 있던 것을 궁합에도 맞췄다.
-     태어난 시각을 모르면 보정할 시각 자체가 없으므로 그때는 묻지 않는다. */
-  if(COMPAT_DRAFT._set.time && !COMPAT_DRAFT.timeUnknown && !COMPAT_DRAFT._set.place) missing.push('출생지');
   var canSubmit = missing.length === 0;
   box.appendChild(circleCTA(CTA_ICON.heart, '궁합 풀어보기', function(){
     if(!canSubmit) return;
@@ -12386,8 +11963,7 @@ function renderCompatForm(){
   }, !canSubmit));
   if(!canSubmit){
     box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin-top:-4px;'},
-      /* ★ R84 — '을(를)'을 그대로 찍고 있었다(테스터 지적). 앱에 이미 있는 조사 판정을 쓴다. */
-      [PL+' '+missing.join(' · ')+josaOnly(missing[missing.length-1],'을','를')+' 채우면 궁합을 볼 수 있어요.']));
+      [PL+' '+missing.join(' · ')+'을(를) 채우면 궁합을 볼 수 있어요.']));
   }
   return box;
 }
@@ -12402,9 +11978,7 @@ function submitCompat(){
   }
   var bSaju = SajuEngine.computeSaju(y,m, d,
     COMPAT_DRAFT.timeUnknown?null:COMPAT_DRAFT.hour, COMPAT_DRAFT.timeUnknown?0:COMPAT_DRAFT.minute,
-    /* ★ R84 — 출생지를 안 고른 경우(birthLon이 null) 그대로 넘기면 계산이 NaN이 된다.
-       profileLon()이 숫자가 아니면 기본 경도로 돌려준다 — 내 프로필 쪽과 같은 그물이다. */
-    {lon:profileLon(COMPAT_DRAFT), adjust:COMPAT_DRAFT.solarTimeAdjust, meridian:draftMeridian(COMPAT_DRAFT)});
+    {lon:COMPAT_DRAFT.birthLon, adjust:COMPAT_DRAFT.solarTimeAdjust, meridian:draftMeridian(COMPAT_DRAFT)});
   var bElemInfo = dominantElementIdx(bSaju);
   var legacyZ = calcZodiac(y);
   var pB = {mbti:COMPAT_DRAFT.mbti, elementIdx:bElemInfo.idx, zodiacIdx:legacyZ.idx, name:(COMPAT_DRAFT.name||'상대방').slice(0,20),
@@ -12426,9 +12000,7 @@ function submitCompat(){
       b: compatPersonInput(pB, {y:y, m:m, d:d,
             hour: COMPAT_DRAFT.timeUnknown?null:COMPAT_DRAFT.hour,
             minute: COMPAT_DRAFT.timeUnknown?0:COMPAT_DRAFT.minute,
-            /* ★ R84 — 기록에도 계산에 쓴 것과 같은 경도를 담는다(안 골랐으면 기본 경도).
-               null이 들어가면 나중에 다시 계산할 때 NaN이 된다. */
-            lon: profileLon(COMPAT_DRAFT), adjust: !!COMPAT_DRAFT.solarTimeAdjust})
+            lon: COMPAT_DRAFT.birthLon, adjust: !!COMPAT_DRAFT.solarTimeAdjust})
     }};
   STATE.compatHistory.unshift(histEntry);
   if(STATE.compatHistory.length>200) STATE.compatHistory.length=200;
@@ -12582,9 +12154,7 @@ function renderCompatSummary(p, draft){
 
   /* ② 이 점수가 어디서 왔는지 — MBTI 궁합과 사주 궁합을 따로 나열하지 않고 한 점수의 구성으로 묶는다. */
   var mixCard=el('div',{class:'scroll-card'});
-  /* ★ R84 — '이 점수는 이렇게 나왔어요'도 계산 이야기로 읽힌다(테스터 지적).
-     같은 두 숫자를 "성격 쪽은 어땠고 사주 쪽은 어땠다"로 읽히게 제목만 바꾼다. */
-  mixCard.appendChild(el('h3',{},['성격 쪽과 사주 쪽은 이랬어요']));
+  mixCard.appendChild(el('h3',{},['이 점수는 이렇게 나왔어요']));
   var mix=el('div',{class:'cm-mix'});
   /* R22 — "숫자를 크게, 뒤에 색 원 하나". 값(mbtiScore/saju.score)은 그대로이고 표시만 키웠다. */
   mix.appendChild(el('div',{class:'cm-mix-cell'},[
@@ -12627,14 +12197,8 @@ function renderCompatSummary(p, draft){
   if(!hasAccess(PRODUCTS.compat_full.id)){
     /* 무료로 어디까지 본 것인지, 결제하면 무엇이 더 열리는지 요약 화면에서 바로 알려준다.
        ★ 여기도 용어를 쓰지 않는다 — 무엇을 사는 건지는 "무엇을 알게 되는지"로 적는다. */
-    /* ★ R84 — 여기도 "무엇을 받는지"를 목록으로 보여준다 (테스터 지적, 2026-08-14).
-       예전에는 회색 글씨 두 문장이 가운데 정렬로 붙어 있어 결제 버튼 위 장식처럼 읽혔다.
-       결제창(openPaywall)과 같은 목록을 쓰므로 두 화면이 서로 다른 약속을 할 일이 없다. */
     var upsell = el('div',{class:'compat-upsell'});
-    upsell.appendChild(el('h3',{style:'margin:0 0 10px;font-size:1rem;'},['상세 해석에서는 이걸 보실 수 있어요']));
-    var upList = el('ul',{class:'upsell-opens'});
-    (PRODUCTS.compat_full.opens||[]).forEach(function(t){ upList.appendChild(el('li',{},[t])); });
-    upsell.appendChild(upList);
+    upsell.appendChild(el('p',{},['두 사람의 기운이 어디서 맞물리고 어디서 부딪히는지, 왜 그런지까지 문장으로 풀어드리는 상세 해석이 따로 있어요. 지금 보신 점수가 어떻게 나왔는지도 항목별로 다 나옵니다.']));
     upsell.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ openPaywall(PRODUCTS.compat_full); }},['궁합 상세 열기 · '+formatWon(PRODUCTS.compat_full.price)]));
     box.appendChild(upsell);
   }
@@ -12643,7 +12207,6 @@ function renderCompatSummary(p, draft){
   actions.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ openShareModal('compatSummary', p, r); }},['궁합 결과 공유하기']));
   actions.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ COMPAT_DRAFT=null; COMPAT_SUB=null; render(); }},['다시 보기']));
   box.appendChild(actions);
-  box.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   box.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, 성격유형 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
   box.appendChild(crossSell('toSelf'));
   return box;
@@ -12684,7 +12247,6 @@ function renderCompatSajuDetail(p, draft){
     }
   }
   box.appendChild(el('p',{class:'disclaimer'},['사주 궁합은 두 사람의 관계를 읽는 여러 참고 자료 중 하나일 뿐, 정해진 정답은 아닙니다.']));
-  box.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   return box;
 }
 /* MBTI 궁합 상세 */
@@ -12705,7 +12267,6 @@ function renderCompatMbtiDetail(p, draft){
     card.appendChild(el('p',{},[r.res.categories[key]]));
     box.appendChild(card);
   });
-  box.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   return box;
 }
 /* 기능11: 궁합 시각화 (레이더+매듭 v1 유지 + 합충선 신규) */
@@ -14198,7 +13759,6 @@ function renderGroupCompat(){
     ]));
   }
   if(gsCard) view.appendChild(gsCard);
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   view.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, 성격유형 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
   /* R50 — 그룹으로 들어온 분에게도 다른 서비스를 권한다.
      1:1 궁합에만 붙이면, 링크로 그룹에 들어온 사람은 이 앱에 사주 풀이가 있는 줄도 모른다. */
@@ -14361,14 +13921,11 @@ function applyRowToCompatDraft(row){
   COMPAT_DRAFT.year = o.y; COMPAT_DRAFT.month = o.mo; COMPAT_DRAFT.day = o.d;
   if(o.h!=null){ COMPAT_DRAFT.timeUnknown=false; COMPAT_DRAFT.hour=o.h; COMPAT_DRAFT.minute=o.mi||0; }
   COMPAT_DRAFT.gender = o.g||'F';
-  var hasLon = (typeof o.lo==='number' && isFinite(o.lo));
-  if(hasLon){ COMPAT_DRAFT.birthLon=o.lo; COMPAT_DRAFT.birthLonKey='custom'; }
+  if(typeof o.lo==='number' && isFinite(o.lo)){ COMPAT_DRAFT.birthLon=o.lo; COMPAT_DRAFT.birthLonKey='custom'; }
   if(o.ts!=null) COMPAT_DRAFT.solarTimeAdjust = !!o.ts;
   COMPAT_DRAFT.fromInvite = true;
-  /* 링크에 담겨 온 값은 보낸 사람이 이미 고른 값이다. '입력 안 함'으로 보이면 안 된다.
-     ★ R84 — 출생지만은 링크에 실제로 담겨 왔을 때만 '고른 것'으로 친다.
-       안 담겨 왔는데 고른 것처럼 표시하면 예전처럼 서울 기준으로 조용히 계산된다. */
-  COMPAT_DRAFT._set = {cal:true, date:true, time:true, place:hasLon, gender:true};
+  /* 링크에 담겨 온 값은 보낸 사람이 이미 고른 값이다. '입력 안 함'으로 보이면 안 된다. */
+  COMPAT_DRAFT._set = {cal:true, date:true, time:true, place:true, gender:true};
   return true;
 }
 
@@ -14713,16 +14270,14 @@ function renderInviteAccept(){
       if(PENDING_INVITE.h!=null){ COMPAT_DRAFT.timeUnknown=false; COMPAT_DRAFT.hour=PENDING_INVITE.h; COMPAT_DRAFT.minute=PENDING_INVITE.mi||0; }
       COMPAT_DRAFT.gender = PENDING_INVITE.g||'F';
       /* R20 — 보낸 쪽의 출생지·보정 설정을 그대로 이어받는다(없는 옛 링크면 기본값 그대로). */
-      var inviteHasLon = (typeof PENDING_INVITE.lo==='number' && isFinite(PENDING_INVITE.lo));
-      if(inviteHasLon){
+      if(typeof PENDING_INVITE.lo==='number' && isFinite(PENDING_INVITE.lo)){
         COMPAT_DRAFT.birthLon = PENDING_INVITE.lo;
         COMPAT_DRAFT.birthLonKey = 'custom';
       }
       if(PENDING_INVITE.ts!=null) COMPAT_DRAFT.solarTimeAdjust = !!PENDING_INVITE.ts;
       /* R32 — 이 화면의 칸들은 "상대방"이 아니라 링크를 보낸 사람의 정보다. 문구가 그렇게 나가도록 표시해 둔다. */
       COMPAT_DRAFT.fromInvite = true;
-      /* ★ R84 — 출생지는 링크에 실제로 담겨 왔을 때만 '고른 것'으로 친다(applyRowToCompatDraft와 같은 규칙). */
-      COMPAT_DRAFT._set = {cal:true, date:true, time:true, place:inviteHasLon, gender:true};
+      COMPAT_DRAFT._set = {cal:true, date:true, time:true, place:true, gender:true};
     }
     INVITE_CONSUMED = true;
     history.replaceState(null,'',location.pathname+location.search);
@@ -15120,123 +14675,6 @@ function buildShareText(kind, profile, data){
     return '['+COMPANY.serviceName+'] '+profile.name+' × '+r.pB.name+' 궁합 결과\n종합 점수: '+r.res.combined+'점 ('+r.res.combinedTier+')\n사주: '+r.res.saju.elemRel+'\n성격유형: '+r.res.categories.chemistry;
   }
 }
-/* =====================================================================
-   R84 — 화면에 나온 결과를 통째로 복사 (2026-08-14, 대표님 지시)
-   ---------------------------------------------------------------------
-   지금까지 [공유하기]는 카드 그림 한 장과 서너 줄짜리 요약만 줬다. 사주 풀이는
-   열세 섹션이고 월별 운세는 열두 달인데, 그걸 통째로 어디 옮겨 적을 방법이 없었다.
-   (메모장에 옮겨 두거나, 남에게 그대로 보내거나, 나중에 다시 읽으려는 경우다.)
-
-   ★ 다시 만들지 않고 "화면에 그려진 것"을 그대로 긁는다.
-     같은 글을 만드는 코드를 한 벌 더 쓰면 화면과 복사본이 서서히 어긋난다 —
-     한쪽만 고치는 날이 반드시 온다. 화면이 정본이면 그 일이 아예 안 생긴다.
-
-   ★ 잠긴(유료) 대목은 뺀다. .locked-block 안에는 흐릿하게 깔아 둔 맛보기 글이
-     실제로 들어 있어서, 그냥 긁으면 결제하지 않은 사람이 본문을 텍스트로 가져간다.
-     통째로 지우고 몇 개가 잠겼는지만 남긴다.
-
-   ★ 버튼·탭·푸터·결제 안내처럼 '읽을 글'이 아닌 것도 뺀다. 붙여넣었을 때
-     "이미지로 저장 텍스트 복사 닫기"가 섞여 있으면 그건 쓸 수 없는 복사본이다.
-===================================================================== */
-var COPY_SKIP_SEL = [
-  'button', '.tab-btn', '.site-footer', '.biz', '.copy',
-  '.locked-block', '.locked-count', '.compat-upsell', '.pay-opens', '.upsell-opens',
-  '.cross-sell', '.share-preview', '.fb-callout', '.fb-kinds',
-  'script', 'style', 'svg', 'canvas', 'input', 'textarea', 'select'
-].join(',');
-/* ★ 용어 풀이(autoTermify)는 문장 한가운데의 낱말을 <button>으로 감싼다 —
-   '검사님의 사주팔자'의 '사주팔자'가 버튼이다. 그래서 버튼을 통째로 지우면
-   문장에서 낱말만 쏙 빠진 복사본이 나온다. 실제로 그렇게 나왔다(실측:
-   '내 사주 · 만세력' → '내 사주 ·', '검사님의 사주팔자' → '검사님의').
-   이 둘은 지우지 말고 겉껍데기만 벗겨 글자를 남긴다. */
-var COPY_UNWRAP_SEL = '.term-lite, .term-chip';
-/* ★ 격자로 배치된 칸(사주 네 기둥, 오행 개수, 점수 타일 …)은 innerText가 칸 안의
-   글자마다 줄을 바꾼다. 그대로 붙여넣으면 '무 / 戊 / 진 / 辰'처럼 한 글자씩 세로로
-   늘어서서 무슨 표였는지 알 수가 없다(실측). 이런 칸은 한 줄로 눌러 준다. */
-var COPY_INLINE_SEL = [
-  '.pillar-col', '.elem-bar-row', '.stat-cell', '.cm-head', '.cm-foot',
-  '.why-row', '.ts-row', '.biz-row', '.basis-chip', '.grid3 > *', '.mini-stat',
-  '.month-cell', '.daewoon-item', '.gc-rank-row', '.cm-mix-cell'
-].join(',');
-
-/* 한 칸 안에 흩어져 있는 글자 조각을 순서대로 모은다. 격자 칸을 한 줄로 누를 때 쓴다. */
-function copyLeafTexts(node){
-  var out = [];
-  (function walk(x){
-    if(x.nodeType === 3){
-      var t = String(x.nodeValue || '').replace(/\s+/g, ' ').trim();
-      if(t) out.push(t);
-      return;
-    }
-    if(x.nodeType !== 1) return;
-    for(var i = 0; i < x.childNodes.length; i++) walk(x.childNodes[i]);
-  })(node);
-  return out;
-}
-/* 줄 사이를 정리한다 — innerText는 빈 <div> 하나마다 빈 줄을 남긴다. */
-function tidyCopyText(t){
-  return String(t || '')
-    .replace(/ /g, ' ')
-    .split('\n').map(function(l){ return l.replace(/[ \t]+$/, '').replace(/^[ \t]+/, ''); }).join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-/* 지금 화면(#main .view)에 보이는 글을 그대로 돌려준다. 없으면 빈 문자열. */
-function screenTextForCopy(){
-  var view = $('#main .view') || $('#main');
-  if(!view) return '';
-  var clone = view.cloneNode(true);
-  /* ★ 순서가 중요하다. 껍데기 벗기기를 먼저 해야 한다 —
-     지우기를 먼저 하면 그 안의 낱말이 이미 사라진 뒤다. */
-  $all(COPY_UNWRAP_SEL, clone).forEach(function(n){
-    if(!n.parentNode) return;
-    /* ★ 칩형(.term-chip)은 위아래 두 줄이다 — 쉬운 말과 사주 용어.
-       textContent로 합치면 '태어난 시각시주(時柱)'처럼 붙는다(실측). 조각 사이를 띄운다. */
-    var t = copyLeafTexts(n).join(' ');
-    n.parentNode.replaceChild(document.createTextNode(t), n);
-  });
-  $all(COPY_SKIP_SEL, clone).forEach(function(n){ if(n.parentNode) n.parentNode.removeChild(n); });
-  /* 지우기가 끝난 뒤에 눌러야 한다 — 버튼을 지우기 전에 누르면 지울 것까지 한 줄에 섞인다. */
-  $all(COPY_INLINE_SEL, clone).forEach(function(n){
-    /* ★ textContent를 그대로 쓰면 칸 안의 조각들이 띄어쓰기 없이 붙는다
-       ('태어난 시각시주(時柱)무戊진辰', '목2' — 실측). 조각마다 사이를 띄운다. */
-    n.textContent = copyLeafTexts(n).join(' ');
-    n.style.display = 'block';   /* 눌러 놓은 칸끼리는 줄이 나뉘게 */
-  });
-  /* ★ innerText는 "화면에 보이는 대로"를 돌려주는 값이라, 배치가 계산돼야 줄바꿈이 잡힌다.
-     문서에 붙이지 않은 조각에서 읽으면 textContent와 같아져 줄이 전부 붙어 버린다.
-     그래서 화면 밖에 잠깐 세웠다가 값을 읽고 곧바로 걷어낸다. */
-  clone.style.position = 'fixed';
-  clone.style.left = '-99999px';
-  clone.style.top = '0';
-  clone.style.width = (view.offsetWidth || 390) + 'px';
-  clone.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(clone);
-  var text = clone.innerText || clone.textContent || '';
-  document.body.removeChild(clone);
-  return tidyCopyText(text);
-}
-/* 잠긴 대목이 몇 개였는지 — 뺀 사실을 숨기지 않는다. */
-function lockedNoteForCopy(){
-  var n = $all('#main .locked-block').length;
-  if(!n) return '';
-  return '\n\n(유료 상세 해석 ' + n + '곳은 복사에 포함되지 않았어요.)';
-}
-function copyScreenText(){
-  var p = activeProfile();
-  /* ownerLabel()은 '검사님의'처럼 뒤에 이름씨가 붙는 자리를 위한 말이라, 첫 줄에 그대로
-     쓰면 '[인연점] 검사님의 · 2026-08-14'가 된다(실측). 여기서는 이름만 세운다. */
-  var who = (p && String(p.name || '').trim()) ? String(p.name).trim() + '님' : '';
-  var head = '[' + COMPANY.serviceName + ']' + (who ? ' ' + who : '') + ' · ' + todayStr();
-  var body = screenTextForCopy();
-  if(!body){ showToast('복사할 내용을 찾지 못했어요.'); return; }
-  copyText(head + '\n\n' + body + lockedNoteForCopy());
-}
-/* 결과 화면마다 붙이는 [전체 복사] 버튼. 공유 버튼 바로 옆(또는 아래)에 둔다. */
-function copyAllButton(){
-  return el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:copyScreenText},
-    ['이 화면 글 전체 복사']);
-}
 function copyText(text){
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(function(){ showToast('텍스트를 복사했습니다.'); }).catch(function(){ fallbackCopy(text); });
@@ -15434,9 +14872,7 @@ function render(){
      예전에는 프로필이 없으면 무조건 마법사로 보냈다. 그래서 새로 온 사람은
      이 앱이 무엇을 해 주는지 보기도 전에 생년월일부터 넣어야 했다.
      나머지 화면(사주·궁합 등)은 계산할 값이 없으므로 여전히 마법사로 보낸다. */
-  /* ★ R84 — feedback(개선 의견)도 프로필 없이 열려야 한다. 앱을 처음 켜서 막힌 분이야말로
-     가장 물어볼 게 많은데, 거기서 생년월일부터 넣으라고 하면 그 말을 들을 길이 없어진다. */
-  var NO_PROFILE_OK = {home:1, about:1, guideSaju:1, guideMbti:1, faq:1, glossary:1, settings:1, stats:1, feedback:1};
+  var NO_PROFILE_OK = {home:1, about:1, guideSaju:1, guideMbti:1, faq:1, glossary:1, settings:1, stats:1};
   if(STATE.profiles.length===0 && !NO_PROFILE_OK[ROUTE]){ startSetupWizard(null); renderSetup(); return; }
   if(ROUTE==='groupJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderGroupJoin(); return; }
   if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
@@ -15473,52 +14909,11 @@ function render(){
   else if(ROUTE==='guideSaju') renderGuideSaju();
   else if(ROUTE==='guideMbti') renderGuideMbti();
   else if(ROUTE==='faq') renderFaq();
-  else if(ROUTE==='feedback') renderFeedback();
   else renderHome();
   /* R34 — 모든 화면 맨 아래에 공통 하단을 붙인다.
      각 render 함수를 일일이 고치지 않고 여기서 한 번에 처리한다 —
      화면이 늘어날 때마다 푸터를 빠뜨리는 일이 없도록. */
   appendFooterOnce();
-}
-
-/* =====================================================================
-   R84 — 값을 하나 고칠 때마다 화면 맨 위로 튀어 오르지 않게 한다 (테스터 지적, 2026-08-14)
-   ---------------------------------------------------------------------
-   render()는 #main의 innerHTML을 통째로 비우고 다시 짓는다. 비우는 순간 문서 높이가
-   화면 한 장 크기로 줄어드는데, 브라우저는 그때 스크롤 위치를 넘길 수 있는 최댓값으로
-   깎아 버린다(= 0). 그다음 내용을 다시 채워도 스크롤은 0에 남는다.
-   그래서 궁합 입력처럼 줄이 여럿인 화면에서 아래쪽 칸을 하나 고칠 때마다 맨 위로 올라갔고,
-   고칠 칸이 일곱이면 일곱 번 다시 내려와야 했다.
-
-   여기서는 그리기 전에 위치를 적어 두고, 다 그린 뒤 같은 자리로 돌려놓는다.
-   ★ 한 프레임 뒤에 한 번 더 맞춘다 — 폰트·이미지가 늦게 자리를 잡으면서 문서 높이가
-     뒤늦게 늘어나는 경우가 있어, 첫 번째 시도에서는 최댓값에 걸려 덜 내려가기 때문이다.
-   ★ 화면(ROUTE) 자체가 바뀌는 이동에는 쓰지 않는다. 그건 새 화면이므로 맨 위가 맞다.
-===================================================================== */
-function currentScrollY(){
-  return window.pageYOffset || document.documentElement.scrollTop || 0;
-}
-function renderKeepScroll(){
-  var y = currentScrollY();
-  render();
-  if(y <= 0) return;
-  function restore(){
-    /* ★ html에 scroll-behavior:smooth가 걸려 있다. 그대로 두면 되돌리는 것 자체가
-       '스르륵 움직이는 연출'이 되어, 값 하나 고칠 때마다 화면이 출렁인다.
-       게다가 render() 안에서 탭 버튼이 부르는 scrollIntoView()도 같이 애니메이션이라
-       둘이 겹쳐 엉뚱한 자리에 멈춘다(실측: 665px에서 691px로 밀렸다).
-       되돌리는 동안만 애니메이션을 꺼서 눈 깜짝할 새 없이 제자리에 둔다. */
-    var de = document.documentElement;
-    var prev = de.style.scrollBehavior;
-    de.style.scrollBehavior = 'auto';
-    var maxY = Math.max(0, de.scrollHeight - window.innerHeight);
-    window.scrollTo(0, Math.min(y, maxY));
-    de.style.scrollBehavior = prev;
-  }
-  restore();
-  /* 폰트·이미지가 늦게 자리를 잡으면서 문서 높이가 뒤늦게 늘어나는 경우가 있다.
-     첫 시도에서 최댓값에 걸려 덜 내려갔으면 한 프레임 뒤에 마저 내려간다. */
-  if(window.requestAnimationFrame) window.requestAnimationFrame(restore);
 }
 
 /* =====================================================================

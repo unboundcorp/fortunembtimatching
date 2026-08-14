@@ -164,3 +164,30 @@ create index if not exists kakao_session_idx on kakao_links (session_id);
 
 alter table kakao_links enable row level security;
 -- 정책을 하나도 만들지 않는다 = service_role(서버)만 읽고 쓸 수 있다.
+
+-- =====================================================================
+-- 개선 의견 (R84, 2026-08-14) — 페이지 안에서 바로 쓰고 보내는 창구
+-- ★ 예전에는 mailto: 링크라 브라우저가 기본 메일 앱을 열었다. 메일 앱을 안 쓰는 분은
+--   거기서 그냥 포기했다(대표님이 맥북에서 겪으셨다). 이제 앱 안에서 받아 여기에 담는다.
+-- ★ contact 는 "답을 받고 싶은 분만" 스스로 적는 값이다. 안 적어도 보낼 수 있다.
+--   전화번호·카톡 아이디·메일 무엇이든 받는다 — 형식을 강요하면 그냥 안 적고 만다.
+--   개인정보이므로 개인정보처리방침에도 같은 내용을 적어 두었다.
+-- ★ mailed / mail_error 는 메일 발송을 켰을 때(RESEND_API_KEY가 있을 때)만 채워진다.
+--   지금은 발송을 끈 상태라 mailed=false 로 남는다 — 저장은 그것과 무관하게 된다.
+-- =====================================================================
+create table if not exists feedback (
+  id         bigserial primary key,
+  session_id text not null,
+  kind       text,                        -- howto | broken | wish
+  screen     text,                        -- 어느 화면에서 겪었는지 (앱이 자동으로 채운다)
+  body       text not null,
+  contact    text,                        -- 답을 받을 곳. 형식 자유. 안 적어도 된다.
+  mailed     boolean not null default false,
+  mail_error text,
+  created_at timestamptz not null default now()
+);
+create index if not exists feedback_created_idx on feedback (created_at desc);
+create index if not exists feedback_session_idx on feedback (session_id, created_at desc);
+
+alter table feedback enable row level security;
+-- 정책을 하나도 만들지 않는다 = service_role(서버)만 읽고 쓸 수 있다.
