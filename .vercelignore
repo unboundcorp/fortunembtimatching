@@ -1,0 +1,21 @@
+# Vercel 배포에서 뺄 것 (저장소에는 그대로 남는다)
+#
+# ★ 여기에 무엇을 넣기 전에 "서버 함수가 실행 중에 이 파일을 읽지 않는가"를 반드시 확인할 것.
+#   knowledge_saju_mbti.md 를 넣을 뻔했는데, api/_lib/knowledge.js 가 실행 중에 이 파일을
+#   readFileSync 로 읽는다. 뺐으면 유료 AI 해석이 통째로 죽었을 것이다. 그래서 안 넣었다.
+#   (2026-08-14)
+
+# index.html — GitHub Pages 옛 주소로 들어온 사람을 정식 주소로 보내주는 파일이다.
+#   GitHub Pages에는 반드시 있어야 하지만, Vercel에서는 없어야 한다.
+#   있으면 Vercel이 '/' 요청에서 이 파일을 먼저 집어 들어(정적 파일이 rewrite보다 먼저다),
+#   주소창에 다시 /fortune.html 이 붙는다. 빼 두면 vercel.json 의 rewrite가 걸려
+#   '/' 그대로 앱이 나온다. (대표님 지시)
+index.html
+
+# 옛 버전 백업 — 30개가 넘고 한 개가 1MB가 넘는다. 서비스에서 읽는 곳이 없다.
+archive/
+
+# 배포 전 검사기 — 내 컴퓨터에서만 돌린다.
+scripts/
+
+.DS_Store

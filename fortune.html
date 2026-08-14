@@ -3670,7 +3670,10 @@ var COMPAT_SUB = null; /* null=요약, 'saju'=사주궁합 상세, 'mbti'=MBTI�
 ===================================================================== */
 (function moveToLiveHost(){
   var OLD_HOSTS = ['unboundcorp.github.io'];
-  var LIVE = 'https://fortunembtimatching.vercel.app/fortune.html';
+  /* ★ R84 (2026-08-14) — 정식 주소를 inyeonjeom.kr 로 옮겼다(대표님 지시).
+     주소 끝에 파일 이름을 붙이지 않는다 — 이제 '/' 로 들어오면 그 자리에서 앱이 나온다
+     (vercel.json 의 rewrite). 옛 주소 fortunembtimatching.vercel.app 도 계속 살아 있다. */
+  var LIVE = 'https://inyeonjeom.kr/';
   if(OLD_HOSTS.indexOf(location.hostname) < 0) return;
   try{ location.replace(LIVE + location.search + location.hash); }catch(e){}
 })();
