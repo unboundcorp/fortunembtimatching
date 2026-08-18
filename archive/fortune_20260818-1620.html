@@ -17,15 +17,6 @@
 /* ===================== 리셋 & 베이스 ===================== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  /* ★ R88 (2026-08-18) — 만세력 지면 컨셉으로 색을 통째로 바꿨다 (대표님 지시, 외부 자문안).
-     지면 #F0EEE9 · 먹 #1C1A17 · 인주 #B41E30. 강조색은 인주 하나뿐이고,
-     나머지 색은 전부 오행(--em-*)이라 뜻이 있다 — 장식으로 쓰지 마라.
-     ★ 대비는 바꾸기 전 분홍 테마와 같거나 더 좋게 맞췄다(본문 AAA 7:1, 그래픽 3:1).
-       본문 글자 --ink 14.97 · --ink-dim 9.97 · --ink-faint 8.45 · --gold 8.58 · --pB 9.71.
-       --brand는 그래픽 전용이라 5.72다(예전 분홍 --brand는 2.79로 오히려 이보다 나빴다).
-     ★ 색을 새로 넣을 일이 생기면 반드시 이 표에 토큰으로 넣고 쓸 것.
-       화면 곳곳에 글자로 박으면 다음에 테마를 바꿀 때 그 자리만 옛 색으로 남는다 —
-       실제로 대운 그래프가 그렇게 청동색으로 남아 있었다(R87에서 고침). */
   /* R29 (2026-08-10 대표님 지시) — 화면 전체를 밝은 톤으로 뒤집었다.
      이 앱은 이제 "밝은 화면 하나"로만 만든다. color-scheme을 light로 고정해야
      <select>의 펼침 목록·스크롤바·기본 컨트롤이 OS가 다크 모드여도 밝게 그려진다.
@@ -42,22 +33,22 @@
      ★ 로고 원색(#F76391)은 글자로 쓰면 바탕 대비 2.79:1이라 못 읽는다.
        그래서 원색은 "그림"(로고·아이콘)에만 쓰고, 글자로 쓰는 브랜드색은 한참 어둡게 내렸다.
        같은 분홍 계열이되 역할에 따라 밝기를 나눈다 — 이게 이번 교체의 핵심이다. */
-  --void:#FAF8F3;          /* 진한 면 위에 얹는 밝은 글자 */
-  --base:#F0EEE9;          /* 페이지 바탕: 아주 옅은 분홍 흰색 */
-  --panel:#FAF8F3;         /* 카드 */
-  --panel-2:#FAF8F3;       /* 모달·입력칸 */
-  --panel-3:#E8E5DD;       /* 카드 안에 한 단 눌러 앉히는 면 */
-  --track:#E2DED4;         /* 막대·게이지의 빈 홈 */
-  --brand:#B41E30;         /* ★ 로고 원색 — 그림에만. 글자로 쓰지 말 것(2.79:1) */
-  --brand-2:#D13D4E;       /* 로고의 밝은 쪽 — 그라데이션·장식용 */
-  --ink:#1C1A17;           /* 본문 먹색 — 바탕 15.10:1 / 카드 15.91:1 */
+  --void:#FFFFFF;          /* 진한 면 위에 얹는 밝은 글자 */
+  --base:#FFF7F9;          /* 페이지 바탕: 아주 옅은 분홍 흰색 */
+  --panel:#FFFFFF;         /* 카드 */
+  --panel-2:#FFFFFF;       /* 모달·입력칸 */
+  --panel-3:#FDEFF3;       /* 카드 안에 한 단 눌러 앉히는 면 */
+  --track:#F7E1E8;         /* 막대·게이지의 빈 홈 */
+  --brand:#F76391;         /* ★ 로고 원색 — 그림에만. 글자로 쓰지 말 것(2.79:1) */
+  --brand-2:#FF8FAF;       /* 로고의 밝은 쪽 — 그라데이션·장식용 */
+  --ink:#2A1F24;           /* 본문 먹색 — 바탕 15.10:1 / 카드 15.91:1 */
   /* 설명 글자. 밝은 바탕으로 뒤집으면서 "밝게"가 아니라 "어둡게" 가야 한다 —
      방향만 바뀌었지 기준은 그대로 본문 AAA(7:1)다. 바탕 8.70:1 / 카드 9.50:1. */
-  --ink-dim:#3E3832;       /* 바탕 9.58:1 / 카드 10.10:1 */
+  --ink-dim:#4E3D46;       /* 바탕 9.58:1 / 카드 10.10:1 */
   /* 결제·보안 고지문. 위계(--ink > --ink-dim > --ink-faint)는 유지하되
      가장 흐린 이 색도 7:1을 넘긴다 — 바탕 7.30:1 / 카드 7.97:1.
      밝은 바탕에서는 세 단계 간격이 어두울 때보다 좁아 보인다(그건 아래 SELF_CHECK에 적었다). */
-  --ink-faint:#48433C;     /* 바탕 8.13:1 / 카드 8.56:1 — 가장 흐린 색도 7:1을 넘긴다 */
+  --ink-faint:#5A4750;     /* 바탕 8.13:1 / 카드 8.56:1 — 가장 흐린 색도 7:1을 넘긴다 */
   /* 금박. 밝은 바탕에 밝은 금색을 그대로 쓰면 사라지므로 채도·명도를 낮춘 청동빛으로 내렸다.
      글자로도 쓰이는 색이라 7:1을 넘겨야 한다.
      ★ 처음 잡은 값(#5F4A1C)은 "카드 위"만 보고 정해서 7.4:1이었는데, 실제로 이 색이 가장 많이
@@ -70,30 +61,30 @@
        맨바탕이 아니라 --gold-soft가 깔린 옅은 분홍 면이었다. 거기서 6.61:1로 떨어졌다.
        (R29에서 청동 골드를 잡을 때도 똑같은 실수를 했고 같은 방법으로 잡았다.)
        그래서 한 단 더 내리고, 깔리는 면의 알파도 함께 낮춘다. #98003C — 바탕 8.30:1. */
-  --gold:#841522;
-  --gold-2:#9A1728;
+  --gold:#98003C;
+  --gold-2:#A50F45;
   /* 그라데이션은 "거의 단색 + 미세한 광택"으로 좁혔다. 넓게 잡으면 밝은 쪽 끝에서
      그 위에 얹은 흰 글자가 7:1 아래로 떨어진다(실제로 재서 좁혔다 — 밝은 끝 7.13:1). */
   /* 버튼처럼 "면"으로 쓰는 자리는 조금 밝아도 된다 — 그 위 글자가 흰색이기 때문이다.
      #C81E59 위 흰 글자 5.55:1 (보통 글자 AA·큰 글자 AAA). */
-  --gold-gradient:linear-gradient(135deg,#A31C2B,#7A1220);  /* 흰 글자 기준 밝은 끝 7.4:1 — 계산이 아니라 화면에서 재서 정한 값 */
-  --gold-soft:rgba(180,30,48,.06);
-  --gold-line:rgba(28,26,23,.16);
+  --gold-gradient:linear-gradient(135deg,#AA0648,#8E0038);  /* 흰 글자 기준 밝은 끝 7.4:1 — 계산이 아니라 화면에서 재서 정한 값 */
+  --gold-soft:rgba(247,99,145,.055);
+  --gold-line:rgba(247,99,145,.30);
   /* 입력칸 테두리만 따로 둔다. 장식 헤어라인(--gold-line)은 1.4:1이라 "이게 입력칸이구나"를
      알려주지 못한다. 폼 컨트롤 경계는 3:1이 필요하므로 웜그레이 실선으로 분리했다(3.46:1). */
-  --field-line:#B8B2A5;
-  --red:rgba(140,23,37,.38);
+  --field-line:#C9A7B4;
+  --red:rgba(156,21,51,.38);
   /* ★ 경고·잠금 글자로도 쓰이므로 본문 기준(7:1)을 넘겨야 한다.
      처음 #B21E3C로 잡았다가 6.34:1인 것을 재보고 한 단 내렸다. #9C1533 — 바탕 7.76:1. */
-  --red-hi:#8C1725;
+  --red-hi:#9C1533;
   --ok:#3F6B45;
   /* 그림자는 테두리를 대신해 카드를 띄우는 수단이다. 밝은 바탕에서는 검정 알파를
      10% 안팎까지 낮춰야 얼룩이 아니라 "떠 있는 느낌"이 된다. */
-  --shadow:0 18px 44px rgba(60,54,44,.12),0 2px 6px rgba(60,54,44,.06);
-  --shadow-sm:0 4px 14px rgba(60,54,44,.10);
+  --shadow:0 18px 44px rgba(160,60,95,.14),0 2px 6px rgba(160,60,95,.06);
+  --shadow-sm:0 4px 14px rgba(160,60,95,.10);
   /* R22 — 카드에만 쓰는 부드러운 그림자. 기존 --shadow-sm보다 넓고 옅어서 "떠 있는 느낌"만 준다.
      새 색을 만든 게 아니다: 검정 알파값만 조정한 것이라 팔레트는 그대로다. */
-  --shadow-soft:0 6px 20px rgba(60,54,44,.08),0 1px 2px rgba(60,54,44,.05);
+  --shadow-soft:0 6px 20px rgba(160,60,95,.08),0 1px 2px rgba(160,60,95,.05);
   /* R22 — 여백 단계. 값을 손으로 흩어 적지 않고 여기 한 곳에서 키운다. */
   --gap-card:18px;
   --pad-card:24px;
@@ -106,8 +97,8 @@
      @font-face도, CDN 링크도, data: URI도 쓰지 않는다(외부 요청 0건이 이 앱의 검수 항목이다).
      순서: Pretendard → 애플 → 안드로이드 → 윈도우 → 총칭. */
   --sans:'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',Roboto,'Malgun Gothic','Segoe UI',system-ui,sans-serif;
-  --pA:#841522; /* 프로필A 라인색 — 브랜드 분홍(글자용 톤) */
-  --pB:#1D3E53; /* 프로필B 라인색 — 인디고. 분홍 옆에서 확실히 구분된다 */
+  --pA:#98003C; /* 프로필A 라인색 — 브랜드 분홍(글자용 톤) */
+  --pB:#3A3C72; /* 프로필B 라인색 — 인디고. 분홍 옆에서 확실히 구분된다 */
   /* 오행 5색. 밝은 바탕에서 사라지지 않도록 전부 어둡고 채도를 낮췄다.
      특히 금(金)은 예전 #cfd3d8(밝은 은색)이라 밝은 바탕에서 1.3:1로 아예 안 보였다.
      지금은 바탕 대비 4.4~5.5:1 — 그림 요소 기준(3:1)을 넉넉히 넘는다. */
@@ -234,7 +225,7 @@ h1,h2,h3,h4{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;}
   transition:color .15s,background .15s,border-color .15s;
 }
 .tab-btn[aria-current="page"]{color:var(--gold);background:var(--gold-soft);border-color:var(--gold-line);font-weight:600;}
-.tab-btn:hover{color:var(--ink);background:rgba(28,26,23,.05);}
+.tab-btn:hover{color:var(--ink);background:rgba(35,31,24,.05);}
 .tab-btn:active{opacity:.6;}
 
 main{flex:1;padding:28px 20px 96px;}
@@ -774,7 +765,7 @@ main{flex:1;padding:28px 20px 96px;}
 
 /* ===================== R20: 진태양시 보정 안내표 ===================== */
 .ts-table{display:flex;flex-direction:column;gap:0;margin:8px 0 4px;}
-.ts-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid rgba(28,26,23,.10);font-size:.84rem;}
+.ts-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid rgba(35,31,24,.10);font-size:.84rem;}
 .ts-row:last-child{border-bottom:0;}
 .ts-row .ts-k{color:var(--ink-dim);flex:none;}
 .ts-row .ts-v{color:var(--ink);text-align:right;word-break:keep-all;}
@@ -878,7 +869,7 @@ main{flex:1;padding:28px 20px 96px;}
 /* 지금 풀이를 무엇이 만들고 있는지 알리는 띠 */
 .interp-notice{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
   padding:12px 16px;margin:16px 0;border-radius:var(--r-md);background:var(--panel-3);
-  border:1px solid rgba(28,26,23,.10);font-size:.8rem;color:var(--ink-dim);line-height:1.6;}
+  border:1px solid rgba(35,31,24,.10);font-size:.8rem;color:var(--ink-dim);line-height:1.6;}
 .interp-notice.on{border-color:var(--gold-line);}
 .interp-notice.warn{border-color:var(--red);}
 .interp-badge{flex:0 0 auto;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px;
@@ -887,7 +878,7 @@ main{flex:1;padding:28px 20px 96px;}
 .interp-err{color:var(--red-hi);}
 
 /* 설정: 구매 내역 / 연동 */
-.biz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(28,26,23,.10);font-size:.86rem;}
+.biz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(35,31,24,.10);font-size:.86rem;}
 .biz-row:last-child{border-bottom:0;}
 .biz-row .k{color:var(--ink-dim);}
 .biz-row .v{color:var(--ink);font-weight:600;text-align:right;}
@@ -974,7 +965,7 @@ main{flex:1;padding:28px 20px 96px;}
 .why-panel{margin-top:14px;padding:16px 17px;border:1px solid rgba(88,68,22,.14);border-radius:var(--r-md);background:var(--panel-3);}
 .why-panel h4{font-size:.88rem;color:var(--gold);margin:14px 0 6px;font-weight:600;}
 .why-panel h4:first-child{margin-top:0;}
-.why-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(28,26,23,.10);font-size:.82rem;}
+.why-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(35,31,24,.10);font-size:.82rem;}
 .why-row:last-child{border-bottom:0;}
 .why-row .why-k{color:var(--ink-dim);}
 .why-row .why-v{color:var(--ink);text-align:right;word-break:keep-all;}
@@ -997,7 +988,7 @@ main{flex:1;padding:28px 20px 96px;}
 .daewoon-item .dw-strnum{font-size:.64rem;color:var(--ink-dim);}
 /* 가장 큰 구간 표시. .current(빨간 테두리)와 겹쳐도 서로 지우지 않도록 테두리가 아닌 안쪽 선으로 그린다. */
 .daewoon-item.peak{box-shadow:inset 0 0 0 1px var(--gold);}
-.dw-why-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid rgba(28,26,23,.10);font-size:.82rem;}
+.dw-why-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid rgba(35,31,24,.10);font-size:.82rem;}
 .dw-why-row:last-child{border-bottom:0;}
 .dw-why-row .dwy-k{color:var(--ink);}
 .dwy-parts{width:100%;font-size:.75rem;color:var(--ink-faint);line-height:1.6;}
@@ -1066,7 +1057,7 @@ main{flex:1;padding:28px 20px 96px;}
 .gc-member:hover{border-color:var(--gold);color:var(--ink);}
 .gc-member[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
 /* 전체 순위 목록 */
-.gc-rank-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(28,26,23,.10);font-size:.85rem;}
+.gc-rank-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(35,31,24,.10);font-size:.85rem;}
 .gc-rank-row:last-child{border-bottom:0;}
 .gc-rank-row .gr-no{color:var(--ink-faint);font-size:.74rem;flex:none;min-width:1.8em;padding-top:2px;}
 .gc-rank-row .gr-who{flex:1;min-width:0;word-break:keep-all;}
@@ -1087,7 +1078,7 @@ main{flex:1;padding:28px 20px 96px;}
 .inline-pick-val{font-size:.86rem;color:var(--ink-dim);}
 
 /* R74 — 테스트 키일 때 결제창 맨 위에 뜨는 띠 */
-.pay-testbar{background:var(--red-hi);color:var(--void);border-radius:12px;padding:12px 14px;margin-bottom:14px;}
+.pay-testbar{background:#8F2413;color:#fff;border-radius:12px;padding:12px 14px;margin-bottom:14px;}
 .pay-testbar strong{display:block;font-size:.95rem;font-weight:800;margin-bottom:4px;}
 .pay-testbar p{font-size:.82rem;line-height:1.6;margin:0;color:#fff;word-break:keep-all;}
 
@@ -1171,10 +1162,10 @@ main{flex:1;padding:28px 20px 96px;}
   /* R29 — 이 배지만은 일부러 어둡게 남긴다. "지금 화면은 테스트다"를 알리는 유일한 표시라
      밝은 화면에 묻히면 안 된다. 짙은 인주 알약 + 밝은 글자(11:1대). */
   border:1px solid #6E1B0E;background:rgba(110,27,14,.96);
-  color:var(--void);font-size:.74rem;font-weight:700;letter-spacing:0;box-shadow:var(--shadow-sm);}
+  color:#FFEDE8;font-size:.74rem;font-weight:700;letter-spacing:0;box-shadow:var(--shadow-sm);}
 .admin-flag .af-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .admin-flag .af-open{flex:none;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,237,232,.6);
-  color:var(--void);font-size:.72rem;font-weight:700;line-height:1.5;}
+  color:#FFEDE8;font-size:.72rem;font-weight:700;line-height:1.5;}
 .admin-flag .af-open:hover{background:rgba(255,237,232,.22);}
 @media (max-width:420px){ .admin-flag{font-size:.68rem;padding:6px 10px;gap:6px;} }
 
@@ -1185,7 +1176,7 @@ main{flex:1;padding:28px 20px 96px;}
   font-size:.76rem;transition:background .15s,color .15s,border-color .15s;}
 .admin-chip:hover{border-color:var(--gold);color:var(--ink);}
 .admin-chip[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
-.admin-log{margin-top:8px;padding:10px;border-radius:8px;background:var(--panel-2);border:1px solid rgba(28,26,23,.12);
+.admin-log{margin-top:8px;padding:10px;border-radius:8px;background:var(--panel-2);border:1px solid rgba(35,31,24,.12);
   font-size:.74rem;line-height:1.7;color:var(--ink-dim);max-height:190px;overflow:auto;
   white-space:pre-wrap;word-break:break-word;}
 
@@ -1288,7 +1279,7 @@ main{flex:1;padding:28px 20px 96px;}
 /* 용어 사전 화면 */
 .gl-tools{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:6px;}
 .gl-count{font-size:.8rem;color:var(--ink-dim);}
-.gl-item{padding:14px 0;border-bottom:1px solid rgba(28,26,23,.10);}
+.gl-item{padding:14px 0;border-bottom:1px solid rgba(35,31,24,.10);}
 .gl-item:last-child{border-bottom:0;}
 .gl-plain{font-size:1rem;color:var(--ink);font-weight:600;line-height:1.55;}
 .gl-term{font-size:.76rem;color:var(--gold);margin-top:3px;}
@@ -1414,10 +1405,6 @@ var COMPANY = {
      ★ 이름을 바꿀 일이 또 생기면 이 한 줄만 고치면 된다 —
        화면에 나가는 스무 곳이 전부 이 값을 보고 있다. */
   serviceName:  '인연점',
-  /* ★ R88 (2026-08-18) — 서비스 주소를 여기 한 곳에 둔다.
-     예전에는 moveToLiveHost 안에만 글자로 박혀 있어서 다른 데서 쓸 수가 없었다.
-     공유 카드에 주소를 적으려다 알았다 — 주소를 바꾸면 고칠 자리가 흩어진다. */
-  site:         'inyeonjeom.kr',
   legalName:    '주식회사 언바운드',
   legalNameEn:  'Unbound',
   ceo:          '박정인',
@@ -3791,7 +3778,7 @@ var COMPAT_SUB = null; /* null=요약, 'saju'=사주궁합 상세, 'mbti'=MBTI�
   /* ★ R84 (2026-08-14) — 정식 주소를 inyeonjeom.kr 로 옮겼다(대표님 지시).
      주소 끝에 파일 이름을 붙이지 않는다 — 이제 '/' 로 들어오면 그 자리에서 앱이 나온다
      (vercel.json 의 rewrite). 옛 주소 fortunembtimatching.vercel.app 도 계속 살아 있다. */
-  var LIVE = 'https://' + COMPANY.site + '/';
+  var LIVE = 'https://inyeonjeom.kr/';
   if(OLD_HOSTS.indexOf(location.hostname) < 0) return;
   try{ location.replace(LIVE + location.search + location.hash); }catch(e){}
 })();
@@ -7480,15 +7467,8 @@ function warmCharCache(){
     var k = keys[i++];
     var im = new Image();
     im.decoding = 'async';
-    /* ★ R88 (2026-08-18) — 여기서 _ok를 안 찍어서 공유 카드의 캐릭터가 통째로 사라져 있었다.
-       drawCharOnCanvas는 im._ok가 true일 때만 그린다. 그런데 이 미리받기는 다 받고 나서도
-       _ok를 안 남겼고, charImage()는 캐시에 뭔가 있으면 그대로 돌려주고 끝냈다.
-       그래서 미리받기가 먼저 끝난 사람(= 사실상 모든 사람. 이 함수는 켠 뒤 1.2초쯤 뒤에 돈다)은
-       공유 카드에서 캐릭터를 영원히 못 봤다. 사주 카드는 가운데가 절반 넘게 비어서 나갔다.
-       카톡으로 나가는 그림이라 사람들이 인연점을 처음 보는 자리인데 빈 종이가 나가고 있었다.
-       ★ 라이브(inyeonjeom.kr)에서 실제로 카드를 뽑아 확인한 사실이다. */
-    im.onload  = function(){ im._ok = true;  next(); };
-    im.onerror = function(){ im._ok = false; next(); };
+    /* 다 받든 실패하든 다음 것으로 넘어간다. 한 장 때문에 멈추지 않는다. */
+    im.onload = im.onerror = next;
     im.src = charImgSrc(k);
     if(!CHAR_IMG_CACHE[k]) CHAR_IMG_CACHE[k] = im;
   }
@@ -7503,17 +7483,7 @@ function scheduleCharWarm(){
 }
 function charImage(key, onReady){
   var im = CHAR_IMG_CACHE[key];
-  if(im){
-    if(im._ok){ if(onReady) onReady(); return im; }
-    /* ★ R88 — 캐시에 있는데 아직 다 안 받은 경우가 있다(미리받기가 도는 중).
-       예전에는 여기서 그냥 돌려보내서, 그림이 도착해도 카드를 다시 그리지 않았다.
-       도착하면 알려주도록 줄을 이어 둔다. 기존 onload를 지우지 않고 뒤에 덧붙인다. */
-    if(im._ok !== false && onReady){
-      var prev = im.onload;
-      im.onload = function(){ im._ok = true; if(prev) try{ prev(); }catch(e){} onReady(); };
-    }
-    return im;
-  }
+  if(im) { if(im._ok && onReady) onReady(); return im; }
   im = new Image();
   im.onload = function(){ im._ok = true; if(onReady) onReady(); };
   im.onerror = function(){ im._ok = false; };
@@ -13849,7 +13819,7 @@ function buildCoupleRelationSvg(sajuA, sajuB, nameA, nameB){
   branchesA.forEach(function(posA,i){
     branchesB.forEach(function(posB,j){
       var relSet = SajuEngine.branchRelations([{idx:sajuA[posA].branchIdx},{idx:sajuB[posB].branchIdx}]);
-      var color = relSet.hap.length>0 ? '#3F6B45' : (relSet.chung.length>0 ? 'var(--red-hi)' : null);
+      var color = relSet.hap.length>0 ? '#3F6B45' : (relSet.chung.length>0 ? '#8F2413' : null);
       if(color){
         var a=ptA(i), b=ptB(j);
         var line=document.createElementNS(ns,'line'); line.setAttribute('x1',a[0]); line.setAttribute('y1',a[1]); line.setAttribute('x2',b[0]); line.setAttribute('y2',b[1]); line.setAttribute('stroke',color); line.setAttribute('stroke-width','1.6'); line.setAttribute('opacity','.8');
@@ -13887,8 +13857,8 @@ function buildCoupleRelationSvg(sajuA, sajuB, nameA, nameB){
   var wrap=el('div',{style:'overflow-x:auto;'},[svg]);
   /* ★ R85-c — 범례도 '합 / 충' 두 글자였다. 무슨 뜻인지 그대로 적는다. */
   var legend=el('div',{class:'legend', style:'margin-top:8px;'},[
-    el('span',{},[el('span',{class:'dot',style:'background:var(--em-wood)'}),'짝이 맞아요']),
-    el('span',{},[el('span',{class:'dot',style:'background:var(--red-hi)'}),'부딪혀요'])
+    el('span',{},[el('span',{class:'dot',style:'background:#3F6B45'}),'짝이 맞아요']),
+    el('span',{},[el('span',{class:'dot',style:'background:#8F2413'}),'부딪혀요'])
   ]);
   var outer=el('div',{},[wrap,legend]);
   return outer;
@@ -16502,11 +16472,7 @@ function wrapCanvasText(ctx, text, x, yy, maxWidth, lineHeight){
   return yy2+lineHeight;
 }
 /* 캐릭터를 얹는 카드 종류. openShareModal(캔버스 높이)과 drawShareCard(그리는 자리)가 같은 표를 본다. */
-var SHARE_CARD_WITH_CHAR = { fortune:1, saju:1, report:1, mbtiReport:1, compatSummary:1 };
-/* ★ R88 — 오늘의 운세 카드에 캐릭터가 없어서 아래 3분의 1이 통째로 비어 있었다(실측).
-   카톡으로 나가는 자리라 사람들이 인연점을 처음 보는 화면인데, 빈 종이가 나가고 있었다.
-   오늘의 운세 화면이 보여주는 것과 같은 오행 캐릭터(일간 기준)를 얹는다 —
-   성격유형 캐릭터를 얹으면 화면에서 본 것과 다른 그림이 카드에 찍힌다. */
+var SHARE_CARD_WITH_CHAR = { saju:1, report:1, mbtiReport:1, compatSummary:1 };
 /* R62 — 이 카드에 어떤 캐릭터가 들어가는지. 그림을 미리 받아 두려고 쓴다.
    ★ 아래 drawShareCard가 고르는 규칙과 같아야 한다. 다르면 엉뚱한 그림을 받아 놓고
      정작 필요한 그림은 없어서 카드에 캐릭터가 빈다. */
@@ -16517,7 +16483,7 @@ function shareCardCharKeys(kind, profile, data){
     var kB = (data && data.pB) ? charKeyForMbti(data.pB.mbti) : null;
     return [kA, kB].filter(Boolean);
   }
-  var k = (kind === 'saju' || kind === 'fortune')
+  var k = (kind === 'saju')
     ? charKeyForDayStem(data && data.year ? data : getSajuResult(profile))
     : charKeyForMbti(profile.mbti);
   return k ? [k] : [];
@@ -16525,35 +16491,22 @@ function shareCardCharKeys(kind, profile, data){
 /* R29 — 공유 카드도 함께 밝은 톤으로 뒤집었다. 앱만 밝히고 내보내는 그림만 어두우면
    "저장하기"를 누른 순간 다른 서비스의 카드가 나온다. 글꼴도 화면과 같은 규칙을 쓴다:
    본문·제목·숫자는 고딕(CARD_SANS), 인장 '緣'과 사주 간지만 명조(CARD_SERIF). */
-/* ★ R88 (2026-08-18) — 카드 색을 앱과 같은 값으로 맞췄다.
-   예전 주석은 "공유 카드는 화면과 다른 '한지' 배색을 일부러 유지하는 자리"라고 적혀 있었다.
-   그때는 앱이 분홍이라 그 말이 맞았다 — 분홍 카드를 카톡에 내보내기는 어색했으니까.
-   그런데 앱 자체가 만세력 지면(--base #F0EEE9 · 먹 · 인주)으로 바뀌었다. 이제 카드가
-   따로 놀 이유가 없다. 오히려 같은 색이어야 카드를 본 사람이 앱에 들어왔을 때 같은 서비스로 읽힌다.
-   ★ 여기 값은 :root의 --base / --ink / --ink-faint / --brand / --gold와 짝이다.
-     Canvas는 CSS 변수를 못 읽으므로 숫자를 옮겨 적는다 — 한쪽만 고치지 마라. */
-var CARD_BG   = '#F0EEE9';            /* 지면  = --base */
-var CARD_INK  = '#1C1A17';            /* 먹    = --ink */
-var CARD_DIM  = '#48433C';            /* 흐린 글씨 = --ink-faint */
-var CARD_SEAL = '#B41E30';            /* 인주  = --brand */
-var CARD_ACC  = '#841522';            /* 인주 진함(글자 강조) = --gold */
-var CARD_LINE = 'rgba(28,26,23,.28)'; /* 먹 괘선 */
 var CARD_SANS  = "'Pretendard Variable','Pretendard','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif";
 var CARD_SERIF = "'Nanum Myeongjo','AppleMyungjo','Batang',serif";
 function drawShareCard(canvas, kind, profile, data){
   var ctx=canvas.getContext('2d');
   var w=canvas.width, h=canvas.height;
-  ctx.fillStyle=CARD_BG; ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle=CARD_INK; ctx.lineWidth=3; ctx.strokeRect(18,18,w-36,h-36);
-  ctx.strokeStyle=CARD_LINE; ctx.lineWidth=1; ctx.strokeRect(30,30,w-60,h-60);
+  ctx.fillStyle='#F3F0E9'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle='#584416'; ctx.lineWidth=3; ctx.strokeRect(18,18,w-36,h-36);
+  ctx.strokeStyle='rgba(88,68,22,.35)'; ctx.lineWidth=1; ctx.strokeRect(30,30,w-60,h-60);
 
-  ctx.beginPath(); ctx.arc(w-90,90,42,0,Math.PI*2); ctx.strokeStyle=CARD_SEAL; ctx.lineWidth=3; ctx.stroke();
-  ctx.fillStyle=CARD_SEAL; ctx.font='700 26px '+CARD_SERIF; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.beginPath(); ctx.arc(w-90,90,42,0,Math.PI*2); ctx.strokeStyle='#8F2413'; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle='#8F2413'; ctx.font='700 26px '+CARD_SERIF; ctx.textAlign='center'; ctx.textBaseline='middle';
   /* R36 — 인장 글자 자리에 로고 하트를 그린다. Canvas라 SVG를 쓸 수 없어 경로로 직접 그린다. */
   (function drawLogoMark(cx, cy, sc){
     ctx.save();
     ctx.translate(cx, cy); ctx.scale(sc, sc);
-    ctx.strokeStyle = CARD_SEAL; ctx.lineWidth = 3.4; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.strokeStyle = '#F76391'; ctx.lineWidth = 3.4; ctx.lineCap='round'; ctx.lineJoin='round';
     ctx.beginPath();
     ctx.moveTo(0, 16.5);
     ctx.bezierCurveTo(-17.5, 6.2, -17.5, -5.2, -8.5, -9.5);
@@ -16565,40 +16518,40 @@ function drawShareCard(canvas, kind, profile, data){
     ctx.restore();
   })(w-84, 78, 1.15);
 
-  ctx.fillStyle=CARD_ACC; ctx.font='700 30px '+CARD_SANS; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#584416'; ctx.font='700 30px '+CARD_SANS; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
   ctx.fillText(COMPANY.serviceName, 50, 100);
 
-  ctx.fillStyle=CARD_INK; ctx.font='400 17px '+CARD_SANS;
+  ctx.fillStyle='#231F18'; ctx.font='400 17px '+CARD_SANS;
   var y=170;
 
   if(kind==='fortune'){
-    ctx.font='700 22px '+CARD_SANS; ctx.fillStyle=CARD_INK;
+    ctx.font='700 22px '+CARD_SANS; ctx.fillStyle='#231F18';
     ctx.fillText(ownerLabel(profile.name)+' 오늘의 운세', 50, y); y+=16;
-    ctx.font='400 14px '+CARD_SANS; ctx.fillStyle=CARD_DIM;
+    ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#544E40';
     ctx.fillText(data.date, 50, y+18); y+=50;
     /* ★ R85 — 종합 점수를 카드 위쪽에 한 줄로. 점수가 없는 옛 기록이면 건너뛴다. */
     if(data.overall != null){
-      ctx.font='700 17px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
+      ctx.font='700 17px '+CARD_SANS; ctx.fillStyle='#584416';
       ctx.fillText('종합 '+data.overall+'점 · '+todayOverallWord(data.overall), 50, y); y+=34;
     }
     FORTUNE_CATS.forEach(function(cat){
       var item=data.items[cat.key];
-      /* ★ R88 — 여기 적혀 있던 "공유 카드는 일부러 청동색을 유지한다"는 주석을 지웠다.
-         앱이 만세력 지면으로 바뀌면서 그 이유가 사라졌다. 이제 카드도 앱과 같은 인주색이다.
-         주석이 코드와 다른 말을 하면 다음 사람이 코드가 아니라 주석을 믿는다. */
-      ctx.font='700 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
+      /* 카드 안의 색은 이 카드 전체가 쓰는 청동색(#584416) 그대로 둔다.
+         공유 카드는 화면과 다른 '한지' 배색을 일부러 유지하는 자리이고, 다른 카드 종류
+         (사주·성향·궁합)가 전부 이 색이라 여기만 바꾸면 운세 카드만 겉돈다. */
+      ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416';
       ctx.fillText(item.label+(item.score != null ? '  '+item.score+'점' : ''), 50, y); y+=22;
-      ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_INK;
+      ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18';
       y=wrapCanvasText(ctx, item.text, 50, y, w-100, 21); y+=14;
     });
-    y+=6; ctx.font='400 14px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
+    y+=6; ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#584416';
     ctx.fillText('행운 아이템 '+data.luckyItem+' · 행운 색상 '+data.luckyColor, 50, y);
   } else if(kind==='report'){
     ctx.font='700 22px '+CARD_SANS; ctx.fillText(ownerLabel(profile.name)+' 성향 리포트', 50, y); y+=40;
-    ctx.font='700 26px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText(profile.mbti, 50, y); y+=8;
-    ctx.font='400 16px '+CARD_SANS; ctx.fillStyle=CARD_INK; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=60;
-    ctx.font='700 16px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('오행 · '+profile.element, 50, y); y+=26;
-    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_INK;
+    ctx.font='700 26px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText(profile.mbti, 50, y); y+=8;
+    ctx.font='400 16px '+CARD_SANS; ctx.fillStyle='#231F18'; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=60;
+    ctx.font='700 16px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('오행 · '+profile.element, 50, y); y+=26;
+    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18';
     y=wrapCanvasText(ctx, ELEMENT_TRAIT[profile.element], 50, y, w-100, 21);
   } else if(kind==='saju'){
     var s=data.year?data:getSajuResult(profile);
@@ -16609,10 +16562,10 @@ function drawShareCard(canvas, kind, profile, data){
     cols.forEach(function(pos,i){
       var g=s[pos]; var cx=50+colW*i+colW/2;
       ctx.textAlign='center';
-      ctx.font='400 13px '+CARD_SANS; ctx.fillStyle=CARD_DIM; ctx.fillText(labelMap[pos], cx, y);
+      ctx.font='400 13px '+CARD_SANS; ctx.fillStyle='#544E40'; ctx.fillText(labelMap[pos], cx, y);
       /* 간지 두 글자만 명조로 남긴다 — 화면의 인장 칸(.pillar-seal .ch)과 같은 규칙이다. */
-      ctx.font='700 30px '+CARD_SERIF; ctx.fillStyle=CARD_INK; ctx.fillText(g.stem+g.branch, cx, y+42);
-      ctx.font='400 13px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText(g.stemH+g.branchH, cx, y+62);
+      ctx.font='700 30px '+CARD_SERIF; ctx.fillStyle='#231F18'; ctx.fillText(g.stem+g.branch, cx, y+42);
+      ctx.font='400 13px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText(g.stemH+g.branchH, cx, y+62);
     });
     ctx.textAlign='left';
     y+=110;
@@ -16621,26 +16574,26 @@ function drawShareCard(canvas, kind, profile, data){
   } else if(kind==='mbtiReport'){
     var rpt = buildMbtiReport16(profile);
     ctx.font='700 22px '+CARD_SANS; ctx.fillText(ownerLabel(profile.name)+' 성격유형 풀이', 50, y); y+=40;
-    ctx.font='700 30px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText(profile.mbti, 50, y); y+=8;
-    ctx.font='400 16px '+CARD_SANS; ctx.fillStyle=CARD_INK; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=64;
-    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('오프닝', 50, y); y+=22;
-    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_INK;
+    ctx.font='700 30px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText(profile.mbti, 50, y); y+=8;
+    ctx.font='400 16px '+CARD_SANS; ctx.fillStyle='#231F18'; ctx.fillText(TYPE_TAGLINE[profile.mbti], 50, y+26); y+=64;
+    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('오프닝', 50, y); y+=22;
+    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18';
     y=wrapCanvasText(ctx, rpt.sections[0].body.replace(/<[^>]+>/g,''), 50, y, w-100, 21); y+=18;
-    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('4지표', 50, y); y+=22;
-    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_INK;
+    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('4지표', 50, y); y+=22;
+    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18';
     ctx.fillText(profile.mbti.split('').join('  ·  '), 50, y);
   } else {
     var r=data;
     ctx.font='700 22px '+CARD_SANS; ctx.fillText(profile.name+' × '+r.pB.name, 50, y); y+=50;
-    ctx.font='700 60px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.textAlign='center';
+    ctx.font='700 60px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.textAlign='center';
     ctx.fillText(r.res.combined+'점', w/2, y+40); y+=70;
-    ctx.font='400 18px '+CARD_SANS; ctx.fillStyle=CARD_INK;
+    ctx.font='400 18px '+CARD_SANS; ctx.fillStyle='#231F18';
     ctx.fillText(r.res.combinedTier, w/2, y); y+=50;
     ctx.textAlign='left';
-    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('사주 관점', 50, y); y+=22;
-    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_INK; y=wrapCanvasText(ctx, r.res.saju.elemRel, 50, y, w-100, 21); y+=16;
-    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('성격유형 관점', 50, y); y+=22;
-    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_INK; y=wrapCanvasText(ctx, r.res.categories.chemistry, 50, y, w-100, 21);
+    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('사주 관점', 50, y); y+=22;
+    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18'; y=wrapCanvasText(ctx, r.res.saju.elemRel, 50, y, w-100, 21); y+=16;
+    ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416'; ctx.fillText('성격유형 관점', 50, y); y+=22;
+    ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18'; y=wrapCanvasText(ctx, r.res.categories.chemistry, 50, y, w-100, 21);
   }
 
   /* R19 — 캐릭터를 카드 아래쪽에 크게 얹는다. 화면과 같은 좌표(CHARACTERS)를 Path2D로 다시 그리는 방식이라
@@ -16655,36 +16608,28 @@ function drawShareCard(canvas, kind, profile, data){
       var kA=charKeyForMbti(profile.mbti), kB=charKeyForMbti(rr.pB.mbti);
       var cs=Math.max(104, Math.min(152, avail-38)), gap=26;
       var x0=(w-(cs*2+gap))/2, cy=top+Math.max(0,(avail-(cs+34))/2);
-      if(kA) drawCharOnCanvas(ctx, kA, x0, cy, cs, CARD_INK);
-      if(kB) drawCharOnCanvas(ctx, kB, x0+cs+gap, cy, cs, CARD_INK);
-      ctx.font='400 14px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
+      if(kA) drawCharOnCanvas(ctx, kA, x0, cy, cs, '#231F18');
+      if(kB) drawCharOnCanvas(ctx, kB, x0+cs+gap, cy, cs, '#231F18');
+      ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#584416';
       if(kA) ctx.fillText(CHARACTERS[kA].name.split(' · ')[0], x0+cs/2, cy+cs+22);
       if(kB) ctx.fillText(CHARACTERS[kB].name.split(' · ')[0], x0+cs+gap+cs/2, cy+cs+22);
     } else if(kind!=='compatSummary' && avail >= 150){
-      var key = (kind==='saju' || kind==='fortune')
+      var key = (kind==='saju')
         ? charKeyForDayStem(data && data.year ? data : getSajuResult(profile))
         : charKeyForMbti(profile.mbti);
       if(key){
         var size=Math.max(120, Math.min(196, avail-38));
         var cyy=top+Math.max(0,(avail-(size+34))/2);
-        drawCharOnCanvas(ctx, key, (w-size)/2, cyy, size, CARD_INK);
-        ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
+        drawCharOnCanvas(ctx, key, (w-size)/2, cyy, size, '#231F18');
+        ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#584416';
         ctx.fillText(CHARACTERS[key].name, w/2, cyy+size+26);
       }
     }
     ctx.textAlign='left';
   }
 
-  /* ★ R88 — 주소를 적는다. 이 카드는 카톡으로 나가서 남이 처음 보는 화면인데,
-     지금까지 "어디로 가면 되는지"가 카드 어디에도 없었다. 보고 나서 갈 데가 없으면
-     아무리 잘 만들어도 그 자리에서 끝난다. 고지문 위에 한 줄로 앉힌다. */
-  ctx.textAlign='center';
-  ctx.font='700 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
-  ctx.fillText(COMPANY.site+' 에서 내 운세도 보기', w/2, h-62);
-
-  ctx.font='400 11px '+CARD_SANS; ctx.fillStyle=CARD_DIM;
+  ctx.font='400 11px '+CARD_SANS; ctx.fillStyle='#544E40'; ctx.textAlign='center';
   ctx.fillText('자체 계산 만세력 기반 참고용 콘텐츠입니다', w/2, h-40);
-  ctx.textAlign='left';
 }
 
 /* =====================================================================
