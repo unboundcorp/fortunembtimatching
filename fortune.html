@@ -506,7 +506,100 @@ main{flex:1;padding:28px 20px 96px;}
 
 /* 레이더차트 */
 .radar-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;}
+/* R85 (2026-08-18) — buildRadarChart 용. SVG <text>는 CSS 글자색을 fill로 받는다.
+   축 이름은 본문 글자 기준(7:1)을 지켜 --ink-dim, 값은 강조색 --gold 를 쓴다.
+   글꼴 크기를 rem이 아니라 px로 두는 이유: SVG 안에서는 viewBox 좌표계가 기준이라
+   rem을 쓰면 기기 글자 크기 설정에 따라 도형 밖으로 삐져나간다. */
+.radar-svg{width:100%;max-width:320px;height:auto;display:block;}
+/* R85-c — 기운 점 눈금(두 사람 마주보기) · 성격유형 네 축 */
+.ed-wrap{margin:6px 0 4px;}
+.ed-head{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;}
+.ed-name{flex:1;font-size:.82rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ed-name.a{text-align:right;color:var(--pA);}
+.ed-name.b{text-align:left;color:var(--pB);}
+.ed-mid{flex:0 0 44px;text-align:center;font-size:.72rem;color:var(--ink-faint);}
+.ed-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.ed-row:last-child{margin-bottom:0;}
+.ed-dots{flex:1;display:flex;gap:4px;}
+.ed-dots.r{justify-content:flex-end;}
+.ed-dots.l{justify-content:flex-start;}
+/* ★ 빈 점에 테두리를 준다. 실측해 보니 빈 점(--track)과 카드 흰 바탕의 대비가 1.24:1이라
+   눈금이 몇 칸인지 아예 안 보였다("다섯 칸 중 둘"이 그냥 "점 두 개"로 읽힌다).
+   새 색을 만들지 않고 이미 있는 --gold-line 을 테두리로 쓴다. 채워진 점은 그 위를 덮는다. */
+.ed-dot{width:9px;height:9px;border-radius:50%;background:var(--track);flex:0 0 9px;
+  box-shadow:inset 0 0 0 1px var(--gold-line);}
+.ed-dot.on{box-shadow:none;}
+.ed-label{flex:0 0 44px;text-align:center;font-size:.86rem;font-weight:700;}
+
+.ma-sep{height:1px;background:var(--gold-line);margin:18px 0 14px;}
+.ma-note{font-size:.78rem;color:var(--ink-dim);line-height:1.75;margin-top:12px;}
+
+/* 성격유형 사분면 */
+.mq-wrap{margin:4px 0 2px;}
+.mq-axis-top{text-align:center;font-size:.7rem;color:var(--ink-faint);margin-bottom:6px;}
+.mq-axis-bot{text-align:center;font-size:.7rem;color:var(--ink-faint);margin-top:2px;}
+.mq-axis-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:.7rem;color:var(--ink-faint);margin-top:6px;}
+.mq-axis-name{color:var(--ink-dim);}
+.mq-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.mq-cell{background:var(--panel-3);border:1px solid transparent;border-radius:var(--r-md);
+  padding:11px 10px 9px;min-height:92px;display:flex;flex-direction:column;gap:3px;}
+/* 두 사람이 실제로 놓인 칸만 살린다. 나머지는 있는 줄만 알면 된다. */
+.mq-cell.on{background:var(--panel);border-color:var(--gold-line);box-shadow:var(--shadow-sm);}
+.mq-title{font-size:.8rem;font-weight:700;color:var(--ink-faint);}
+.mq-cell.on .mq-title{color:var(--ink);}
+.mq-desc{font-size:.68rem;color:var(--ink-faint);line-height:1.45;}
+.mq-pins{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto;padding-top:6px;}
+.mq-pin{height:20px;padding:0 8px;border-radius:999px;display:inline-flex;align-items:center;
+  font-size:.66rem;font-weight:700;color:var(--void);white-space:nowrap;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;}
+.mq-pin.a{background:var(--pA);}
+.mq-pin.b{background:var(--pB);}
+.mq-chips{margin-top:12px;display:flex;flex-direction:column;gap:7px;}
+.mq-chip-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.mq-who{font-size:.78rem;font-weight:700;}
+.mq-who.a{color:var(--pA);}
+.mq-who.b{color:var(--pB);}
+.mq-mbti{font-size:.7rem;color:var(--ink-faint);font-family:var(--font-mono,inherit);letter-spacing:.04em;}
+.mq-chip{font-size:.68rem;color:var(--ink-dim);background:var(--panel-3);
+  border-radius:var(--r-pill);padding:2px 9px;}
+@media (max-width:360px){
+  .mq-cell{min-height:86px;padding:9px 8px 8px;}
+  .mq-title{font-size:.74rem;}
+  .mq-desc{font-size:.64rem;}
+  .mq-pin{font-size:.62rem;padding:0 6px;}
+}
+
+/* R85-b — 오늘의 총평 문단 */
+.today-summary{margin-top:16px;padding-top:16px;border-top:1px solid var(--gold-line);}
+.today-summary-head{font-size:.78rem;font-weight:700;color:var(--gold);letter-spacing:.04em;margin-bottom:10px;}
+.today-summary p:not(.today-summary-head){font-size:.92rem;color:var(--ink);line-height:1.85;margin-bottom:11px;}
+.today-summary p:last-child{margin-bottom:0;}
+/* R85 — 오늘의 운세: 종합 점수 카드 */
+.today-gauge-row{display:flex;justify-content:center;margin:6px 0 2px;}
+.today-score-note{font-size:.78rem;color:var(--ink-dim);line-height:1.75;margin-top:14px;}
+.today-score-note.dim{color:var(--ink-faint);margin-top:8px;}
+/* 항목 카드 오른쪽: 별 + 점수 숫자 */
+.today-cat-score{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.today-cat-num{font-size:.9rem;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.today-cat-none{font-size:.78rem;color:var(--ink-faint);white-space:nowrap;flex-shrink:0;}
+/* 왜 이 점수인지 */
+.today-why{font-size:.78rem;color:var(--ink-dim);line-height:1.7;margin-top:10px;
+  padding-top:10px;border-top:1px dashed var(--gold-line);}
+@media (max-width:360px){
+  /* 좁은 화면에서는 제목과 점수가 한 줄에 안 들어간다. 점수를 아래로 내린다. */
+  .today-cat-num{font-size:.82rem;}
+  .radar-label{font-size:11px;}
+  .radar-value{font-size:10px;}
+}
+.radar-label{fill:var(--ink-dim);font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:-.01em;}
+.radar-value{fill:var(--gold);font-family:var(--sans);font-size:11px;font-weight:700;}
+/* 움직임을 줄여 쓰는 분에게는 그리는 효과를 뺀다(이 앱의 기존 규칙과 동일). */
+.radar-area{animation:radarIn .5s ease both;transform-origin:center;}
+@keyframes radarIn{from{opacity:0;transform:scale(.82);}to{opacity:1;transform:scale(1);}}
+@media (prefers-reduced-motion:reduce){.radar-area{animation:none;}}
 .legend{display:flex;gap:18px;font-size:.8rem;flex-wrap:wrap;justify-content:center;}
+.radar-note{font-size:.78rem;color:var(--ink-dim);line-height:1.75;text-align:left;margin-top:4px;}
 .legend span{display:inline-flex;align-items:center;gap:6px;}
 .dot{width:10px;height:10px;border-radius:50%;}
 
@@ -1437,6 +1530,18 @@ function paymentMethodsText(){ return paymentMethodsMissing() ? '확인 중' : P
                   개발자도구로 그 함수에 중단점을 걸고 해제 인자를 직접 넘기면 미결제 상태에서도
                   문장을 뽑아낼 수 있다. QA에서 실제로 재현됐다. 이건 버그가 아니라
                   "유료 본문을 브라우저가 만든다"는 구조에서 나오는 필연이다.
+
+                ★ R85-e (2026-08-18, QA 지적 F-5) — 궁합 상세(compat_full)도 같은 등급이다.
+                  위 두 줄이 saju_full 안의 이야기로만 적혀 있어서 궁합이 통째로 빠져 있었다.
+                  궁합은 유료 본문 전부(사주 궁합 상세 3칸 · 성격유형 궁합 상세 4칸 · 연애 성향)가
+                  이 HTML의 문구뱅크에서 조립된다. 서버를 거치는 통로(paintReportInto)를 부르는 곳은
+                  사주 풀이(saju_full)와 성격유형 풀이(mbti_full) 둘뿐이다 — 궁합은 부르지 않는다.
+                  서버 쪽은 이미 받을 준비가 돼 있다(api/_lib/aiprompt.js의 AI_PRODUCTS에 compat_full 등록).
+                  클라이언트가 안 부를 뿐이다. 닫으려면 아래 "닫는 방법"과 같은 작업이 필요하고,
+                  추가로 두 가지를 먼저 손봐야 한다:
+                    · contentPayloadFrom()의 허용 목록이 사주 모양만 알아서 궁합 payload를 통째로 버린다
+                    · Interpreter.buildCompatPayload가 두 사람의 "이름"을 담고 있다 —
+                      이 앱은 닉네임을 서버로 보내지 않는 것이 규칙이다. 반드시 빼고 보내야 한다.
 
                 감수하는 이유: 필요한 것이 "개발자도구를 열고 중단점을 걸 줄 아는 사람"이고,
                 얻는 것이 "문구뱅크 조합 문장"이다. 이 정도 난이도와 가치라면 판매를 막을 사유가 아니라고 봤다.
@@ -3763,11 +3868,14 @@ var PRODUCTS = {
                          '강점과 그림자, 관계에서 반복되는 패턴',
                          '앞으로 어느 쪽으로 크면 좋을지'] },
   compat_full:  { id:'compat_full',  name:'궁합 상세 전체', price:1900, kind:'once',
-                  desc:'사주 궁합 상세 · 성격유형 궁합 상세 · 궁합 시각화',
-                  opens:['두 사람의 기운이 어디서 맞물리고 어디서 부딪히는지',
-                         '연애·우정·갈등 상황별 성격유형 궁합 해석',
-                         '점수 다섯 항목이 각각 왜 그렇게 나왔는지',
-                         '그림 세 장 — 기운 균형 · 인연 매듭 · 연결선'] },
+                  desc:'사주 궁합 상세 · 성격유형 궁합 상세 · 그림으로 보는 두 사람',
+                  /* ★ R85-e (QA 지적 F-3) — '점수 다섯 항목이 각각 왜 그렇게 나왔는지'는
+                     이미 무료 요약 화면에 다 있다(막대 다섯 개 + 접이식 근거 패널, 잠금 없음).
+                     결제 전 목록에 적어 두면 이미 본 것을 다시 파는 셈이다. 실제로 열리는 것만 적는다. */
+                  opens:['두 사람의 기운이 어디서 맞물리고 어디서 부딪히는지 — 자세한 풀이',
+                         '연애·우정·케미·갈등 네 상황별 성격유형 궁합 해석',
+                         '사주로 본 나의 연애 성향',
+                         '그림 — 기운 견주기 · 성격유형 사분면 · 인연 매듭 · 글자 연결선'] },
   premium_pass: { id:'premium_pass', name:'전체 이용권 7일', price:4900, kind:'pass', days:7,
                   desc:'위 모든 상세 해석을 7일간',
                   opens:['사주 풀이 · 성격유형 풀이 · 궁합 상세 전부',
@@ -5780,10 +5888,14 @@ function buildBillingPanel(){
   ]));
   /* ★ R13에서 월별 운세 상세·대운 구간 상세가 유료 범위(saju_full)에 들어왔다. 이 둘은 계산값에
      한두 문장을 붙이는 형태라 서버 본문 규격(sections 배열)에 태우지 않고 이 브라우저에서 만든다.
-     위 줄이 "유료 본문이 전부 서버에서 온다"는 뜻으로 읽히면 과장이므로 예외를 같은 자리에 적는다. */
+     위 줄이 "유료 본문이 전부 서버에서 온다"는 뜻으로 읽히면 과장이므로 예외를 같은 자리에 적는다.
+     ★ R85-e (2026-08-18, QA 지적 F-5) — 여기에 궁합이 빠져 있었다.
+       궁합 상세(compat_full)는 유료 본문 전체가 이 브라우저에서 만들어진다. 서버를 거치는 통로
+       (paintReportInto → /api/content)를 부르는 곳은 사주 풀이와 성격유형 풀이 둘뿐이다.
+       빠뜨린 채 두면 이 카드가 "궁합도 서버에서 온다"는 뜻으로 읽힌다 — 사실이 아니다. */
   if(serverContentMode()){
     card.appendChild(el('p',{class:'biz-hint'},[
-      '월별 운세 상세와 대운 구간 상세는 계산 결과에 붙는 짧은 해설이라, 서버 본문 규격을 거치지 않고 이 브라우저에서 만듭니다. 잠긴 구간은 문장 자체를 만들지 않으므로 미결제 상태에서는 화면에 나오지 않습니다.'
+      '월별 운세 상세 · 대운 구간 상세 · 궁합 상세는 계산 결과에 붙는 해설이라, 서버 본문 규격을 거치지 않고 이 브라우저에서 만듭니다. 잠긴 구간은 문장 자체를 만들지 않으므로 미결제 상태에서는 화면에 나오지 않습니다.'
     ]));
   }
   card.appendChild(el('div',{class:'biz-row'},[
@@ -7390,6 +7502,11 @@ function calcStarSign(month, day){
   }
   return STAR_SIGNS[0].name;
 }
+/* ★ R85 (2026-08-18) — 더 이상 쓰이지 않는다.
+   유일한 사용처였던 오행 레이더(buildRadarSvg)를 실제 오행 개수(dominantElementIdx)로 바꿨다.
+   대표 오행 하나만 보고 95/55/28을 찍던 함수라, 대표 오행이 같으면 도형이 같아졌다.
+   지우지 않고 남겨 둔 이유: 옛 공유 카드 이미지가 이 모양으로 나가 있어, 왜 그렇게 생겼는지
+   되짚을 근거가 필요하다. 새로 부르지 말 것. */
 function elementProfile(primaryIdx){
   return ELEMENTS.map(function(_,i){
     if(i===primaryIdx) return 95;
@@ -7399,12 +7516,19 @@ function elementProfile(primaryIdx){
   });
 }
 function elementScore(aIdx,bIdx){
+  /* ★ R85-d (QA 지적 F-2) — 널가드가 없어서 elementScore(undefined,undefined)가 75를 돌려줬다.
+     계산한 적 없는 75가 종합 점수의 10%로 들어간다. 못 구하면 못 구했다고 말한다. */
+  if(typeof aIdx !== 'number' || typeof bIdx !== 'number') return null;
   if(aIdx===bIdx) return 75;
   var diff=((bIdx-aIdx)+5)%5;
   if(diff===1||diff===4) return 92;
   return 40;
 }
 function zodiacScore(aIdx,bIdx){
+  /* ★ R85 — 인덱스가 없으면(둘 중 하나라도 null/undefined) 맨 아래 기본값 65가 그냥 나갔다.
+     계산한 적 없는 점수가 종합 점수에 10%로 섞이는 자리라, 못 구했다는 사실을 null로 돌려
+     호출부가 "정보 부족"으로 다루게 한다. */
+  if(typeof aIdx !== 'number' || typeof bIdx !== 'number') return null;
   var diff=Math.abs(aIdx-bIdx); diff=Math.min(diff,12-diff);
   if(diff===0) return 70;
   if(diff===4) return 90;
@@ -8165,12 +8289,15 @@ PB.hourKnown = {
   yes:'태어난 시까지 알고 보니, 이 겉과 속의 차이가 하루 중에도 시간대에 따라 오르내리는 편일 거예요. 아침엔 유독 속내를 감추다가 밤이 되면 솔직해지는 식으로, 시간에 따라 다른 얼굴이 드러나는 걸 스스로도 느낀 적 있을 거예요.',
   no:'다만 태어난 시를 몰라서 이 부분은 이 정도까지만 짚을게. 시간을 알게 되면 더 정확히 볼 수 있어요. 시주까지 더해지면 내면·자녀운·말년운처럼 더 세밀한 부분까지 짚어볼 수 있으니, 나중에라도 태어난 시각을 확인할 수 있다면 다시 계산해보는 걸 추천해요.'
 };
+/* ★ R85-b (2026-08-18) — 다섯 문장 모두 십성 이름으로 시작했다("정관이 자리 잡고 있어서").
+   사주를 모르면 첫 두 글자에서 막힌다(대표님 지시). 쉬운 말을 앞에, 용어는 괄호에.
+   뒤 내용은 한 글자도 바꾸지 않았다 — 판정도 그대로다. */
 PB.lovePattern = { // 연애운 5패턴
-  jeonggwan:'정관이 자리 잡고 있어서, 연애에서도 예의와 신뢰를 우선으로 보는 편이에요. <strong>안정감을 주는 사람</strong>에게 마음이 잘 열려. 화려한 이벤트보다 한결같은 태도를 더 중요하게 여기고, 상대가 약속을 잘 지키는 사람인지부터 무의식적으로 살피게 돼요.',
-  pyeongwan:'편관이 자리 잡고 있어서, 밀고 당기는 긴장감이나 <strong>강렬한 끌림</strong>이 있는 관계에 쉽게 빠지는 편이에요. 무난하고 평탄한 관계보다는 어딘가 위태롭거나 자극적인 관계에 마음이 더 크게 흔들리는 경향이 있어서, 스스로도 놀랄 만큼 몰입하는 순간이 있을 거예요.',
-  jeongjae:'정재가 자리 잡고 있어서, 연애에서도 현실적인 계산과 <strong>꾸준함</strong>을 중요하게 여겨요. 순간의 설렘보다 이 관계가 앞으로도 안정적으로 이어질 수 있는지를 먼저 따져보는 편이라, 신중한 만큼 관계가 시작되면 쉽게 흔들리지 않아요.',
-  pyeonjae:'편재가 자리 잡고 있어서, 다양한 인연에 마음이 열려 있고 <strong>새로운 만남</strong> 자체를 즐기는 편이에요. 한 사람에게만 시야를 좁히기보다 여러 인연을 폭넓게 만나보는 걸 즐기는 타입이라, 정착보다 탐색의 시기를 더 오래 즐기는 경우가 많아요.',
-  weak:'관성과 재성이 뚜렷하게 드러나지 않아서, 연애보다 <strong>스스로의 중심</strong>을 먼저 챙기는 시기를 지나고 있을 수 있어요. 억지로 연애를 서두르기보다 지금은 나 자신을 다지는 시간으로 받아들이는 편이 오히려 자연스러운 흐름일 수 있어요.'
+  jeonggwan:'나를 반듯하게 다잡는 기운(정관)이 자리 잡고 있어서, 연애에서도 예의와 신뢰를 우선으로 보는 편이에요. <strong>안정감을 주는 사람</strong>에게 마음이 잘 열려. 화려한 이벤트보다 한결같은 태도를 더 중요하게 여기고, 상대가 약속을 잘 지키는 사람인지부터 무의식적으로 살피게 돼요.',
+  pyeongwan:'나를 몰아붙이는 기운(편관)이 자리 잡고 있어서, 밀고 당기는 긴장감이나 <strong>강렬한 끌림</strong>이 있는 관계에 쉽게 빠지는 편이에요. 무난하고 평탄한 관계보다는 어딘가 위태롭거나 자극적인 관계에 마음이 더 크게 흔들리는 경향이 있어서, 스스로도 놀랄 만큼 몰입하는 순간이 있을 거예요.',
+  jeongjae:'차곡차곡 쌓는 기운(정재)이 자리 잡고 있어서, 연애에서도 현실적인 계산과 <strong>꾸준함</strong>을 중요하게 여겨요. 순간의 설렘보다 이 관계가 앞으로도 안정적으로 이어질 수 있는지를 먼저 따져보는 편이라, 신중한 만큼 관계가 시작되면 쉽게 흔들리지 않아요.',
+  pyeonjae:'넓게 벌리는 기운(편재)이 자리 잡고 있어서, 다양한 인연에 마음이 열려 있고 <strong>새로운 만남</strong> 자체를 즐기는 편이에요. 한 사람에게만 시야를 좁히기보다 여러 인연을 폭넓게 만나보는 걸 즐기는 타입이라, 정착보다 탐색의 시기를 더 오래 즐기는 경우가 많아요.',
+  weak:'나를 다잡는 기운(관성)도 손에 쥐는 기운(재성)도 뚜렷하게 드러나지 않아서, 연애보다 <strong>스스로의 중심</strong>을 먼저 챙기는 시기를 지나고 있을 수 있어요. 억지로 연애를 서두르기보다 지금은 나 자신을 다지는 시간으로 받아들이는 편이 오히려 자연스러운 흐름일 수 있어요.'
 };
 PB.dohwaExtra = [ // 홍염/도화 유무 관련 8종
   '거기에 도화 기운까지 겹쳐 있어서, 본인 의도와 상관없이 유독 시선을 끄는 매력이 있었을 거예요.',
@@ -8898,31 +9025,360 @@ function computeMbtiFromAnswers(answers){
 }
 
 /* =====================================================================
+   R85 (2026-08-18) — 오늘의 운세 점수를 "실제 계산"으로 바꾼다
+   ---------------------------------------------------------------------
+   ★ 왜 손댔나 (대표님께 보고하고 2)번으로 승인받은 건)
+     예전 별점은 이 한 줄이었다:  var stars = 1 + (seed % 5);
+     seed는 (성격유형 + 이름 + 오늘 날짜 + 프로필id)를 djb2로 해시한 값이다.
+     사주도, 오늘 일진도, 오행도 들어가지 않는다. 같은 사람이 같은 날 보면 늘 같은 값이 나오니
+     "계산된 것"처럼 보이지만 실제로는 이름과 날짜로 만든 난수의 나머지였다.
+     그 위에 종합 점수판과 레이더를 얹으면 난수에 그래프 옷을 입히는 꼴이 된다.
+
+   ★ 새 이론을 만들지 않았다. 이 앱의 '월별 운세'(buildMonthlyFortune)가 이미 쓰고 있는
+     판정 방식을 그대로 '오늘'로 옮긴 것뿐이다. 쓰는 함수도 전부 이미 있던 것이다.
+       총운       ← 오늘 지지가 원국에 합/충을 새로 만드는가 (branchRelations)
+       애정운     ← 오늘 지지 ↔ 일지(배우자궁) 관계        (branchRelations)
+       금전운     ← 오늘 천간의 십성이 재성인가            (sipseongOf)
+       학업·직장운 ← 십성 5대분류                          (groupCategory)
+       건강운     ← 오늘 지지 오행이 원국의 가장 여린/진한 오행과 겹치는가 (dominantElementIdx)
+     여기에 십이운성(일간이 오늘 지지에서 어느 단계인가)을 ±로 얹는다.
+
+   ★ 티어 → 점수 표는 이 앱이 이미 쓰던 방식과 같다.
+     elementScore(40/75/92), zodiacScore(35/55/65/70/90), branchScore(40/65/90) 처럼
+     "판정 결과를 눈금 몇 개짜리 점수로 바꾸는 표"를 명시적으로 둔다. 숨은 공식이 아니다.
+
+   ★ 한계는 화면에 적는다. 이 표의 숫자 자체는 명리의 정설이 아니라 이 앱이 정한 눈금이다.
+     그래서 '오늘의 운세' 화면에 근거와 함께 그 사실을 밝힌다.
+===================================================================== */
+
+/* 총운 — 오늘 지지가 타고난 여덟 글자에 새로 만드는 관계 */
+var TODAY_TOTAL_SCORE  = { hap:84, none:62, chung:44 };
+/* 애정운 — 오늘 지지 ↔ 일지(배우자궁). 육합 > 삼합 > 같은 글자 > 무관 > 파 > 충 */
+var TODAY_LOVE_SCORE   = { hap:88, samhap:80, same:66, none:58, pa:48, chung:42 };
+/* 금전운 — 오늘 천간의 십성. 재성이 재물을 뜻하고, 정재(꾸준한 재물)를 편재(들쭉날쭉한 재물)보다 위로 본다.
+   비겁은 재물을 나눠 갖는 자리(분탈)라 가장 아래다. */
+var TODAY_MONEY_SCORE  = { '정재':86, '편재':78, '식상':70, '관성':60, '인성':58, '비겁':50 };
+/* 학업·직장운 — 십성 5대분류. 관성=직장·명예, 인성=문서·공부가 이 항목의 중심이다. */
+var TODAY_WORK_SCORE   = { '관성':84, '인성':80, '식상':70, '재성':62, '비겁':52 };
+/* 건강운 — 원국에서 가장 여린 기운이 오늘 채워지면 좋고, 이미 가장 진한 기운이 더해지면 과하다(억부).
+   이 앱이 사주 화면에서 쓰는 오행-장부 설명(가장 진한 쪽은 무리가 가기 쉽다)과 같은 방향이다. */
+var TODAY_HEALTH_SCORE = { weak:78, other:66, most:50 };
+/* 종합 점수 가중치 — 총운을 2배로 본다. 다섯 항목 각각이 서로 다른 근거를 갖고 있어
+   어느 하나가 다른 하나에서 파생되지 않는다(그래서 총운을 넣어도 순환이 아니다). */
+var TODAY_WEIGHTS = { total:2, love:1, money:1, work:1, health:1 };
+
+function clamp100(v){ return Math.max(1, Math.min(99, Math.round(v))); }
+/* 종합 점수를 한마디로. 숫자만 크게 띄우면 "몇 점이면 좋은 건데?"가 남는다.
+   경계는 궁합 등급(85/70/55/40)과 같은 눈금을 쓴다 — 한 앱 안에서 기준이 두 벌이 되지 않게. */
+function todayOverallWord(score){
+  if(score>=85) return '흐름이 아주 잘 맞는 하루';
+  if(score>=70) return '순하게 풀리는 하루';
+  if(score>=55) return '무난하게 흘러가는 하루';
+  if(score>=40) return '한 박자 늦추면 좋은 하루';
+  return '조심스럽게 움직이면 좋은 하루';
+}
+/* 점수(1~99) → 별(1~5). 화면에 점수와 별이 함께 나오므로 둘이 어긋나면 안 된다. */
+function scoreToStars(score){ return Math.max(1, Math.min(5, Math.round(score/20))); }
+
+/* 오늘 하루 계산의 알맹이. 사주를 못 구하면 null을 돌려준다 — 없는 값을 지어내지 않는다. */
+function computeTodayScores(profile, todayGz){
+  var saju = getSajuResult(profile);
+  if(!saju || !todayGz) return null;
+
+  var dayStemIdx   = saju.day.stemIdx;
+  var dayBranchIdx = saju.day.branchIdx;      /* 일지 = 배우자궁 */
+  var branchList = [{idx:saju.year.branchIdx},{idx:saju.month.branchIdx},{idx:saju.day.branchIdx}];
+  if(saju.hour) branchList.push({idx:saju.hour.branchIdx});
+
+  /* (a) 오늘 지지 ↔ 원국 전체 → 총운 */
+  var baseRel  = SajuEngine.branchRelations(branchList);
+  var todayRel = SajuEngine.branchRelations(branchList.concat([{idx:todayGz.branchIdx}]));
+  var totalTier = (todayRel.chung.length > baseRel.chung.length) ? 'chung'
+                : ((todayRel.hap.length > baseRel.hap.length || todayRel.samhap.length > baseRel.samhap.length) ? 'hap' : 'none');
+
+  /* (b) 오늘 천간 ↔ 일간 십성 → 금전운 · 학업/직장운 */
+  var sipName  = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[todayGz.stemIdx], SajuEngine.STEM_YY[todayGz.stemIdx]);
+  var sipGroup = groupCategory(sipName);
+  var moneyKey = (sipName==='정재' || sipName==='편재') ? sipName : sipGroup;
+
+  /* (c) 오늘 지지 ↔ 일지 → 애정운.
+     판정표가 두 벌이 되지 않도록 새 규칙을 만들지 않고 branchRelations에 두 글자만 넣어 조회한다.
+     인해(寅亥)처럼 육합과 파가 겹치는 조합이 있어 육합 → 충 → 삼합 → 파 순으로 본다
+     (월별 운세와 완전히 같은 순서다). */
+  var pairRel = SajuEngine.branchRelations([{idx:todayGz.branchIdx},{idx:dayBranchIdx}]);
+  var loveTier;
+  if(todayGz.branchIdx === dayBranchIdx) loveTier = 'same';
+  else if(pairRel.hap.length)     loveTier = 'hap';
+  else if(pairRel.chung.length)   loveTier = 'chung';
+  else if(pairRel.samhap.length)  loveTier = 'samhap';
+  else if(pairRel.pa.length)      loveTier = 'pa';
+  else                            loveTier = 'none';
+
+  /* (d) 오늘 지지의 오행 ↔ 원국 오행 분포 → 건강운 */
+  var elemInfo = dominantElementIdx(saju);
+  var counts = elemInfo.counts;
+  var weakestElem = counts.indexOf(Math.min.apply(null, counts));
+  var mostElem    = counts.indexOf(Math.max.apply(null, counts));
+  var todayElem   = SajuEngine.BRANCH_ELEM[todayGz.branchIdx];
+  var healthTier  = (todayElem===weakestElem) ? 'weak' : (todayElem===mostElem ? 'most' : 'other');
+
+  /* (e) 십이운성 — 내 일간이 오늘 지지에서 어느 단계인가. 이 앱이 대운 강도에서 쓰는
+     같은 표(DAEUN_STAGE_POWER, 3~15)를 그대로 쓴다. 9를 가운데로 두고 ±로 얹는다. */
+  var stageName = twelveStageOf(dayStemIdx, todayGz.branchIdx);
+  var stagePow  = DAEUN_STAGE_POWER[stageName];
+  var stageAdj  = (typeof stagePow === 'number') ? (stagePow - 9) * 1.6 : 0;   /* 약 -9.6 ~ +9.6 */
+
+  var scores = {
+    total:  clamp100((TODAY_TOTAL_SCORE[totalTier]  != null ? TODAY_TOTAL_SCORE[totalTier]  : 62) + stageAdj),
+    love:   clamp100((TODAY_LOVE_SCORE[loveTier]    != null ? TODAY_LOVE_SCORE[loveTier]    : 58) + stageAdj*0.5),
+    money:  clamp100((TODAY_MONEY_SCORE[moneyKey]   != null ? TODAY_MONEY_SCORE[moneyKey]   : 60) + stageAdj*0.5),
+    work:   clamp100((TODAY_WORK_SCORE[sipGroup]    != null ? TODAY_WORK_SCORE[sipGroup]    : 62) + stageAdj*0.5),
+    health: clamp100((TODAY_HEALTH_SCORE[healthTier]!= null ? TODAY_HEALTH_SCORE[healthTier]: 66) + stageAdj*0.5)
+  };
+
+  var wSum = 0, vSum = 0;
+  Object.keys(TODAY_WEIGHTS).forEach(function(k){ wSum += TODAY_WEIGHTS[k]; vSum += TODAY_WEIGHTS[k]*scores[k]; });
+  var overall = clamp100(vSum/wSum);
+
+  return {
+    scores: scores,
+    overall: overall,
+    /* 화면에 "왜 이 점수인지"를 적기 위한 근거. 계산에 쓴 값을 그대로 담는다. */
+    basis: {
+      iljin: todayGz.text + '(' + todayGz.textH + ')',
+      totalTier: totalTier,
+      loveTier: loveTier,
+      sipName: sipName,
+      sipGroup: sipGroup,
+      healthTier: healthTier,
+      todayElemName: ELEMENTS[todayElem],
+      weakestName: ELEMENTS[weakestElem],
+      mostName: ELEMENTS[mostElem],
+      stageName: stageName
+    }
+  };
+}
+
+/* 근거를 한국어 한 줄로 풀어 쓴다. 화면에서 항목마다 "무엇을 보고 매긴 점수인지" 밝히는 데 쓴다. */
+/* ★ R85-b — 사주를 모르는 사람도 읽히게 고쳐 썼다 (대표님 지시).
+   이 앱이 궁합 화면에서 쓰던 말과 같은 어휘를 쓴다: 천간=윗글자, 지지=아랫글자, 일지=곁에 있는 사람 자리.
+   원래 용어는 지우지 않고 괄호에 남긴다 — 아는 분에게는 그게 근거이기 때문이다. */
+var TODAY_TOTAL_WHY  = { hap:'오늘 날짜의 아랫글자가 타고난 여덟 글자와 짝이 맞아 떨어집니다(합)',
+                         chung:'오늘 날짜의 아랫글자가 타고난 여덟 글자와 정면으로 부딪힙니다(충)',
+                         none:'오늘 날짜의 아랫글자가 타고난 여덟 글자와 크게 얽히지 않습니다' };
+var TODAY_LOVE_WHY   = { hap:'오늘 날짜의 아랫글자가 곁에 있는 사람 자리와 짝이 맞습니다(육합)',
+                         samhap:'오늘 날짜의 아랫글자가 곁에 있는 사람 자리와 한 덩어리로 묶입니다(삼합)',
+                         same:'오늘 날짜의 아랫글자가 곁에 있는 사람 자리와 같은 글자입니다',
+                         none:'오늘 날짜의 아랫글자가 곁에 있는 사람 자리와 특별히 얽히지 않습니다',
+                         pa:'오늘 날짜의 아랫글자가 곁에 있는 사람 자리를 흔듭니다(파)',
+                         chung:'오늘 날짜의 아랫글자가 곁에 있는 사람 자리와 정면으로 부딪힙니다(충)' };
+var TODAY_HEALTH_WHY = { weak:'오늘 들어오는 기운이 내 사주에서 가장 여린 기운을 채워 줍니다',
+                         most:'오늘 들어오는 기운이 이미 가장 진한 기운에 더해집니다',
+                         other:'오늘 들어오는 기운이 내 사주의 치우침과 크게 겹치지 않습니다' };
+/* =====================================================================
+   R85-b (2026-08-18) — 오늘의 총평 (대표님 지시: "총평 좀 더 디테일하게")
+   ---------------------------------------------------------------------
+   ★ 문구뱅크에서 한 문장 뽑아 쓰던 자리가 아니다. 방금 계산한 값(항목별 점수 · 합충 ·
+     십성 · 오행 · 십이운성)을 읽어서 문단을 조립한다. 그래서 사람마다, 날마다 다르게 나온다.
+   ★ 지어내지 않는 선: 여기 쓰이는 모든 문장은 계산 결과가 가리키는 뜻의 범위 안에서만 쓴다.
+     "무엇이 일어난다"고 단정하지 않고 "무엇을 하기 좋은 때 / 무엇을 조심하면 좋다"로 쓴다
+     (이 앱의 다른 풀이가 지켜 온 선과 같다).
+   ★ 건강·금전 문장은 운세 서술 범위를 넘지 않는다(진료 권유·종목 추천을 쓰지 않는다).
+===================================================================== */
+
+/* 항목이 오늘 '높게' 나왔을 때 / '낮게' 나왔을 때 각각 한 줄.
+   숫자만 크게 띄우고 끝내면 "그래서 뭘 하라는 건데?"가 남는다. */
+var TODAY_CAT_HIGH = {
+  total:  '전체적으로 결이 순하게 흐르는 날이라, 미뤄 둔 일을 꺼내기에 나쁘지 않습니다.',
+  love:   '마음을 표현하거나 먼저 연락하기에 무리가 없는 흐름입니다.',
+  money:  '금전 이야기를 꺼내거나 정리하기에 무난한 흐름입니다.',
+  work:   '맡은 일과 공부에 힘이 붙는 자리라, 집중이 필요한 일을 오늘로 당겨도 좋습니다.',
+  health: '몸의 리듬이 받쳐 주는 편이라, 미뤄 둔 운동이나 정리를 시작하기 좋습니다.'
+};
+var TODAY_CAT_LOW = {
+  total:  '흐름이 한 번 걸리는 날이라, 큰 결정은 하루 미루는 편이 안전합니다.',
+  love:   '말이 평소보다 날카롭게 닿기 쉬우니, 하고 싶은 말을 한 번 삼켰다 꺼내는 편이 좋습니다.',
+  money:  '지출이나 금전 약속은 오늘 확정하지 말고 하루 두고 보는 편이 좋습니다.',
+  work:   '욕심을 내면 다시 손대게 되기 쉬우니, 오늘은 벌이기보다 마무리하는 쪽이 낫습니다.',
+  health: '무리한 일정은 피하고 평소 리듬을 지키는 편이 좋습니다.'
+};
+
+/* 십이운성 12단계를 "오늘 내 기운이 어디쯤인가" 한 줄로. DAEUN_STAGE_POWER의 순서와 같은 뜻이다. */
+var TODAY_STAGE_NOTE = {
+  제왕:'기운이 가장 높이 오르는 자리라, 밀어붙여도 버티는 날입니다.',
+  건록:'제 몫을 해내는 힘이 충분한 자리라, 맡은 일을 밀고 나가기 좋습니다.',
+  관대:'앞에 나서서 목소리를 내기 좋은 자리입니다.',
+  장생:'새로 시작하는 일에 힘이 붙는 자리입니다.',
+  양:'조용히 힘을 모으는 자리라, 서두르지 않는 편이 낫습니다.',
+  쇠:'힘이 서서히 빠지는 자리라, 완급을 조절하면 좋습니다.',
+  목욕:'마음이 이리저리 흔들리기 쉬운 자리라, 결정은 한 박자 늦추는 편이 좋습니다.',
+  태:'아직 자리를 잡기 전이라, 크게 벌이기보다 준비하는 쪽이 맞습니다.',
+  병:'기운이 눌리는 자리라, 무리하지 않는 것이 오늘의 요령입니다.',
+  묘:'안으로 갈무리하는 자리라, 새로 벌이는 일은 다음으로 미루는 편이 좋습니다.',
+  사:'힘이 크게 줄어드는 자리라, 오늘은 지키는 쪽에 무게를 두세요.',
+  절:'기운이 가장 옅어지는 자리라, 오늘은 욕심을 덜어내는 편이 좋습니다.'
+};
+
+/* 총평 문단들을 만든다. 화면·복사·공유가 같은 글을 쓰도록 문자열 배열로 돌려준다. */
+function buildTodaySummary(fortune){
+  if(!fortune || fortune.overall == null || !fortune.scores || !fortune.basis) return null;
+  var b = fortune.basis, sc = fortune.scores;
+  var labelOf = {};
+  FORTUNE_CATS.forEach(function(c){ labelOf[c.key] = c.label; });
+
+  /* 가장 높은 항목 · 가장 낮은 항목. 동점이면 FORTUNE_CATS 순서가 앞선 쪽을 쓴다(임의로 흔들리지 않게). */
+  var keys = FORTUNE_CATS.map(function(c){ return c.key; });
+  var best = keys[0], worst = keys[0];
+  keys.forEach(function(k){
+    if(sc[k] > sc[best]) best = k;
+    if(sc[k] < sc[worst]) worst = k;
+  });
+
+  var out = [];
+
+  /* ① 오늘이 어떤 날인지 — 일진과 종합 점수 */
+  out.push('오늘은 ' + b.iljin + ' 날입니다. 다섯 항목을 합쳐 보면 ' + fortune.overall
+    + '점, ' + todayOverallWord(fortune.overall) + '입니다.');
+
+  /* ② 내 기운이 오늘 어디쯤인가 — 십이운성 */
+  if(TODAY_STAGE_NOTE[b.stageName]){
+    /* "절 자리"라고만 하면 그게 좋은 건지 나쁜 건지 알 수가 없다. 열두 단계 중 몇 번째인지를 함께 적는다. */
+    var rank = TWELVE_STAGE_RANK[b.stageName];
+    out.push('내 기운(태어난 날의 윗글자 · 일간)은 오늘 ' + b.stageName + ' 자리에 놓입니다'
+      + (rank ? ' — 힘의 세기로는 열두 단계 중 ' + rank + '번째입니다' : '') + '. '
+      + TODAY_STAGE_NOTE[b.stageName]);
+  }
+
+  /* ③ 오늘 가장 힘이 실리는 자리 */
+  out.push('오늘 가장 힘이 실리는 쪽은 ' + labelOf[best] + '(' + sc[best] + '점)입니다. '
+    + todayWhy(best, b, true) + '. ' + (sc[best] >= 60 ? TODAY_CAT_HIGH[best] : TODAY_CAT_LOW[best]));
+
+  /* ④ 오늘 가장 낮은 자리 — 다섯 항목이 전부 같은 점수면 이 문단을 빼고 그 사실을 적는다.
+     ★ 최저 항목이 그래도 60점을 넘으면 "가장 조심할 쪽"이라고 부르면 안 된다.
+       실제로 "가장 조심할 쪽은 애정운(60점) … 표현하기에 무리가 없는 흐름입니다" 처럼
+       앞뒤가 어긋나는 문장이 나왔다(실측). 낮다는 사실만 말하고 겁주지 않는다. */
+  if(worst !== best){
+    var low = sc[worst] < 60;
+    out.push((low ? '반대로 오늘 가장 조심할 쪽은 ' : '다섯 중 상대적으로 낮은 쪽은 ')
+      + labelOf[worst] + '(' + sc[worst] + '점)입니다. '
+      + todayWhy(worst, b, true) + '. '
+      + (low ? TODAY_CAT_LOW[worst] : (TODAY_CAT_HIGH[worst] + ' 낮다고 해도 나쁜 자리는 아닙니다.')));
+  } else {
+    out.push('다섯 항목이 고르게 나온 날이라, 어느 한쪽이 특별히 튀지 않습니다. 평소 리듬대로 움직이면 무난합니다.');
+  }
+
+  /* ⑤ 오행이 오늘 어떻게 들어오는지 — 이 앱이 사주 화면에서 쓰는 억부(넘치면 덜고 모자라면 채운다) 관점 */
+  if(b.healthTier === 'weak'){
+    out.push('기운으로 보면, 오늘 들어오는 ' + b.todayElemName + ' 기운이 내 사주에서 가장 여린 자리를 채워 줍니다. '
+      + '평소보다 몸과 마음이 덜 눌리는 날이니, 미뤄 둔 일을 하나 정리하기에 좋습니다.');
+  } else if(b.healthTier === 'most'){
+    out.push('기운으로 보면, 오늘 들어오는 ' + b.todayElemName + ' 기운이 이미 가장 진한 ' + b.mostName
+      + ' 기운 위에 더해집니다. 한쪽으로 쏠리기 쉬운 날이라, 하던 방식을 고집하기보다 한 번 멈춰 보는 편이 좋습니다.');
+  } else {
+    out.push('기운으로 보면, 오늘 들어오는 ' + b.todayElemName + ' 기운은 내 사주의 치우침과 크게 겹치지 않습니다. '
+      + '한쪽으로 쏠릴 일이 적은 날이라 평소 판단을 믿어도 좋습니다.');
+  }
+
+  /* ⑥ 오늘 하루를 한 줄로 — 종합 점수 구간에 따라 */
+  if(fortune.overall >= 85)      out.push('정리하면, 오늘은 미뤄 둔 일을 꺼내고 사람을 만나기에 좋은 날입니다.');
+  else if(fortune.overall >= 70) out.push('정리하면, 오늘은 무리하지 않는 선에서 하나씩 밀고 나가면 순하게 풀리는 날입니다.');
+  else if(fortune.overall >= 55) out.push('정리하면, 오늘은 크게 벌이기보다 하던 일을 정돈하는 쪽이 잘 맞는 날입니다.');
+  else if(fortune.overall >= 40) out.push('정리하면, 오늘은 한 박자 늦추는 것이 가장 좋은 선택입니다. 결정을 하루 미뤄도 늦지 않습니다.');
+  else                           out.push('정리하면, 오늘은 새로 벌이지 말고 지키는 쪽에 무게를 두는 편이 좋습니다.');
+
+  return out;
+}
+
+/* 십성 다섯 갈래를 사주 모르는 사람이 읽을 수 있는 말로. 뜻은 명리 통설 그대로다.
+   쉬운 말을 앞에, 원래 용어는 괄호에 — 이 앱이 다른 화면에서 쓰는 방식과 같다. */
+var SIP_GROUP_PLAIN = {
+  '비겁':'나와 같은 자리에 서는 기운',
+  '식상':'내가 밖으로 내보내는 기운',
+  '재성':'내가 손에 쥐는 기운',
+  '관성':'나를 다잡는 기운',
+  '인성':'나를 받쳐 주는 기운'
+};
+/* 십이운성 열두 단계를 힘 센 순서로 늘어놓은 것. DAEUN_STAGE_POWER를 정렬해 만든다
+   (표를 두 벌 두면 언젠가 서로 다른 답을 낸다). */
+var TWELVE_STAGE_RANK = (function(){
+  var names = Object.keys(DAEUN_STAGE_POWER).sort(function(a,b){ return DAEUN_STAGE_POWER[b]-DAEUN_STAGE_POWER[a]; });
+  var r = {}; names.forEach(function(n,i){ r[n] = i+1; });
+  return r;
+})();
+
+function todayWhy(key, b){
+  if(!b) return null;
+  /* short=true 면 십이운성 꼬리표를 뗀다. 총평 안에서는 그 얘기를 따로 한 문단 쓰기 때문에
+     여기까지 붙으면 같은 말을 두 번 하게 된다(실측으로 봤다). */
+  var short = arguments[2] === true;
+  if(key==='total')  return TODAY_TOTAL_WHY[b.totalTier]
+                            + (short ? '' : ' · 내 기운은 오늘 ' + b.stageName + ' 자리');
+  if(key==='love')   return TODAY_LOVE_WHY[b.loveTier];
+  if(key==='money')  return '오늘 날짜의 윗글자는 ' + (SIP_GROUP_PLAIN[b.sipGroup] || b.sipGroup)
+                            + '입니다(' + b.sipName + ')';
+  if(key==='work')   return '오늘 날짜의 윗글자는 ' + (SIP_GROUP_PLAIN[b.sipGroup] || b.sipGroup)
+                            + '입니다(' + b.sipName + ' · ' + b.sipGroup + ')';
+  if(key==='health') return TODAY_HEALTH_WHY[b.healthTier] + ' (오늘 ' + b.todayElemName + ' · 가장 여린 ' + b.weakestName + ' · 가장 진한 ' + b.mostName + ')';
+  return null;
+}
+
+/* =====================================================================
    오늘의 운세 (v1 유지 + v2: 오늘 일진 + 합충 코멘트 반영)
 ===================================================================== */
 function getTodayFortune(profile){
   var cacheKey = profile.id+'_'+todayStr();
   var cached = STATE.fortuneHistory.find(function(f){ return f.cacheKey===cacheKey; });
-  if(cached) return cached;
+  /* ★ R85 — 오늘 것이 이미 저장돼 있더라도, 그것이 옛 방식(난수 별점)으로 만들어진 것이면
+     점수가 없다. 그 경우 그대로 돌려주면 새 화면(종합 점수·레이더)이 빈 채로 뜬다.
+     그래서 "점수가 없는 오늘 기록"은 한 번 다시 계산해 채워 넣는다.
+     문장(text)·행운 아이템은 건드리지 않는다 — 아침에 본 문장이 오후에 바뀌면 안 된다. */
+  if(cached && cached.scores) return cached;
 
   var seedBase = djb2(profile.mbti+(profile.name||'')+todayStr()+profile.id);
-  var result = {id:uid(), cacheKey:cacheKey, profileId:profile.id, date:todayStr(), items:{}};
-  FORTUNE_CATS.forEach(function(cat, ci){
-    var seed = (seedBase + ci*97) >>> 0;
-    var phrase = seededPick(seed, FORTUNE_PHRASES[cat.key]);
-    var mbtiLetter = profile.mbti[ (seed>>>2) % 4 ];
-    var flavor = MBTI_FLAVOR[mbtiLetter];
-    var stars = 1 + (seed % 5);
-    result.items[cat.key] = {label:cat.label, text:flavor+' '+phrase, stars:stars};
-  });
-  result.luckyItem = seededPick((seedBase+11)>>>0, LUCKY_ITEMS);
-  result.luckyColor = seededPick((seedBase+23)>>>0, LUCKY_COLORS);
+  var result = cached || {id:uid(), cacheKey:cacheKey, profileId:profile.id, date:todayStr(), items:{}};
 
-  // v2: 오늘의 실제 일진 + 원국과의 합충 반영 코멘트
+  /* ── 오늘의 일진과 점수를 "문장보다 먼저" 계산한다 ──
+     예전에는 문장·별점을 다 만든 뒤 맨 아래에서 일진을 구했다. 이제 별점이 일진에서 나오므로
+     순서를 뒤집어야 한다. */
+  var todayGz = null, calc = null;
   try{
     var now=new Date();
     var todayIdx = SajuEngine.dayPillarIndexForCivilDate(now.getFullYear(), now.getMonth()+1, now.getDate(), null);
-    var todayGz = SajuEngine.ganjiOf(todayIdx);
+    todayGz = SajuEngine.ganjiOf(todayIdx);
+    calc = computeTodayScores(profile, todayGz);
+  }catch(e){ todayGz = null; calc = null; }
+
+  if(calc){
+    result.scores  = calc.scores;    /* 항목별 1~99점 */
+    result.overall = calc.overall;   /* 종합 점수 */
+    result.basis   = calc.basis;     /* 왜 그 점수인지의 근거 */
+  }
+
+  FORTUNE_CATS.forEach(function(cat, ci){
+    var seed = (seedBase + ci*97) >>> 0;
+    var prev = result.items[cat.key];
+    /* 문장은 예전 그대로 문구뱅크에서 뽑는다(이번 작업 범위가 아니다).
+       이미 만들어 둔 오늘치가 있으면 그 문장을 그대로 쓴다. */
+    var text = prev ? prev.text
+                    : (MBTI_FLAVOR[ profile.mbti[(seed>>>2)%4] ] + ' ' + seededPick(seed, FORTUNE_PHRASES[cat.key]));
+    /* ★ 별점: 예전 `1 + (seed % 5)`(난수)를 버리고 계산된 점수에서 뽑는다.
+       사주를 못 구해 계산이 안 되면(생년월일 정보 부족 등) 점수를 지어내지 않고
+       stars를 null로 두어 화면이 "아직 계산할 수 없음"을 말하게 한다. */
+    var sc = calc ? calc.scores[cat.key] : null;
+    result.items[cat.key] = {
+      label: cat.label,
+      text: text,
+      score: sc,
+      stars: sc != null ? scoreToStars(sc) : null,
+      why: calc ? todayWhy(cat.key, calc.basis) : null
+    };
+  });
+  if(!result.luckyItem)  result.luckyItem  = seededPick((seedBase+11)>>>0, LUCKY_ITEMS);
+  if(!result.luckyColor) result.luckyColor = seededPick((seedBase+23)>>>0, LUCKY_COLORS);
+
+  // v2: 오늘의 실제 일진 + 원국과의 합충 반영 코멘트
+  try{
+    if(!todayGz) throw new Error('일진 계산 실패');
     result.todayIljin = todayGz;
     var saju = getSajuResult(profile);
     if(saju){
@@ -8942,8 +9398,12 @@ function getTodayFortune(profile){
     }
   }catch(e){ /* 사주 계산 실패해도 기존 v1 운세는 그대로 표시 */ }
 
-  STATE.fortuneHistory.unshift(result);
-  if(STATE.fortuneHistory.length>200) STATE.fortuneHistory.length=200;
+  /* ★ R85 — cached를 되살려 채운 경우에는 이미 목록에 들어 있다. 그대로 unshift하면
+     같은 날짜 기록이 두 개가 되어 히스토리에 중복으로 뜬다. 새로 만든 것만 넣는다. */
+  if(!cached){
+    STATE.fortuneHistory.unshift(result);
+    if(STATE.fortuneHistory.length>200) STATE.fortuneHistory.length=200;
+  }
   saveState();
   return result;
 }
@@ -9091,14 +9551,25 @@ function buildMonthlyFortune(profile, year, isOpen){
 function computeCompat(pA, pB){
   var mbti = MBTI_MATRIX[pA.mbti][pB.mbti];
   var elem = elementScore(pA.elementIdx, pB.elementIdx);
-  var zod = zodiacScore(pA.zodiacIdx, pB.zodiacIdx);
-  var total = Math.round(mbti*0.5 + elem*0.3 + zod*0.2);
-  total = Math.max(1, Math.min(100, total));
+  var zod = zodiacScore(pA.zodiacIdx, pB.zodiacIdx);   /* 못 구하면 null */
+  var saju = buildSajuCompat(pA, pB);                  /* score가 null일 수 있다 */
+
+  /* ★ R85-d (QA 지적 F-1·F-2) — 못 구한 항목은 임의의 값으로 채우지 않는다.
+     그 몫의 가중치를 빼고 남은 항목끼리 다시 나눈다(합이 1이 되게).
+     예전에는 띠만 이렇게 다뤘는데, 사주(60)와 다섯 기운(75)에도 같은 문제가 있었다.
+     한 곳에서 처리해야 또 빠뜨리지 않는다. */
+  function blend(parts){
+    var w = 0, v = 0;
+    parts.forEach(function(pt){
+      if(typeof pt[0] === 'number'){ v += pt[0]*pt[1]; w += pt[1]; }
+    });
+    if(w <= 0) return null;              /* 하나도 못 구했으면 점수를 만들지 않는다 */
+    return Math.max(1, Math.min(100, Math.round(v/w)));
+  }
+  var total = blend([[mbti,0.5],[elem,0.3],[zod,0.2]]);
   var tier = total>=85?'최상':total>=70?'좋음':total>=55?'무난':total>=40?'노력필요':'상극주의';
   var cats = buildCompatCategories(total, mbti, elem, zod, pA, pB);
-  var saju = buildSajuCompat(pA, pB);
-  var combined = Math.round(mbti*0.4 + saju.score*0.4 + elem*0.1 + zod*0.1);
-  combined = Math.max(1, Math.min(100, combined));
+  var combined = blend([[mbti,0.4],[saju.score,0.4],[elem,0.1],[zod,0.1]]);
   var combinedTier = combined>=85?'찰떡 케미':combined>=70?'강한 케미':combined>=55?'무난한 케미':combined>=40?'엇갈린 케미':'상극 케미';
   return {total:total, tier:tier, mbtiScore:mbti, elemScore:elem, zodScore:zod, categories:cats,
     saju:saju, combined:combined, combinedTier:combinedTier};
@@ -9234,6 +9705,16 @@ function compatChemistryLine(mbti){
     '처음엔 어색해도 시간이 지나며 합이 맞아갑니다.');
 }
 function buildCompatCategories(total, mbti, elem, zod, pA, pB){
+  /* ★ R85 — zod가 null(띠 정보 없음)이면 아래 산술이 전부 NaN이 된다.
+     여기서는 "문장을 고르는 기준"으로만 쓰이므로, 없을 때는 중립값으로 두되
+     띠를 근거로 삼는 문장(9480줄 갈등 문구)은 아예 넣지 않도록 아래에서 다시 가른다. */
+  /* ★ R85-d — zod뿐 아니라 elem·total도 null일 수 있다. 아래 문장 고르기 산술이 전부
+     NaN이 되므로 중립값으로 채우되, 그 항목을 근거로 삼는 문장은 넣지 않는다. */
+  var zodKnown  = (typeof zod === 'number');
+  var elemKnown = (typeof elem === 'number');
+  if(!elemKnown) elem = mbti;
+  if(!zodKnown)  zod  = Math.round((mbti+elem)/2);
+  if(typeof total !== 'number') total = Math.round((mbti+elem)/2);
   var love = tierText(total,
     '서로에게 자연스럽게 끌리는 좋은 흐름입니다. 표현에 솔직해질수록 관계가 깊어집니다.',
     '천천히 알아갈수록 매력이 드러나는 사이입니다. 서두르지 않는 편이 좋습니다.',
@@ -9246,16 +9727,17 @@ function buildCompatCategories(total, mbti, elem, zod, pA, pB){
   var conflictParts=[];
   if(elem<60) conflictParts.push('두 사람의 기운이 부딪히기 쉬우니 감정이 격해질 때 한 박자 쉬어가세요.');
   if(mbti<60) conflictParts.push('성향 차이로 오해가 생기기 쉬우니 결론보다 과정을 자주 공유하세요.');
-  if(zod<60) conflictParts.push('생활 리듬이나 속도 차이가 갈등의 씨앗이 될 수 있습니다.');
+  if(zodKnown && zod<60) conflictParts.push('생활 리듬이나 속도 차이가 갈등의 씨앗이 될 수 있습니다.');
   if(conflictParts.length===0) conflictParts.push('큰 갈등 요소는 적지만, 사소한 습관 차이는 미리 이야기해두면 좋습니다.');
   return {love:love, friend:friend, chemistry:chemistry, conflict:conflictParts.join(' ')};
 }
 /* v2: 사주 정밀 궁합 — 두 사람의 일간 오행 상생상극 + 일지 합충 + 십성 상호작용 */
 function buildSajuCompat(pA, pB){
-  if(!pA.saju || !pB.saju) return {score:60, elemRel:'정보 부족', branchRel:'정보 부족', comment:'두 사람 모두 사주 계산이 준비되면 더 정밀한 궁합을 볼 수 있습니다.',
-    /* R21 — 아래 네 값은 점수 계산에 쓰이지 않는다. 요약 화면의 "일상어 항목별 지표"가
-       무엇을 그리는지 알 수 있게 이미 계산된 중간값을 그대로 내보내는 것뿐이다. */
-    elemScore60:60, branchScore:60, elemTerm:'정보 부족', branchTerm:'정보 부족'};
+  /* ★ R85-d (QA 지적 F-2) — 예전에는 사주를 못 구하면 60/60/60을 돌려줬다.
+     "정보 부족"이라고 적으면서 바로 옆에 60점을 찍는 모순이 났고, 그 60이 종합 점수의
+     40%로 들어갔다. 이제 점수는 null로 돌려주고, 화면과 computeCompat이 그것을 알아본다. */
+  if(!pA.saju || !pB.saju) return {score:null, elemRel:'정보 부족', branchRel:'정보 부족', comment:'두 사람 모두 사주 계산이 준비되면 더 정밀한 궁합을 볼 수 있습니다.',
+    elemScore60:null, branchScore:null, elemTerm:'정보 부족', branchTerm:'정보 부족'};
   var aElem = SajuEngine.STEM_ELEM[pA.saju.day.stemIdx], bElem = SajuEngine.STEM_ELEM[pB.saju.day.stemIdx];
   var aStem = SajuEngine.STEMS[pA.saju.day.stemIdx], bStem = SajuEngine.STEMS[pB.saju.day.stemIdx];
   var aElemName = SajuEngine.ELEM_NAMES[aElem], bElemName = SajuEngine.ELEM_NAMES[bElem];
@@ -9269,8 +9751,12 @@ function buildSajuCompat(pA, pB){
         (직전 라운드에 실제로 그랬다.) 절대 같은 문자열을 쓰지 않는다. */
   /* ★ 이름과 오행 글자가 문장 안에 들어가므로 조사를 고정으로 쓰면 반드시 틀린다
      ("토이 금을", "상대방가 주고"). 받침 판정은 josaOnly()로 한다. */
-  var stemLine = nameA+'의 일간은 '+aStem+'('+aElemName+'), '+nameB+'의 일간은 '+bStem+'('+bElemName+')'+
-                 josaOnly(bElemName,'이에요','예요')+'. ';
+  /* ★ R85-b (2026-08-18) — 사주 모르는 사람도 읽히게 (대표님 지시).
+     '일간'을 그냥 쓰면 무슨 말인지 알 수가 없다. 이 앱이 다른 화면에서 쓰는 말
+     ("태어난 날의 윗글자")을 앞에 두고 원래 용어는 괄호에 남긴다 — 지우지는 않는다. */
+  var stemLine = '태어난 날의 윗글자(일간)를 보면 '+nameA+josaOnly(nameA,'은','는')+' '+aStem+'('+aElemName+'), '
+                 +nameB+josaOnly(nameB,'은','는')+' '+bStem+'('+bElemName+')'+josaOnly(bElemName,'이에요','예요')+'. '
+                 +'이 글자가 그 사람의 본바탕을 나타내는 자리예요. ';
   if(diff===0){
     elemScore60=70; elemTerm='비화(같은 오행)'; elemRel='비화(같은 기운) — 편하지만 닮은 단점도 함께 보일 수 있습니다';
     elemDetail = stemLine+'같은 '+aElemName+' 기운을 나눠 가진 사이라, 설명하지 않아도 통하는 대목이 많습니다. '+
@@ -9290,24 +9776,58 @@ function buildSajuCompat(pA, pB){
       '그 사실을 알아차리고 말로 표현하는 순간부터 관계가 한 단계 더 단단해집니다.';
   } else {
     elemScore60=45; elemTerm='상극(서로 극함)'; elemRel='상극(서로 부딪히는 기운) — 자극이 되기도 하지만 의식적으로 배려가 필요합니다';
-    elemDetail = stemLine+'두 오행이 서로를 누르는 자리라, 같은 사안을 봐도 먼저 눈에 들어오는 지점이 다릅니다. '+
+    elemDetail = stemLine+'두 사람의 기운이 서로를 누르는 자리(상극)라, 같은 사안을 봐도 먼저 눈에 들어오는 지점이 다릅니다. '+
       '그래서 상대의 지적이 유난히 아프게 느껴지는데, 사실 그건 내가 놓친 자리를 정확히 짚었기 때문인 경우가 많습니다. '+
       '결론을 먼저 맞추려 하지 말고 각자 무엇을 보고 있는지부터 꺼내 놓으면, 상극은 곧바로 가장 좋은 감시자 관계로 바뀝니다.';
   }
   var relBranch = SajuEngine.branchRelations([{idx:pA.saju.day.branchIdx},{idx:pB.saju.day.branchIdx}]);
   var branchScore, branchRel, branchTerm;
-  if(relBranch.hap.length>0){ branchScore=90; branchTerm='육합'; branchRel='일지 육합 — 생활 리듬이 잘 맞는 편입니다'; }
-  else if(relBranch.chung.length>0){ branchScore=40; branchTerm='충'; branchRel='일지 충 — 서로 다른 리듬 탓에 부딪히는 순간이 잦을 수 있습니다'; }
-  else { branchScore=65; branchTerm='해당 없음'; branchRel='특별한 합충 없음 — 무난하게 맞춰가는 관계입니다'; }
+  /* ★ R85-b — '일지 육합', '특별한 합충 없음' 은 사주를 아는 사람만 읽을 수 있는 말이었다.
+     쉬운 말을 앞에, 용어는 괄호에. branchScore/branchTerm(계산·표 값)은 한 글자도 안 바꿨다. */
+  if(relBranch.hap.length>0){ branchScore=90; branchTerm='육합';
+    branchRel='두 사람의 곁에 있는 사람 자리가 서로 짝이 됩니다(일지 육합) — 생활 리듬이 잘 맞는 편입니다'; }
+  else if(relBranch.chung.length>0){ branchScore=40; branchTerm='충';
+    branchRel='두 사람의 곁에 있는 사람 자리가 정면으로 부딪힙니다(일지 충) — 서로 다른 리듬 탓에 부딪히는 순간이 잦을 수 있습니다'; }
+  else { branchScore=65; branchTerm='해당 없음';
+    branchRel='두 자리가 특별히 얽히지도, 부딪히지도 않습니다 — 무난하게 맞춰가는 관계입니다'; }
   var score = Math.round(elemScore60*0.6 + branchScore*0.4);
   var sipA = SajuEngine.sipseongOf(pA.saju.day.stemIdx, bElem, SajuEngine.STEM_YY[pB.saju.day.stemIdx]);
-  var comment = sipA+' 관계에 가까워서, '+groupCategory(sipA)+' 기운으로 서로를 자극하거나 채워주는 조합입니다.';
+  /* ★ R85-b — "편관 관계에 가까워서, 관성 기운으로 …" 는 읽을 수가 없었다.
+     십성 갈래를 쉬운 말로 풀고(SIP_GROUP_PLAIN), 원래 이름은 괄호에 남긴다. */
+  var sipGroupA = groupCategory(sipA);
+  /* ★ R85-d (QA 지적 F-11) — 이 카드의 앞뒤 문장이 전부 "…입니다" 정중체인데
+     내가 넣은 이 한 줄만 "…자리예요" 다정체라 한 문단 안에서 말투가 갈렸다. 맞춘다. */
+  var comment = '상대는 나에게 '+(SIP_GROUP_PLAIN[sipGroupA] || sipGroupA)+'에 가까운 자리입니다('
+    +sipA+' · '+sipGroupA+'). 서로를 자극하거나 채워주는 조합입니다.';
   /* R21 — elemScore60 / branchScore / elemTerm / branchTerm 네 개를 함께 내보낸다.
      ★ score 계산식(위 한 줄)은 한 글자도 바뀌지 않았다. 이미 이 함수 안에서 만들어 쓰고 있던
        중간값을 밖에서도 읽을 수 있게 노출할 뿐이다 — 요약 화면의 일상어 막대가 이 값을 그린다.
        (표현을 바꾸느라 계산을 바꾸면 예전에 본 궁합 점수가 전부 달라진다.) */
   return {score:score, elemRel:elemRel, elemDetail:elemDetail, branchRel:branchRel, comment:comment,
     elemScore60:elemScore60, branchScore:branchScore, elemTerm:elemTerm, branchTerm:branchTerm};
+}
+
+/* ★ R85-d — 종합 점수의 배분을 말로 적는 곳이 두 군데다(요약 카드 · 근거 패널).
+   둘이 따로 적혀 있으면 한쪽만 고치게 된다. 실제로 그래서 F-1이 났다. 한 곳에서 만든다.
+   res.zodScore 가 숫자가 아니면 띠를 뺀 재분배 배분을 그대로 적는다. */
+function compatWeightSentence(res, head){
+  /* ★ 실제 계산에 들어간 항목만으로 문장을 만든다. 어느 항목이 빠져도 화면이 맞는 말을 한다.
+     (예전에는 "40/40/10/10"이 통째로 박혀 있어서, 띠가 빠진 경우 화면이 거짓을 말했다 — QA F-1) */
+  var parts = [
+    { label:'성격',      w:0.4, v:res && res.mbtiScore },
+    { label:'사주',      w:0.4, v:res && res.saju && res.saju.score },
+    { label:'다섯 기운', w:0.1, v:res && res.elemScore },
+    { label:'띠',        w:0.1, v:res && res.zodScore }
+  ];
+  var have = parts.filter(function(x){ return typeof x.v === 'number'; });
+  var miss = parts.filter(function(x){ return typeof x.v !== 'number'; });
+  if(!have.length) return head + '계산에 필요한 정보가 모자라 종합 점수를 내지 못했어요.';
+  var wSum = have.reduce(function(a,x){ return a + x.w; }, 0);
+  var listed = have.map(function(x){ return x.label + ' ' + Math.round(x.w/wSum*100) + '%'; }).join(' · ');
+  var tail = miss.length
+    ? (' ' + miss.map(function(x){ return x.label; }).join('·') + '은(는) 정보가 모자라 계산에서 뺐고, 남은 것끼리 다시 나눴어요.')
+    : '';
+  return head + listed + '로 합친 값이 위의 종합 점수예요.' + tail;
 }
 
 /* =====================================================================
@@ -9405,13 +9925,18 @@ function buildCompatWhyPanel(p, r){
     ['서로 부족한 걸 채워줘요', '태어난 날의 윗글자끼리 — '+(r.res.saju.elemTerm||'정보 부족')+' · '+(r.res.saju.elemScore60!=null?r.res.saju.elemScore60+'점':'—')],
     ['하루 생활 리듬이 맞아요', '태어난 날의 아랫글자끼리 — '+(r.res.saju.branchTerm||'정보 부족')+' · '+(r.res.saju.branchScore!=null?r.res.saju.branchScore+'점':'—')],
     ['곁에 있으면 편안해요', '여덟 글자 중 가장 진한 기운 '+r.pA.element+' × '+r.pB.element+' · '+r.res.elemScore+'점'],
-    ['티격태격해도 금방 풀려요', '띠 '+r.pA.zodiac+' × '+r.pB.zodiac+' · '+r.res.zodScore+'점']
+    /* ★ R85 — 예전에는 띠가 없으면 "띠 undefined × 소 · 65점"이라고 찍혔다(실측). */
+    ['티격태격해도 금방 풀려요',
+      (typeof r.res.zodScore === 'number')
+        ? ('띠 '+(r.pA.zodiac||'?')+' × '+(r.pB.zodiac||'?')+' · '+r.res.zodScore+'점')
+        : '태어난 해 정보가 없어 띠는 계산에서 뺐어요']
   ];
   rows.forEach(function(kv){
     panel.appendChild(el('div',{class:'why-row'},[
       el('span',{class:'why-k'},[kv[0]]), el('span',{class:'why-v'},[kv[1]]) ]));
   });
-  panel.appendChild(el('p',{class:'why-note'},['종합 점수는 성격(성격유형) 40% · 사주 40% · 다섯 기운 10% · 띠 10%로 합쳐요. 사주 점수는 태어난 날 윗글자끼리의 관계 60%와 아랫글자끼리의 관계 40%를 합한 값이에요.']));
+  panel.appendChild(el('p',{class:'why-note'},[
+    compatWeightSentence(r.res, '') + ' 사주 점수는 태어난 날 윗글자끼리의 관계 60%와 아랫글자끼리의 관계 40%를 합한 값이에요.']));
 
   panel.appendChild(el('h4',{},['사주 용어로 보면']));
   panel.appendChild(el('p',{class:'why-note', style:'margin-top:2px;'},[r.res.saju.elemRel]));
@@ -9424,7 +9949,7 @@ function buildCompatWhyPanel(p, r){
   if(r.pA.saju && r.pB.saju){
     var aHour = !!r.pA.saju.hour, bHour = !!r.pB.saju.hour;
     var anyHour = aHour || bHour;
-    panel.appendChild(el('h4',{},['두 사람의 사주팔자']));
+    panel.appendChild(el('h4',{},['두 사람의 여덟 글자 (사주팔자)']));
     panel.appendChild(el('div',{class:'compat-pair'},[
       el('div',{class:'compat-side'},[el('h4',{},[p.name]),
         buildPillarTable(r.pA.saju, {keepHourSlot:anyHour, noNote:true})]),
@@ -9695,12 +10220,17 @@ function buildDonutGauge(score, size, label){
   var defs=document.createElementNS(ns,'defs');
   var grad=document.createElementNS(ns,'linearGradient'); grad.setAttribute('id',DONUT_GRAD_ID);
   grad.setAttribute('x1','0%'); grad.setAttribute('y1','0%'); grad.setAttribute('x2','100%'); grad.setAttribute('y2','100%');
-  var s1=document.createElementNS(ns,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#57431A');
-  var s2=document.createElementNS(ns,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#7A5F22');
+  /* R85 — 브랜드를 분홍으로 바꾼 R29 때 이 두 줄이 안 따라왔다. 청동색(#57431A/#7A5F22)이
+     그대로 남아, 온 화면이 분홍인데 궁합 점수판만 갈색 링이었다. 지금 팔레트로 맞춘다.
+     --gold-gradient(135deg #AA0648→#8E0038)와 같은 두 끝값을 쓴다 — 새 색을 만들지 않았다. */
+  var s1=document.createElementNS(ns,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#AA0648');
+  var s2=document.createElementNS(ns,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#8E0038');
   grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.appendChild(defs);
   var track=document.createElementNS(ns,'circle');
   track.setAttribute('cx',c); track.setAttribute('cy',c); track.setAttribute('r',r);
-  track.setAttribute('fill','none'); track.setAttribute('stroke','#E5E1D6'); track.setAttribute('stroke-width',stroke);
+  /* ★ R85 — 빈 홈도 옛 베이지(#E5E1D6)가 남아 있었다. 채워진 쪽만 분홍으로 바꾸면
+     한 게이지 안에서 두 시대의 색이 만난다. 이 앱의 '빈 홈' 색(--track)으로 맞춘다. */
+  track.setAttribute('fill','none'); track.setAttribute('stroke','var(--track)'); track.setAttribute('stroke-width',stroke);
   svg.appendChild(track);
   var fg=document.createElementNS(ns,'circle');
   fg.setAttribute('cx',c); fg.setAttribute('cy',c); fg.setAttribute('r',r);
@@ -9717,6 +10247,137 @@ function buildDonutGauge(score, size, label){
   wrap.appendChild(el('div',{class:'donut-gauge-num', html:numHtml}));
   return wrap;
 }
+
+/* =====================================================================
+   R85 (2026-08-18) — 레이더(방사형) 차트. 대표님 지시: "시각화 효과 좀 더 개발해"
+   ---------------------------------------------------------------------
+   ★ 저작권: 외부 라이브러리·이미지·폰트를 일절 쓰지 않고 SVG를 좌표부터 직접 그린다.
+     이 앱의 다른 그림(오행 막대·대운 꺾은선·도넛 게이지)과 같은 방식이다.
+     방사형 차트 자체는 통계 그래프의 한 종류라 특정 회사의 것이 아니다.
+
+   ★ 색: 새 색을 만들지 않는다. --gold(글자용 톤)와 --track(빈 홈)만 쓴다.
+     칠 면은 알파를 낮춰, 그 위에 놓이는 축 이름(--ink-dim)의 대비를 깎지 않게 한다.
+
+   ★ 접근성: 그림만 두면 화면 낭독기 사용자는 아무것도 못 듣는다.
+     role="img" + aria-label 에 "항목 이름 N점" 을 전부 적어 넣는다.
+     그림 요소 대비는 3:1 기준으로 본다(본문 글자 7:1과 다른 기준이다).
+
+   axes: [{label:'애정운', value:3, max:5}, ...]  — 3개 이상이면 그린다.
+===================================================================== */
+function buildRadarChart(axes, opts){
+  opts = opts || {};
+  var n = axes.length;
+  if(n < 3) return null;                 /* 삼각형이 안 되면 그리지 않는다 */
+  var size  = opts.size || 300;          /* viewBox 한 변 */
+  var cx = size/2, cy = size/2;
+  /* 축 이름이 바깥에 놓이므로 반지름은 넉넉히 줄여 잡는다. 안 그러면 글자가 잘린다. */
+  var R = opts.radius || Math.round(size*0.29);
+  var labelR = R + Math.round(size*0.115);
+  var rings = opts.rings || 4;
+  var ns = 'http://www.w3.org/2000/svg';
+
+  /* 12시 방향에서 시작해 시계방향. -90도가 12시다. */
+  function pt(i, ratio){
+    var a = (Math.PI*2*i/n) - Math.PI/2;
+    return [cx + Math.cos(a)*R*ratio, cy + Math.sin(a)*R*ratio];
+  }
+  function poly(ratio){
+    var out = [];
+    for(var i=0;i<n;i++){ var p = pt(i, ratio); out.push(p[0].toFixed(1)+','+p[1].toFixed(1)); }
+    return out.join(' ');
+  }
+
+  var svg = document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox','0 0 '+size+' '+size);
+  svg.setAttribute('class','radar-svg');
+  svg.setAttribute('role','img');
+  svg.setAttribute('aria-label',
+    (opts.title ? opts.title+' — ' : '') +
+    axes.map(function(a){ return a.label+' '+a.max+'점 만점에 '+a.value+'점'; }).join(', '));
+
+  /* ① 눈금 다각형(안쪽부터 바깥까지). 값을 눈으로 가늠할 자가 없으면 그림이 의미를 못 가진다. */
+  for(var g=1; g<=rings; g++){
+    var ring = document.createElementNS(ns,'polygon');
+    ring.setAttribute('points', poly(g/rings));
+    ring.setAttribute('fill','none');
+    ring.setAttribute('stroke','var(--track)');
+    ring.setAttribute('stroke-width', g===rings ? '1.4' : '1');
+    svg.appendChild(ring);
+  }
+
+  /* ② 축 선 */
+  for(var i=0;i<n;i++){
+    var e = pt(i,1);
+    var line = document.createElementNS(ns,'line');
+    line.setAttribute('x1',cx); line.setAttribute('y1',cy);
+    line.setAttribute('x2',e[0].toFixed(1)); line.setAttribute('y2',e[1].toFixed(1));
+    line.setAttribute('stroke','var(--track)'); line.setAttribute('stroke-width','1');
+    svg.appendChild(line);
+  }
+
+  /* ③ 값 다각형 */
+  var vals = axes.map(function(a){
+    var max = a.max || 5;
+    var v = Math.max(0, Math.min(max, Number(a.value)||0));
+    /* 0점이어도 점 하나는 보이게 최소 반지름을 준다 — 아니면 가운데 한 점으로 뭉개져
+       "값이 0"인지 "그리다 만 것"인지 구분이 안 된다. */
+    return Math.max(0.06, v/max);
+  });
+  var shape = [];
+  for(var j=0;j<n;j++){ var p = pt(j, vals[j]); shape.push(p[0].toFixed(1)+','+p[1].toFixed(1)); }
+  var area = document.createElementNS(ns,'polygon');
+  area.setAttribute('points', shape.join(' '));
+  area.setAttribute('fill','var(--gold)');
+  area.setAttribute('fill-opacity','.16');
+  area.setAttribute('stroke','var(--gold)');
+  area.setAttribute('stroke-width','2');
+  area.setAttribute('stroke-linejoin','round');
+  area.setAttribute('class','radar-area');
+  svg.appendChild(area);
+
+  /* ④ 꼭짓점 */
+  for(var k=0;k<n;k++){
+    var q = pt(k, vals[k]);
+    var dot = document.createElementNS(ns,'circle');
+    dot.setAttribute('cx',q[0].toFixed(1)); dot.setAttribute('cy',q[1].toFixed(1));
+    dot.setAttribute('r','3.2');
+    dot.setAttribute('fill','var(--gold)');
+    svg.appendChild(dot);
+  }
+
+  /* ⑤ 축 이름 + 값. SVG <text>로 넣어야 그림 하나로 저장·공유될 때 같이 딸려 간다. */
+  for(var m=0;m<n;m++){
+    var a2 = (Math.PI*2*m/n) - Math.PI/2;
+    var lx = cx + Math.cos(a2)*labelR;
+    var ly = cy + Math.sin(a2)*labelR;
+    /* 좌우 끝에서는 글자가 밖으로 삐져나가므로 정렬을 바꾼다. */
+    var cosv = Math.cos(a2);
+    var anchor = Math.abs(cosv) < 0.25 ? 'middle' : (cosv > 0 ? 'start' : 'end');
+    var t = document.createElementNS(ns,'text');
+    t.setAttribute('x', lx.toFixed(1)); t.setAttribute('y', ly.toFixed(1));
+    t.setAttribute('text-anchor', anchor);
+    t.setAttribute('dominant-baseline','middle');
+    t.setAttribute('class','radar-label');
+    t.textContent = axes[m].label;
+    svg.appendChild(t);
+
+    if(opts.showValues !== false){
+      var tv = document.createElementNS(ns,'text');
+      tv.setAttribute('x', lx.toFixed(1));
+      tv.setAttribute('y', (ly + 13).toFixed(1));
+      tv.setAttribute('text-anchor', anchor);
+      tv.setAttribute('dominant-baseline','middle');
+      tv.setAttribute('class','radar-value');
+      tv.textContent = axes[m].value + (opts.unit || '');
+      svg.appendChild(tv);
+    }
+  }
+
+  var wrap = el('div',{class:'radar-wrap'});
+  wrap.appendChild(svg);
+  return wrap;
+}
+
 /* v4-A 신규: row + chevron 리스트 아이템 — 값을 고르고 확인하는 화면(설정/궁합 입력/사주 정보 입력)
    전반에서 재사용. 탭하면 바텀시트형 모달(기존 openModal 재사용)로 실제 선택 UI를 띄운다. */
 /* leadNode(선택) — 라벨 앞에 붙는 작은 노드(R19의 캐릭터 칩). 넘기지 않으면 기존과 완전히 같다.
@@ -11342,6 +12003,45 @@ function renderHome(){
     view.appendChild(iljinCard);
   }
 
+  /* ★ R85 (2026-08-18) — 오늘의 종합 점수 + 다섯 항목 레이더. (대표님 지시)
+     점수가 없으면(사주를 못 구한 프로필) 이 카드를 아예 만들지 않는다.
+     빈 그래프를 그려 놓고 0점처럼 보이게 두는 것이 가장 나쁘다. */
+  if(fortune.overall != null && fortune.scores){
+    var scoreCard = el('div',{class:'scroll-card stamp-in'});
+    scoreCard.appendChild(el('p',{class:'card-eyebrow'},['오늘의 종합 점수']));
+    scoreCard.appendChild(el('h3',{},[todayOverallWord(fortune.overall)]));
+
+    var gauge = el('div',{class:'today-gauge-row'});
+    gauge.appendChild(buildDonutGauge(fortune.overall, 132, '100점 만점'));
+    scoreCard.appendChild(gauge);
+
+    var radar = buildRadarChart(FORTUNE_CATS.map(function(c){
+      return { label:c.label, value:fortune.scores[c.key], max:100 };
+    }), { size:300, unit:'', title:'오늘의 다섯 항목' });
+    if(radar) scoreCard.appendChild(radar);
+
+    /* ★ R85-b — 총평. 계산 결과를 읽어 조립한 문단이라 사람마다·날마다 다르다. */
+    var sumLines = buildTodaySummary(fortune);
+    if(sumLines && sumLines.length){
+      var sumBox = el('div',{class:'today-summary'});
+      sumBox.appendChild(el('p',{class:'today-summary-head'},['오늘의 총평']));
+      sumLines.forEach(function(line){ sumBox.appendChild(el('p',{},[line])); });
+      scoreCard.appendChild(sumBox);
+    }
+
+    /* 이 숫자가 어디서 왔는지 못 박는다. 이 앱의 다른 화면과 같은 규칙이다. */
+    scoreCard.appendChild(el('p',{class:'today-score-note'},[
+      '다섯 항목을 총운 2배로 두고 평균 낸 값입니다. 각 항목은 오늘 일진('
+      + (fortune.basis ? fortune.basis.iljin : '') + ')과 타고난 여덟 글자의 관계에서 계산했습니다 — '
+      + '항목 카드마다 무엇을 보고 매긴 점수인지 적어 두었습니다.'
+    ]));
+    scoreCard.appendChild(el('p',{class:'today-score-note dim'},[
+      '점수 눈금은 이 앱이 정한 기준입니다. 명리에 정해진 점수표가 있는 것이 아니라, '
+      + '합·충·십성·오행 판정 결과를 견주어 보기 쉽게 숫자로 바꾼 것입니다.'
+    ]));
+    view.appendChild(scoreCard);
+  }
+
   FORTUNE_CATS.forEach(function(cat){
     var item = fortune.items[cat.key];
     var card=el('div',{class:'scroll-card stamp-in'});
@@ -11350,9 +12050,23 @@ function renderHome(){
     card.appendChild(el('p',{class:'card-eyebrow'},[item.label]));
     var head=el('div',{style:'display:flex;justify-content:space-between;align-items:center;gap:12px;'});
     head.appendChild(el('h3',{style:'margin-bottom:0;'},[FORTUNE_CAT_HEADLINE[cat.key] || item.label]));
-    head.appendChild(buildStars(item.stars));
+    /* ★ R85 — 점수를 못 구한 경우 별을 0개로 그려 "최악"처럼 보이게 두지 않는다.
+       별 자리에 왜 없는지를 적는다. */
+    if(item.stars != null){
+      var scoreWrap = el('div',{class:'today-cat-score'});
+      scoreWrap.appendChild(buildStars(item.stars));
+      if(item.score != null) scoreWrap.appendChild(el('span',{class:'today-cat-num'},[item.score+'점']));
+      head.appendChild(scoreWrap);
+    } else {
+      head.appendChild(el('span',{class:'today-cat-none'},['점수 계산 불가']));
+    }
     card.appendChild(head);
     card.appendChild(el('p',{style:'margin-top:12px;'},[item.text]));
+    /* 왜 이 점수인지. 근거를 안 적으면 숫자만 커져서 더 그럴듯해 보이기만 한다. */
+    if(item.why) card.appendChild(el('p',{class:'today-why'},['근거 — '+item.why]));
+    else if(item.stars == null) card.appendChild(el('p',{class:'today-why'},[
+      '근거 — 생년월일시 정보가 모자라 오늘 일진과 맞대어 볼 수 없었습니다. 설정에서 태어난 정보를 채우면 점수가 계산됩니다.'
+    ]));
     view.appendChild(card);
   });
 
@@ -11371,6 +12085,9 @@ function renderHome(){
   main.appendChild(autoTermify(view));
 }
 function buildStars(n){
+  /* ★ R85 — n이 null이면(점수를 계산 못 한 경우) 별을 0개로 그려 "최악"으로 읽히게 두지 않는다.
+     호출부가 걸러 주는 것이 원칙이지만, 여기서도 한 번 막는다. */
+  if(n == null) return el('span',{class:'today-cat-none'},['점수 없음']);
   var wrap=el('div',{class:'stars', role:'img','aria-label':'5점 만점에 '+n+'점'});
   for(var i=1;i<=5;i++){
     var ns='http://www.w3.org/2000/svg';
@@ -12413,7 +13130,12 @@ function renderCompatForm(){
 function submitCompat(){
   var p=activeProfile();
   var pSaju = getSajuResult(p);
-  var pA = {mbti:p.mbti, elementIdx:p.elementIdx, zodiacIdx:p.zodiacIdx, name:p.name, element:p.element, zodiac:p.zodiac, saju:pSaju, gender:p.gender};
+  /* ★ R85-d (2026-08-18, QA 지적 F-1) — 여기는 toCompatPerson()을 안 거치고 직접 객체를 만든다.
+     그래서 앞서 toCompatPerson에만 넣어 둔 "띠가 비면 태어난 해에서 뽑는다"가 1:1 궁합에는
+     걸리지 않았고, 화면에 "태어난 해 정보가 없어 띠는 계산에서 뺐어요"가 뜨는 프로필이 생겼다.
+     사람 객체를 만드는 곳이 두 벌이면 언젠가 서로 다른 답을 낸다 — 같은 함수를 쓰게 한다. */
+  var pZ = zodiacOfProfile(p);
+  var pA = {mbti:p.mbti, elementIdx:p.elementIdx, zodiacIdx:pZ.idx, name:p.name, element:p.element, zodiac:pZ.name, saju:pSaju, gender:p.gender};
   var y=COMPAT_DRAFT.year, m=COMPAT_DRAFT.month, d=COMPAT_DRAFT.day;
   if(COMPAT_DRAFT.calendarType==='lunar'){
     var solar=SajuEngine.lunarToSolar(y,m,d,COMPAT_DRAFT.lunarLeap);
@@ -12500,7 +13222,7 @@ function compatHistoryChemistry(c){
 function renderCompatBody(p, draft){
   /* 기본 궁합(점수·한 줄 요약)은 무료, 상세 3종은 유료.
      잠긴 상태로 상세 화면에 들어오면 빈 화면 대신 무엇이 잠겼는지 보여준다. */
-  var detailSubs = {saju:'사주 궁합 상세', mbti:'성격유형 궁합 상세', visual:'궁합 시각화'};
+  var detailSubs = {saju:'사주 궁합 상세', mbti:'성격유형 궁합 상세', visual:'그림으로 보는 두 사람'};
   if(COMPAT_SUB && detailSubs[COMPAT_SUB] && !hasAccess(PRODUCTS.compat_full.id)){
     var box = el('div',{});
     box.appendChild(compatBackNav());
@@ -12612,10 +13334,16 @@ function renderCompatSummary(p, draft){
   ]));
   mix.appendChild(el('div',{class:'cm-mix-cell'},[
     el('div',{class:'cm-mix-k'},['타고난 기운으로 본 궁합']),
-    el('div',{class:'cm-mix-v'},[bigNum(r.res.saju.score+'점')])
+    /* ★ R85-d — buildSajuCompat이 못 구하면 score가 null이다. "null점"이 찍히지 않게 막는다. */
+    el('div',{class:'cm-mix-v'},[bigNum((typeof r.res.saju.score === 'number') ? (r.res.saju.score+'점') : '정보 부족')])
   ]));
   mixCard.appendChild(mix);
-  mixCard.appendChild(el('p',{class:'cm-mix-note'},['두 결과를 따로 보지 않아도 돼요. 성격 40% · 사주 40% · 오행 10% · 띠 10%로 합친 값이 위의 종합 점수예요.']));
+  /* ★ R85-d (QA 지적 F-1) — 띠를 못 구한 경우 computeCompat이 그 몫을 빼고 나머지로 다시 나눈다.
+     그런데 이 줄은 조건 없이 "40/40/10/10"이라고 적고 있었다. 화면이 코드와 다른 말을 하면
+     그게 가장 나쁜 종류의 버그다(이 앱의 합격 조건이 "화면에 적힌 주장 = 코드 동작"이다). */
+  /* ★ 여기 r 은 {pA, pB, res} 묶음이다. 점수는 r.res 안에 있다 — 처음에 r 을 그대로 넘겨
+     "정보가 모자라 종합 점수를 내지 못했어요"가 찍혔다(브라우저 검사에서 잡음). */
+  mixCard.appendChild(el('p',{class:'cm-mix-note'},[compatWeightSentence(r.res, '두 결과를 따로 보지 않아도 돼요. ')]));
   box.appendChild(mixCard);
 
   /* ③ 일상어 항목별 지표 — 용어 없이, 그 사람이 겪을 일로 */
@@ -12714,8 +13442,10 @@ function renderCompatMbtiDetail(p, draft){
   box.appendChild(pageHead('궁합 상세', '성격유형 궁합 상세 — '+p.mbti+' × '+r.pB.mbti, null, {marginTop:'14px'}));
   var scoreGrid=el('div',{class:'grid3', style:'margin:16px 0;'});
   scoreGrid.appendChild(statMini('성격유형 궁합', r.res.mbtiScore+'점'));
-  scoreGrid.appendChild(statMini('기운 궁합', r.res.elemScore+'점'));
-  scoreGrid.appendChild(statMini('띠 궁합', r.res.zodScore+'점'));
+  scoreGrid.appendChild(statMini('기운 궁합',
+    (typeof r.res.elemScore === 'number') ? (r.res.elemScore+'점') : '정보 부족'));
+  scoreGrid.appendChild(statMini('띠 궁합',
+    (typeof r.res.zodScore === 'number') ? (r.res.zodScore+'점') : '정보 부족'));
   box.appendChild(scoreGrid);
   ['love','friend','chemistry','conflict'].forEach(function(key){
     var labelMap={love:'연애',friend:'우정',chemistry:'케미',conflict:'갈등 요소'};
@@ -12732,9 +13462,45 @@ function renderCompatVisual(p, draft){
   var box=el('div',{});
   var r=draft.result;
   box.appendChild(compatBackNav());
-  box.appendChild(pageHead('궁합 상세', '궁합 시각화', null, {marginTop:'14px'}));
+  /* ★ R85-b — '시각화'는 만든 사람 말이다(대표님 지시: 사주 모르는 사람도 알아먹게).
+     무엇을 보여주는 화면인지 그대로 적는다. */
+  box.appendChild(pageHead('궁합 상세', '그림으로 보는 두 사람',
+    '기운의 균형, 그리고 어느 글자끼리 짝이 되고 부딪히는지', {marginTop:'14px'}));
   box.appendChild(buildKnotSvg());
-  box.appendChild(el('div',{class:'radar-wrap'},[
+
+  /* ★ R85-c (2026-08-18) — 이 화면의 주인공을 오각형에서 "점 눈금 + 네 축"으로 바꾼다.
+     대표님 지시: 목화토금수 다섯 개만 간단히, 그리고 사주뿐 아니라 성격유형까지 함께.
+     오각형은 지우지 않고 아래에 접어 둔다(결제 상품 설명에 "그림 세 장"으로 적혀 있다). */
+  var nameA = p.name || '나', nameB = r.pB.name || '상대방';
+  var mainCard = el('div',{class:'scroll-card'});
+  mainCard.appendChild(el('p',{class:'card-eyebrow'},['한눈에 보기']));
+  mainCard.appendChild(el('h3',{},['두 사람은 어디가 닮고 어디가 다른가요']));
+
+  /* ① 기운 — 목화토금수 다섯 줄 */
+  var cntA = r.pA.saju ? dominantElementIdx(r.pA.saju).counts : null;
+  var cntB = r.pB.saju ? dominantElementIdx(r.pB.saju).counts : null;
+  if(cntA || cntB){
+    mainCard.appendChild(buildElemDotCompare(cntA, cntB, nameA, nameB));
+    mainCard.appendChild(el('p',{class:'radar-note'},[
+      '점이 많을수록 그 기운을 많이 갖고 있어요. 한쪽만 점이 많은 줄은 서로 채워 줄 수 있는 자리예요.'
+    ]));
+  } else {
+    mainCard.appendChild(el('p',{class:'radar-note'},[
+      '두 분 모두 사주를 계산할 정보가 모자라 기운을 세지 못했습니다. 생년월일시를 채우면 나옵니다.'
+    ]));
+  }
+
+  /* ② 성향 — 성격유형 네 축 */
+  var axes = buildMbtiQuadCompare(r.pA.mbti, r.pB.mbti, nameA, nameB);
+  if(axes){
+    mainCard.appendChild(el('div',{class:'ma-sep'}));
+    mainCard.appendChild(el('p',{class:'card-eyebrow', style:'margin-top:0;'},['성향 · 성격유형']));
+    mainCard.appendChild(axes);
+  }
+  box.appendChild(mainCard);
+
+  /* ③ 오각형 레이더 — 접어서 아래에 */
+  var radarBox = el('div',{class:'radar-wrap'},[
     buildRadarSvg(r.pA, r.pB),
     (function(){
       var lg=el('div',{class:'legend'});
@@ -12742,39 +13508,208 @@ function renderCompatVisual(p, draft){
       lg.appendChild(el('span',{},[el('span',{class:'dot',style:'background:var(--pB)'}),r.pB.name]));
       return lg;
     })()
+  ]);
+  radarBox.appendChild(el('p',{class:'radar-note'},[
+    (r.pA.saju || r.pB.saju)
+      ? '타고난 여덟 글자를 목·화·토·금·수로 세어 그린 그림입니다. 바깥으로 갈수록 그 기운이 많다는 뜻이고, 두 도형이 서로 다른 쪽으로 뻗어 있으면 서로 없는 기운을 갖고 있다는 뜻입니다.'
+      : '두 분 모두 사주를 계산할 정보가 모자라 도형을 그리지 못했습니다. 생년월일시를 채우면 그려집니다.'
   ]));
+  var radarFold = buildFoldPanel({ id:'compatRadarFold',
+    label:'오각형 그림으로도 보기', openLabel:'오각형 그림 접기',
+    regionLabel:'오행 균형 오각형 그림', children:[radarBox] });
+  box.appendChild(radarFold.wrap);
+
   if(r.pA.saju && r.pB.saju){
     var relCard=el('div',{class:'scroll-card'});
-    relCard.appendChild(cardHead('두 사람의 글자가 어디서 짝이 되고 어디서 부딪히나요', ['합충형파']));
-    relCard.appendChild(buildCoupleRelationSvg(r.pA.saju, r.pB.saju));
+    /* ★ R85-c — 제목 아래 "사주 용어로는 합충형파" 줄을 뺐다. 이 그림에서 한자를 전부 없앴는데
+       바로 밑에 용어를 다시 붙이면 앞뒤가 맞지 않는다. 용어는 용어 사전에 그대로 있다. */
+    relCard.appendChild(cardHead('어느 자리가 서로 잘 맞고 어느 자리가 부딪히나요'));
+    relCard.appendChild(buildCoupleRelationSvg(r.pA.saju, r.pB.saju, p.name, r.pB.name));
+    /* ★ R85-b — 예전에는 한자 글자 여섯 개와 선만 있고 아무 설명이 없었다.
+       사주를 모르면 무엇을 보는 그림인지 알 수가 없다. */
+    relCard.appendChild(el('p',{class:'radar-note'},[
+      '위 줄이 ' + (p.name||'나') + '님, 아래 줄이 ' + (r.pB.name||'상대방') + '님이에요. '
+      + '동그라미 넷은 각각 태어난 해 · 달 · 날 · 시각을 뜻해요. '
+      + '두 사람의 자리를 하나씩 맞대어 보고, 짝이 맞는 자리는 초록 선으로, 정면으로 부딪히는 자리는 붉은 선으로 이었습니다. '
+      + '선이 하나도 없으면 크게 얽히지도 부딪히지도 않는다는 뜻이에요. '
+      + '동그라미를 길게 누르면 원래 사주 글자가 떠요.'
+    ]));
     box.appendChild(relCard);
   }
   return box;
 }
-function buildCoupleRelationSvg(sajuA, sajuB){
+/* =====================================================================
+   R85-c (2026-08-18) — 두 사람을 한눈에 견주는 그림 두 가지 (대표님 지시)
+   ---------------------------------------------------------------------
+   ★ 왜 만들었나
+     대표님이 다른 서비스 화면을 보여주며 "목화토금수 이 5개 정도만 나타내면 돼",
+     "다만 저 서비스에서 더 나아가 우리는 사주 말고 MBTI로도 복합적으로 표현하는 거지"
+     라고 하셨다. 오각형 레이더는 정확하지만 두 사람을 견주기에는 읽는 품이 든다.
+     점 눈금 다섯 줄이면 "누가 어느 기운이 많은지"가 즉시 보인다.
+
+   ★ 지어내지 않은 선 — 성격유형은 네 글자만 저장한다
+     간이 테스트가 축마다 0~2로 세긴 하지만(computeMbtiFromAnswers) 그 값을 저장하지 않는다.
+     그래서 "E가 80%" 같은 막대는 없는 값을 만들어야만 그릴 수 있다. 그리지 않는다.
+     대신 네 축에 두 사람이 "어느 쪽에 서 있는지"만 찍는다 — 이건 실제로 가진 값이다.
+===================================================================== */
+
+/* 오행 다섯 줄 · 점 눈금. 두 사람을 나란히 놓는다.
+   눈금 칸 수는 여덟 글자를 다섯 칸에 나눈 값이라 5칸이면 충분하다(한 칸이 5를 넘는 일은 드물다).
+   그보다 많은 치우친 사주는 칸을 늘려 잘라내지 않는다. */
+function buildElemDotCompare(countsA, countsB, nameA, nameB){
+  var maxCount = 0;
+  [countsA, countsB].forEach(function(c){ if(c) c.forEach(function(v){ if(v>maxCount) maxCount=v; }); });
+  var slots = Math.max(5, maxCount);
+
+  var wrap = el('div',{class:'ed-wrap'});
+  var head = el('div',{class:'ed-head'});
+  head.appendChild(el('span',{class:'ed-name a'},[nameA]));
+  head.appendChild(el('span',{class:'ed-mid'},['기운']));
+  head.appendChild(el('span',{class:'ed-name b'},[nameB]));
+  wrap.appendChild(head);
+
+  /* ★ 왼쪽은 순서를 뒤집어 채운다. 안 그러면 채워진 점이 바깥 끝에 몰려서
+     가운데 이름표를 축으로 마주 보는 그림이 되지 않는다(처음에 그렇게 나왔다). */
+  function dots(n, colorVar, align){
+    var box = el('div',{class:'ed-dots '+align});
+    for(var i=0;i<slots;i++){
+      var on = (align === 'r') ? (i >= slots - n) : (i < n);
+      box.appendChild(el('span',{class:'ed-dot'+(on?' on':''),
+        style: on ? ('background:'+colorVar+';') : ''}));
+    }
+    return box;
+  }
+
+  ELEMENTS.forEach(function(name, i){
+    var a = countsA ? countsA[i] : null;
+    var b = countsB ? countsB[i] : null;
+    var row = el('div',{class:'ed-row'});
+    /* 왼쪽(나)은 안쪽부터 차오르게 오른쪽 정렬한다 — 가운데 이름표를 축으로 마주 보게 하려는 것. */
+    row.appendChild(a != null ? dots(a, ELEMENT_COLOR_ARR[i], 'r') : el('div',{class:'ed-dots r'}));
+    var mid = el('span',{class:'ed-label', style:'color:'+ELEMENT_COLOR_ARR[i]+';'},[name]);
+    /* 둘 중 많은 쪽을 굵게 — 어느 쪽이 그 기운을 더 갖고 있는지가 눈에 먼저 들어와야 한다. */
+    row.appendChild(mid);
+    row.appendChild(b != null ? dots(b, ELEMENT_COLOR_ARR[i], 'l') : el('div',{class:'ed-dots l'}));
+    /* ★ R85-d (QA 지적 F-4) — aria-label만 있고 role이 없으면 화면 낭독기가 이 줄을
+       그냥 지나칠 수 있다. 같은 파일의 다른 그림들이 role='img'를 쓰고 있다. 맞춘다. */
+    row.setAttribute('role','img');
+    row.setAttribute('aria-label', name+' 기운 — '+nameA+' '+(a==null?'정보 없음':a+'개')+', '+nameB+' '+(b==null?'정보 없음':b+'개'));
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+
+/* =====================================================================
+   성격유형 사분면 (대표님 지시: "성향 성격 유형은 그냥 사분면으로 표시하는 게 나아보인다")
+   ---------------------------------------------------------------------
+   ★ 저작권을 피해 고른 축
+     흔히 보는 네 그룹 이름(분석가·외교관·관리자·탐험가)은 16Personalities라는 특정 회사가
+     붙인 이름이라 그대로 쓰지 않는다. 대신 MBTI 이론 자체에 있는 조합을 쓴다 —
+     "무엇을 먼저 보나(S↔N)" × "어떻게 정하나(T↔F)". 이 두 축의 조합(ST·SF·NT·NF)은
+     특정 회사 것이 아니라 이론의 기본이고, 네 칸 이름은 우리말로 직접 지었다.
+
+   ★ 네 축 중 둘만 사분면에 들어간다. 남는 둘(E/I, J/P)은 사람 이름 옆 작은 칩으로 붙인다 —
+     정보를 버리지 않으면서 그림은 간소하게 둔다.
+
+   ★ 강도(어느 쪽으로 얼마나)는 그리지 않는다. 이 앱은 네 글자만 저장하고 축별 점수를
+     저장하지 않아서, 그리려면 없는 값을 지어내야 한다. 그래서 칸 안 가운데에만 찍는다.
+===================================================================== */
+/* 가로 = S(왼) ↔ N(오), 세로 = T(위) ↔ F(아래).
+   quad 인덱스: 0=ST(왼위) 1=NT(오른위) 2=SF(왼아래) 3=NF(오른아래) */
+var MBTI_QUAD = [
+  { key:'ST', title:'사실 · 논리',   desc:'눈앞의 사실을 기준대로 처리하는 결' },
+  { key:'NT', title:'가능성 · 논리', desc:'큰 그림을 논리로 밀어붙이는 결' },
+  { key:'SF', title:'사실 · 마음',   desc:'눈앞의 사람을 살뜰히 챙기는 결' },
+  { key:'NF', title:'가능성 · 마음', desc:'의미와 마음을 먼저 보는 결' }
+];
+function mbtiQuadIndex(mbti){
+  if(!mbti || mbti.length < 4) return -1;
+  var n = (mbti[1] === 'N'), f = (mbti[2] === 'F');
+  return (f ? 2 : 0) + (n ? 1 : 0);   /* 0 ST · 1 NT · 2 SF · 3 NF */
+}
+/* 사분면에 안 들어가는 나머지 두 축을 사람 이름 옆에 붙일 짧은 말로. */
+function mbtiSideChips(mbti){
+  if(!mbti || mbti.length < 4) return [];
+  return [ mbti[0]==='E' ? '밖에서 충전' : '안에서 충전',
+           mbti[3]==='J' ? '계획대로'   : '상황따라' ];
+}
+function buildMbtiQuadCompare(mbtiA, mbtiB, nameA, nameB){
+  if(!mbtiA || !mbtiB || mbtiA.length<4 || mbtiB.length<4) return null;
+  var qa = mbtiQuadIndex(mbtiA), qb = mbtiQuadIndex(mbtiB);
+  if(qa < 0 || qb < 0) return null;
+
+  var wrap = el('div',{class:'mq-wrap'});
+
+  /* 축 이름 — 그림 밖에 둔다. 칸 안에 다 넣으면 320px에서 글자가 뭉갠다. */
+  wrap.appendChild(el('div',{class:'mq-axis-top'},['어떻게 정하나 ↑ 논리']));
+
+  var grid = el('div',{class:'mq-grid', role:'img',
+    'aria-label':'성격유형 사분면 — '+nameA+'('+mbtiA+')는 '+MBTI_QUAD[qa].title
+      +' 칸, '+nameB+'('+mbtiB+')는 '+MBTI_QUAD[qb].title+' 칸'});
+  MBTI_QUAD.forEach(function(q, i){
+    var cell = el('div',{class:'mq-cell'+((i===qa||i===qb) ? ' on' : '')});
+    cell.appendChild(el('span',{class:'mq-title'},[q.title]));
+    cell.appendChild(el('span',{class:'mq-desc'},[q.desc]));
+    var pins = el('div',{class:'mq-pins'});
+    if(i===qa) pins.appendChild(el('span',{class:'mq-pin a'},[nameA.slice(0,4)]));
+    if(i===qb) pins.appendChild(el('span',{class:'mq-pin b'},[nameB.slice(0,4)]));
+    cell.appendChild(pins);
+    grid.appendChild(cell);
+  });
+  wrap.appendChild(grid);
+
+  var foot = el('div',{class:'mq-axis-foot'});
+  foot.appendChild(el('span',{},['← 사실']));
+  foot.appendChild(el('span',{class:'mq-axis-name'},['무엇을 먼저 보나']));
+  foot.appendChild(el('span',{},['가능성 →']));
+  wrap.appendChild(foot);
+  wrap.appendChild(el('div',{class:'mq-axis-bot'},['마음 ↓']));
+
+  /* 사분면에 안 들어가는 두 축 — 이름 옆 칩 */
+  var chips = el('div',{class:'mq-chips'});
+  [[nameA, mbtiA, 'a'], [nameB, mbtiB, 'b']].forEach(function(row){
+    var line = el('div',{class:'mq-chip-row'});
+    line.appendChild(el('span',{class:'mq-who '+row[2]},[row[0]]));
+    line.appendChild(el('span',{class:'mq-mbti'},[row[1]]));
+    mbtiSideChips(row[1]).forEach(function(c){
+      line.appendChild(el('span',{class:'mq-chip'},[c]));
+    });
+    chips.appendChild(line);
+  });
+  wrap.appendChild(chips);
+
+  /* 한 줄 정리 — 같은 칸인지 아닌지에 따라. 네 글자 중 몇 개가 같은지도 함께 센다. */
+  var same = 0;
+  for(var i=0;i<4;i++){ if(mbtiA[i] === mbtiB[i]) same++; }
+  var note = (qa === qb)
+    ? '두 분은 같은 칸이에요 — 무엇을 먼저 보고 어떻게 정하는지가 닮았습니다. 말이 빨리 통하는 대신, 둘 다 놓치는 자리도 같을 수 있어요.'
+    : ((qa%2) === (qb%2)
+        ? '보는 것은 같은데 정하는 방식이 갈립니다. 같은 걸 보고도 결론이 달라질 때가 있으니, 결정 전에 각자 무엇을 근거로 삼았는지 한 번 꺼내면 좋아요.'
+        : (Math.floor(qa/2) === Math.floor(qb/2)
+            ? '정하는 방식은 같은데 보는 것이 갈립니다. 한 사람은 지금 눈앞을, 한 사람은 그 너머를 보고 있어요.'
+            : '보는 것도 정하는 방식도 갈리는 대각선 자리예요. 서로에게 없는 것을 갖고 있는 조합이라, 다른 만큼 배울 게 많습니다.'));
+  wrap.appendChild(el('p',{class:'ma-note'},[note + ' 네 글자 중 ' + same + '개가 같아요.']));
+  return wrap;
+}
+
+/* 네 기둥의 자리 이름. 한자 대신 이걸 동그라미에 적는다. */
+var POS_PLAIN = { year:'해', month:'달', day:'날', hour:'시' };
+function buildCoupleRelationSvg(sajuA, sajuB, nameA, nameB){
+  nameA = nameA || '나'; nameB = nameB || '상대방';
   var ns='http://www.w3.org/2000/svg';
   var branchesA = sajuA.hour? ['year','month','day','hour'] : ['year','month','day'];
   var branchesB = sajuB.hour? ['year','month','day','hour'] : ['year','month','day'];
   var w=300, h=120;
   var svg=document.createElementNS(ns,'svg'); svg.setAttribute('viewBox','0 0 '+w+' '+h); svg.setAttribute('width','100%'); svg.setAttribute('height',h); svg.setAttribute('role','img');
-  var title=document.createElementNS(ns,'title'); title.textContent='두 사람 사주 지지 합충선'; svg.appendChild(title);
+  var title=document.createElementNS(ns,'title');
+  title.textContent='두 사람의 태어난 해·달·날·시각이 서로 짝이 되는 자리와 부딪히는 자리';
+  svg.appendChild(title);
   var stepA = w/(branchesA.length+1), stepB = w/(branchesB.length+1);
   function ptA(i){ return [stepA*(i+1), 20]; }
   function ptB(i){ return [stepB*(i+1), h-20]; }
-  branchesA.forEach(function(pos,i){
-    var xy=ptA(i);
-    var c=document.createElementNS(ns,'circle'); c.setAttribute('cx',xy[0]); c.setAttribute('cy',xy[1]); c.setAttribute('r','14'); c.setAttribute('fill','rgba(88,68,22,.10)'); c.setAttribute('stroke','var(--pA)');
-    svg.appendChild(c);
-    var t=document.createElementNS(ns,'text'); t.setAttribute('x',xy[0]); t.setAttribute('y',xy[1]+4); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','11'); t.setAttribute('fill','#231F18'); t.textContent=sajuA[pos].branch;
-    svg.appendChild(t);
-  });
-  branchesB.forEach(function(pos,i){
-    var xy=ptB(i);
-    var c=document.createElementNS(ns,'circle'); c.setAttribute('cx',xy[0]); c.setAttribute('cy',xy[1]); c.setAttribute('r','14'); c.setAttribute('fill','rgba(143,36,19,.08)'); c.setAttribute('stroke','var(--pB)');
-    svg.appendChild(c);
-    var t=document.createElementNS(ns,'text'); t.setAttribute('x',xy[0]); t.setAttribute('y',xy[1]+4); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','11'); t.setAttribute('fill','#231F18'); t.textContent=sajuB[pos].branch;
-    svg.appendChild(t);
-  });
+  /* ★ R85-b (2026-08-18) — 그리는 순서를 뒤집었다.
+     예전에는 동그라미와 글자를 먼저 그리고 선을 나중에 그려서, 선이 글자 위를 그대로 지나갔다
+     (실측 확대해서 확인했다). SVG는 나중에 붙인 것이 위에 그려지므로 선을 먼저 붙인다. */
   branchesA.forEach(function(posA,i){
     branchesB.forEach(function(posB,j){
       var relSet = SajuEngine.branchRelations([{idx:sajuA[posA].branchIdx},{idx:sajuB[posB].branchIdx}]);
@@ -12786,10 +13721,38 @@ function buildCoupleRelationSvg(sajuA, sajuB){
       }
     });
   });
+  /* ★ R85-c (2026-08-18) — 동그라미 안의 글자를 '오·묘·축·술' 같은 지지 글자에서
+     '해·달·날·시' 라는 자리 이름으로 바꿨다 (대표님 지시: "합충파 오묘 이런 한자어 아예 빼고").
+     사주를 모르는 사람에게 '오'와 '묘'는 아무 뜻이 없다. 반면 "태어난 해끼리 부딪힌다"는
+     설명 없이도 읽힌다. 원래 글자는 지운 게 아니라 눌렀을 때 뜨는 설명(<title>)과
+     화면 낭독기용 이름표에만 남겼다 — 아는 분은 여전히 확인할 수 있다.
+     (여덟 글자 원본을 보고 싶으면 요약 화면의 '두 사람의 여덟 글자' 표가 그대로 있다.) */
+  function drawNodes(list, saju, ptFn, strokeVar, who){
+    list.forEach(function(pos,i){
+      var xy=ptFn(i);
+      var g=document.createElementNS(ns,'g');
+      var tip=document.createElementNS(ns,'title');
+      tip.textContent = who+' · '+POS_PLAIN[pos]+' — '+saju[pos].branch+'('+saju[pos].branchH+')';
+      g.appendChild(tip);
+      var c=document.createElementNS(ns,'circle');
+      c.setAttribute('cx',xy[0]); c.setAttribute('cy',xy[1]); c.setAttribute('r','14');
+      c.setAttribute('fill','var(--panel)'); c.setAttribute('stroke',strokeVar);
+      g.appendChild(c);
+      var t=document.createElementNS(ns,'text');
+      t.setAttribute('x',xy[0]); t.setAttribute('y',xy[1]+4); t.setAttribute('text-anchor','middle');
+      t.setAttribute('font-size','11'); t.setAttribute('fill','var(--ink)');
+      t.textContent = POS_PLAIN[pos];
+      g.appendChild(t);
+      svg.appendChild(g);
+    });
+  }
+  drawNodes(branchesA, sajuA, ptA, 'var(--pA)', nameA);
+  drawNodes(branchesB, sajuB, ptB, 'var(--pB)', nameB);
   var wrap=el('div',{style:'overflow-x:auto;'},[svg]);
+  /* ★ R85-c — 범례도 '합 / 충' 두 글자였다. 무슨 뜻인지 그대로 적는다. */
   var legend=el('div',{class:'legend', style:'margin-top:8px;'},[
-    el('span',{},[el('span',{class:'dot',style:'background:#3F6B45'}),'합']),
-    el('span',{},[el('span',{class:'dot',style:'background:#8F2413'}),'충'])
+    el('span',{},[el('span',{class:'dot',style:'background:#3F6B45'}),'짝이 맞아요']),
+    el('span',{},[el('span',{class:'dot',style:'background:#8F2413'}),'부딪혀요'])
   ]);
   var outer=el('div',{},[wrap,legend]);
   return outer;
@@ -12818,27 +13781,47 @@ function buildRadarSvg(pA, pB){
   [0.25,0.5,0.75,1].forEach(function(f){
     var poly=document.createElementNS(ns,'polygon');
     var p=[]; for(var i=0;i<5;i++){ var xy=pt(i,R*f); p.push(xy[0]+','+xy[1]); }
-    poly.setAttribute('points',p.join(' ')); poly.setAttribute('fill','none'); poly.setAttribute('stroke','rgba(35,31,24,.18)');
+    poly.setAttribute('points',p.join(' ')); poly.setAttribute('fill','none'); poly.setAttribute('stroke','var(--track)');
     svg.appendChild(poly);
   });
   for(var i=0;i<5;i++){
     var xy=pt(i,R);
-    var line=document.createElementNS(ns,'line'); line.setAttribute('x1',cx); line.setAttribute('y1',cy); line.setAttribute('x2',xy[0]); line.setAttribute('y2',xy[1]); line.setAttribute('stroke','rgba(35,31,24,.18)');
+    var line=document.createElementNS(ns,'line'); line.setAttribute('x1',cx); line.setAttribute('y1',cy); line.setAttribute('x2',xy[0]); line.setAttribute('y2',xy[1]); line.setAttribute('stroke','var(--track)');
     svg.appendChild(line);
     var label=document.createElementNS(ns,'text'); var lp=pt(i,R+16);
-    label.setAttribute('x',lp[0]); label.setAttribute('y',lp[1]); label.setAttribute('fill','#494334'); label.setAttribute('font-size','11'); label.setAttribute('text-anchor','middle');
+    label.setAttribute('x',lp[0]); label.setAttribute('y',lp[1]); label.setAttribute('fill','var(--ink-dim)'); label.setAttribute('font-size','11'); label.setAttribute('text-anchor','middle');
     label.textContent=ELEMENTS[i];
     svg.appendChild(label);
   }
+  /* ★ R85 (2026-08-18) — 여기가 오래 잘못돼 있었다.
+     예전에는 elementProfile(대표 오행 하나)로 값을 만들었는데, 그 함수는
+       대표 오행 = 95, 이웃 = 55, 나머지 = 28
+     이라는 고정값만 돌려준다. 그래서 "오행 균형 차트"라는 이름을 달고도
+     **대표 오행이 같은 사람은 사주가 아무리 달라도 도형이 똑같이** 나왔다.
+     진짜 오행 개수를 세는 함수(dominantElementIdx → counts)가 이미 있고
+     '내 사주' 화면의 오행 막대는 진작부터 그 값을 쓰고 있었다. 레이더만 안 따라온 것이다.
+     ★ 눈금: 여덟 글자를 다섯 칸에 나누므로 한 칸이 4를 넘는 일이 드물다. 4를 바깥 테두리로 잡고,
+       그보다 많으면(치우친 사주) 그 최대값을 테두리로 쓴다 — 잘라내지 않는다.
+     ★ 사주를 못 구한 사람은 그리지 않는다(옛 고정값으로 대신 채우지 않는다). */
+  function elemRatios(profile){
+    var saju = profile.saju || (profile.id ? getSajuResult(profile) : null);
+    if(!saju) return null;
+    var counts = dominantElementIdx(saju).counts;
+    var top = Math.max(4, Math.max.apply(null, counts));
+    return counts.map(function(c){ return c/top; });
+  }
   function polyFor(profile, color){
-    var vals=elementProfile(profile.elementIdx);
-    var pts=[]; for(var i=0;i<5;i++){ var xy=pt(i, R*(vals[i]/100)); pts.push(xy[0]+','+xy[1]); }
+    var ratios = elemRatios(profile);
+    if(!ratios) return null;
+    var pts=[]; for(var i=0;i<5;i++){ var xy=pt(i, R*Math.max(0.05, ratios[i])); pts.push(xy[0]+','+xy[1]); }
     var poly=document.createElementNS(ns,'polygon');
     poly.setAttribute('points',pts.join(' ')); poly.setAttribute('fill',color); poly.setAttribute('fill-opacity','0.13'); poly.setAttribute('stroke',color); poly.setAttribute('stroke-width','2');
     return poly;
   }
-  svg.appendChild(polyFor(pA,'#584416'));
-  svg.appendChild(polyFor(pB,'#8F2413'));
+  /* ★ R85 — 색도 옛 어두운 테마 값(#584416/#8F2413)이 남아 있었다. 바로 아래 범례는
+     --pA/--pB를 쓰고 있어서 "범례 색과 도형 색이 서로 다른" 상태였다(실측). 범례에 맞춘다. */
+  var polyA = polyFor(pA,'var(--pA)'); if(polyA) svg.appendChild(polyA);
+  var polyB = polyFor(pB,'var(--pB)'); if(polyB) svg.appendChild(polyB);
   return svg;
 }
 
@@ -12897,7 +13880,24 @@ function toCompatPerson(p){
   /* ★ R25 — 사주를 먼저 구한다. 객체 리터럴 안에서 getSajuResult(p)를 부르면
      elementIdx 항목이 그보다 앞에 있어 "맞추기 전 값"을 읽는다(그룹 궁합이 옛 오행을 쓰던 자리). */
   var saju = getSajuResult(p);
-  return {mbti:p.mbti, elementIdx:p.elementIdx, zodiacIdx:p.zodiacIdx, name:p.name, element:p.element, zodiac:p.zodiac, saju:saju, gender:p.gender};
+  /* ★ R85 (2026-08-18) — 띠(zodiacIdx/zodiac)가 비어 있는 프로필이 있을 수 있다.
+     그대로 두면 두 가지가 조용히 잘못된다.
+       ① 화면에 "띠 undefined × 소" 라고 찍힌다 (실측으로 봤다)
+       ② zodiacScore(undefined, n)이 NaN을 타고 내려가 맨 아래 기본값 65를 돌려준다.
+          계산한 적 없는 65점이 종합 궁합 점수의 10%로 들어간다 — 지어낸 값이 섞이는 것이다.
+     띠는 태어난 해만 있으면 언제나 구할 수 있으므로 여기서 채워 넣는다(calcZodiac 재사용). */
+  var z = zodiacOfProfile(p);
+  return {mbti:p.mbti, elementIdx:p.elementIdx, zodiacIdx:z.idx, name:p.name, element:p.element, zodiac:z.name, saju:saju, gender:p.gender};
+}
+/* 프로필의 띠. 저장된 값이 있으면 그것을, 없으면 태어난 해에서 뽑는다.
+   태어난 해조차 없으면 지어내지 않고 null을 돌려준다(그 경우 화면이 "정보 부족"이라고 말한다). */
+function zodiacOfProfile(p){
+  if(p && typeof p.zodiacIdx === 'number' && p.zodiac) return {idx:p.zodiacIdx, name:p.zodiac};
+  if(p && typeof p.year === 'number'){
+    var z = calcZodiac(p.year);
+    return {idx:z.idx, name:z.name};
+  }
+  return {idx:null, name:null};
 }
 /* 그룹에 세우는 "사람 한 명". 저장된 프로필에서 올 수도 있고, 그룹 링크에서 올 수도 있다.
    두 경로가 같은 모양을 내놓아야 그림·순위·카드가 출처를 몰라도 되게 만든다. */
@@ -14293,7 +15293,15 @@ function inviteRowToObj(row){
   INVITE_FIELDS.forEach(function(f, i){
     var raw = parts[i];
     if(raw === '' ){ obj[f.k] = null; return; }
-    if(f.k==='n')  { obj[f.k] = decodeURIComponent(raw); return; }
+    /* ★ R85-d (QA 지적 F-9, 실제로 재현함) — decodeURIComponent는 '%' 뒤가 온전하지 않으면
+       URIError를 던진다. 여기가 try 밖이라, 링크가 messenger에서 잘리거나 이름에 '%'가 섞이면
+       앱이 부팅 중에 죽어 흰 화면만 남았다(브라우저로 확인: "URI malformed" 1건 · 화면 0자).
+       못 읽으면 이름만 원문 그대로 두고 넘어간다 — 이름 하나 때문에 앱이 죽어서는 안 된다. */
+    if(f.k==='n')  {
+      try{ obj[f.k] = decodeURIComponent(raw); }
+      catch(e){ obj[f.k] = String(raw).replace(/%/g,'').slice(0,20); }
+      return;
+    }
     if(f.k==='m' || f.k==='g'){ obj[f.k] = raw; return; }
     if(f.k==='ts'){ obj[f.k] = (raw==='1') ? 1 : 0; return; }
     var num = Number(raw);
@@ -14302,8 +15310,20 @@ function inviteRowToObj(row){
   return obj;
 }
 function inviteObjValid(obj){
-  return !!obj && typeof obj.y==='number' && typeof obj.mo==='number'
-      && typeof obj.d==='number' && typeof obj.m==='string' && obj.m.length===4;
+  if(!obj) return false;
+  if(typeof obj.y!=='number' || typeof obj.mo!=='number' || typeof obj.d!=='number') return false;
+  if(typeof obj.m!=='string') return false;
+  /* ★ R85-d (QA 지적 F-10, 실제로 재현함) — 예전에는 "네 글자면 통과"였다.
+     그래서 링크를 손으로 고쳐 m=ZZZZ 로 보내면 그대로 받아들였고, 뒤에서
+     MBTI_MATRIX['ZZZZ'] 를 읽다가 터지거나 NaN 점수가 화면에 나갔다.
+     소문자는 받아주되(실수로 흔하다), 실제로 있는 16가지인지 반드시 확인한다. */
+  obj.m = obj.m.toUpperCase();
+  if(MBTI_TYPES.indexOf(obj.m) < 0) return false;
+  /* 날짜도 사람이 살 수 있는 범위인지만 본다. 여기서 막지 않으면 사주 계산이 이상한 값을 낸다. */
+  if(obj.y < 1900 || obj.y > 2100) return false;
+  if(obj.mo < 1 || obj.mo > 12) return false;
+  if(obj.d < 1 || obj.d > 31) return false;
+  return true;
 }
 function decodeInviteFromHash(hash){
   var h = hash || '';
@@ -14850,7 +15870,10 @@ function renderHistory(){
         if(fChipKey) left.appendChild(buildCharChip(fChipKey, 40, CHARACTERS[fChipKey].name.split(' · ')[0]+' 캐릭터'));
         var fTxt=el('div',{class:'hi-text'});
         fTxt.appendChild(el('div',{},[f.date]));
-        fTxt.appendChild(el('div',{class:'meta'},['총운: '+f.items.total.text.slice(0,24)+'…']));
+        /* ★ R85 — 종합 점수가 있으면 함께 보여 준다. 옛 기록에는 없으므로 있을 때만 붙인다. */
+        fTxt.appendChild(el('div',{class:'meta'},[
+          (f.overall != null ? f.overall+'점 · ' : '') + '총운: '+f.items.total.text.slice(0,24)+'…'
+        ]));
         left.appendChild(fTxt);
         item.appendChild(left);
         item.appendChild(el('div',{class:'hist-actions'},[
@@ -14965,9 +15988,17 @@ function renderHistory(){
 }
 function openFortuneDetailModal(f){
   var body=el('div',{});
+  /* ★ R85 — 점수가 있는 기록이면 맨 위에 종합 점수를, 항목마다 그날의 점수를 함께 적는다.
+     옛 기록(점수 없음)에는 아무것도 붙이지 않는다 — 없는 값을 0점으로 채우지 않는다. */
+  if(f.overall != null){
+    body.appendChild(el('p',{style:'margin-bottom:12px;'},[
+      el('strong',{},['종합 '+f.overall+'점 — ']), todayOverallWord(f.overall)
+    ]));
+  }
   FORTUNE_CATS.forEach(function(cat){
     var it=f.items[cat.key];
-    body.appendChild(el('p',{style:'margin-bottom:8px;'},[el('strong',{},[it.label+': ']), it.text]));
+    var head = it.label + (it.score != null ? ' ('+it.score+'점)' : '') + ': ';
+    body.appendChild(el('p',{style:'margin-bottom:8px;'},[el('strong',{},[head]), it.text]));
   });
   openModal(f.date+'의 운세', autoTermify(body), [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
 }
@@ -15162,8 +16193,16 @@ function openShareModal(kind, profile, data){
 function buildShareText(kind, profile, data){
   if(kind==='fortune'){
     var f=data;
+    /* ★ R85 — 종합 점수를 공유 문구에도 싣는다. 점수가 없는 옛 기록이면 그 줄을 빼고 보낸다. */
     return '['+COMPANY.serviceName+'] '+ownerLabel(profile.name)+' 오늘의 운세 ('+f.date+')\n'+
-      FORTUNE_CATS.map(function(c){ return c.label+': '+f.items[c.key].text; }).join('\n')+
+      (f.overall != null ? ('종합 '+f.overall+'점 — '+todayOverallWord(f.overall)+'\n') : '')+
+      /* ★ R85-b — 총평의 마지막 한 줄("정리하면, …")을 공유 문구에 함께 싣는다.
+         문단 전체를 넣으면 공유 문구가 너무 길어져 카카오톡에서 잘린다. */
+      (function(){ var L=buildTodaySummary(f); return (L && L.length) ? (L[L.length-1]+'\n') : ''; })()+
+      FORTUNE_CATS.map(function(c){
+        var it=f.items[c.key];
+        return c.label+(it.score != null ? ' '+it.score+'점' : '')+': '+it.text;
+      }).join('\n')+
       '\n행운 아이템: '+f.luckyItem+' / 행운 색상: '+f.luckyColor;
   } else if(kind==='report'){
     return '['+COMPANY.serviceName+'] '+ownerLabel(profile.name)+' 성향 리포트\n성격유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n오행: '+profile.element+' — '+ELEMENT_TRAIT[profile.element];
@@ -15379,10 +16418,18 @@ function drawShareCard(canvas, kind, profile, data){
     ctx.fillText(ownerLabel(profile.name)+' 오늘의 운세', 50, y); y+=16;
     ctx.font='400 14px '+CARD_SANS; ctx.fillStyle='#544E40';
     ctx.fillText(data.date, 50, y+18); y+=50;
+    /* ★ R85 — 종합 점수를 카드 위쪽에 한 줄로. 점수가 없는 옛 기록이면 건너뛴다. */
+    if(data.overall != null){
+      ctx.font='700 17px '+CARD_SANS; ctx.fillStyle='#584416';
+      ctx.fillText('종합 '+data.overall+'점 · '+todayOverallWord(data.overall), 50, y); y+=34;
+    }
     FORTUNE_CATS.forEach(function(cat){
       var item=data.items[cat.key];
+      /* 카드 안의 색은 이 카드 전체가 쓰는 청동색(#584416) 그대로 둔다.
+         공유 카드는 화면과 다른 '한지' 배색을 일부러 유지하는 자리이고, 다른 카드 종류
+         (사주·성향·궁합)가 전부 이 색이라 여기만 바꾸면 운세 카드만 겉돈다. */
       ctx.font='700 15px '+CARD_SANS; ctx.fillStyle='#584416';
-      ctx.fillText(item.label, 50, y); y+=22;
+      ctx.fillText(item.label+(item.score != null ? '  '+item.score+'점' : ''), 50, y); y+=22;
       ctx.font='400 15px '+CARD_SANS; ctx.fillStyle='#231F18';
       y=wrapCanvasText(ctx, item.text, 50, y, w-100, 21); y+=14;
     });
