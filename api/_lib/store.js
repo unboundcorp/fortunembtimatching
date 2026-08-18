@@ -281,20 +281,44 @@ export async function testAccessOf(sessionId) {
   return row;
 }
 
-/* 코드 맞히기를 막는다. 코드가 짧아도 무한정 찍어보지는 못하게 한다. */
-export async function tooManyUnlockTries(sessionId) {
+/* 코드 맞히기를 막는다. 코드가 짧아도 무한정 찍어보지는 못하게 한다.
+   ★ R86 (2026-08-18) — 세션만 세던 것을 접속 지점(IP)까지 함께 세도록 고쳤다.
+     예전에는 session_id 하나로만 셌다. 그런데 세션은 쿠키일 뿐이라, 쿠키를 버리고
+     다시 받으면 카운터가 0부터 시작한다. 실제로 확인했다 — 열 번 막힌 뒤에도
+     쿠키 없이 요청하니 곧바로 다시 받아줬다. 즉 "무한정 찍어보지는 못하게 한다"는
+     이 주석의 약속이 지켜지지 않고 있었다. 덤으로 시도할 때마다 표에 줄이 하나씩
+     쌓이므로, 막히지 않는 시도는 데이터베이스를 부풀리는 통로이기도 했다.
+
+     ★ 표를 바꾸지 않고 고친다. 같은 unlock_attempts 표의 session_id 칸에
+       'ip:<해시>' 라는 다른 모양의 값을 한 줄 더 넣는 방식이다. 칸을 새로 만들면
+       Supabase에 마이그레이션을 돌려야 하는데, 그건 대표님 손이 필요한 일이라
+       고치는 시점이 미뤄진다. 지금 막는 쪽이 낫다.
+     ★ IP 원본은 저장하지 않는다 — 해시만 넣는다(개인정보처리방침과 어긋나지 않게).
+     ★ IP 한도는 세션 한도보다 넉넉하게 잡는다. 회사·카페처럼 여러 사람이 같은
+       IP를 쓰는 곳에서 애먼 사람이 막히면 안 된다. */
+const UNLOCK_MAX_SESSION = 10;
+const UNLOCK_MAX_IP = 30;
+
+export async function tooManyUnlockTries(sessionId, ipKey) {
   const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const rows = await rest(
-    `unlock_attempts?session_id=eq.${encodeURIComponent(sessionId)}&tried_at=gte.${encodeURIComponent(since)}&select=id`
-  );
-  return Array.isArray(rows) && rows.length >= 10;
+  const q = async (key) => {
+    const rows = await rest(
+      `unlock_attempts?session_id=eq.${encodeURIComponent(key)}&tried_at=gte.${encodeURIComponent(since)}&select=id`
+    );
+    return Array.isArray(rows) ? rows.length : 0;
+  };
+  if ((await q(sessionId)) >= UNLOCK_MAX_SESSION) return true;
+  if (ipKey && (await q(ipKey)) >= UNLOCK_MAX_IP) return true;
+  return false;
 }
 
-export async function noteUnlockTry(sessionId) {
+export async function noteUnlockTry(sessionId, ipKey) {
+  const rows = [{ session_id: sessionId }];
+  if (ipKey) rows.push({ session_id: ipKey });
   await rest('unlock_attempts', {
     method: 'POST',
     headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({ session_id: sessionId }),
+    body: JSON.stringify(rows),
   });
 }
 

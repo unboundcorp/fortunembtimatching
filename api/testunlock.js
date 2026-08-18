@@ -18,6 +18,27 @@ import { grantTestAccess, testAccessOf, tooManyUnlockTries, noteUnlockTry } from
 
 const GRANT_HOURS = 24 * 7; /* 일주일. 테스트하다 자꾸 풀리면 그것대로 일이 안 된다. */
 
+/* 접속 지점을 세는 열쇠 (R86).
+   ★ IP 원본은 어디에도 남기지 않는다 — 서버 비밀키로 해시해서 그 값만 쓴다.
+     개인정보처리방침에 "접속 기록을 모은다"고 적어 두지 않았으므로, 원본을 쌓으면
+     화면에 적힌 말과 코드가 어긋난다.
+   ★ Vercel 뒤에서는 req.socket 주소가 항상 같은 내부 주소라 쓸모가 없다.
+     x-forwarded-for 의 맨 앞 값이 실제 접속자다.
+   ★ 헤더가 없으면 null을 준다 — 그때는 예전처럼 세션만 센다. 이 함수가 던져서
+     문이 통째로 막히는 것보다는 낫다. */
+function ipKeyOf(req) {
+  try {
+    const xf = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    const ip = xf || String(req.headers['x-real-ip'] || '').trim();
+    if (!ip) return null;
+    const secret = process.env.SESSION_SECRET;
+    if (!secret) return null;
+    return 'ip:' + crypto.createHmac('sha256', secret).update(ip).digest('base64url').slice(0, 32);
+  } catch (err) {
+    return null;
+  }
+}
+
 /* 길이가 달라도 시간이 새지 않게 비교한다. 길이 자체가 단서가 되면 안 된다. */
 function sameSecret(a, b) {
   const ha = crypto.createHash('sha256').update(String(a)).digest();
@@ -65,10 +86,13 @@ export default async function handler(req, res) {
   if (!code) return json(res, 400, { ok: false, reason: '코드를 입력해 주세요.' });
 
   try {
-    if (await tooManyUnlockTries(sessionId)) {
+    /* ★ R86 — 세션만 세면 쿠키를 버리는 것만으로 카운터가 초기화된다(실측 확인).
+       접속 지점까지 함께 센다. */
+    const ipKey = ipKeyOf(req);
+    if (await tooManyUnlockTries(sessionId, ipKey)) {
       return json(res, 429, { ok: false, reason: '시도가 너무 많아요. 한 시간 뒤에 다시 해주세요.' });
     }
-    await noteUnlockTry(sessionId);
+    await noteUnlockTry(sessionId, ipKey);
 
     if (!sameSecret(code, expected)) {
       /* 맞는지 틀리는지 외에 아무것도 알려주지 않는다. */
