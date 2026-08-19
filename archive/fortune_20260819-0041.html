@@ -93,17 +93,13 @@
   --shadow-sm:0 4px 14px rgba(60,54,44,.10);
   /* R22 — 카드에만 쓰는 부드러운 그림자. 기존 --shadow-sm보다 넓고 옅어서 "떠 있는 느낌"만 준다.
      새 색을 만든 게 아니다: 검정 알파값만 조정한 것이라 팔레트는 그대로다. */
-  /* ★ R90 — 시안은 "그림자 대신 괘선"이다. 카드를 띄우지 않고 지면에 눕힌다.
-     완전히 0으로 두지 않는 이유: 겹쳐 뜨는 창(모달)은 아래 화면과 구분돼야 한다. */
-  --shadow-soft:0 1px 2px rgba(60,54,44,.05);
+  --shadow-soft:0 6px 20px rgba(60,54,44,.08),0 1px 2px rgba(60,54,44,.05);
   /* R22 — 여백 단계. 값을 손으로 흩어 적지 않고 여기 한 곳에서 키운다. */
   --gap-card:18px;
   --pad-card:24px;
   /* ★ 로고 글자가 끝이 둥근 서체다. 모서리를 더 둥글려 그 결을 화면 전체에 맞춘다. */
-  /* ★ R90 — 시안(인연점 리디자인 문서)의 지면 규칙에 맞춘다: 카드 4px, 그림자 대신 괘선.
-     둥근 모서리 24px는 앱 느낌이고, 만세력 지면은 각이 진 종이다. */
-  --r-lg:6px;    /* 카드 */
-  --r-md:4px;    /* 타일·입력칸·작은 상자 */
+  --r-lg:24px;   /* 카드 */
+  --r-md:16px;   /* 타일·입력칸·작은 상자 */
   --r-pill:999px;
   --serif:'Nanum Myeongjo','AppleMyungjo','Batang','Songti SC',serif;
   /* R29 폰트 — 대표님이 고르신 방식 ⓐ: 이름만 지정하고 없으면 기기 기본 고딕으로 떨어진다.
@@ -117,11 +113,7 @@
      지금은 바탕 대비 4.4~5.5:1 — 그림 요소 기준(3:1)을 넉넉히 넘는다. */
   --em-wood:#3F6B45; --em-fire:#B4442C; --em-earth:#7E5F2C; --em-metal:#646B70; --em-water:#3D6480;
 }
-/* ★ R90 (2026-08-19 대표님 지시) — "30~50대가 보기 좋게" 글자를 키운다.
-   이 앱의 글자 크기는 211곳이 전부 rem이라, 뿌리 하나만 올리면 전체가 같은 비율로 커진다
-   (여백은 px라 그대로 있는다 — 글자만 커지고 배치는 안 흔들린다는 뜻이다).
-   %로 적는 이유: 브라우저 글자 크기를 키워 쓰는 분의 설정을 덮어쓰지 않기 위해서다. */
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;overflow-x:hidden;max-width:100%;font-size:110%;}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;overflow-x:hidden;max-width:100%;}
 body{
   font-family:var(--sans);
   /* R29 — 350은 Pretendard Variable에서만 의미가 있고 시스템 고딕으로 떨어지면 400으로 반올림된다.
@@ -220,7 +212,7 @@ h1,h2,h3,h4{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;}
 .tabbar-wrap{position:relative;border-bottom:1px solid var(--gold-line);}
 .tabbar-wrap::after{
   content:"";position:absolute;top:0;right:0;bottom:0;width:26px;
-  background:linear-gradient(90deg, transparent, var(--panel-3) 80%);
+  background:linear-gradient(90deg, transparent, var(--base) 80%);
   pointer-events:none;
 }
 /* ===================== R22: 메뉴를 알약(pill) 칩으로 =====================
@@ -228,24 +220,21 @@ h1,h2,h3,h4{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;}
    이 앱에도 이미 알약 칩이 세 종류(.tabgroup / .toc-nav a / .admin-chip) 있었다.
    같은 모양이 화면마다 따로 놀지 않도록 주 메뉴도 같은 형태로 맞춘다.
    색은 이미 .tabgroup[aria-selected]가 쓰던 조합(--gold-soft 배경 + --gold 글자)을 그대로 쓴다 — 새 색 0개. */
-/* ★ R90 (2026-08-19 대표님 지시) — 알약 칩을 버리고 시안(인연점 리디자인 문서)의 밑줄 탭으로 돌아간다.
-   시안의 규칙: 띠는 한 겹 눌린 지면(--panel-3) + 아래 괘선, 고른 탭만 밝은 지면 위에 인주색 밑줄.
-   ★ 글자색은 --brand(5.72:1)가 아니라 --gold(8.58:1)를 쓴다. 이 앱의 본문 대비 기준이 7:1이고,
-     --brand는 주석에 적힌 대로 그래픽 전용이다. 밑줄은 그래픽이라 --brand로 둔다(3:1 기준). */
 .tabbar{
-  display:flex;gap:0;padding:0 6px;
-  /* 아래 괘선은 .tabbar-wrap이 이미 갖고 있다. 여기 또 그리면 두 줄이 된다. */
-  overflow-x:auto;background:var(--panel-3);
+  display:flex;gap:6px;padding:10px 14px;
+  /* R29 — 예전엔 검정 12%로 띠를 눌렀다. 밝은 바탕에서 같은 값을 쓰면 회색 얼룩이 된다.
+     페이지 바탕과 같게 두고, 오른쪽 스크롤 그림자(::after)가 var(--base)로 자연스럽게 이어지게 한다. */
+  overflow-x:auto;background:transparent;
 }
 .tab-btn{
-  /* 12px+10px + 글자 약 22px = 44px → 터치 목표 44px 이상 */
-  padding:12px 13px 10px;min-height:44px;display:inline-flex;align-items:center;
-  font-size:.82rem;color:var(--ink-faint);white-space:nowrap;
-  border:0;border-bottom:2px solid transparent;border-radius:0;letter-spacing:0;
+  /* 12px×2 + 글자 약 21px = 45px → 터치 목표 44px 이상 */
+  padding:12px 15px;min-height:44px;display:inline-flex;align-items:center;
+  font-size:.83rem;color:var(--ink-dim);white-space:nowrap;
+  border:1px solid transparent;border-radius:var(--r-pill);letter-spacing:.01em;
   transition:color .15s,background .15s,border-color .15s;
 }
-.tab-btn[aria-current="page"]{color:var(--gold);background:var(--panel-2);border-bottom-color:var(--brand);font-weight:700;}
-.tab-btn:hover{color:var(--ink);background:rgba(28,26,23,.04);}
+.tab-btn[aria-current="page"]{color:var(--gold);background:var(--gold-soft);border-color:var(--gold-line);font-weight:600;}
+.tab-btn:hover{color:var(--ink);background:rgba(28,26,23,.05);}
 .tab-btn:active{opacity:.6;}
 
 main{flex:1;padding:28px 20px 96px;}
@@ -276,7 +265,7 @@ main{flex:1;padding:28px 20px 96px;}
   background:var(--panel);
   /* R29 — 밝은 톤에서는 테두리보다 그림자로 띄운다(대표님 지시). 테두리는 완전히 지우지 않고
      헤어라인만 남긴다 — 겹쳐 놓인 카드끼리의 경계가 아예 사라지면 어디까지가 한 덩어리인지 모른다. */
-  border:1px solid var(--gold-line);
+  border:1px solid rgba(88,68,22,.10);
   /* R22 — 모서리 16→20, 안쪽 여백 22→24, 카드 사이 14→18. 한 카드에 한 주제라는 규칙은
      이미 지켜지고 있었고, 모자랐던 건 카드끼리의 숨 쉴 자리였다. */
   border-radius:var(--r-lg);
@@ -302,7 +291,7 @@ main{flex:1;padding:28px 20px 96px;}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   /* R22 — 모서리 12→16, 최소 높이 48px 고정(터치 목표) */
-  padding:13px 22px;border-radius:6px;min-height:48px;font-weight:600;font-size:1.02rem;letter-spacing:-.01em;
+  padding:13px 22px;border-radius:16px;min-height:48px;font-weight:600;font-size:1.02rem;letter-spacing:-.01em;
   border:1px solid rgba(88,68,22,.30);transition:transform .15s,background .15s,box-shadow .15s;
 }
 .btn:hover{transform:translateY(-1px);}
@@ -356,7 +345,7 @@ main{flex:1;padding:28px 20px 96px;}
    줄마다 따로 정해 줄 필요가 없어 새로 만드는 화면에도 그대로 적용된다. */
 .settings-row{
   display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
-  padding:16px 18px;min-height:60px;background:var(--panel);border:1px solid var(--gold-line);
+  padding:16px 18px;min-height:60px;background:var(--panel);border:1px solid rgba(88,68,22,.12);
   border-radius:var(--r-lg);margin-bottom:12px;width:100%;text-align:left;
   box-shadow:var(--shadow-soft);
   transition:border-color .15s,background .15s,transform .15s;
@@ -485,7 +474,7 @@ main{flex:1;padding:28px 20px 96px;}
 .stat-mini .v{font-family:var(--sans);font-weight:700;font-size:1.15rem;letter-spacing:-.02em;color:var(--gold);}
 
 /* 온보딩 */
-.onboard{min-height:calc(100vh - 0px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 24px;gap:10px;}
+.onboard{min-height:calc(100vh - 0px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px;gap:22px;}
 /* ★ R79 — 320px이던 것을 화면 높이에 따라 줄인다 (외부 실사 지적).
    iPhone SE(375×667)에서 [시작하기] 버튼 상단이 747px이라 첫 화면 밖으로 나가 있었다.
    스크롤해야 시작할 수 있는 첫 화면은 그 자체로 이탈이다.
@@ -897,68 +886,6 @@ main{flex:1;padding:28px 20px 96px;}
 .interp-notice.on .interp-badge{background:var(--gold-gradient);color:var(--void);}
 .interp-err{color:var(--red-hi);}
 
-/* ★ R90 (2026-08-19 대표님 지시) — 유료 풀이를 쓰는 동안 앞에 띄우는 기다림 창.
-   글은 뒤에서 지금처럼 차오르고, 이 창은 "얼마나 걸리는지"만 먼저 알린다.
-   ★ 저절로 닫지 않는다. 손님이 직접 닫고 순서대로 읽게 하라는 지시다. */
-.wait-lead{font-size:1rem;color:var(--ink);line-height:1.7;margin:0 0 10px;}
-.wait-time{font-size:.95rem;color:var(--gold);font-weight:700;margin:0 0 16px;line-height:1.6;}
-.wait-bar{height:6px;border-radius:999px;background:var(--track);overflow:hidden;margin:0 0 9px;}
-.wait-bar i{display:block;height:100%;width:0;border-radius:999px;background:var(--gold-gradient);
-  transition:width .5s ease;}
-.wait-bar.idle i{width:36%;animation:waitSlide 1.5s ease-in-out infinite;}
-@keyframes waitSlide{0%{margin-left:-38%;}100%{margin-left:100%;}}
-.wait-count{font-size:.9rem;color:var(--ink-dim);margin:0 0 16px;font-variant-numeric:tabular-nums;}
-.wait-tip{font-size:.88rem;color:var(--ink-faint);line-height:1.7;margin:0;
-  padding-top:14px;border-top:1px solid var(--gold-line);}
-@media (prefers-reduced-motion:reduce){ .wait-bar.idle i{animation:none;width:36%;} }
-
-/* ★ R90 (2026-08-19 대표님 지시) — 홈 탭을 대시보드로 바꾼다.
-   예전 홈은 프로필을 만든 뒤에도 서비스 소개가 그대로 떠 있었다(외부 진단의 1순위 지적:
-   "이미 쓰는 사람에게 매번 처음 보는 사람용 화면을 보여준다").
-   이제 프로필이 있으면 오늘 점수·타고난 여덟 글자·다음 갈 곳을 한 화면에 세운다.
-   ★ 숫자는 전부 기존 계산(getTodayFortune / getSajuResult)에서 그대로 가져온다.
-     홈에서 따로 계산하면 언젠가 '오늘의 운세' 화면의 숫자와 어긋난다. */
-.hd-date{font-family:var(--serif);font-size:.86rem;letter-spacing:.1em;color:var(--ink-faint);margin:0 0 14px;}
-.hd-top{display:flex;align-items:center;gap:14px;}
-.hd-figure{flex:none;}
-.hd-head{min-width:0;}
-.hd-who{font-size:.9rem;color:var(--ink-dim);margin:0 0 2px;}
-.hd-score{display:flex;align-items:baseline;gap:4px;font-family:var(--serif);}
-.hd-score b{font-size:2.6rem;line-height:1;color:var(--gold);font-weight:700;}
-.hd-score span{font-size:1rem;color:var(--ink-dim);}
-.hd-word{font-size:1.02rem;font-weight:700;color:var(--ink);margin:6px 0 0;}
-.hd-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--gold-line);
-  border:1px solid var(--gold-line);border-radius:var(--r-md);overflow:hidden;margin:16px 0 0;}
-.hd-cell{background:var(--panel);padding:10px 2px;text-align:center;}
-.hd-cell .k{display:block;font-size:.72rem;color:var(--ink-faint);margin-bottom:3px;}
-.hd-cell .v{display:block;font-size:1.16rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);}
-/* 점수 색은 큰 굵은 글자에만 쓴다. --panel 위 실측 대비: 초록 5.82:1 · 주황 5.20:1
-   (본문 7:1 기준은 작은 글자에 대한 것이고, 여기는 21px 굵은 글자라 큰 글자 기준을 넘긴다.) */
-.hd-cell .v.hi{color:var(--ok);}
-.hd-cell .v.lo{color:var(--em-fire);}
-.hd-line{font-size:.95rem;color:var(--ink-dim);line-height:1.75;margin:14px 0 0;}
-.hd-cardhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-  border-bottom:1px solid var(--gold-line);padding-bottom:10px;margin-bottom:14px;}
-.hd-cardhead h3{margin:0;font-size:1.06rem;}
-.hd-more{font-size:.86rem;color:var(--gold);font-weight:700;background:none;border:0;padding:6px 2px;
-  white-space:nowrap;min-height:auto;}
-.hd-more:hover{text-decoration:underline;}
-.hd-elem{display:flex;height:10px;border-radius:999px;overflow:hidden;margin:16px 0 10px;background:var(--track);}
-.hd-elem i{display:block;height:100%;}
-.hd-legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:.8rem;color:var(--ink-dim);}
-.hd-legend span{display:inline-flex;align-items:center;gap:5px;}
-.hd-legend i{width:9px;height:9px;border-radius:2px;display:inline-block;flex:none;}
-.hd-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;
-  background:var(--panel);border:1px solid var(--gold-line);border-radius:var(--r-lg);
-  padding:16px 18px;min-height:64px;margin-bottom:12px;
-  transition:border-color .15s,background .15s;}
-.hd-row:hover,.hd-row:focus-visible{border-color:var(--gold);background:var(--gold-soft);}
-.hd-row:active{background:rgba(88,68,22,.10);}
-.hd-row .t{font-size:1.02rem;font-weight:700;color:var(--ink);}
-.hd-row .s{font-size:.86rem;color:var(--ink-faint);margin-top:3px;}
-.hd-row .price{font-size:1rem;font-weight:700;color:var(--gold);white-space:nowrap;font-variant-numeric:tabular-nums;}
-.hd-row .price.open{color:var(--ok);font-size:.9rem;}
-
 /* 설정: 구매 내역 / 연동 */
 .biz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(28,26,23,.10);font-size:.86rem;}
 .biz-row:last-child{border-bottom:0;}
@@ -1203,16 +1130,6 @@ main{flex:1;padding:28px 20px 96px;}
 .svc-card:focus-visible{border-color:var(--gold);transform:translateY(-3px);
   box-shadow:0 10px 24px rgba(152,0,60,.14);}
 .svc-card:active{transform:translateY(0);box-shadow:var(--shadow-soft);}
-/* ★ R90 — 첫 화면에서 만 14세 확인 전에는 카드가 잠긴다. 눌러도 안 되는 것을
-   멀쩡해 보이게 두면 눌러보고 아무 일도 안 일어나서 고장으로 읽힌다. */
-.svc-card[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none;}
-.svc-card[disabled]:hover{transform:none;border-color:var(--gold-line);}
-.onboard-lead{font-family:var(--serif);font-size:1.42rem;font-weight:700;line-height:1.45;
-  letter-spacing:-.02em;color:var(--ink);text-align:center;margin:4px 0 4px;word-break:keep-all;}
-.onboard-sub{color:var(--ink-dim);font-size:.92rem;line-height:1.7;text-align:center;
-  margin:0 0 6px;word-break:keep-all;}
-.onboard-trust{color:var(--ink-faint);font-size:.82rem;line-height:1.65;text-align:center;
-  margin:14px 0 2px;word-break:keep-all;}
 @media (prefers-reduced-motion: reduce){
   .svc-card:hover,.svc-card:focus-visible{transform:none;}
 }
@@ -1395,8 +1312,8 @@ main{flex:1;padding:28px 20px 96px;}
   .section-title{font-size:1.22rem;}
   .page-head{margin-bottom:18px;}
   .scroll-card::before,.scroll-card::after{left:15px;right:15px;}
-  .tabbar{gap:0;padding:0 4px;}
-  .tab-btn{padding:12px 10px 10px;}
+  .tabbar{gap:5px;padding:9px 11px;}
+  .tab-btn{padding:12px 11px;}
   .toc-nav{padding:12px;gap:7px;}
   .toc-nav a{padding:0 11px;}
   .char-hero .ch-text{min-width:0;}
@@ -6621,88 +6538,6 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
   var state = { sections: baseSections, source: 'local', loading: willAsk, error: null,
                 attempted: willAsk, paidLoading: false, paidError: null };
 
-  /* ★ R90 (2026-08-19 대표님 지시) — 유료 풀이는 다 쓰는 데 1~2분 걸린다.
-     예전에는 섹션마다 "본문을 불러오는 중이에요…"만 적혀 있었다. 처음 보는 사람은
-     얼마나 기다려야 하는지 알 길이 없어, 멈춘 줄 알고 나가 버린다.
-     그래서 앞에 창을 하나 띄워 "얼마나 걸리는지"를 먼저 알린다. 글은 뒤에서 지금처럼 차오른다.
-     ★ 저절로 닫지 않는다 — 손님이 직접 닫고 순서대로 읽게 하라는 지시다.
-     ★ 0.7초 늦게 띄운다. 다시 읽는 경우에는 서버에 이미 글이 있어 곧바로 끝나는데,
-       그때도 띄우면 "닫기만 시키는 창"이 된다.
-     ★ 한 번 띄운 뒤에는 다시 띄우지 않는다(waitOpened). 손님이 닫은 창을 도로 여는 것은
-       고쳐 주는 게 아니라 뺏는 것이다. */
-  var waitTimer = null, waitUI = null, waitDone = false, waitOpened = false;
-  /* 손님이 목차에서 보는 것은 13개다. 유료 10개만 세어 "총 10개 중"이라고 쓰면
-     화면에 보이는 숫자와 어긋난다. 무료 구간은 이미 다 쓰인 것으로 세고 전체로 말한다. */
-  var WAIT_TOTAL = baseSections.length;
-  var PAID_TOTAL = Math.max(0, baseSections.length - FREE_SECTION_COUNT);
-
-  function armWait(){
-    if(waitDone || waitOpened || waitTimer) return;
-    waitTimer = setTimeout(function(){
-      waitTimer = null;
-      if(waitDone || waitOpened) return;
-      if(!host.isConnected) return;   /* 다른 화면으로 떠났으면 띄우지 않는다 */
-      if($('#activeModal')) return;   /* 이미 열려 있는 창을 빼앗지 않는다 */
-      openWait();
-    }, 700);
-  }
-
-  function openWait(){
-    waitOpened = true;
-    var body = el('div',{});
-    var lead = el('p',{class:'wait-lead'},['타고난 여덟 글자를 하나씩 읽어 풀이를 쓰고 있어요.']);
-    /* ★ 시간은 지어내지 않는다. 이 글은 실제로 2분 30초쯤 걸린다(프로젝트 기록).
-       "1~2분"이라고 적으면 대부분의 손님에게 약속을 어기는 숫자가 된다 —
-       기다림 창을 두는 이유가 "멈춘 줄 알고 나가는 것"을 막는 것인데, 짧게 적으면 그걸 되레 부른다. */
-    var time = el('p',{class:'wait-time'},['다 쓰는 데 보통 2분쯤 걸려요. 길면 3분까지 걸릴 수 있어요.']);
-    var bar  = el('div',{class:'wait-bar idle'});
-    var fill = el('i',{});
-    bar.appendChild(fill);
-    var cnt  = el('p',{class:'wait-count'},[PAID_TOTAL ? ('총 '+WAIT_TOTAL+'개 중 '+FREE_SECTION_COUNT+'개 완성') : '준비하는 중이에요']);
-    var tip  = el('p',{class:'wait-tip'},['이 창을 닫으면 지금까지 쓰인 곳부터 바로 읽으실 수 있어요. 나머지는 읽으시는 동안 이어서 채워집니다.']);
-    body.appendChild(lead); body.appendChild(time); body.appendChild(bar);
-    body.appendChild(cnt);  body.appendChild(tip);
-    waitUI = { bar:bar, fill:fill, cnt:cnt, lead:lead, time:time };
-    openModal('풀이를 쓰는 중이에요', body,
-      [{label:'닫고 먼저 읽기', cls:'btn-primary', onclick:function(){ closeModal(true); }}]);
-    updateWait();
-  }
-
-  /* 손님이 창을 닫았으면 그 뒤로는 손대지 않는다(떨어져 나간 노드에 글을 쓰지 않는다). */
-  function waitAlive(){
-    if(waitUI && !waitUI.bar.isConnected) waitUI = null;
-    return !!waitUI;
-  }
-
-  function updateWait(){
-    if(!waitAlive() || !PAID_TOTAL) return;
-    var done = PAID_TOTAL - emptyPaidCount(state.sections);
-    if(done < 0) done = 0;
-    if(done > PAID_TOTAL) done = PAID_TOTAL;
-    if(done > 0){
-      waitUI.bar.classList.remove('idle');
-      waitUI.fill.style.width = Math.round((FREE_SECTION_COUNT + done) / WAIT_TOTAL * 100) + '%';
-    }
-    waitUI.cnt.textContent = '총 ' + WAIT_TOTAL + '개 중 ' + (FREE_SECTION_COUNT + done) + '개 완성';
-  }
-
-  function finishWait(ok){
-    waitDone = true;
-    if(waitTimer){ clearTimeout(waitTimer); waitTimer = null; }
-    if(!waitAlive()) return;
-    waitUI.bar.classList.remove('idle');
-    if(ok){
-      waitUI.fill.style.width = '100%';
-      waitUI.lead.textContent = '풀이를 다 썼어요.';
-      waitUI.time.textContent = '이 창을 닫으면 처음부터 읽으실 수 있어요.';
-      waitUI.cnt.textContent  = PAID_TOTAL ? ('총 ' + WAIT_TOTAL + '개 전부 완성') : '';
-    } else {
-      waitUI.lead.textContent = '풀이를 다 쓰지 못했어요.';
-      waitUI.time.textContent = '이용권은 그대로 있어요. 창을 닫고 화면의 [다시 시도]를 눌러 주세요.';
-      waitUI.cnt.textContent  = '';
-    }
-  }
-
   function paint(){
     host.innerHTML = '';
     host.appendChild(buildGatedToc(state.sections, product, tocLabel));
@@ -6721,20 +6556,17 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
      ★ 실패를 조용히 삼키지 않는다 — 결제한 사람이 아무 설명 없이 빈 화면을 보는 게 제일 나쁘다. */
   function loadPaidBody(){
     state.paidLoading = true; state.paidError = null;
-    armWait();
     paint();
     fetchPaidSection(product.id, payload, displayName).then(function(remote){
       state.paidLoading = false;
       state.paidError = null;
       state.sections = baseSections.slice(0, FREE_SECTION_COUNT).concat(remote);
-      finishWait(true);
       paint();
     }).catch(function(err){
       state.paidLoading = false;
       state.paidError = (err && err.message) || '유료 해석을 불러오지 못했습니다.';
       state.sections = baseSections;
       console.warn('유료 본문 조회 실패', err);
-      finishWait(false);
       paint();
     });
   }
@@ -6799,7 +6631,6 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
                paragraphs: got.paras, body: '' };
     });
     state.source = 'api';
-    updateWait();
     var now = Date.now();
     if(force || now - lastPaint > 400){
       lastPaint = now;
@@ -6810,7 +6641,6 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     }
   }
 
-  armWait();
   Interpreter.generateStream(product.id, payload, function(text){ applyText(text, false); })
     .then(function(full){
       var secs = Interpreter.parseSections(full, titles);
@@ -6828,7 +6658,6 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
         loadPaidBody();
         return;
       }
-      finishWait(true);
       paint();
     })
     .catch(function(err){
@@ -6837,8 +6666,6 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
       state.source = 'local';
       state.loading = false;
       state.error = (err && err.message) || '해석 서버 호출에 실패했습니다.';
-      /* 아래에서 통짜 경로로 한 번 더 시도한다. 그때까지는 기다림 창에 실패라고 쓰지 않는다. */
-      if(!paidNeeded) finishWait(false);
       paint();
       /* ★ R69 — 스트리밍이 죽었다고 결제한 사람을 빈 화면에 두지 않는다.
          유료 본문 주소로 한 번 더 시도한다. 여기가 그 주소가 실제로 쓰이는 자리다. */
@@ -6961,7 +6788,7 @@ function renderGatedSections(view, sections, product, opts){
     sec.appendChild(h);
     if(pendingFrom >= 0 && i >= pendingFrom){
       if(opts.pendingLoading){
-        sec.appendChild(el('p',{class:'section-sub'},['이 부분은 아직 쓰는 중이에요.']));
+        sec.appendChild(el('p',{class:'section-sub'},['본문을 불러오는 중이에요…']));
       } else {
         sec.appendChild(el('p',{class:'section-sub'},['본문을 불러오지 못했어요. 이용권은 그대로 남아 있어요.']));
         /* 재시도 버튼은 첫 실패 섹션에만 둔다(섹션마다 달면 같은 버튼이 열 개 늘어선다). */
@@ -7015,7 +6842,7 @@ function interpreterNotice(state){
     box.classList.add('on');
     box.appendChild(el('span',{class:'interp-badge'},[st.loading ? 'AI 해석 쓰는 중' : 'AI 해석']));
     box.appendChild(el('span',{},[st.loading
-      ? '사주 여덟 글자를 읽고 쓰는 중이에요. 보통 2분, 길면 3분쯤 걸리니 먼저 온 부분부터 읽으셔도 돼요.'
+      ? '사주 여덟 글자를 읽고 쓰는 중이에요. 다 쓰기까지 1~3분쯤 걸리니, 먼저 온 부분부터 읽으셔도 돼요.'
       : '이 풀이는 이 사주의 계산 결과를 직접 읽고 쓴 것이에요.']));
     return box;
   }
@@ -11206,30 +11033,15 @@ function buildElementFixNotice(p){
 function renderOnboarding(){
   var main=$('#main'); main.innerHTML='';
   var wrap=el('div',{class:'onboard view'});
-  /* ★ R90 (2026-08-19, 대표님 지시) — 첫 화면에서 바로 고를 수 있게 한 장으로 합쳤다.
-     예전 흐름: [소개 + 시작하기] → [소개가 또 나오고 카드 두 장] → 프로필 만들기.
-     같은 소개 문단을 두 번 읽히고, 고르기까지 탭이 한 번 더 들었다.
-     이제 소개와 고르기를 한 화면에 둔다. '시작하기' 버튼은 없앴다 — 카드가 곧 시작이다.
-     ★ 별자리 그림을 뺐다. 위쪽 600px을 그림과 여백이 쓰고 있어서 정작 고를 것이
-       첫 화면 밖으로 밀려났다(외부 자문 실측: 시작하기 버튼이 y=702).
-       캐릭터 석 줄은 남긴다 — 이 앱이 무엇인지 문장보다 빨리 말해 준다.
-     ★ 초대를 받고 온 사람에게는 카드를 보여주지 않는다. 고를 것이 이미 정해져 있다. */
+  wrap.appendChild(buildConstellationSvg());
   wrap.appendChild(el('h1',{},[COMPANY.serviceName]));
   /* ★ R22 — 첫 화면에 캐릭터 셋을 세운다. 이 앱을 처음 본 사람이 "무슨 앱인지"를
      문장보다 먼저 알게 되는 자리이고, 여기에는 계산 근거·고지·결제가 없다.
      세 종만 쓰는 이유: 21종을 다 세우면 320px에서 줄이 네 겹이 되고 첫 화면이 시끄러워진다. */
-  var invitedLead = !!(PENDING_GROUP_JOIN || PENDING_GROUP || PENDING_MEET || PENDING_ROOM || PENDING_INVITE);
-  wrap.appendChild(el('p',{class:'onboard-lead'},[
-    invitedLead ? '궁합 초대를 받으셨어요' : '오늘 하루를 여덟 글자로 읽어드려요'
-  ]));
-  wrap.appendChild(el('p',{class:'onboard-sub'},[
-    invitedLead ? '닉네임과 생년월일만 넣으면 바로 결과가 나와요.'
-                : '생년월일만 넣으면 오늘의 운세부터 나와요. 회원가입도, 앱 설치도 없이.'
-  ]));
   var introKeys = ['e0','e1','e4'];
   var introRow = el('div',{class:'char-row'});
   introKeys.forEach(function(k){
-    if(CHARACTERS[k]) introRow.appendChild(buildCharSvg(k, 54, {mini:true, label:CHARACTERS[k].name+' 캐릭터'}));
+    if(CHARACTERS[k]) introRow.appendChild(buildCharSvg(k, 62, {mini:true, label:CHARACTERS[k].name+' 캐릭터'}));
   });
   if(introRow.childNodes.length) wrap.appendChild(introRow);
   /* R30 — 앱을 처음 만나는 화면이다. 여기서는 용어를 한 개도 쓰지 않는다.
@@ -11247,31 +11059,10 @@ function renderOnboarding(){
      초대를 들고 온 사람에게는 그 이야기부터 하고, 곧바로 정보 입력으로 보낸다.
      고를 것이 이미 정해져 있는 사람에게 다시 고르라고 하지 않는다.
   ===================================================================== */
-  var invited = invitedLead;
-  /* ★ R90 — 여기 있던 소개 문단을 걷었다. 바로 다음 화면(홈)이 같은 문단을 또 보여줘서
-     처음 온 사람이 같은 글을 두 번 읽었다. 이제 그 홈 카드를 이 화면으로 끌어올린다. */
-  var svcCards = [];
-  function onbCard(title, desc, mode){
-    var c = el('button',{class:'svc-card', type:'button', disabled:'disabled', onclick:function(){
-      if(!ageOk) return;
-      STATE.onboarded = true; saveState();
-      startService(mode);
-    }});
-    c.appendChild(el('div',{class:'svc-title'},[title]));
-    c.appendChild(el('div',{class:'svc-desc'},[desc]));
-    c.appendChild(el('span',{class:'svc-arrow','aria-hidden':'true'},[dirIcon('right')]));
-    svcCards.push(c);
-    return c;
-  }
-  if(!invited){
-    wrap.appendChild(onbCard('내 사주 × 성격유형',
-      '오늘의 운세 · 사주팔자 · 대운 흐름 · 성격 강점', 'self'));
-    wrap.appendChild(onbCard('타인과 궁합 보기',
-      '링크 하나로 1:1부터 '+GC_MAX+'명 모임까지', 'compat'));
-    wrap.appendChild(el('p',{class:'onboard-trust'},[
-      '천문 자료로 만든 만세력을 직접 계산합니다. 절기와 태어난 곳의 해 위치까지 맞춰서요.'
-    ]));
-  }
+  var invited = !!(PENDING_GROUP_JOIN || PENDING_GROUP || PENDING_MEET || PENDING_ROOM || PENDING_INVITE);
+  wrap.appendChild(el('p',{}, [ invited
+    ? '궁합 초대를 받으셨어요. 닉네임과 생년월일만 넣으면 바로 결과가 나와요. 회원가입은 없습니다.'
+    : '성격유형과 사주를 기반으로 운세와 궁합을 풀어보는 서비스입니다. 회원가입 없이 편하게 링크 하나로 가족·친구·연인과 함께 궁합도 볼 수 있어요.' ]));
   /* =====================================================================
      R49 — 만 14세 이상 확인 (대표님 지시)
      ---------------------------------------------------------------------
@@ -11301,24 +11092,11 @@ function renderOnboarding(){
   chk.addEventListener('change', function(e){
     ageOk = !!e.target.checked;
     if(ageOk) startBtn.removeAttribute('disabled'); else startBtn.setAttribute('disabled','disabled');
-    /* ★ R90 — 카드도 같이 열고 닫는다. 확인 전에 눌리면 안 물어본 것과 같다. */
-    svcCards.forEach(function(c){
-      if(ageOk) c.removeAttribute('disabled'); else c.setAttribute('disabled','disabled');
-    });
   });
-  /* ★ R90 — 확인 줄을 카드보다 위에 둔다.
-     아래에 두면 작은 화면(390×667)에서 접힘 밑으로 내려가, 손님은 '카드가 회색인데 왜 안 눌리지'만
-     보게 된다(실측: 카드는 y=654에서 끝나는데 확인 줄이 y=778이었다).
-     묻는 것이 먼저이고 고르는 것이 그다음이다. */
-  wrap.insertBefore(
-    el('div',{class:'chk-row', style:'justify-content:center;margin:2px 0 12px;'},[
-      chk, el('label',{for:'ageOk14'},['만 14세 이상입니다.'])
-    ]),
-    svcCards.length ? svcCards[0] : null
-  );
-  /* ★ R90 — 초대받아 온 사람에게만 버튼을 둔다. 그 사람은 고를 것이 이미 정해져 있다.
-     그냥 온 사람은 위 카드가 곧 시작이라 버튼이 하나 더 있으면 무엇을 눌러야 할지 헷갈린다. */
-  if(invited) wrap.appendChild(startBtn);
+  wrap.appendChild(el('div',{class:'chk-row', style:'justify-content:center;margin-top:6px;'},[
+    chk, el('label',{for:'ageOk14'},['만 14세 이상입니다.'])
+  ]));
+  wrap.appendChild(startBtn);
   wrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
     (invited ? '' : '')
     + '만 14세 미만은 이용하실 수 없어요. 시작하시면 이용약관과 개인정보처리방침에 동의하신 것으로 봅니다.'
@@ -12264,143 +12042,7 @@ function openOrderLookup(receiptId){
     .catch(function(){ body.innerHTML=''; body.appendChild(el('p',{class:'biz-hint'},['불러오지 못했어요.'])); });
 }
 
-/* =====================================================================
-   ★ R90 (2026-08-19 대표님 지시) — 홈 탭 대시보드
-   ---------------------------------------------------------------------
-   프로필이 있으면 오늘 점수·타고난 여덟 글자·다음 갈 곳을 한 화면에 세운다.
-   프로필이 없으면 예전 소개 화면(renderLandingIntro)이 그대로 나간다 —
-   처음 오신 분에게 남의 사주 대시보드를 보여줄 수는 없다.
-
-   ★ 여기서 숫자를 새로 계산하지 않는다. getTodayFortune / getSajuResult 가 만든 값을
-     그대로 읽는다. 홈에서 따로 세면 '오늘의 운세' 화면과 언젠가 어긋나고,
-     그때 어느 쪽이 맞는지 알 방법이 없어진다.
-   ★ 값이 없으면(사주를 못 구하는 프로필) 그 카드를 아예 만들지 않는다.
-     0점짜리 빈 카드를 세우는 것이 가장 나쁘다.
-===================================================================== */
 function renderLanding(){
-  var p = activeProfile();
-  if(!p){ renderLandingIntro(); return; }
-  renderHomeDash(p);
-}
-
-var HD_CAT_SHORT = { total:'총운', love:'애정', money:'금전', work:'직장', health:'건강' };
-function renderHomeDash(p){
-  var main=$('#main'); main.innerHTML='';
-  var view=el('div',{class:'view home-dash'});
-  var fortune=null, saju=null;
-  try{ fortune = getTodayFortune(p); }catch(e){ fortune = null; }
-  try{ saju = getSajuResult(p); }catch(e){ saju = null; }
-
-  /* ── 날짜 줄 : 2026 · 08 · 19 · 을축(乙丑) 날 ── */
-  var d=new Date();
-  var dateTxt = d.getFullYear()+' · '+pad2(d.getMonth()+1)+' · '+pad2(d.getDate());
-  if(fortune && fortune.todayIljin){
-    dateTxt += '  ·  '+fortune.todayIljin.text+'('+fortune.todayIljin.textH+') 날';
-  }
-  view.appendChild(el('p',{class:'hd-date'},[dateTxt]));
-
-  /* ── ① 오늘 카드 ── */
-  if(fortune && fortune.overall != null && fortune.scores){
-    var tc = el('div',{class:'scroll-card stamp-in'});
-    var top = el('div',{class:'hd-top'});
-    var ckey = charKeyForDayStem(saju);
-    if(ckey){
-      var fig = el('div',{class:'hd-figure'});
-      fig.appendChild(buildCharSvg(ckey, 84, {label: ownerLabel(p.name)+' 타고난 기운 캐릭터'}));
-      top.appendChild(fig);
-    }
-    var head = el('div',{class:'hd-head'});
-    head.appendChild(el('p',{class:'hd-who'},[ownerLabel(p.name)+' 오늘']));
-    head.appendChild(el('div',{class:'hd-score', role:'img',
-      'aria-label':'오늘의 종합 점수 '+fortune.overall+'점 (100점 만점)'},[
-      el('b',{'aria-hidden':'true'},[String(fortune.overall)]),
-      el('span',{'aria-hidden':'true'},['점'])
-    ]));
-    head.appendChild(el('p',{class:'hd-word'},[todayOverallWord(fortune.overall)]));
-    top.appendChild(head);
-    tc.appendChild(top);
-
-    /* 다섯 칸. 점수가 없는 항목은 '—'로 둔다 — 지어내지 않는다. */
-    var strip = el('div',{class:'hd-strip'});
-    FORTUNE_CATS.forEach(function(cat){
-      var v = fortune.scores[cat.key];
-      var cell = el('div',{class:'hd-cell'});
-      /* 라벨은 다섯 칸에 들어가도록 짧게 줄인다. 표를 따로 두는 이유: 예전에 '운'만 지웠더니
-         '총운'이 '총'이 됐다. 규칙으로 깎지 말고 쓸 이름을 적어 둔다. */
-      cell.appendChild(el('span',{class:'k'},[HD_CAT_SHORT[cat.key] || cat.label]));
-      var cls = 'v' + (v == null ? '' : (v >= 70 ? ' hi' : (v < 45 ? ' lo' : '')));
-      cell.appendChild(el('span',{class:cls},[v == null ? '—' : String(v)]));
-      strip.appendChild(cell);
-    });
-    tc.appendChild(strip);
-
-    var lead = fortune.items && fortune.items.total && fortune.items.total.text;
-    if(lead) tc.appendChild(el('p',{class:'hd-line'},[lead]));
-
-    tc.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:16px;', onclick:function(){
-      setMode('self'); ROUTE='today'; render();
-    }},['오늘의 운세 자세히 보기']));
-    view.appendChild(tc);
-  }
-
-  /* ── ② 타고난 여덟 글자 ── */
-  if(saju){
-    var sc = el('div',{class:'scroll-card stamp-in'});
-    var hd = el('div',{class:'hd-cardhead'});
-    hd.appendChild(el('h3',{},['타고난 여덟 글자']));
-    hd.appendChild(el('button',{class:'hd-more', type:'button', onclick:function(){
-      setMode('self'); ROUTE='saju'; render();
-    }},['전체 보기 ›']));
-    sc.appendChild(hd);
-    sc.appendChild(buildPillarTable(saju));
-    /* 오행 분포 — 가로 막대 한 줄 + 범례. 값은 dominantElementIdx가 센 것 그대로다. */
-    try{
-      var counts = dominantElementIdx(saju).counts;
-      var sum = counts.reduce(function(a,b){ return a+b; },0);
-      if(sum > 0){
-        var bar = el('div',{class:'hd-elem', role:'img',
-          'aria-label':'오행 분포 ' + ELEMENTS.map(function(n,i){ return n+' '+counts[i]; }).join(', ')});
-        ELEMENTS.forEach(function(n,i){
-          if(!counts[i]) return;
-          bar.appendChild(el('i',{style:'width:'+(counts[i]/sum*100)+'%;background:'+ELEMENT_COLOR_ARR[i]+';'}));
-        });
-        sc.appendChild(bar);
-        var lg = el('div',{class:'hd-legend','aria-hidden':'true'});
-        ELEMENTS.forEach(function(n,i){
-          lg.appendChild(el('span',{},[
-            el('i',{style:'background:'+ELEMENT_COLOR_ARR[i]+';'}), n+' '+counts[i]
-          ]));
-        });
-        sc.appendChild(lg);
-      }
-    }catch(e){}
-    view.appendChild(sc);
-  }
-
-  /* ── ③ 다음 갈 곳 ── */
-  function hdRow(title, sub, right, go){
-    var b = el('button',{class:'hd-row', type:'button', onclick:go});
-    var l = el('div',{});
-    l.appendChild(el('div',{class:'t'},[title]));
-    if(sub) l.appendChild(el('div',{class:'s'},[sub]));
-    b.appendChild(l);
-    b.appendChild(right);
-    return b;
-  }
-  view.appendChild(hdRow('궁합 보기','링크 하나로 가족 · 친구 · 연인과',
-    el('span',{class:'price', 'aria-hidden':'true'},[dirIcon('right')]),
-    function(){ setMode('compat'); ROUTE='compat'; render(); }));
-
-  var opened = hasAccess(PRODUCTS.saju_full.id);
-  view.appendChild(hdRow('내 사주 전체 풀이','13개 섹션 · 월별 운세 · 대운 구간',
-    el('span',{class:'price'+(opened?' open':'')},[opened ? '열려 있어요' : formatWon(PRODUCTS.saju_full.price)]),
-    function(){ setMode('self'); ROUTE='report13'; render(); }));
-
-  main.appendChild(autoTermify(view));
-}
-
-/* 처음 오신 분에게 보여 주는 소개 화면(예전 홈 그대로). */
-function renderLandingIntro(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view landing'});
   var p=activeProfile();
@@ -17121,17 +16763,7 @@ function render(){
      ★ R56 — 홈에서는 서비스 탭을 아예 감춘다(대표님 지적).
        홈은 '무엇을 볼지 고르는 자리'인데, 직전에 무엇을 눌렀느냐에 따라 탭이 달라 보였다.
        고르러 온 화면의 메뉴가 매번 바뀌면 그게 더 헷갈린다. 홈은 늘 같은 모습이어야 한다. */
-  /* ★ R90 (2026-08-19) — 홈이 대시보드가 되면서 이 규칙을 바꾼다.
-     예전 홈은 "무엇을 볼지 고르는 화면"이라 메뉴를 숨겨 두는 게 맞았다.
-     지금 홈은 내 오늘 점수와 내 여덟 글자가 놓인 화면이다. 그런 화면에서 메뉴가 셋만
-     보이면 나머지가 사라진 것처럼 보인다. 프로필이 없을 때(=소개 화면)만 예전대로 둔다.
-     ★ 홈에서는 지금 고른 모드가 아니라 늘 'self'로 본다. 홈 대시보드에 놓인 것이
-       내 오늘 점수와 내 여덟 글자(=사주 쪽 내용)이기 때문이다. 궁합을 보다 홈에 왔다고
-       메뉴가 통째로 바뀌면, 같은 화면인데 갈 수 있는 곳이 달라지는 셈이 된다.
-       (궁합으로 가는 길은 홈 대시보드 안의 [궁합 보기] 줄이 준다.) */
-  var tabMode = (ROUTE==='home')
-    ? (activeProfile() ? 'self' : null)
-    : modeOf();
+  var tabMode = (ROUTE==='home') ? null : modeOf();
   $all('.tab-btn').forEach(function(b){
     var m = b.dataset.mode;
     b.hidden = !!(m && m !== tabMode);
