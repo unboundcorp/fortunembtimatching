@@ -6689,9 +6689,13 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     var tip  = el('p',{class:'wait-tip'},['이 창을 닫으면 지금까지 쓰인 곳부터 바로 읽으실 수 있어요. 나머지는 읽으시는 동안 이어서 채워집니다.']);
     body.appendChild(lead); body.appendChild(time); body.appendChild(bar);
     body.appendChild(cnt);  body.appendChild(tip);
-    waitUI = { bar:bar, fill:fill, cnt:cnt, lead:lead, time:time };
     openModal('풀이를 쓰는 중이에요', body,
       [{label:'닫고 먼저 읽기', cls:'btn-primary', onclick:function(){ closeModal(true); }}]);
+    /* ★ 제목·닫기 버튼은 openModal이 만든다. 다 쓰고 나면 그 둘도 함께 바꿔야 한다 —
+       안 그러면 "풀이를 쓰는 중이에요" 밑에 "다 썼어요"가 나란히 놓인다(대표님이 실제로 보심). */
+    waitUI = { bar:bar, fill:fill, cnt:cnt, lead:lead, time:time, tip:tip,
+               title: document.querySelector('#activeModal .modal-box h3'),
+               btn:   document.querySelector('#activeModal .modal-close-row .btn') };
     updateWait();
   }
 
@@ -6720,13 +6724,21 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     waitUI.bar.classList.remove('idle');
     if(ok){
       waitUI.fill.style.width = '100%';
-      waitUI.lead.textContent = '풀이를 다 썼어요.';
+      if(waitUI.title) waitUI.title.textContent = '풀이를 다 썼어요';
+      waitUI.lead.textContent = WAIT_TOTAL + '개 이야기를 모두 썼어요.';
       waitUI.time.textContent = '이 창을 닫으면 처음부터 읽으실 수 있어요.';
       waitUI.cnt.textContent  = PAID_TOTAL ? ('총 ' + WAIT_TOTAL + '개 전부 완성') : '';
+      /* ★ 이 말은 실제 동작이다. 서버가 만든 글을 보관해 두었다가 다음에는 그대로 돌려준다
+         (api/interpret.js의 getAiCache 갈래). 그래서 다시 열 때는 기다림도 비용도 없다. */
+      if(waitUI.tip) waitUI.tip.textContent = '다음에 이 화면을 다시 열 때는 기다리지 않고 바로 나와요.';
+      if(waitUI.btn) waitUI.btn.textContent = '닫고 읽기';
     } else {
-      waitUI.lead.textContent = '풀이를 다 쓰지 못했어요.';
+      if(waitUI.title) waitUI.title.textContent = '풀이를 다 쓰지 못했어요';
+      waitUI.lead.textContent = '쓰다가 끊겼어요.';
       waitUI.time.textContent = '이용권은 그대로 있어요. 창을 닫고 화면의 [다시 시도]를 눌러 주세요.';
       waitUI.cnt.textContent  = '';
+      if(waitUI.tip) waitUI.tip.textContent = '지금까지 쓰인 곳은 그대로 읽으실 수 있어요.';
+      if(waitUI.btn) waitUI.btn.textContent = '닫기';
     }
   }
 
@@ -6826,6 +6838,14 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
                paragraphs: got.paras, body: '' };
     });
     state.source = 'api';
+    /* ★ R92 — 다시 읽는 경우 서버는 보관해 둔 글을 한 덩어리로 한 번에 보낸다.
+       그러면 이 지점에서 이미 열세 자리가 다 차 있다. 0.7초 시계에만 맡기면
+       망이 느린 날에는 "다 나온 화면 위에 기다림 창"이 뜬다.
+       다 찼으면 시계를 여기서 끈다 — 뜰 이유가 없다. */
+    if(PAID_TOTAL && !waitOpened && emptyPaidCount(state.sections) === 0){
+      waitDone = true;
+      if(waitTimer){ clearTimeout(waitTimer); waitTimer = null; }
+    }
     updateWait();
     var now = Date.now();
     if(force || now - lastPaint > 400){
