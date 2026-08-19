@@ -424,16 +424,21 @@ main{flex:1;padding:28px 20px 96px;}
 .big-num > span{position:relative;}
 
 /* ===================== MBTI 그리드 ===================== */
-.mbti-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0;}
+/* ★ R94 (외부 자문 지적) — 영문 코드 네 글자만 있는 정사각 16칸이었다.
+   "코드만 보고는 못 고르겠다"가 여기서 막히는 이유였다. 두 칸으로 넓혀 별명을 함께 적는다. */
+.mbti-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:18px 0;}
 .mbti-cell{
-  aspect-ratio:1/1;border:1px solid rgba(88,68,22,.22);border-radius:var(--r-md);
-  display:flex;align-items:center;justify-content:center;font-family:var(--sans);
+  border:1px solid rgba(88,68,22,.22);border-radius:var(--r-md);
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  min-height:58px;padding:10px 12px;text-align:left;font-family:var(--sans);
   font-weight:700;font-size:1.05rem;letter-spacing:-.01em;color:var(--ink-dim);background:var(--panel-3);
   transition:all .15s;
 }
+.mbti-cell .mc-code{font-size:.98rem;font-weight:700;}
+.mbti-cell .mc-tag{font-size:.76rem;font-weight:400;line-height:1.4;margin-top:2px;opacity:.9;}
 .mbti-cell:hover{border-color:var(--gold);color:var(--ink);background:var(--gold-soft);}
 .mbti-cell[aria-pressed="true"]{background:var(--gold-gradient);border-color:transparent;color:var(--void);}
-@media (max-width:520px){.mbti-grid{grid-template-columns:repeat(4,1fr);gap:7px;}.mbti-cell{font-size:.85rem;}}
+@media (max-width:360px){.mbti-grid{gap:6px;}.mbti-cell{padding:9px 10px;}.mbti-cell .mc-tag{font-size:.72rem;}}
 
 /* ===================== 폼 공통 ===================== */
 .field{margin-bottom:18px;}
@@ -448,6 +453,9 @@ main{flex:1;padding:28px 20px 96px;}
 .field select:focus,.field input:focus{border-color:var(--gold);}
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+/* 셀렉트가 자기 칸을 다 쓰게 한다 — 기본 너비로 두면 칸 안에서 왼쪽에 몰려 눌 자리가 좁다. */
+.row3 select,.row2 select,.inline-pick select{width:100%;}
+.row3.row3-keep select{padding-left:8px;padding-right:8px;}
 .hour-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px;}
 .hour-btn{padding:11px 6px;min-height:44px;font-size:.78rem;border:1px solid rgba(88,68,22,.26);background:var(--panel-3);border-radius:var(--r-md);color:var(--ink-dim);transition:border-color .15s,background .15s,color .15s,transform .15s;}
 .hour-btn:hover{border-color:var(--gold);color:var(--ink);background:var(--gold-soft);}
@@ -1435,7 +1443,9 @@ body.has-fab main{padding-bottom:110px;}
   :root{ --pad-card:20px; --gap-card:16px; }
   main{padding:22px 16px 88px;}
   .section-title{font-size:1.34rem;}
-  .row3{grid-template-columns:1fr 1fr;}
+  /* ★ R94 — 마법사의 생년월일(연·월·일)만은 좁은 화면에서도 한 줄로 둔다.
+     두 줄로 접히면 '1일'이 혼자 아래에 떨어져 무슨 값인지 안 읽힌다(실측). */
+  .row3:not(.row3-keep){grid-template-columns:1fr 1fr;}
   .scroll-card::before,.scroll-card::after{left:18px;right:18px;}
   .char-hero{gap:14px;}
 }
@@ -11572,23 +11582,233 @@ function renderSetup(){
   var view=el('div',{class:'view'});
   var progress=el('div',{class:'progress-track'},[el('div',{class:'progress-fill',style:'width:'+(SETUP.step*33)+'%'})]);
   view.appendChild(progress);
-  if(SETUP.step===1) view.appendChild(renderSetupStep1());
-  else if(SETUP.step===2) view.appendChild(renderSetupStep2());
+  /* ★ R94 — 1단계가 사주 정보, 2단계가 성격유형이다(순서를 뒤집었다). */
+  if(SETUP.step===1) view.appendChild(renderSetupBirth());
+  else if(SETUP.step===2) view.appendChild(renderSetupMbti());
   else view.appendChild(renderSetupStep3());
   main.appendChild(autoTermify(view));
 }
-function renderSetupStep1(){
+/* =====================================================================
+   ★ R94 (2026-08-19 대표님 지시 · 외부 자문 1순위) — 프로필 만들기를 다시 짠다
+   ---------------------------------------------------------------------
+   자문의 실측: 첫 결과 한 줄을 보기까지 28번을 눌러야 했다. 그중 대부분이
+   "줄을 눌러 창을 열고 · 값을 고르고 · [확인]을 누르는" 왕복이었다(창 다섯 개).
+
+   바꾼 것:
+   ① 순서를 뒤집었다 — 사주를 보러 온 사람에게 가장 익숙한 값은 생년월일이다.
+      예전 1단계(성격유형 16칸)는 아는 사람만 넘어갈 수 있는 관문이었다.
+   ② 창 다섯 개를 이 한 화면에 폈다. 고르는 순간 바로 반영된다([확인] 없음).
+   ③ 진태양시 안내는 한 곳에만 둔다 — 예전에는 시각 창과 출생지 창에 같은 설명이 둘 있었다.
+
+   그대로 둔 것:
+   · SETUP._set 표시와 [다음] 막기 규칙은 손대지 않았다. 안 고른 값이 기본값인 채로
+     조용히 사주가 만들어지던 사고(R33)를 막는 장치라, 화면이 바뀌어도 그대로 필요하다.
+   · 계산(computeSetupSaju)과 저장 경로는 건드리지 않았다.
+===================================================================== */
+function setupClampDay(o){
+  var maxD = o.calendarType==='lunar' ? 30 : daysInMonth(o.year, o.month);
+  if(o.day > maxD) o.day = maxD;
+}
+/* 한 덩어리 = 이름표 + 지금 값 + 고르는 것. 화면 전체가 같은 모양으로 늘어선다. */
+function setupField(label, valueText, contentNode, hint){
+  var wrap = el('div',{class:'inline-pick'});
+  wrap.appendChild(el('div',{class:'inline-pick-head'},[
+    el('span',{class:'inline-pick-label'},[label]),
+    el('span',{class:'inline-pick-val'},[valueText])
+  ]));
+  wrap.appendChild(contentNode);
+  if(hint) wrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},[hint]));
+  return wrap;
+}
+function renderSetupBirth(){
   var box=el('div',{});
-  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 1/3':'프로필 만들기 · 1/3', '1. 성격유형 선택',
-    '알고 있다면 바로 선택하고, 모른다면 간단 테스트로 알아보세요.'));
+  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 1/3':'프로필 만들기 · 1/3', '언제 태어나셨어요?',
+    '사주 여덟 글자를 계산하는 데 쓰여요.'));
+
+  /* ── 양력 / 음력 ── 기본값(양력)이 대다수에게 맞아 막지 않는다 ── */
+  var calSeg = el('div',{class:'seg-toggle'});
+  [['solar','양력'],['lunar','음력']].forEach(function(pair){
+    calSeg.appendChild(el('button',{type:'button',
+      'aria-pressed': SETUP.calendarType===pair[0] ? 'true':'false',
+      onclick:function(){ SETUP.calendarType=pair[0]; SETUP._set.cal=true; setupClampDay(SETUP); renderKeepScroll(); }},[pair[1]]));
+  });
+  var calBody = el('div',{});
+  calBody.appendChild(calSeg);
+  if(SETUP.calendarType==='lunar'){
+    calBody.appendChild(el('div',{class:'chk-row', style:'margin-top:10px;'},[
+      el('input',{type:'checkbox', id:'leapChkInline', checked: SETUP.lunarLeap?'checked':null,
+        onchange:function(e){ SETUP.lunarLeap=e.target.checked; renderKeepScroll(); }}),
+      el('label',{for:'leapChkInline'},['윤달이에요'])
+    ]));
+  }
+  box.appendChild(setupField('양력 / 음력',
+    (SETUP.calendarType==='lunar' ? ('음력'+(SETUP.lunarLeap?' · 윤달':'')) : '양력'), calBody));
+
+  if(SETUP.calendarType==='lunar' && (SETUP.year<1900||SETUP.year>2100)){
+    box.appendChild(el('p',{class:'warn-box'},['1900~2100년 범위 밖의 음력 생년월일은 지원하지 않아요. 범위 안의 날짜를 고르시거나 양력으로 넣어주세요.']));
+  }
+
+  /* ── 생년월일 ── */
+  var dRow = el('div',{class:'row3 row3-keep'});
+  var ySel = el('select',{'aria-label':'출생 연도'});
+  for(var y=new Date().getFullYear(); y>=1900; y--){
+    var oy = el('option',{value:y},[y+'년']);
+    if(y===SETUP.year) oy.setAttribute('selected','selected');
+    ySel.appendChild(oy);
+  }
+  ySel.addEventListener('change', function(e){
+    SETUP.year=parseInt(e.target.value,10); SETUP._set.date=true; setupClampDay(SETUP); renderKeepScroll();
+  });
+  var mSel = el('select',{'aria-label':'출생 월'});
+  for(var m=1;m<=12;m++){
+    var om = el('option',{value:m},[m+'월']);
+    if(m===SETUP.month) om.setAttribute('selected','selected');
+    mSel.appendChild(om);
+  }
+  mSel.addEventListener('change', function(e){
+    SETUP.month=parseInt(e.target.value,10); SETUP._set.date=true; setupClampDay(SETUP); renderKeepScroll();
+  });
+  var dSel = el('select',{'aria-label':'출생 일'});
+  var dim = SETUP.calendarType==='lunar' ? 30 : daysInMonth(SETUP.year, SETUP.month);
+  for(var dd=1;dd<=dim;dd++){
+    var od = el('option',{value:dd},[dd+'일']);
+    if(dd===SETUP.day) od.setAttribute('selected','selected');
+    dSel.appendChild(od);
+  }
+  dSel.addEventListener('change', function(e){
+    SETUP.day=parseInt(e.target.value,10); SETUP._set.date=true; renderKeepScroll();
+  });
+  dRow.appendChild(el('div',{},[ySel]));
+  dRow.appendChild(el('div',{},[mSel]));
+  dRow.appendChild(el('div',{},[dSel]));
+  box.appendChild(setupField('생년월일',
+    SETUP._set.date ? (SETUP.year+'. '+SETUP.month+'. '+SETUP.day) : '눌러서 고르기', dRow));
+
+  /* ── 태어난 시각 ── */
+  var tBody = el('div',{});
+  if(!SETUP.timeUnknown){
+    var tRow = el('div',{class:'row2'});
+    var hSel = el('select',{'aria-label':'태어난 시'});
+    for(var h=0;h<24;h++){
+      var oh = el('option',{value:h},[pad2(h)+'시']);
+      if(h===SETUP.hour) oh.setAttribute('selected','selected');
+      hSel.appendChild(oh);
+    }
+    hSel.addEventListener('change', function(e){ SETUP.hour=parseInt(e.target.value,10); SETUP._set.time=true; renderKeepScroll(); });
+    var miSel = el('select',{'aria-label':'태어난 분'});
+    for(var mi=0;mi<60;mi++){
+      var omi = el('option',{value:mi},[pad2(mi)+'분']);
+      if(mi===SETUP.minute) omi.setAttribute('selected','selected');
+      miSel.appendChild(omi);
+    }
+    miSel.addEventListener('change', function(e){ SETUP.minute=parseInt(e.target.value,10); SETUP._set.time=true; renderKeepScroll(); });
+    tRow.appendChild(el('div',{},[hSel]));
+    tRow.appendChild(el('div',{},[miSel]));
+    tBody.appendChild(tRow);
+  }
+  tBody.appendChild(el('div',{class:'chk-row', style:'margin-top:10px;'},[
+    el('input',{type:'checkbox', id:'timeUnknownInline', checked: SETUP.timeUnknown?'checked':null,
+      onchange:function(e){ SETUP.timeUnknown=e.target.checked; SETUP._set.time=true; renderKeepScroll(); }}),
+    el('label',{for:'timeUnknownInline'},['시간을 몰라요 (시주는 계산에서 빼요)'])
+  ]));
+  box.appendChild(setupField('태어난 시각',
+    SETUP._set.time ? (SETUP.timeUnknown ? '시간 모름' : (pad2(SETUP.hour)+':'+pad2(SETUP.minute))) : '눌러서 고르기',
+    tBody));
+
+  /* ── 성별 ── 대운이 도는 방향을 정하는 값이라 기본값으로 넘길 수 없다 ── */
+  var gSeg = el('div',{class:'seg-toggle'});
+  [['F','여자'],['M','남자']].forEach(function(pair){
+    gSeg.appendChild(el('button',{type:'button',
+      'aria-pressed': (SETUP._set.gender && SETUP.gender===pair[0]) ? 'true':'false',
+      onclick:function(){ SETUP.gender=pair[0]; SETUP._set.gender=true; renderKeepScroll(); }},[pair[1]]));
+  });
+  box.appendChild(setupField('성별',
+    SETUP._set.gender ? (SETUP.gender==='F'?'여자':'남자') : '눌러서 고르기', gSeg,
+    '10년 단위 흐름(대운)이 어느 방향으로 도는지를 정할 때 쓰여요. 잘못 고르면 흐름이 반대로 나옵니다.'));
+
+  /* ── 출생지 ── 시간을 모르면 보정할 시각 자체가 없으므로 묻지 않는다 ── */
+  if(!SETUP.timeUnknown){
+    var pSel = el('select',{'aria-label':'태어난 지역'});
+    var ph = el('option',{value:''},['눌러서 고르기']);
+    if(!SETUP._set.place) ph.setAttribute('selected','selected');
+    pSel.appendChild(ph);
+    SajuEngine.BIRTH_PLACES.forEach(function(bp){
+      var o = el('option',{value:bp.key},[bp.label]);
+      if(SETUP._set.place && SETUP.birthLonKey===bp.key) o.setAttribute('selected','selected');
+      pSel.appendChild(o);
+    });
+    pSel.addEventListener('change', function(e){
+      var key = e.target.value;
+      if(!key) return;
+      for(var i=0;i<SajuEngine.BIRTH_PLACES.length;i++){
+        if(SajuEngine.BIRTH_PLACES[i].key===key){
+          SETUP.birthLonKey = key;
+          SETUP.birthLon = SajuEngine.BIRTH_PLACES[i].lon;
+          SETUP._set.place = true;
+          break;
+        }
+      }
+      renderKeepScroll();
+    });
+    var pBody = el('div',{});
+    pBody.appendChild(pSel);
+    /* ★ 진태양시 안내는 여기 한 곳에만 둔다(예전에는 시각 창·출생지 창 둘 다에 있었다).
+       시각과 지역이 모두 정해진 뒤에만 그린다 — 아직 안 고른 값으로 "계산했습니다"라고
+       말하지 않기 위해서다(R87에서 같은 이유로 고쳤다). */
+    if(SETUP._set.time && SETUP._set.place){
+      var solar = setupSolarDate(SETUP);
+      if(solar){
+        pBody.appendChild(el('div',{class:'chk-row', style:'margin-top:10px;'},[
+          el('input',{type:'checkbox', id:'adjInline', checked: SETUP.solarTimeAdjust?'checked':null,
+            onchange:function(e){ SETUP.solarTimeAdjust=e.target.checked; renderKeepScroll(); }}),
+          el('label',{for:'adjInline'},['해가 떠 있던 위치에 맞춰 보정하기'])
+        ]));
+        pBody.appendChild(buildTimeAdjustTable({y:solar.year, m:solar.month, d:solar.day,
+          timeUnknown:false, hour:SETUP.hour, minute:SETUP.minute,
+          lon:SETUP.birthLon, lonKey:SETUP.birthLonKey, adjust:SETUP.solarTimeAdjust,
+          noTerms:true}));
+      }
+    }
+    box.appendChild(setupField('출생지',
+      SETUP._set.place ? placeLabelOfKey(SETUP.birthLonKey, SETUP.birthLon) : '눌러서 고르기', pBody,
+      '서울과 부산은 해가 뜨는 시각이 약 8분 다릅니다. 시주 경계 근처에 태어나셨다면 시주가 달라져요.'));
+  }
+
+  /* ── 안 고른 값이 있으면 다음을 막는다 (R33 규칙 그대로) ── */
+  var missing = [];
+  if(!SETUP._set.date)   missing.push('생년월일');
+  if(!SETUP._set.time)   missing.push('태어난 시각');
+  if(!SETUP._set.gender) missing.push('성별');
+  if(!SETUP.timeUnknown && !SETUP._set.place) missing.push('출생지');
+  var lunarOut = SETUP.calendarType==='lunar' && (SETUP.year<1900||SETUP.year>2100);
+  var blocked = lunarOut || missing.length>0;
+  if(missing.length){
+    box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin-top:16px;'},
+      [missing.join(' · ')+josaOnly(missing[missing.length-1],'을','를')+' 골라주세요.']));
+  }
+  box.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:16px;',
+    disabled: blocked?'disabled':null,
+    onclick:function(){ if(blocked) return; SETUP.step=2; render(); }},['다음 · 성격유형 고르기']));
+  box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin:8px 0 0;'},
+    ['여기서 고른 값은 아직 저장된 게 아니에요. 3단계에서 저장을 눌러야 반영돼요.']));
+  box.appendChild(setupExitRow());
+  return box;
+}
+function renderSetupMbti(){
+  var box=el('div',{});
+  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 2/3':'프로필 만들기 · 2/3', '성격유형을 골라주세요',
+    '아시면 바로 고르시고, 모르시면 아래 8문항으로 알아보실 수 있어요.'));
 
   if(!SETUP.testMode){
     var grid=el('div',{class:'mbti-grid'});
     MBTI_TYPES.forEach(function(t){
       var pressed = SETUP.mbti===t;
-      grid.appendChild(el('button',{class:'mbti-cell', 'aria-pressed':pressed?'true':'false', onclick:function(){
-        SETUP.mbti=t; render();
-      }},[t]));
+      grid.appendChild(el('button',{class:'mbti-cell', 'aria-pressed':pressed?'true':'false',
+        'aria-label': t+' · '+TYPE_TAGLINE[t],
+        onclick:function(){ SETUP.mbti=t; renderKeepScroll(); }},[
+        el('span',{class:'mc-code'},[t]),
+        el('span',{class:'mc-tag'},[TYPE_TAGLINE[t]])
+      ]));
     });
     box.appendChild(grid);
     if(SETUP.mbti){
@@ -11620,20 +11840,26 @@ function renderSetupStep1(){
     box.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ SETUP.testMode=false; render(); }},['그리드에서 직접 선택할게요']));
   }
 
-  var nav=el('div',{style:'display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-top:18px;'});
-  if(!SETUP.mbti){ nav.appendChild(el('p',{class:'section-sub', style:'margin:0;'},['성격유형을 선택하면 다음으로 넘어갈 수 있어요.'])); }
-  nav.appendChild(el('button',{class:'btn btn-primary', disabled: SETUP.mbti?null:'disabled', onclick:function(){
-    if(!SETUP.mbti) return; SETUP.step=2; render();
-  }},['다음']));
-  box.appendChild(nav);
+  if(!SETUP.mbti){
+    box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin-top:16px;'},
+      ['성격유형을 고르시면 다음으로 넘어갈 수 있어요.']));
+  }
+  box.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:12px;',
+    disabled: SETUP.mbti?null:'disabled',
+    onclick:function(){ if(!SETUP.mbti) return; SETUP.step=3; render(); }},['다음 · 확인하고 저장']));
+  box.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;',
+    onclick:function(){ SETUP.step=1; render(); }},['이전']));
   /* R20 — 이 단계에서 고른 값이 아직 저장된 것이 아니라는 사실을 분명히 적는다.
      (마법사 전체가 "작성 중인 사본"이고, 실제 저장은 3단계의 저장 버튼 한 번뿐이다.) */
-  box.appendChild(el('p',{class:'section-sub', style:'text-align:right;margin:6px 0 0;'},
+  box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin:8px 0 0;'},
     ['여기서 고른 값은 아직 저장된 게 아니에요. 3단계에서 저장을 눌러야 반영돼요.']));
   box.appendChild(setupExitRow());
   return box;
 }
-function renderSetupStep2(){
+/* ★ R94 — 예전 2단계(창 다섯 개로 값을 고르던 화면)다. 지금은 renderSetupBirth가 대신하며
+   아무도 부르지 않는다. 되돌릴 일이 생길 수 있어 한동안 남겨 둔다 —
+   지울 때는 openValueSheet 쪽 주석(R20)에서 이 함수를 가리키는 설명도 함께 볼 것. */
+function renderSetupStep2_legacy(){
   var box=el('div',{});
   box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 2/3':'프로필 만들기 · 2/3', '2. 사주 정보',
     '태어난 시각을 모르면 "시간 모름"을 골라주세요.'));
@@ -11875,25 +12101,31 @@ function computeSetupSaju(){
 }
 function renderSetupStep3(){
   var box=el('div',{});
-  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 3/3':'프로필 만들기 · 3/3', '3. 확인 및 저장'));
+  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 3/3':'프로필 만들기 · 3/3', '이 정보가 맞나요?'));
   var computed = computeSetupSaju();
   if(!computed){
     box.appendChild(el('p',{class:'warn-box'},['입력한 음력 날짜를 변환할 수 없어요. 이전 단계로 돌아가 날짜를 다시 확인해주세요.']));
-    box.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ SETUP.step=2; render(); }},['이전으로']));
+    box.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ SETUP.step=1; render(); }},['이전으로']));
     return box;
   }
   var saju = computed.saju;
+  /* ★ R94 (외부 자문 지적) — 저장하기도 전에 한자 여덟 글자(신辛 경庚 … 시주(時柱))를 펼쳐 놓았다.
+     아직 아무 가치도 못 받은 사람에게 이 앱에서 가장 어려운 화면을 먼저 보여준 셈이다.
+     여기서는 "내가 넣은 값이 맞는지"만 확인하면 된다. 여덟 글자는 저장한 뒤
+     '내 사주' 화면에서 처음 만나면 되고, 그 표는 이미 거기 있다. */
   var card=el('div',{class:'scroll-card stamp-in'});
-  card.appendChild(el('h3',{},['사주 요약']));
-  card.appendChild(buildPillarTable(saju));
-  var grid=el('div',{class:'grid2'});
-  grid.appendChild(statMini('성격유형', SETUP.mbti));
-  grid.appendChild(statMini('성별', SETUP.gender==='F'?'여자':'남자'));
-  card.appendChild(grid);
-  card.appendChild(el('p',{class:'section-sub', style:'margin-top:12px;'},[
-    (SETUP.calendarType==='lunar'?('음력 '+SETUP.year+'-'+pad2(SETUP.month)+'-'+pad2(SETUP.day)+' (양력 '+computed.solarY+'-'+pad2(computed.solarM)+'-'+pad2(computed.solarD)+')'):('양력 '+SETUP.year+'-'+pad2(SETUP.month)+'-'+pad2(SETUP.day)))+
-    ' · '+(SETUP.timeUnknown?'시간 모름':pad2(SETUP.hour)+':'+pad2(SETUP.minute))
+  var dateLine = (SETUP.calendarType==='lunar'
+      ? ('음력 '+SETUP.year+'. '+SETUP.month+'. '+SETUP.day+' (양력 '+computed.solarY+'. '+computed.solarM+'. '+computed.solarD+')')
+      : ('양력 '+SETUP.year+'. '+SETUP.month+'. '+SETUP.day));
+  card.appendChild(el('h3',{},[dateLine]));
+  card.appendChild(el('p',{class:'section-sub', style:'margin-top:6px;'},[
+    (SETUP.timeUnknown ? '시간 모름' : (pad2(SETUP.hour)+':'+pad2(SETUP.minute)))
+    + ' · ' + (SETUP.gender==='F'?'여자':'남자')
+    + (SETUP.timeUnknown ? '' : (' · ' + placeLabelOfKey(SETUP.birthLonKey, SETUP.birthLon)))
+    + ' · ' + SETUP.mbti
   ]));
+  card.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:10px;',
+    onclick:function(){ SETUP.step=1; render(); }},['고치기']));
   if(saju.nearBoundary){ card.appendChild(el('p',{class:'warn-box'},['태어난 날이 계절이 바뀌는 마디와 아주 가까워요. 그래서 태어난 달과 태어난 해를 적은 글자가 다르게 나올 수도 있어요.'])); }
   box.appendChild(card);
 
@@ -11906,7 +12138,7 @@ function renderSetupStep3(){
     lon:SETUP.birthLon, lonKey:SETUP.birthLonKey, adjust:SETUP.solarTimeAdjust
   }));
   if(!SETUP.timeUnknown){
-    tsCard.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:10px;', onclick:function(){ SETUP.step=2; render(); }},
+    tsCard.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:10px;', onclick:function(){ SETUP.step=1; render(); }},
       ['출생지·보정 설정 바꾸기']));
   }
   box.appendChild(tsCard);
@@ -11916,10 +12148,12 @@ function renderSetupStep3(){
     el('input',{type:'text',id:'profName',maxlength:'20',value:SETUP.name||'', placeholder:'예: 나, 민지 등', oninput:function(e){ SETUP.name=e.target.value; }})
   ]));
 
-  var nav=el('div',{style:'display:flex;justify-content:space-between;margin-top:20px;'});
-  nav.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ SETUP.step=2; render(); }},['이전']));
-  box.appendChild(nav);
-  box.appendChild(circleCTA(CTA_ICON.check, SETUP.editId?'수정 완료':'저장하고 시작하기', function(){
+  box.appendChild(el('p',{class:'section-sub', style:'margin:12px 0 0;'},
+    ['사주 여덟 글자 풀이는 저장하면 ‘내 사주’ 화면에서 바로 볼 수 있어요.']));
+  /* ★ R94 (외부 자문 지적) — 퍼널의 마지막 버튼이 68×68 검은 원이고, 무슨 버튼인지 적은
+     글자는 버튼 바깥 회색이었다. 화면 폭을 다 쓰는 버튼 하나로 바꾼다. */
+  box.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:16px;',
+    onclick:function(){
     var nameInput = $('#profName');
     /* ★ R79 — 닉네임을 안 넣으면 '나'가 그대로 붙어 "나님과의 궁합"이 됐다(외부 실사 지적).
        손님이 자기를 '나님'이라고 부르는 화면이 된다. 빈 이름으로 두고,
@@ -12020,9 +12254,9 @@ function renderSetupStep3(){
       showToast('프로필이 저장되었습니다.');
     }
     render();
-  }));
-  box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin:2px 0 0;'},
-    ['이 버튼을 눌러야 1~3단계에서 넣은 값이 실제로 저장돼요.']));
+  }},[SETUP.editId?'수정 완료':'저장하고 내 운세 보기']));
+  box.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;',
+    onclick:function(){ SETUP.step=2; render(); }},['이전']));
   box.appendChild(setupExitRow());
   return box;
 }
