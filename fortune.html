@@ -108,7 +108,14 @@
   --serif:'Nanum Myeongjo','AppleMyungjo','Batang','Songti SC',serif;
   /* R29 폰트 — 대표님이 고르신 방식 ⓐ: 이름만 지정하고 없으면 기기 기본 고딕으로 떨어진다.
      @font-face도, CDN 링크도, data: URI도 쓰지 않는다(외부 요청 0건이 이 앱의 검수 항목이다).
-     순서: Pretendard → 애플 → 안드로이드 → 윈도우 → 총칭. */
+     순서: Pretendard → 애플 → 안드로이드 → 윈도우 → 총칭.
+     ★ R93 (2026-08-19) — 외부 자문이 "Pretendard를 1순위로 쓰면서 안 받으니 실제로 그려지는
+       폰트를 1순위로 두라"고 지적했다. 검토했고 **바꾸지 않기로 했다.**
+       이 목록은 "이 순서로 있으면 쓴다"는 뜻이지 "받아 온다"는 뜻이 아니다. Pretendard가
+       깔린 기기(설치해 쓰는 분이 실제로 있다)에서는 그대로 쓰이고, 없는 기기는 다음 것으로
+       내려간다 — 지금도 그렇게 돌고 있다. 지우면 깔린 분에게만 나빠지고, 없는 분에게는
+       아무 변화가 없다. 즉 지적의 처방은 이 앱에서 이득이 0이고 손해가 있다.
+       (자간 -.005em은 Pretendard 기준으로 잡았지만 애플 고딕에서도 어색하지 않은 값이다.) */
   --sans:'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',Roboto,'Malgun Gothic','Segoe UI',system-ui,sans-serif;
   --pA:#841522; /* 프로필A 라인색 — 브랜드 분홍(글자용 톤) */
   --pB:#1D3E53; /* 프로필B 라인색 — 인디고. 분홍 옆에서 확실히 구분된다 */
@@ -651,6 +658,22 @@ main{flex:1;padding:28px 20px 96px;}
 .site-footer .biz{margin-top:16px;}
 .site-footer .biz p{font-size:.68rem;color:var(--ink-faint);line-height:1.75;margin:0;}
 .site-footer .copy{margin-top:10px;font-size:.68rem;color:var(--ink-faint);}
+/* ★ R93 — 접어 둔 사업자 정보. 접힌 상태에서 44px을 넘겨 손가락으로 누를 수 있게 한다. */
+/* ★ R93 — 잠금 카드: 무엇이 잠겼는지 제목으로 보여주고, 값 비교를 한 줄 붙인다. */
+.locked-titles{margin:12px 0 16px;padding:0;list-style:none;text-align:left;
+  display:grid;gap:6px;}
+.locked-titles li{position:relative;padding-left:18px;font-size:.86rem;color:var(--ink-dim);line-height:1.6;}
+.locked-titles li::before{content:'';position:absolute;left:4px;top:.62em;width:5px;height:5px;
+  border-radius:50%;background:var(--gold);opacity:.55;}
+.locked-compare{margin:9px 0 0;font-size:.82rem;color:var(--ink-faint);line-height:1.6;}
+.site-footer .biz-fold{margin-top:12px;}
+.site-footer .biz-fold summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;
+  justify-content:center;min-height:44px;padding:0 12px;font-size:.78rem;color:var(--ink-faint);}
+.site-footer .biz-fold summary::-webkit-details-marker{display:none;}
+.site-footer .biz-fold summary::after{content:' ▾';margin-left:4px;}
+.site-footer .biz-fold[open] summary::after{content:' ▴';}
+.site-footer .biz-fold summary:hover{color:var(--gold);text-decoration:underline;}
+.site-footer .biz-fold .biz{margin-top:6px;}
 /* R35 — 궁합 근거 목록 */
 .reason-list{margin:0;padding:0;list-style:none;}
 .reason-list li{position:relative;padding:6px 0 6px 16px;font-size:.88rem;line-height:1.7;color:var(--ink);}
@@ -1466,14 +1489,15 @@ body.has-fab main{padding-bottom:110px;}
     <!-- R50 — 서비스를 고른 뒤 그 서비스의 탭만 보여준다(대표님 지시).
          data-mode 가 붙은 탭은 지금 고른 서비스와 같을 때만 나온다.
          홈·히스토리·설정은 어느 쪽에서도 필요하므로 표시가 없다. -->
+    <!-- ★ R93 (2026-08-19 외부 자문 지적) — 탭 여덟 개는 390px 화면에 안 들어간다(실측 615px).
+         게다가 고른 서비스에 따라 나타났다 사라져서, 같은 탭이 매번 다른 자리에 있었다.
+         자주 쓰는 넷만 남기고 나머지는 [더보기]로 접는다. 다섯 개는 320px에도 들어가고,
+         무엇을 고르든 자리가 바뀌지 않는다. -->
     <button class="tab-btn" data-route="home" aria-controls="main">홈</button>
-    <button class="tab-btn" data-route="today" data-mode="self" aria-controls="main">오늘의 운세</button>
-    <button class="tab-btn" data-route="saju" data-mode="self" aria-controls="main">내 사주</button>
-    <button class="tab-btn" data-route="report" data-mode="self" aria-controls="main">성격유형 리포트</button>
-    <button class="tab-btn" data-route="chars" data-mode="self" aria-controls="main">캐릭터 도감</button>
-    <button class="tab-btn" data-route="compat" data-mode="compat" aria-controls="main">궁합 보기</button>
-    <button class="tab-btn" data-route="history" aria-controls="main">히스토리</button>
-    <button class="tab-btn" data-route="settings" aria-controls="main">설정</button>
+    <button class="tab-btn" data-route="today" aria-controls="main">오늘</button>
+    <button class="tab-btn" data-route="saju" aria-controls="main">내 사주</button>
+    <button class="tab-btn" data-route="compat" aria-controls="main">궁합</button>
+    <button class="tab-btn" data-more="1" aria-haspopup="dialog">더보기</button>
   </nav>
   </div>
 
@@ -2499,6 +2523,13 @@ function showToast(msg){
   var t=$('#toast'); t.textContent=msg; t.classList.add('show');
   clearTimeout(showToast._t);
   showToast._t=trackTimeout(function(){ t.classList.remove('show'); }, 2400);
+}
+/* ★ R93 (외부 자문 지적) — "…만드는 중이에요"가 다 만들어진 뒤에도 화면에 남아 있었다.
+   2.4초 시계가 알아서 지우기를 기다렸기 때문이다. 일이 끝난 쪽에서 직접 걷는다. */
+function hideToast(){
+  var t=$('#toast'); if(!t) return;
+  clearTimeout(showToast._t);
+  t.classList.remove('show');
 }
 
 /* =====================================================================
@@ -4650,7 +4681,15 @@ function compatLockMark(){ return hasAccess(PRODUCTS.compat_full.id) ? null : lo
 
 /* 잠긴 구간에 들어가는 카드.
    내용을 통째로 숨기지 않고 앞부분을 흐릿하게 남겨, 무엇이 잠겼는지 보이게 한다. */
-function lockedBlock(product, teaserHtml, sectionTitle){
+/* ★ R93 (외부 자문 지적) — "무엇을 사는지"가 눈으로 확인돼야 한다.
+   예전에는 잠금 카드에 160자 맛보기와 개수만 있어서, 열세 개가 무슨 이야기인지 몰랐다.
+   lockedTitles를 넘기면 그 목록을 그대로 보여준다(제목은 이미 목차에 공개된 값이다).
+   ★ 값 비교도 여기서 한다. 숫자는 PRODUCTS에서 그때그때 더한다 —
+     '1,700원 이득' 같은 문장을 손으로 적어 두면 가격을 바꾼 날 거짓말이 된다. */
+function singleProductsTotal(){
+  return PRODUCTS.saju_full.price + PRODUCTS.mbti_full.price + PRODUCTS.compat_full.price;
+}
+function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles){
   var wrap = el('div',{class:'locked-block'});
   if(teaserHtml){
     var teaser = el('div',{class:'locked-teaser', html:teaserHtml, 'aria-hidden':'true'});
@@ -4666,11 +4705,25 @@ function lockedBlock(product, teaserHtml, sectionTitle){
        무엇이 열리는지 다시 보여준다. 순서를 바꾼 것이다. */
   cta.appendChild(el('div',{class:'locked-title'},[sectionTitle ? '‘'+sectionTitle+'’부터 더 깊이 이어져요' : '여기서부터 더 깊이 이어져요']));
   cta.appendChild(el('div',{class:'locked-desc'},[product.desc]));
+
+  /* 잠긴 이야기의 제목을 그대로 늘어놓는다 — 목차에 이미 있는 제목이라 새로 여는 것이 아니다. */
+  if(lockedTitles && lockedTitles.length){
+    var ul = el('ul',{class:'locked-titles'});
+    lockedTitles.forEach(function(t){ ul.appendChild(el('li',{},[t])); });
+    cta.appendChild(ul);
+  }
+
   var btn = el('button',{class:'btn btn-primary', onclick:function(){ openPaywall(product); }},
     ['더보기 · '+formatWon(product.price)]);
   cta.appendChild(btn);
   cta.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ openPaywall(PRODUCTS.premium_pass); }},
-    ['전체 이용권으로 한 번에 열기']));
+    ['전체 이용권 '+formatWon(PRODUCTS.premium_pass.price)+'으로 한 번에 열기']));
+  var gap = singleProductsTotal() - PRODUCTS.premium_pass.price;
+  if(gap > 0){
+    cta.appendChild(el('p',{class:'locked-compare'},[
+      '따로 셋을 사면 '+formatWon(singleProductsTotal())+'이에요 — 전체 이용권이 '+formatWon(gap)+' 덜 듭니다.'
+    ]));
+  }
   wrap.appendChild(cta);
   return wrap;
 }
@@ -5463,14 +5516,21 @@ var FOOTER_PAGES = [
   ['faq',     '자주 묻는 질문']
 ];
 /* 안내 페이지들은 스스로 푸터를 붙이므로 여기서 또 붙이지 않는다. */
+/* ★ R93 (2026-08-19 외부 자문 지적) — 법정 표기가 여덟 탭에 전부 600px씩 붙어 있었다.
+   히스토리 화면에서는 화면의 30%가 사업자 정보였다.
+   ★ 그렇다고 지울 수는 없다. 전자상거래법이 요구하는 표시 항목이라 어느 화면에서도
+     닿을 수 있어야 한다. 그래서 지우지 않고 '사업자 정보' 한 줄로 접는다 —
+     한 번 누르면 그 자리에서 펼쳐지고, 내용은 그대로 문서 안에 있다.
+   ★ 설정·서비스 소개처럼 실제로 그 정보를 찾으러 오는 화면에서는 펼친 채로 둔다. */
+var FOOTER_FULL_BIZ_ROUTES = { settings:1, about:1, faq:1, guideSaju:1, guideMbti:1, feedback:1 };
 function appendFooterOnce(){
   var main = $('#main');
   if(!main) return;
   if(main.querySelector('.site-footer')) return;
   var view = main.querySelector('.view') || main;
-  view.appendChild(buildSiteFooter());
+  view.appendChild(buildSiteFooter(!!FOOTER_FULL_BIZ_ROUTES[ROUTE]));
 }
-function buildSiteFooter(){
+function buildSiteFooter(fullBiz){
   var f = el('div',{class:'site-footer'});
   var row = el('div',{class:'fl-row'});
   FOOTER_PAGES.forEach(function(pair){
@@ -5500,7 +5560,15 @@ function buildSiteFooter(){
   biz.appendChild(el('p',{},['사업자등록번호 '+COMPANY.bizRegNo+' · 통신판매업신고 '+companyValue(COMPANY.mailOrderNo)]));
   biz.appendChild(el('p',{},[COMPANY.address]));
   biz.appendChild(el('p',{},[companyValue(COMPANY.supportPhone)+' · '+companyValue(COMPANY.supportEmail)]));
-  f.appendChild(biz);
+  if(fullBiz){
+    f.appendChild(biz);
+  } else {
+    /* <details>는 브라우저가 기본으로 접고 펴 준다 — 직접 만들면 낭독기 처리까지 다시 짜야 한다. */
+    var box = el('details',{class:'biz-fold'});
+    box.appendChild(el('summary',{},['사업자 정보']));
+    box.appendChild(biz);
+    f.appendChild(box);
+  }
   f.appendChild(el('p',{class:'copy'},['© '+(new Date().getFullYear())+' '+COMPANY.legalNameEn]));
   return f;
 }
@@ -5514,7 +5582,8 @@ function buildInfoPage(title, sub, build){
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:18px;', onclick:function(){
     ROUTE='home'; render(); window.scrollTo(0,0);
   }},['홈으로 돌아가기']));
-  view.appendChild(buildSiteFooter());
+  /* 안내 페이지는 그 정보를 찾으러 오는 자리다 — 여기서는 펼쳐 둔다. */
+  view.appendChild(buildSiteFooter(true));
   main.appendChild(autoTermify(view));
 }
 function infoCard(view, title, paras){
@@ -7038,7 +7107,9 @@ function renderGatedSections(view, sections, product, opts){
        (유료 본문 서버 모드에서는 본문 자체가 비어 있어 티저도 나오지 않는다.) */
     var teaser = sectionPlainText(next).slice(0, 160);
     var remain = sections.length - freeCount;
-    var block = lockedBlock(product, teaser ? '<p>'+escapeHtml(teaser)+'…</p>' : '', next.title.split(' · ')[0]);
+    var lockedTitles = sections.slice(freeCount).map(function(x){ return x.title.split(' · ')[0]; });
+    var block = lockedBlock(product, teaser ? '<p>'+escapeHtml(teaser)+'…</p>' : '',
+                            next.title.split(' · ')[0], lockedTitles);
     block.insertBefore(el('div',{class:'locked-count'},['남은 '+remain+'개 섹션이 잠겨 있어요']), block.firstChild);
     view.appendChild(block);
   }
@@ -10241,7 +10312,15 @@ var COMPAT_METRICS = [
 function compatMetricWord(m, v){ return v>=75 ? m.words[0] : (v>=50 ? m.words[1] : m.words[2]); }
 /* R29 — 세 단계 전부 불투명 색으로 바꿨다. 예전 가운데 단계는 금색 55% 투명이었는데,
    밝은 홈(--track) 위에 얹으면 2:1대로 떨어져 막대가 있는지도 안 보인다. */
-function compatBarColor(v){ return v>=75 ? 'var(--gold)' : (v>=50 ? '#8C7134' : '#B4442C'); }
+/* ★ R93 (외부 자문 지적) — 여기 남아 있던 #8C7134(옛 청동 테마의 올리브)를 걷어낸다.
+   오행 5색은 뜻이 있어 그대로 두고, 뜻이 없는 이 자리는 '색'이 아니라 '진하기'로 단계를 말한다.
+   트랙(--track) 위 실측 대비: 진한 인주 7.40:1 · 옅은 인주 3.42:1 · 먹 7:1 이상.
+   (막대는 그림이라 3:1이 기준이다. 옛 올리브가 3.45였으니 눈에 띄는 정도는 그대로다.) */
+function compatBarColor(v){
+  return v>=75 ? 'var(--gold)'
+       : (v>=50 ? 'rgba(132,21,34,.62)'
+                : 'var(--ink-faint)');
+}
 /* 종합 점수 한 줄 — 등급(combinedTier)에서만 고른다. 새 판정이 아니다. */
 var COMPAT_TIER_LINE = {
   '찰떡 케미':'설명하지 않아도 통하는 대목이 많은 사이예요. 잘 맞는 만큼, 당연하게 여기지만 않으면 오래 가요.',
@@ -11462,7 +11541,7 @@ function startSetupWizard(editProfile){
        남자분은 10년 흐름이 통째로 반대로 나온다. 그런데 화면만 봐서는 알 수가 없다.
 
        그래서 값과 별개로 "이 사람이 실제로 골랐는가"를 따로 기억한다.
-       고르기 전에는 화면에 "입력 안 함"으로 보여주고, 필수 항목이 안 채워졌으면 [다음]을 막는다.
+       고르기 전에는 화면에 "눌러서 고르기"로 보여주고, 필수 항목이 안 채워졌으면 [다음]을 막는다.
        ★ 기존 프로필을 수정할 때는 전부 이미 고른 값이므로 처음부터 true다.
     ===================================================================== */
     _set: {
@@ -11569,7 +11648,7 @@ function renderSetupStep2(){
   /* R33 — 고르기 전에는 값을 보여주지 않는다. 기본값이 내가 고른 값처럼 보이면 안 된다. */
   var calValue = SETUP._set.cal
     ? ((SETUP.calendarType==='lunar'?'음력':'양력') + (SETUP.calendarType==='lunar' && SETUP.lunarLeap ? ' · 윤달' : ''))
-    : '선택 안 함';
+    : '눌러서 고르기';
   box.appendChild(settingsRow('양력 / 음력', calValue, function(){
     openValueSheet('양력 / 음력',
       function(){ return {calendarType:SETUP.calendarType, lunarLeap:SETUP.lunarLeap}; },
@@ -11598,7 +11677,7 @@ function renderSetupStep2(){
   }
 
   /* row 2: 생년월일 */
-  var dateValue = SETUP._set.date ? (SETUP.year+'-'+pad2(SETUP.month)+'-'+pad2(SETUP.day)) : '입력 안 함';
+  var dateValue = SETUP._set.date ? (SETUP.year+'-'+pad2(SETUP.month)+'-'+pad2(SETUP.day)) : '눌러서 고르기';
   box.appendChild(settingsRow('생년월일', dateValue, function(){
     openValueSheet('생년월일',
       function(){ return {year:SETUP.year, month:SETUP.month, day:SETUP.day}; },
@@ -11631,7 +11710,7 @@ function renderSetupStep2(){
   }));
 
   /* row 3: 태어난 시각 — R20에서 분(分)까지 받는다(0~59분) */
-  var timeValue = SETUP._set.time ? (SETUP.timeUnknown ? '시간 모름' : (pad2(SETUP.hour)+':'+pad2(SETUP.minute))) : '입력 안 함';
+  var timeValue = SETUP._set.time ? (SETUP.timeUnknown ? '시간 모름' : (pad2(SETUP.hour)+':'+pad2(SETUP.minute))) : '눌러서 고르기';
   box.appendChild(settingsRow('태어난 시각', timeValue, function(){
     openValueSheet('태어난 시각',
       /* ★ R87 (2026-08-18, 외부 자문 지적) — 고른 적이 있는지(touched)를 함께 들고 다닌다.
@@ -11683,18 +11762,18 @@ function renderSetupStep2(){
   }));
 
   /* row 4: 출생지 · 진태양시 보정 (R20 신규) */
-  /* ★ R71 — 안 골랐으면 '선택 안 함'이라고 적는다. 예전에는 '서울·경기 (기본)'이라고 적었는데,
+  /* ★ R71 — 안 골랐으면 '눌러서 고르기'이라고 적는다. 예전에는 '서울·경기 (기본)'이라고 적었는데,
      그러면 이미 정해진 값처럼 보여 그냥 지나친다. 성별·태어난 시각과 같은 방식으로 맞췄다.
      태어난 시각을 모르면 보정할 시각 자체가 없으므로 '해당 없음'이다. */
   var placeValue = SETUP.timeUnknown ? '해당 없음'
-    : (SETUP._set.place ? placeLabelOfKey(SETUP.birthLonKey, SETUP.birthLon) : '선택 안 함');
+    : (SETUP._set.place ? placeLabelOfKey(SETUP.birthLonKey, SETUP.birthLon) : '눌러서 고르기');
   box.appendChild(settingsRow('출생지', placeValue, function(){
     var solar = setupSolarDate(SETUP);
     openValueSheet('출생지 · 태어난 시각 보정(진태양시)',
       /* ★ R71 — 아직 안 골랐으면 시트 안에서는 서울에서 시작한다. 어딘가에 서 있어야
          "부산으로 바꾸면 시각이 이렇게 달라진다"는 미리보기를 보여줄 수 있다(경도가 없으면
          계산이 NaN이 된다). 시트에서 [확인]을 눌러야 비로소 고른 것으로 친다 —
-         화면의 '선택 안 함'은 그때 바뀐다. */
+         화면의 '눌러서 고르기'은 그때 바뀐다. */
       function(){ return {
         birthLonKey: SETUP.birthLonKey || 'seoul',
         birthLon: (typeof SETUP.birthLon === 'number' && isFinite(SETUP.birthLon))
@@ -11719,7 +11798,7 @@ function renderSetupStep2(){
   var gWrap = el('div',{class:'inline-pick'});
   gWrap.appendChild(el('div',{class:'inline-pick-head'},[
     el('span',{class:'inline-pick-label'},['성별']),
-    el('span',{class:'inline-pick-val'},[SETUP._set.gender ? (SETUP.gender==='F'?'여자':'남자') : '선택 안 함'])
+    el('span',{class:'inline-pick-val'},[SETUP._set.gender ? (SETUP.gender==='F'?'여자':'남자') : '눌러서 고르기'])
   ]));
   var gseg = el('div',{class:'seg-toggle'});
   [['F','여자'],['M','남자']].forEach(function(pair){
@@ -13510,7 +13589,7 @@ function renderCompatForm(){
   var PL = compatPartyPrefix();
 
   /* row 1: 상대방 닉네임 */
-  box.appendChild(settingsRow((PL+' 닉네임'), COMPAT_DRAFT.name || '입력 안 함', function(){
+  box.appendChild(settingsRow((PL+' 닉네임'), COMPAT_DRAFT.name || '눌러서 고르기', function(){
     openValueSheet((PL+' 닉네임'),
       function(){ return {name:COMPAT_DRAFT.name}; },
       function(d, redraw){
@@ -13527,7 +13606,7 @@ function renderCompatForm(){
   }));
 
   /* row 2: 상대방 MBTI */
-  box.appendChild(settingsRow((PL+' 성격유형'), COMPAT_DRAFT.mbti || '선택 안 함', function(){
+  box.appendChild(settingsRow((PL+' 성격유형'), COMPAT_DRAFT.mbti || '눌러서 고르기', function(){
     openValueSheet((PL+' 성격유형'),
       function(){ return {mbti:COMPAT_DRAFT.mbti, testMode:false, testAnswers:[], testQIdx:0}; },
       function(d, redraw){
@@ -13565,7 +13644,7 @@ function renderCompatForm(){
 
   /* row 3: 상대방 양력/음력 */
   box.appendChild(settingsRow((PL+' 양력/음력'),
-    COMPAT_DRAFT._set.cal ? (COMPAT_DRAFT.calendarType==='lunar'?'음력':'양력') : '선택 안 함', function(){
+    COMPAT_DRAFT._set.cal ? (COMPAT_DRAFT.calendarType==='lunar'?'음력':'양력') : '눌러서 고르기', function(){
     openValueSheet((PL+' 양력/음력'),
       function(){ return {calendarType:COMPAT_DRAFT.calendarType}; },
       function(d, redraw){
@@ -13584,7 +13663,7 @@ function renderCompatForm(){
 
   /* row 4: 상대방 생년월일 */
   var partnerDateValue = COMPAT_DRAFT._set.date
-    ? (COMPAT_DRAFT.year+'-'+pad2(COMPAT_DRAFT.month)+'-'+pad2(COMPAT_DRAFT.day)) : '입력 안 함';
+    ? (COMPAT_DRAFT.year+'-'+pad2(COMPAT_DRAFT.month)+'-'+pad2(COMPAT_DRAFT.day)) : '눌러서 고르기';
   box.appendChild(settingsRow((PL+' 생년월일'), partnerDateValue, function(){
     openValueSheet((PL+' 생년월일'),
       function(){ return {year:COMPAT_DRAFT.year, month:COMPAT_DRAFT.month, day:COMPAT_DRAFT.day}; },
@@ -13614,7 +13693,7 @@ function renderCompatForm(){
   /* row 5: 상대방 태어난 시각 — R20에서 분(分)까지 */
   var partnerTimeValue = COMPAT_DRAFT._set.time
     ? (COMPAT_DRAFT.timeUnknown ? '시간 모름' : (pad2(COMPAT_DRAFT.hour)+':'+pad2(COMPAT_DRAFT.minute)))
-    : '입력 안 함';
+    : '눌러서 고르기';
   box.appendChild(settingsRow((PL+' 태어난 시각'), partnerTimeValue, function(){
     openValueSheet((PL+' 태어난 시각'),
       function(){ return {timeUnknown:COMPAT_DRAFT.timeUnknown, hour:COMPAT_DRAFT.hour, minute:COMPAT_DRAFT.minute}; },
@@ -13643,13 +13722,13 @@ function renderCompatForm(){
   }));
 
   /* row 6: 상대방 출생지 · 진태양시 보정 (R20 신규) */
-  /* ★ R84 — 안 골랐으면 '선택 안 함'이라고 적는다. 예전에는 '서울·경기 · 보정 켬 (기본)'이라고
+  /* ★ R84 — 안 골랐으면 '눌러서 고르기'이라고 적는다. 예전에는 '서울·경기 · 보정 켬 (기본)'이라고
      적었는데, 그러면 이미 정해진 값처럼 보여 그냥 지나친다. 내 프로필 쪽(R71)과 같은 방식이다. */
   var partnerPlaceValue = (COMPAT_DRAFT._set.time && COMPAT_DRAFT.timeUnknown) ? '시간 모름 — 해당 없음'
     : (COMPAT_DRAFT._set.place
         ? (placeLabelOfKey(COMPAT_DRAFT.birthLonKey, COMPAT_DRAFT.birthLon) + ' · 보정 '
            + (COMPAT_DRAFT.solarTimeAdjust?'켬':'끔'))
-        : '선택 안 함');
+        : '눌러서 고르기');
   /* ★ R44 — '상대방 출생지 · 태어난 시각 보정'은 이 줄에 안 들어간다(390px에서 23px, 320px에서 56px 잘림).
      뜻이 같으면서 짧은 말로 바꾼다. 시트를 열면 제목에 온전한 이름이 나온다. */
   box.appendChild(settingsRow((PL+' 출생지 · 시각 보정'), partnerPlaceValue, function(){
@@ -13675,7 +13754,7 @@ function renderCompatForm(){
 
   /* row 7: 상대방 성별 */
   box.appendChild(settingsRow((PL+' 성별'),
-    COMPAT_DRAFT._set.gender ? (COMPAT_DRAFT.gender==='F'?'여자':'남자') : '선택 안 함', function(){
+    COMPAT_DRAFT._set.gender ? (COMPAT_DRAFT.gender==='F'?'여자':'남자') : '눌러서 고르기', function(){
     openValueSheet((PL+' 성별'),
       function(){ return {gender:COMPAT_DRAFT.gender}; },
       function(d, redraw){
@@ -15992,7 +16071,7 @@ function applyRowToCompatDraft(row){
   if(hasLon){ COMPAT_DRAFT.birthLon=o.lo; COMPAT_DRAFT.birthLonKey='custom'; }
   if(o.ts!=null) COMPAT_DRAFT.solarTimeAdjust = !!o.ts;
   COMPAT_DRAFT.fromInvite = true;
-  /* 링크에 담겨 온 값은 보낸 사람이 이미 고른 값이다. '입력 안 함'으로 보이면 안 된다.
+  /* 링크에 담겨 온 값은 보낸 사람이 이미 고른 값이다. '눌러서 고르기'으로 보이면 안 된다.
      ★ R84 — 출생지만은 링크에 실제로 담겨 왔을 때만 '고른 것'으로 친다.
        안 담겨 왔는데 고른 것처럼 표시하면 예전처럼 서울 기준으로 조용히 계산된다. */
   COMPAT_DRAFT._set = {cal:true, date:true, time:true, place:hasLon, gender:true};
@@ -16207,6 +16286,7 @@ function openInviteLinkModal(profile){
     });
 }
 function showInviteModal(profile, link, live, ttlHours){
+  hideToast();   /* ★ R93 — 링크가 나왔으니 '만드는 중' 안내를 여기서 걷는다 */
   var body=el('div',{});
   /* ★ 이 문장은 실제 동작과 정확히 같아야 한다. 방이 만들어졌을 때와 아닐 때가 다르다. */
   if(live){
@@ -17176,6 +17256,32 @@ function scrollToTopNow(){
 ===================================================================== */
 var FAB_COMPAT_ROUTES = { compat:1, groupCompat:1 };
 var FAB_HIDDEN_ROUTES = { setup:1, groupJoin:1, roomJoin:1, inviteAccept:1, stats:1 };
+/* ★ R93 — [더보기] 안에 든 화면들. 탭 막대의 표시와 시트의 목록이 같은 표를 본다. */
+var MORE_ROUTES = { report:1, chars:1, history:1, settings:1, glossary:1, monthlyFortune:1,
+                    report13:1, mbtiReport:1, groupCompat:1 };
+var MORE_MENU = [
+  ['report',   '성격유형 리포트', '강점 · 그림자 · 관계에서 반복되는 패턴'],
+  ['chars',    '캐릭터 도감',     '오행 다섯 · 성격유형 열여섯'],
+  ['history',  '히스토리',        '지난 운세 · 궁합 기록'],
+  ['settings', '설정',            '프로필 · 이용권 · 사업자 정보']
+];
+function openMoreSheet(){
+  var box = el('div',{});
+  MORE_MENU.forEach(function(row){
+    var b = el('button',{class:'hd-row', type:'button', onclick:function(){
+      closeModal(true);
+      guardRouteChange(row[0], function(){ setRoute(row[0]); });
+    }});
+    var l = el('div',{});
+    l.appendChild(el('div',{class:'t'},[row[1]]));
+    l.appendChild(el('div',{class:'s'},[row[2]]));
+    b.appendChild(l);
+    b.appendChild(el('span',{class:'price','aria-hidden':'true'},[dirIcon('right')]));
+    box.appendChild(b);
+  });
+  openModal('더보기', box, [{label:'닫기', cls:'btn-ghost', onclick:function(){ closeModal(true); }}]);
+}
+
 function syncModeFab(){
   var host = document.body;
   var fab = document.getElementById('modeFab');
@@ -17233,30 +17339,21 @@ function render(){
   if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
   if(ROUTE==='inviteAccept'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderInviteAccept(); return; }
 
-  /* R50 — 고른 서비스의 탭만 보여준다. 아직 안 골랐으면 홈·히스토리·설정만 남는다.
-     ★ R56 — 홈에서는 서비스 탭을 아예 감춘다(대표님 지적).
-       홈은 '무엇을 볼지 고르는 자리'인데, 직전에 무엇을 눌렀느냐에 따라 탭이 달라 보였다.
-       고르러 온 화면의 메뉴가 매번 바뀌면 그게 더 헷갈린다. 홈은 늘 같은 모습이어야 한다. */
-  /* ★ R90 (2026-08-19) — 홈이 대시보드가 되면서 이 규칙을 바꾼다.
-     예전 홈은 "무엇을 볼지 고르는 화면"이라 메뉴를 숨겨 두는 게 맞았다.
-     지금 홈은 내 오늘 점수와 내 여덟 글자가 놓인 화면이다. 그런 화면에서 메뉴가 셋만
-     보이면 나머지가 사라진 것처럼 보인다. 프로필이 없을 때(=소개 화면)만 예전대로 둔다.
-     ★ 홈에서는 지금 고른 모드가 아니라 늘 'self'로 본다. 홈 대시보드에 놓인 것이
-       내 오늘 점수와 내 여덟 글자(=사주 쪽 내용)이기 때문이다. 궁합을 보다 홈에 왔다고
-       메뉴가 통째로 바뀌면, 같은 화면인데 갈 수 있는 곳이 달라지는 셈이 된다.
-       (궁합으로 가는 길은 홈 대시보드 안의 [궁합 보기] 줄이 준다.) */
-  var tabMode = (ROUTE==='home')
-    ? (activeProfile() ? 'self' : null)
-    : modeOf();
+  /* ★ R93 (2026-08-19 외부 자문 지적) — 서비스별로 탭을 갈아 끼우던 규칙을 없앤다.
+     예전에는 고른 서비스에 따라 탭이 나타났다 사라져서, 같은 탭이 매번 다른 자리에 있었다.
+     자주 쓰는 넷(홈·오늘·내 사주·궁합)은 늘 같은 자리에 두고, 나머지는 [더보기]로 접었다.
+     ★ 이제 modeOf()는 탭에 쓰이지 않는다. MODE는 프로필을 만든 뒤 어디로 갈지에만 쓴다.
+     ★ 지금 보고 있는 화면이 [더보기] 안쪽이면 [더보기]에 표시를 준다 —
+       그래야 "내가 어디에 있는지"가 막대에서 사라지지 않는다. */
   $all('.tab-btn').forEach(function(b){
-    var m = b.dataset.mode;
-    b.hidden = !!(m && m !== tabMode);
-    var on=b.dataset.route===ROUTE;
-    if(on && !b.hidden){
+    b.hidden = false;
+    var on = b.dataset.more
+      ? !!MORE_ROUTES[ROUTE]
+      : (b.dataset.route === ROUTE);
+    if(on){
       b.setAttribute('aria-current','page');
-      /* ★ R89 — scrollIntoView는 세로로도 페이지를 끌어당긴다. 이게 "새 화면인데 위에서
-         시작하지 않는" 원인 중 하나였다. 탭 막대는 가로로만 움직이면 되므로 직접 민다.
-         (사주 화면은 탭이 일곱 개라 615px이고 화면은 390px이다 — 가로 이동은 실제로 필요하다.) */
+      /* 다섯 개는 320px에도 들어가지만, 글자 크기를 키워 쓰는 기기에서는 넘칠 수 있다.
+         그때만 가로로 민다(세로로는 끌지 않는다 — 새 화면은 맨 위에서 시작해야 한다). */
       var bar = b.parentElement;
       if(bar && bar.scrollWidth > bar.clientWidth){
         var bl = b.offsetLeft, bw = b.offsetWidth;
@@ -17362,6 +17459,8 @@ function guardRouteChange(nextRoute, proceed){
 $('#tabbar').addEventListener('click', function(e){
   var btn=e.target.closest('.tab-btn');
   if(!btn) return;
+  /* ★ R93 — [더보기]는 화면 이동이 아니라 목록을 여는 버튼이다. */
+  if(btn.dataset.more){ openMoreSheet(); return; }
   var next = btn.dataset.route;
   guardRouteChange(next, function(){
     if(next==='compat'){ COMPAT_DRAFT=null; COMPAT_SUB=null; CURRENT_ROOM_ID=null; }

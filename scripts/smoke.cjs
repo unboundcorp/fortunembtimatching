@@ -140,10 +140,30 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
   console.log('\n[2] 화면 여덟 개');
   for (const [route, must] of TABS) {
     errs = [];
-    await page.evaluate((r) => {
+    /* ★ R93 — 탭 막대는 다섯 개(홈·오늘·내 사주·궁합·더보기)로 줄었다.
+       나머지 네 화면은 [더보기] 시트를 거쳐야 닿는다. 예전처럼 data-route 만 찾으면
+       버튼이 없어 아무 일도 안 일어나고, 앞 화면이 그대로 남아 "통과"로 읽힌다.
+       (실제로 그 함정에 걸렸다 — 없는 버튼을 눌러 놓고 합격이라고 보고했다.) */
+    const moved = await page.evaluate((r) => {
       const t = document.querySelector('.tab-btn[data-route="' + r + '"]');
-      if (t) t.click();
+      if (t) { t.click(); return 'tab'; }
+      const more = document.querySelector('.tab-btn[data-more]');
+      if (!more) return null;
+      more.click();
+      return 'sheet';
     }, route);
+    if (moved === 'sheet') {
+      await w(600);
+      const picked = await page.evaluate((r) => {
+        const names = { report: '성격유형 리포트', chars: '캐릭터 도감', history: '히스토리', settings: '설정' };
+        const want = names[r];
+        const rows = [...document.querySelectorAll('#activeModal .hd-row')];
+        const hit = rows.find((x) => x.textContent.indexOf(want) >= 0);
+        if (hit) { hit.click(); return true; }
+        return false;
+      }, route);
+      if (!picked) { note(false, route, '더보기 시트에서 항목을 못 찾음'); continue; }
+    } else if (!moved) { note(false, route, '탭도 더보기도 못 찾음'); continue; }
     await w(1200);
     const txt = await page.evaluate(() => (document.querySelector('#main') || { innerText: '' }).innerText);
     const drew = txt.length > 120 && txt.indexOf(must) >= 0;
