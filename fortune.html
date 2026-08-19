@@ -959,6 +959,29 @@ main{flex:1;padding:28px 20px 96px;}
 .hd-row .price{font-size:1rem;font-weight:700;color:var(--gold);white-space:nowrap;font-variant-numeric:tabular-nums;}
 .hd-row .price.open{color:var(--ok);font-size:.9rem;}
 
+/* ★ R91 (2026-08-19 대표님 지시) — 내 사주 ↔ 궁합 사이를 오가는 떠 있는 버튼.
+   이 앱은 고른 서비스(모드)의 탭만 보여 준다. 그래서 사주를 보다가 궁합으로 넘어가려면
+   홈까지 되돌아가야 했다 — 두 서비스를 다 파는 앱에서 그 길이 제일 멀었다.
+   ★ z-index는 40이다. 창(모달 50)보다 아래여야 한다 — 창이 떴을 때 이 버튼이 그 위에
+     떠 있으면, 창을 닫으려다 엉뚱한 화면으로 넘어간다.
+   ★ 오른손 엄지가 닿는 자리(오른쪽 아래)에 두고, 높이는 52px로 터치 목표를 넉넉히 넘긴다. */
+.mode-fab{
+  position:fixed;right:16px;z-index:40;
+  bottom:calc(20px + env(safe-area-inset-bottom, 0px));
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 20px;min-height:52px;border-radius:var(--r-pill);
+  background:var(--gold-gradient);color:var(--void);border:0;
+  font-weight:700;font-size:.95rem;letter-spacing:-.01em;white-space:nowrap;
+  box-shadow:0 6px 20px rgba(60,54,44,.22),0 2px 6px rgba(60,54,44,.12);
+  transition:transform .15s,box-shadow .15s;
+}
+.mode-fab:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(60,54,44,.28);}
+.mode-fab:active{transform:translateY(0) scale(.97);}
+.mode-fab svg{width:17px;height:17px;flex:none;}
+/* 떠 있는 버튼이 화면 맨 아래 글(법정 표기)을 가리지 않도록 자리를 비워 둔다. */
+body.has-fab main{padding-bottom:150px;}
+@media (prefers-reduced-motion:reduce){ .mode-fab{transition:none;} .mode-fab:hover{transform:none;} }
+
 /* 설정: 구매 내역 / 연동 */
 .biz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(28,26,23,.10);font-size:.86rem;}
 .biz-row:last-child{border-bottom:0;}
@@ -17092,6 +17115,49 @@ function scrollToTopNow(){
   }catch(e){}
 }
 
+/* =====================================================================
+   ★ R91 (2026-08-19 대표님 지시) — 내 사주 ↔ 궁합 전환 버튼(오른쪽 아래 떠 있는 버튼)
+   ---------------------------------------------------------------------
+   지금 보고 있는 쪽의 "반대편"으로 가는 버튼 하나만 둔다. 두 개를 나란히 두면
+   지금 어디에 있는지가 오히려 흐려진다.
+   ★ 어느 쪽인지는 MODE가 아니라 ROUTE로 정한다. MODE는 직전에 무엇을 눌렀느냐에 따라
+     화면과 어긋날 수 있는데(예: 궁합을 보다 홈에 온 경우), 버튼이 가리키는 곳은
+     지금 눈앞에 있는 화면을 기준으로 정해져야 한다.
+   ★ 프로필이 없으면 만들지 않는다 — 궁합도 사주도 계산할 값이 없다.
+===================================================================== */
+var FAB_COMPAT_ROUTES = { compat:1, groupCompat:1 };
+var FAB_HIDDEN_ROUTES = { setup:1, groupJoin:1, roomJoin:1, inviteAccept:1, stats:1 };
+function syncModeFab(){
+  var host = document.body;
+  var fab = document.getElementById('modeFab');
+  var show = !!activeProfile()
+          && !FAB_HIDDEN_ROUTES[ROUTE]
+          && !(ROUTE==='setup' && SETUP)
+          && !(!STATE.onboarded && STATE.profiles.length===0);
+  if(!show){
+    if(fab && fab.parentNode) fab.parentNode.removeChild(fab);
+    host.classList.remove('has-fab');
+    return;
+  }
+  var toCompat = !FAB_COMPAT_ROUTES[ROUTE];
+  var label = toCompat ? '궁합 보기' : '내 사주';
+  var aria  = toCompat ? '궁합 보기로 이동' : '내 사주로 이동';
+  if(!fab){
+    fab = el('button',{class:'mode-fab', type:'button', id:'modeFab'});
+    host.appendChild(fab);
+  }
+  fab.innerHTML = '';
+  fab.setAttribute('aria-label', aria);
+  fab.appendChild(document.createTextNode(label));
+  fab.appendChild(dirIcon('right'));
+  fab.onclick = function(){
+    if(toCompat){ setMode('compat'); ROUTE='compat'; }
+    else { setMode('self'); ROUTE='saju'; }
+    render();
+  };
+  host.classList.add('has-fab');
+}
+
 function render(){
   /* R59 — 화면이 바뀌었으면 방문 기록에 한 칸 얹는다(뒤로가기용). */
   var routeChanged = (ROUTE !== LAST_ROUTE);
@@ -17101,6 +17167,7 @@ function render(){
   /* R25 — 그리기 전에 대표 오행 사본을 계산 결과에 맞춘다(위 syncAllProfileElements 주석 참고). */
   syncAllProfileElements();
   updateHeader();
+  syncModeFab();
   /* ★ R54 — 운영 현황판은 온보딩보다 먼저다. 대표님이 새 브라우저에서 #stats 를 열면
      '만 14세 이상입니다' 화면이 먼저 떠서 현황판에 닿을 수가 없었다(실측). */
   if(!STATE.onboarded && STATE.profiles.length===0 && ROUTE!=='stats'){ renderOnboarding(); return; }
