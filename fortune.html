@@ -968,18 +968,22 @@ main{flex:1;padding:28px 20px 96px;}
 .mode-fab{
   position:fixed;right:16px;z-index:40;
   bottom:calc(20px + env(safe-area-inset-bottom, 0px));
-  display:inline-flex;align-items:center;gap:8px;
-  padding:14px 20px;min-height:52px;border-radius:var(--r-pill);
+  /* ★ 크기는 대표님 지시로 2/3다(글자 .95→.63rem · 높이 52→35px · 여백 14/20→9/13px).
+     ★ 이 앱은 누르는 것을 44px 이상으로 맞춰 왔는데 이 버튼만 35px이다.
+       WCAG 2.2 AA의 최소 크기(24px)는 넘지만 AAA(44px)에는 못 미친다 —
+       화면을 덜 가리는 쪽을 고른 결과다. 되돌릴 때는 아래 세 줄만 원래 값으로 바꾸면 된다. */
+  display:inline-flex;align-items:center;gap:5px;
+  padding:9px 13px;min-height:35px;border-radius:var(--r-pill);
   background:var(--gold-gradient);color:var(--void);border:0;
-  font-weight:700;font-size:.95rem;letter-spacing:-.01em;white-space:nowrap;
-  box-shadow:0 6px 20px rgba(60,54,44,.22),0 2px 6px rgba(60,54,44,.12);
+  font-weight:700;font-size:.63rem;letter-spacing:-.01em;white-space:nowrap;
+  box-shadow:0 4px 13px rgba(60,54,44,.22),0 1px 4px rgba(60,54,44,.12);
   transition:transform .15s,box-shadow .15s;
 }
 .mode-fab:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(60,54,44,.28);}
 .mode-fab:active{transform:translateY(0) scale(.97);}
-.mode-fab svg{width:17px;height:17px;flex:none;}
+.mode-fab svg{width:11px;height:11px;flex:none;}
 /* 떠 있는 버튼이 화면 맨 아래 글(법정 표기)을 가리지 않도록 자리를 비워 둔다. */
-body.has-fab main{padding-bottom:150px;}
+body.has-fab main{padding-bottom:110px;}
 @media (prefers-reduced-motion:reduce){ .mode-fab{transition:none;} .mode-fab:hover{transform:none;} }
 
 /* 설정: 구매 내역 / 연동 */
@@ -17140,7 +17144,7 @@ function syncModeFab(){
     return;
   }
   var toCompat = !FAB_COMPAT_ROUTES[ROUTE];
-  var label = toCompat ? '궁합 보기' : '내 사주';
+  var label = toCompat ? '궁합도 봐보기' : '내 사주도 봐보기';
   var aria  = toCompat ? '궁합 보기로 이동' : '내 사주로 이동';
   if(!fab){
     fab = el('button',{class:'mode-fab', type:'button', id:'modeFab'});
