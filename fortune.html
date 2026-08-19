@@ -1228,8 +1228,27 @@ body.has-fab main{padding-bottom:110px;}
 .watch-line{color:var(--ink);font-size:.9rem;font-weight:600;line-height:1.6;margin:4px 0 0;word-break:keep-all;}
 
 /* R65 — 초대 링크 안내의 점 목록 */
-.invite-note{margin:6px 0 0;padding-left:18px;}
+.invite-note{margin:8px 0 0;padding-left:18px;}
 .invite-note li{color:var(--ink-dim);font-size:.78rem;line-height:1.8;word-break:keep-all;}
+/* ★ R95 (2026-08-19 대표님 지적) — 초대 창이 글로 꽉 차 있고, 정작 보내야 할 링크가
+   맨 아래에 눌린 채 잘려 있었다. 링크를 맨 위로 올리고 그 옆에 [복사]를 붙인다.
+   보관 기간·개인정보 안내는 지우지 않고 접는다 — 고지는 그대로 있어야 한다. */
+.invite-link-row{display:flex;gap:8px;align-items:stretch;margin:4px 0 14px;}
+.invite-link-row input{flex:1;min-width:0;border:1px solid var(--field-line);border-radius:var(--r-md);
+  background:var(--panel-2);color:var(--ink-dim);padding:12px 14px;font-size:.86rem;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-overflow:ellipsis;}
+.invite-link-row button{flex:none;min-height:46px;padding:0 16px;border-radius:var(--r-md);
+  border:1px solid var(--gold);background:var(--gold-soft);color:var(--gold);
+  font-weight:700;font-size:.86rem;white-space:nowrap;}
+.invite-link-row button:active{background:var(--gold);color:var(--void);}
+.invite-fold{margin-top:6px;}
+.invite-fold summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;
+  min-height:40px;font-size:.8rem;color:var(--ink-faint);}
+.invite-fold summary::-webkit-details-marker{display:none;}
+.invite-fold summary::after{content:' ▾';margin-left:4px;}
+.invite-fold[open] summary::after{content:' ▴';}
+.invite-pin{background:none;border:0;padding:8px 2px;min-height:40px;
+  font-size:.8rem;color:var(--gold);font-weight:600;text-decoration:underline;text-underline-offset:3px;}
 
 /* R56 — '또는 내가 직접 입력하기' 가름줄 */
 .manual-head{display:flex;align-items:center;gap:10px;margin:6px 0 14px;}
@@ -16522,25 +16541,39 @@ function openInviteLinkModal(profile){
 function showInviteModal(profile, link, live, ttlHours){
   hideToast();   /* ★ R93 — 링크가 나왔으니 '만드는 중' 안내를 여기서 걷는다 */
   var body=el('div',{});
+  /* ★ R95 — 이 창에서 할 일은 하나다: 링크를 보내는 것. 그래서 링크를 맨 위에 둔다.
+     설명은 두 줄로 줄이고, 고지는 지우지 않고 접는다(지우면 고지가 아니게 된다). */
+  function linkRow(){
+    var row = el('div',{class:'invite-link-row'});
+    row.appendChild(el('input',{type:'text', value:link, readOnly:'readonly', id:'inviteLinkInput',
+      'aria-label':'궁합 초대 링크', onclick:function(e){ e.target.select(); }}));
+    row.appendChild(el('button',{type:'button', onclick:function(){ copyText(link); }},['복사']));
+    return row;
+  }
   /* ★ 이 문장은 실제 동작과 정확히 같아야 한다. 방이 만들어졌을 때와 아닐 때가 다르다. */
   if(live){
-    body.appendChild(el('p',{},['이 링크를 보내주세요. 받은 분이 자기 정보를 넣으면 바로 궁합이 나오고, '+profile.name+'님 화면에도 함께 나타나요. 두 명이든 '+GC_MAX+'명이든 이 링크 하나로 됩니다.']));
+    body.appendChild(linkRow());
+    body.appendChild(el('p',{},['받은 분이 정보를 넣는 순간 '+profile.name+'님 화면에도 함께 나타나요. 두 명이든 '+GC_MAX+'명이든 이 링크 하나면 됩니다.']));
     /* ★ R65 — 대표님이 주신 문장으로. 항목을 하나하나 나열하니 아무도 안 읽었다.
-       읽히지 않는 고지는 고지가 아니다. 자세한 항목은 개인정보처리방침에 그대로 있다. */
-    body.appendChild(el('p',{class:'biz-hint'},[
+       읽히지 않는 고지는 고지가 아니다. 자세한 항목은 개인정보처리방침에 그대로 있다.
+       ★ R95 — 지우지 않고 접었다. 누르면 그 자리에서 그대로 펴진다. */
+    var fold = el('details',{class:'invite-fold'});
+    fold.appendChild(el('summary',{},['보관 기간과 개인정보 안내']));
+    fold.appendChild(el('p',{class:'biz-hint', style:'margin-top:4px;'},[
       '초대받은 분이 입력한 정보가 궁합을 확인하기 위한 목적으로 서버에 저장돼요.'
     ]));
     var noteList = el('ul',{class:'invite-note'});
     [ '그룹을 처음 만든 날로부터 ' + GROUP_TTL_TEXT + ' 동안 보관됩니다.',
       '이름을 바꾸거나 사람을 제외하고 싶으시면 궁합 화면의 [그룹 관리]에서 하실 수 있어요.'
     ].forEach(function(t){ noteList.appendChild(el('li',{},[t])); });
-    body.appendChild(noteList);
+    fold.appendChild(noteList);
+    body.appendChild(fold);
 
     /* ★ 다른 기기에서도 관리하려면 PIN이 있어야 한다. 그 사실을 [그룹 관리] 안에 묻어 두면
        기기를 잃고 나서야 알게 된다. 링크를 만든 바로 이 자리에서 한 번 권한다.
        만들 때 PIN을 꼭 받지는 않는다 — 링크 하나 뽑자고 비밀번호부터 정하라고 하면
        정작 링크를 안 보내게 된다(R39에서 그래서 선택으로 바꿨다). */
-    body.appendChild(el('button',{class:'btn btn-ghost btn-sm btn-block', style:'margin-top:10px;',
+    body.appendChild(el('button',{class:'invite-pin', type:'button',
       /* ★ closeModal()을 먼저 부르면 안 된다. 그건 '사람이 닫은 것'으로 보고 방문 기록을
          한 칸 되돌리는데(R59), 그 되돌림이 한 박자 뒤에 도착해 방금 연 그룹 관리 창을
          닫아 버린다. openModal이 어차피 자리를 비우므로 그냥 열면 된다. */
@@ -16552,8 +16585,7 @@ function showInviteModal(profile, link, live, ttlHours){
       '지금은 실시간 연결을 쓸 수 없어 예전 방식으로 만들었어요. 결과는 링크를 연 상대방 화면에만 나오고 '+profile.name+'님 화면은 바뀌지 않아요. 이 링크 주소 안에는 '+ownerLabel(profile.name)+' '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 그대로 담기니 궁합을 볼 상대에게만 보내주세요.'
     ]));
   }
-  var box2=el('div',{class:'field'},[ el('input',{type:'text',value:link,readOnly:'readonly', id:'inviteLinkInput'}) ]);
-  body.appendChild(box2);
+  if(!live) body.appendChild(linkRow());
   openModal('궁합 초대 링크', body, [
     {label:'닫기', cls:'btn-ghost', onclick:closeModal},
     {label:'공유하기', cls:'btn-primary', onclick:function(){
