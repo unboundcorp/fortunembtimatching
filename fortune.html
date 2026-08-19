@@ -15330,8 +15330,6 @@ var COMPAT_WHY_ITEMS = [
            '특별히 좋지도 나쁘지도 않은 짝이에요',
            '예로부터 부딪힌다고 보는 짝이에요'] }
 ];
-/* 숫자를 소리 내어 읽었을 때의 받침으로 조사를 고른다 — "3로"가 아니라 "3으로" */
-function numRo(n){ return ('36790'.indexOf(String(n).slice(-1)) >= 0) ? '으로' : '로'; }
 var KO_COUNT = ['','한','두','세','네'];
 function buildCompatWhyScores(total, vals, extraNote){
   var rows = COMPAT_WHY_ITEMS
@@ -15436,14 +15434,10 @@ function buildGroupCompatCards(members, pairs, unlocked){
     card.appendChild(el('p',{class:'section-sub', style:'margin-top:8px;'},['사주로는 '+elemPhrase+', 성격유형으로는 '+mbtiPhrase]));
 
     /* ── 왜 이 점수인지 ── 1:1 화면과 같은 블록을 쓴다(같은 궁합에 다른 말을 하지 않게) ── */
-    /* ★ R97 (대표님 지적: "평균 낸 값이 먼 말이여") — 무엇을 평균했는지 이름으로 밝힌다.
-       "3명과의 궁합을 각각 계산한 뒤 평균"은 계산 얘기라 무슨 말인지 안 읽힌다. */
-    var otherNames = related.map(function(pr){ return (pr.ai===mi ? pr.b : pr.a).name; });
-    var nameList = otherNames.slice(0,3).join(' · ') + (otherNames.length>3 ? (' 외 '+(otherNames.length-3)+'명') : '');
-    var why = buildCompatWhyScores(avg, {mbti:avgMbti, saju:avgSaju, elem:avgElem, zod:avgZod},
-      related.length>1
-        ? (m.name+'님은 이 방의 다른 '+related.length+'명('+nameList+')과 각각 궁합이 나와요. 위 점수는 그 '+related.length+'개를 더해 '+related.length+numRo(related.length)+' 나눈 값이에요.')
-        : (nameList+'님과의 궁합 하나예요.'));
+    /* ★ R98 (2026-08-19 대표님 지시: "뜬금없이 3명 평균이 나와? 지워라")
+       평균이라는 사실을 설명하는 문장 자체를 뺐다. 사람 카드에서 기대하는 것은
+       그 사람과의 둘 사이 점수이지, 계산 방식 설명이 아니다. */
+    var why = buildCompatWhyScores(avg, {mbti:avgMbti, saju:avgSaju, elem:avgElem, zod:avgZod}, '');
     if(why) card.appendChild(why);
     /* 사람별 "나와 제일 잘 맞는 사람 / 제일 부딪히는 사람" — 점수와 등급까지가 무료다. */
     card.appendChild(el('p',{class:'section-sub', style:'margin-top:6px;'},
@@ -16243,9 +16237,9 @@ function renderGroupCompat(){
       saju: avgAllOf(function(pr){ return pr.res.saju && pr.res.saju.score; }),
       elem: avgAllOf(function(pr){ return pr.res.elemScore; }),
       zod:  avgAllOf(function(pr){ return pr.res.zodScore; })
-    }, pairs.length>1
-        ? ('이 방에서 나올 수 있는 짝은 모두 '+pairs.length+'쌍이에요. 위 점수는 그 '+pairs.length+'쌍의 점수를 더해 '+pairs.length+numRo(pairs.length)+' 나눈 값이에요.')
-        : '');
+    /* ★ R98 (대표님 지시) — 평균 계산을 설명하는 문장은 뺐다.
+       이 숫자 바로 위에 "N명 · 전체 평균 궁합 지수"라고 이미 적혀 있다. */
+    }, '');
     if(why) gaugeCard.appendChild(why);
   })();
   view.appendChild(gaugeCard);
