@@ -136,6 +136,21 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
   await w(2500);
   note(errs.length === 0, '켤 때 오류 0건', errs[0] || '');
 
+  /* ── 1.5 문법 ──────────────────────────────────────────────────────
+     ★ R96 — 화면을 열어 보기 전에 문법부터 본다. 괄호 하나가 빠지면 앱이 통째로 안 뜨는데,
+       그때 [2]는 "여덟 화면 전부 실패"라고만 말해 준다 — 어디가 잘못됐는지는 안 알려준다.
+       여기서 잡으면 파일 몇 줄인지까지 나온다(실제로 그렇게 한 번 잡았다). */
+  console.log('\n[1.5] 문법');
+  try {
+    const html = await (await fetch(APP)).text();
+    const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    const big = blocks.sort((x, y) => y.length - x.length)[0] || '';
+    new (require('vm').Script)(big, { filename: 'fortune.html <script>' });
+    note(true, '앱 스크립트 문법', big.length.toLocaleString() + '자');
+  } catch (e) {
+    note(false, '앱 스크립트 문법', String(e.message).slice(0, 160));
+  }
+
   /* ── 2. 탭마다 화면이 그려지는가 ─────────────────────────────────── */
   console.log('\n[2] 화면 여덟 개');
   for (const [route, must] of TABS) {
