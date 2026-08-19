@@ -10403,6 +10403,15 @@ function updateHeader(){
   var sw=$('#profileSwitch');
   sw.innerHTML='';
   var select=el('select',{'aria-label':'활성 프로필 선택', onchange:function(e){
+    /* ★ R92 (2026-08-19 대표님 지적) — "친구 사주를 봐주려는데 들어갈 데가 없다".
+       프로필을 여러 개 만들 수 있는 기능은 있었는데, 그 길이 설정 안쪽에만 있었다.
+       머리말의 이 고르개는 모든 화면에 떠 있으므로, 여기에 만들기를 함께 둔다. */
+    if(e.target.value === '__new__'){
+      /* 고른 값을 되돌려 놓는다 — 마법사를 도중에 그만두면 고르개가
+         '＋ 다른 사람 추가'에 멈춰 있어, 지금 누구를 보고 있는지가 사라진다. */
+      e.target.value = STATE.activeId;
+      startSetupWizard(null); render(); return;
+    }
     STATE.activeId = e.target.value; saveState(); render();
   }});
   STATE.profiles.forEach(function(p){
@@ -10410,6 +10419,7 @@ function updateHeader(){
     if(p.id===STATE.activeId) opt.setAttribute('selected','selected');
     select.appendChild(opt);
   });
+  select.appendChild(el('option',{value:'__new__'},['＋ 다른 사람 추가']));
   sw.appendChild(select);
 }
 function statMini(k,v){ return el('div',{class:'stat-mini'},[el('div',{class:'k'},[k]),el('div',{class:'v'},[v])]); }
@@ -12414,6 +12424,11 @@ function renderHomeDash(p){
     b.appendChild(right);
     return b;
   }
+  /* ★ R92 (2026-08-19 대표님 지적) — 친구 사주를 봐주러 들어올 자리.
+     궁합(둘을 맞대어 보는 것)과 다른 일이라 줄을 따로 둔다. */
+  view.appendChild(hdRow('다른 사람 사주 봐주기','친구 · 가족 것도 만들어서 볼 수 있어요',
+    el('span',{class:'price', 'aria-hidden':'true'},[dirIcon('right')]),
+    function(){ startSetupWizard(null); render(); }));
   view.appendChild(hdRow('궁합 보기','링크 하나로 가족 · 친구 · 연인과',
     el('span',{class:'price', 'aria-hidden':'true'},[dirIcon('right')]),
     function(){ setMode('compat'); ROUTE='compat'; render(); }));
@@ -12881,6 +12896,8 @@ function renderSaju(){
 
   view.appendChild(circleCTA(CTA_ICON.arrow, '내 사주 풀이 읽어보기', function(){ ROUTE='report13'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ ROUTE='monthlyFortune'; render(); }},['올해 월별 운세 보기']));
+  /* ★ R92 — 친구 사주를 봐주는 길. 이 화면에서 가장 자주 그 생각이 든다(대표님 제보). */
+  view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ startSetupWizard(null); render(); }},['다른 사람 사주 보기']));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('saju', p, saju); }},['사주 요약 카드 저장하기']));
   view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   /* ★ R53 — 내 사주에도 궁합 권유를 넣는다(대표님 지적: MBTI에만 있었다).
@@ -16792,7 +16809,11 @@ function buildShareText(kind, profile, data){
      "이미지로 저장 텍스트 복사 닫기"가 섞여 있으면 그건 쓸 수 없는 복사본이다.
 ===================================================================== */
 var COPY_SKIP_SEL = [
-  'button', '.tab-btn', '.site-footer', '.biz', '.copy',
+  /* ★ R92 (2026-08-19 대표님 지적) — '.btn-circle-wrap'을 새로 넣었다.
+     circleCTA는 라벨을 <button> 안이 아니라 그 옆 <div class="btn-circle-label">에 둔다.
+     그래서 'button'만 지우면 라벨만 남아, 복사한 글 끝에 '내 성격유형 풀이 읽어보기' 같은
+     누를 수 없는 문장이 붙어 나갔다(대표님이 실제로 받아 보심). 감싼 것째로 지운다. */
+  'button', '.btn-circle-wrap', '.tab-btn', '.site-footer', '.biz', '.copy',
   '.locked-block', '.locked-count', '.compat-upsell', '.pay-opens', '.upsell-opens',
   '.cross-sell', '.share-preview', '.fb-callout', '.fb-kinds',
   'script', 'style', 'svg', 'canvas', 'input', 'textarea', 'select'
@@ -16883,7 +16904,11 @@ function copyScreenText(){
   var head = '[' + COMPANY.serviceName + ']' + (who ? ' ' + who : '') + ' · ' + todayStr();
   var body = screenTextForCopy();
   if(!body){ showToast('복사할 내용을 찾지 못했어요.'); return; }
-  copyText(head + '\n\n' + body + lockedNoteForCopy());
+  /* ★ R92 (2026-08-19 대표님 지시) — 복사한 글은 대개 남에게 보낸다.
+     받은 사람이 "이건 어디서 본 거지"에서 멈추지 않도록 주소를 한 줄 붙인다.
+     ★ 주소는 COMPANY.site 하나에서만 가져온다 — 도메인이 바뀌면 여기도 같이 바뀐다. */
+  var tail = '\n\n— ' + COMPANY.serviceName + ' · 내 운세도 보기 ' + COMPANY.site;
+  copyText(head + '\n\n' + body + lockedNoteForCopy() + tail);
 }
 /* 결과 화면마다 붙이는 [전체 복사] 버튼. 공유 버튼 바로 옆(또는 아래)에 둔다. */
 function copyAllButton(){
