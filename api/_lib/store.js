@@ -397,6 +397,48 @@ export async function kakaoLinkOfSession(sessionId) {
   return rows && rows[0] ? rows[0] : null;
 }
 
+/* =====================================================================
+   기기 사이 이어보기 (R104, 2026-08-22 대표님 지시)
+   ---------------------------------------------------------------------
+   "폰에서 만든 걸 노트북에서도 보고 싶다"를 위한 서랍. 카카오 회원번호로 찾는다.
+   ★ 로그인한 사람만 쓴다. 로그인하지 않으면 이 표에는 아무것도 안 들어간다 —
+     "회원가입 없이 쓴다"는 이 서비스의 약속이 그대로 지켜져야 한다.
+   ★ 담는 것은 이용자가 앱에 넣은 것(프로필·기록)이다. 이용권은 여기 담지 않는다 —
+     그건 orders가 근거이고, 브라우저가 보낸 값을 권한의 근거로 삼으면 페이월이 뚫린다.
+
+   create table if not exists user_sync (
+     kakao_id   text primary key,
+     data       jsonb not null,
+     rev        bigint not null default 1,
+     updated_at timestamptz not null default now(),
+     created_at timestamptz not null default now()
+   );
+===================================================================== */
+export async function getUserSync(kakaoId) {
+  const rows = await rest(
+    `user_sync?kakao_id=eq.${encodeURIComponent(kakaoId)}&select=data,rev,updated_at&limit=1`
+  );
+  return rows && rows[0] ? rows[0] : null;
+}
+
+export async function putUserSync(kakaoId, data) {
+  /* 있으면 갈아 끼우고 없으면 새로 넣는다. rev는 서버가 센다 —
+     브라우저가 보낸 번호를 믿으면 오래된 기기가 새 것을 덮어쓸 수 있다. */
+  const now = new Date().toISOString();
+  const cur = await getUserSync(kakaoId);
+  const rev = (cur && Number(cur.rev) ? Number(cur.rev) : 0) + 1;
+  await rest(`user_sync?on_conflict=kakao_id`, {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ kakao_id: kakaoId, data, rev, updated_at: now }),
+  });
+  return { rev, updatedAt: now };
+}
+
+export async function deleteUserSync(kakaoId) {
+  return rest(`user_sync?kakao_id=eq.${encodeURIComponent(kakaoId)}`, { method: 'DELETE' });
+}
+
 /* 연결 끊기 — 카카오 회원번호를 지운다.
    ★ 주문 기록은 지우지 않는다. 전자상거래법이 대금 결제 기록을 5년 보관하라고 정하고 있어
      지울 수 없다. 다만 그 기록에 카카오 회원번호는 애초에 들어 있지 않다. */
