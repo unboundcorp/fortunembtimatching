@@ -16,7 +16,7 @@
 import { json, methodGuard, readBody, fail } from './_lib/http.js';
 import { productOf } from './_lib/products.js';
 import { ensureSession, newReceiptId } from './_lib/session.js';
-import { createOrder } from './_lib/store.js';
+import { createOrder, kakaoLinkOfSession } from './_lib/store.js';
 
 export default async function handler(req, res) {
   if (!methodGuard(req, res, 'POST')) return;
@@ -32,6 +32,35 @@ export default async function handler(req, res) {
     }
 
     const sessionId = ensureSession(req, res);
+
+    /* =====================================================================
+       ★ 2026-08-22 대표님 지시 — 유료 결제는 카카오 로그인을 한 분만 할 수 있다.
+       ---------------------------------------------------------------------
+       왜 막는가: 지금까지 이용권은 브라우저 쿠키에만 매여 있었다. 그래서 브라우저 기록을
+       지우거나 기기를 바꾸면 산 것이 안 보였고, 되찾는 길은 영수증 번호를 따로 적어 둔
+       사람에게만 있었다. 대부분은 안 적어 둔다 — 그러면 돈을 내고 못 보는 일이 생긴다.
+       로그인한 분만 결제하게 하면 회원번호에 주문이 묶여서 그런 일이 안 생긴다.
+
+       ★ 화면에서도 막지만, 진짜 관문은 여기다. 화면 쪽 막음은 개발자도구로 넘길 수 있다.
+       ★ 무료 기능에는 이 관문이 없다. 로그인은 결제할 때만 필요하다.
+    ===================================================================== */
+    let kakaoId = null;
+    try {
+      kakaoId = await kakaoLinkOfSession(sessionId);
+    } catch (err) {
+      /* 확인 자체를 못 했으면 열어주지 않는다. 이 앱은 실패를 늘 '잠금' 쪽으로 떨어뜨린다 —
+         못 물어봤다고 통과시키면 그게 곧 관문이 없는 것과 같다. */
+      console.error('카카오 연결 확인 실패:', err?.message);
+      return fail(res, 503, '지금은 결제를 시작할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+    }
+    if (!kakaoId) {
+      return json(res, 401, {
+        verified: false,
+        error: 'login_required',
+        reason: '결제 전에 카카오로 로그인해 주세요. 로그인하시면 결제한 것을 다른 기기에서도 보실 수 있어요.',
+      });
+    }
+
     const orderId = newReceiptId();
 
     await createOrder({
