@@ -24,22 +24,45 @@
      id bigserial primary key, session_id text not null, kind text, screen text,
      body text not null, contact text, mailed boolean not null default false,
      mail_error text, sheeted boolean, sheet_error text,
+     status text not null default 'received', reply text, replied_at timestamptz,
+     kakao_id text, order_id text,
      created_at timestamptz not null default now()
    );
    ────────────────────────────────────────────────────────────────────── */
 import { readBody, json, methodGuard } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { testAccessOf } from './_lib/store.js';
+import { testAccessOf, kakaoLinkOfSession } from './_lib/store.js';
 import { COMPANY } from './_lib/company.js';
 
 /* 글자수 상한. 넉넉하되 무한은 아니다 — 저장소를 지키는 선이다. */
 const MAX_BODY = 2000;
 const MAX_CONTACT = 120;
 const MAX_SCREEN = 40;
+const MAX_ORDER = 80;
 
 /* 무엇을 물어보는 것인지. 화면의 세 갈래와 같은 값이다.
    ★ 앱이 보낸 값을 그대로 믿지 않고 이 목록에 있는 것만 받는다. */
-const KINDS = { howto: '어떻게 하는지 모르겠어요', broken: '안 되는 게 있어요', wish: '이런 게 있으면 좋겠어요' };
+const KINDS = {
+  howto:  '어떻게 하는지 모르겠어요',
+  broken: '안 되는 게 있어요',
+  wish:   '이런 게 있으면 좋겠어요',
+  /* ★ 2026-08-22 — 고객지원 화면을 만들면서 늘렸다.
+     돈이 걸린 두 갈래를 따로 세워야 급한 것부터 먼저 볼 수 있다. 섞여 있으면
+     "이런 게 있으면 좋겠어요" 스무 건 사이에 환불 요청이 파묻힌다. */
+  paid:   '결제했는데 결과가 안 보여요',
+  refund: '환불 신청',
+};
+
+/* 처리 상태 — 시트에서 대표님이 적으시는 값이기도 하다.
+   ★ 목록 밖의 값이 들어오면 통째로 거절하지 않고 'received'로 떨어뜨린다.
+     시트에 오타가 났다고 손님 화면이 비면 안 되기 때문이다. */
+const STATUS = {
+  received: '접수됨',
+  working:  '확인 중',
+  answered: '답변 완료',
+  closed:   '처리 완료',
+};
+const MAX_REPLY = 4000;
 
 /* 도배 막기. 한 사람(세션)이 한 시간에 다섯 건까지.
    ★ 진짜 의견을 여러 번 쓰는 분을 막을 생각은 없다 — 다섯 건이면 충분히 넉넉하고,
@@ -91,7 +114,7 @@ function esc(s) {
    ★ 실패해도 접수는 이미 끝나 있다. 원본은 언제나 feedback 표에 있고 시트는 사본이다.
      그래서 절대 던지지 않는다.
    ★ Apps Script는 응답을 리다이렉트로 준다. redirect:'follow'가 없으면 302에서 멈춘다. */
-async function sendToSheet({ body, contact, kind, screen, createdAt, sessionId }) {
+async function sendToSheet({ id, body, contact, kind, screen, createdAt, sessionId, orderId }) {
   const url = process.env.SHEET_WEBHOOK_URL;
   if (!url) return null;
   try {
@@ -100,11 +123,15 @@ async function sendToSheet({ body, contact, kind, screen, createdAt, sessionId }
       redirect: 'follow',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        /* ★ 접수번호를 함께 보낸다. 이게 없으면 시트에 적으신 답을 어느 문의에
+           붙여야 하는지 되짚을 길이 없다 — 손님 화면의 [내 문의 내역]이 이 번호로 이어진다. */
+        id: id || '',
         at: createdAt,
         kind: KINDS[kind] || '적지 않음',
         screen: screen || '적지 않음',
         body,
         contact: contact || '',
+        orderId: orderId || '',
         /* 세션은 앞 8자만. 같은 사람이 여러 번 보냈는지 알아보는 용도다.
            통째로 적으면 그 값으로 이용권까지 짚을 수 있어 시트에 남길 이유가 없다. */
         session: sessionId ? String(sessionId).slice(0, 8) : '',
@@ -160,8 +187,63 @@ async function sendMail({ body, contact, kind, screen, createdAt }) {
   }
 }
 
+/* =====================================================================
+   시트에서 되돌아오는 답변 (2026-08-22)
+   ---------------------------------------------------------------------
+   대표님은 구글 시트에서 문의를 읽으신다. 답도 거기에 적으시는 게 가장 자연스럽다.
+   그래서 시트의 '상태'·'답변' 칸을 고치시면 시트에 붙은 Apps Script가 이 창구로
+   되쏴 준다. 그 값을 feedback 표에 넣으면 손님의 [내 문의 내역]에 그대로 뜬다.
+
+   ★ 이 창구는 손님이 부르는 곳이 아니다. 아무나 부르면 남의 문의에 아무 답이나
+     달 수 있으므로 SHEET_ANSWER_KEY를 아는 쪽만 받는다. 키는 Vercel 환경변수와
+     Apps Script 속성에만 있고, 이 파일이나 화면 코드에는 값이 없다.
+   ★ 키를 안 넣어두면 이 기능은 통째로 꺼진 것으로 본다(404). 설정을 덜 한 상태가
+     '아무나 통과'로 이어지면 안 된다.
+===================================================================== */
+async function handleAnswer(req, res, body) {
+  const key = process.env.SHEET_ANSWER_KEY;
+  const given = req.headers['x-answer-key'];
+  if (!key || !given || String(given) !== String(key)) {
+    return json(res, 404, { error: 'not_found', reason: '없는 주소예요.' });
+  }
+  const id = Number(body.id);
+  if (!id || !Number.isFinite(id)) {
+    return json(res, 400, { error: 'bad_request', reason: 'id가 필요해요.' });
+  }
+  const reply = String(body.reply == null ? '' : body.reply).trim().slice(0, MAX_REPLY);
+  const status = STATUS[body.status] ? String(body.status)
+    : (reply ? 'answered' : 'received');
+
+  const patch = { status, reply: reply || null };
+  /* 답이 처음 달린 시각만 남긴다. 오타를 고치실 때마다 시각이 밀리면
+     손님 화면의 "언제 답을 받았나"가 계속 바뀐다. */
+  patch.replied_at = reply ? new Date().toISOString() : null;
+
+  try {
+    const rows = await rest(`feedback?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify(patch),
+    });
+    if (!rows || !rows.length) {
+      return json(res, 404, { error: 'not_found', reason: '그 번호의 문의가 없어요.' });
+    }
+    return json(res, 200, { ok: true, id, status });
+  } catch (err) {
+    console.error('답변 반영 실패', err && err.message);
+    return json(res, 500, { error: 'server_error', reason: '지금은 반영할 수 없어요.' });
+  }
+}
+
 export default async function handler(req, res) {
   if (!methodGuard(req, res, 'POST')) return;
+
+  /* ★ 답변 반영은 손님 세션과 무관하다. 세션 쿠키를 발급하기 전에 갈라낸다 —
+     시트가 부를 때마다 쓸데없는 세션이 하나씩 생기지 않게 한다. */
+  {
+    const early = readBody(req);
+    if (String(early.action || '') === 'answer') return handleAnswer(req, res, early);
+  }
 
   let sessionId;
   try {
@@ -173,6 +255,47 @@ export default async function handler(req, res) {
 
   const body = readBody(req);
   const action = String(body.action || 'send');
+
+  /* =====================================================================
+     ── 내 문의 내역 ─────────────────────────────────────────────────
+     접수한 것이 어떻게 되고 있는지 손님이 스스로 확인하는 창구다.
+     ★ 이게 없으면 "접수했는데 아무 소식이 없다"는 문의가 원래 문의 위에 또 쌓인다.
+       상태만 보여도 다시 묻는 일이 줄어든다.
+     ★ 남의 글이 섞이지 않게 세션(쿠키)으로만 찾는다. 카카오로 이어보기를 켜신
+       분은 기기가 바뀌어도 보이도록 카카오 회원번호로도 함께 찾는다.
+     ★ 연락처는 돌려주지 않는다. 손님이 자기가 적은 값을 다시 볼 이유가 없고,
+       내려보내는 값은 적을수록 좋다.
+  ===================================================================== */
+  if (action === 'mine') {
+    try {
+      let kakaoId = null;
+      try { kakaoId = await kakaoLinkOfSession(sessionId); } catch (e) { kakaoId = null; }
+      const cols = 'id,created_at,kind,screen,body,status,reply,replied_at,order_id';
+      const sess = `session_id=eq.${encodeURIComponent(sessionId)}`;
+      const q = kakaoId
+        ? `feedback?or=(${sess},kakao_id.eq.${encodeURIComponent(kakaoId)})&select=${cols}&order=created_at.desc&limit=50`
+        : `feedback?${sess}&select=${cols}&order=created_at.desc&limit=50`;
+      const rows = await rest(q);
+      return json(res, 200, {
+        items: (rows || []).map((r) => ({
+          id: r.id,
+          at: r.created_at,
+          kind: r.kind || null,
+          kindLabel: KINDS[r.kind] || '그 밖의 의견',
+          screen: r.screen || '',
+          body: r.body || '',
+          orderId: r.order_id || '',
+          status: STATUS[r.status] ? r.status : 'received',
+          statusLabel: STATUS[r.status] || STATUS.received,
+          reply: r.reply || '',
+          repliedAt: r.replied_at || null,
+        })),
+      });
+    } catch (err) {
+      console.error('내 문의 내역 조회 실패', err && err.message);
+      return json(res, 500, { error: 'server_error', reason: '지금은 불러올 수 없어요.' });
+    }
+  }
 
   /* ── 목록 보기 — 관리자만 ────────────────────────────────────────
      stats.js와 같은 관문을 쓴다(테스트 허가를 받은 세션만).
@@ -196,6 +319,9 @@ export default async function handler(req, res) {
   const contact = String(body.contact || '').trim().slice(0, MAX_CONTACT);
   const screen = String(body.screen || '').trim().slice(0, MAX_SCREEN);
   const kind = KINDS[body.kind] ? String(body.kind) : null;
+  /* 결제·환불 문의에서만 받는 값이다. 형식은 따지지 않는다 —
+     손님이 영수증 번호 대신 "카톡으로 받은 그 번호"를 붙여넣으셔도 우리가 찾으면 된다. */
+  const orderId = String(body.orderId || '').trim().slice(0, MAX_ORDER);
 
   if (!text) {
     return json(res, 400, { error: 'bad_request', reason: '무슨 일이 있었는지 한 줄만 적어주세요.' });
@@ -217,26 +343,35 @@ export default async function handler(req, res) {
       });
     }
 
+    /* 카카오로 이어보기를 켜신 분은 기기를 바꿔도 자기 문의를 볼 수 있어야 한다.
+       못 읽어도 접수는 그대로 진행한다 — 이것 때문에 글이 날아가면 안 된다. */
+    let kakaoId = null;
+    try { kakaoId = await kakaoLinkOfSession(sessionId); } catch (e) { kakaoId = null; }
+
     /* ★ 저장이 먼저다. 여기까지 됐으면 의견은 살아남는다. */
     const saved = await rest('feedback', {
       method: 'POST',
       headers: { Prefer: 'return=representation' },
       body: JSON.stringify({
         session_id: sessionId,
+        kakao_id: kakaoId,
         kind,
         screen: screen || null,
         body: text,
         contact: contact || null,
+        order_id: orderId || null,
       }),
     });
     const row = saved && saved[0] ? saved[0] : null;
 
     /* 시트로 보낸다. 실패해도 손님에게는 접수 성공이라 답한다(실제로 접수됐다). */
     const sheetErr = await sendToSheet({
+      id: row && row.id,
       body: text,
       contact: contact || null,
       kind,
       screen,
+      orderId: orderId || null,
       createdAt: (row && row.created_at) || new Date().toISOString(),
       sessionId,
     });
@@ -273,7 +408,9 @@ export default async function handler(req, res) {
     }
     if (mailErr) console.error('개선 의견 메일 발송 실패', mailErr);
 
-    return json(res, 200, { ok: true });
+    /* 접수번호를 돌려준다 — 화면이 "몇 번으로 접수됐어요"를 그 자리에서 보여준다.
+       번호가 있으면 손님이 다시 물으실 때 "3번 문의요"라고 말할 수 있다. */
+    return json(res, 200, { ok: true, id: row && row.id ? row.id : null });
   } catch (err) {
     console.error('개선 의견 접수 실패', err && err.message);
     return json(res, 500, {

@@ -10,7 +10,7 @@
 ===================================================================== */
 import { json, methodGuard } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { paidOrdersOf, testAccessOf, aiUsedProductIds } from './_lib/store.js';
+import { paidOrdersOf, recentOrdersOf, testAccessOf, aiUsedProductIds } from './_lib/store.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import { productOf } from './_lib/products.js';
 import { isTossTestKey } from './_lib/company.js';
@@ -81,6 +81,30 @@ export default async function handler(req, res) {
        진짜 결제인 줄 알고 카드번호와 주민등록번호를 입력한다.
        ★ 키 값 자체는 절대 내려보내지 않는다. '테스트인가 아닌가'만 보낸다. */
     ent.testPayment = isTossTestKey();
+
+    /* =====================================================================
+       ★ 2026-08-22 — 고객지원의 "결제했는데 결과가 안 보여요" 화면에서 쓴다.
+       ---------------------------------------------------------------------
+       승인까지 못 간 주문을 손님이 스스로 볼 수 있어야 중복 결제를 막을 수 있다.
+       ent.items / ent.pass 와 달리 권한 판정에는 쓰이지 않는 '보여주기용' 값이라,
+       못 읽어도 그냥 빈 배열로 둔다 — 이것 때문에 권한 조회 전체를 실패시키지 않는다.
+       ★ 앱의 normalizeEntitlements()는 모르는 키를 버리므로, 화면 쪽에서 이 값은
+         따로 받아 둔다(ENT_RECENT). 권한 상태와 섞이지 않게 하려는 것이기도 하다.
+    ===================================================================== */
+    try {
+      const recent = await recentOrdersOf(sessionId, 10);
+      ent.recent = recent.map((r) => ({
+        receiptId: r.order_id,
+        productId: r.product_id,
+        price: r.amount,
+        status: r.status,
+        at: r.created_at ? new Date(r.created_at).getTime() : null,
+        paidAt: r.paid_at ? new Date(r.paid_at).getTime() : null,
+      }));
+    } catch (err) {
+      console.warn('최근 주문 조회 실패(무시하고 진행):', err && err.message);
+      ent.recent = [];
+    }
 
     json(res, 200, ent);
   } catch (err) {

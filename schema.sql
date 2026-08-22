@@ -182,12 +182,43 @@ create table if not exists feedback (
   screen     text,                        -- 어느 화면에서 겪었는지 (앱이 자동으로 채운다)
   body       text not null,
   contact    text,                        -- 답을 받을 곳. 형식 자유. 안 적어도 된다.
+  order_id   text,                        -- 결제·환불 문의에서만. 손님이 적어주신 영수증 번호.
+  kakao_id   text,                        -- 카카오로 이어보기를 켜신 분만. 기기가 바뀌어도 자기 문의를 보게 한다.
+  status     text not null default 'received',  -- received | working | answered | closed
+  reply      text,                        -- 대표님이 시트에 적으신 답. Apps Script가 되쏴서 채운다.
+  replied_at timestamptz,
   mailed     boolean not null default false,
   mail_error text,
+  sheeted    boolean,                     -- 구글 시트로 넘겼는지 (SHEET_WEBHOOK_URL을 켰을 때만)
+  sheet_error text,
   created_at timestamptz not null default now()
 );
 create index if not exists feedback_created_idx on feedback (created_at desc);
 create index if not exists feedback_session_idx on feedback (session_id, created_at desc);
+create index if not exists feedback_kakao_idx   on feedback (kakao_id, created_at desc);
 
 alter table feedback enable row level security;
+-- 정책을 하나도 만들지 않는다 = service_role(서버)만 읽고 쓸 수 있다.
+
+
+-- =====================================================================
+-- user_sync — 카카오로 이어보기 (2026-08-22)
+-- ---------------------------------------------------------------------
+-- 왜 필요한가: 지금까지 프로필과 기록은 그 브라우저에만 있었다. 그래서 폰에서 본 것을
+--   노트북에서 열면 아무것도 없었다("다른 브라우저에서 확인이 안 된다" — 대표님).
+-- ★ 카카오로 로그인하신 분만 쓴다. 회원번호 하나를 열쇠로 삼아 그분의 프로필·기록
+--   사본을 통째로 담아 둔다.
+-- ★ 이용권·결제 정보는 여기 담지 않는다. 그건 orders 원장이 유일한 근거여야 한다.
+-- ★ rev 는 서버가 올리는 번호다. 어느 기기의 것이 더 최신인지 판단할 때 쓴다.
+-- =====================================================================
+create table if not exists user_sync (
+  kakao_id   text primary key,
+  data       jsonb not null default '{}'::jsonb,
+  rev        bigint not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists user_sync_updated_idx on user_sync (updated_at desc);
+
+alter table user_sync enable row level security;
 -- 정책을 하나도 만들지 않는다 = service_role(서버)만 읽고 쓸 수 있다.
