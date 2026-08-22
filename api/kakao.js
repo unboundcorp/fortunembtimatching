@@ -13,7 +13,7 @@
 import { readBody, json } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
 import { kakaoLinkOfSession, unlinkKakao } from './_lib/store.js';
-import { AUTH_URL, redirectUri, restKey, newState, stateCookie, addCookie } from './_lib/kakao.js';
+import { AUTH_URL, redirectUri, restKey, newState, stateCookie, addCookie, hostAllowed, hostOf, allowedHosts } from './_lib/kakao.js';
 
 export default async function handler(req, res) {
   /* ── 로그인 시작 — 카카오로 보낸다 ─────────────────────────────── */
@@ -23,6 +23,12 @@ export default async function handler(req, res) {
     } catch (err) {
       console.error('카카오 설정 없음:', err && err.message);
       return backTo(res, '/fortune.html?kakao=notready');
+    }
+    /* ★ 등록되지 않은 주소에서는 카카오까지 가지 않는다. 가면 카카오가 KOE006을 띄우는데,
+       그건 우리가 손님에게 보여줄 말이 아니다. 여기서 막고 우리 말로 안내한다. */
+    if (!hostAllowed(req)) {
+      console.warn('등록되지 않은 주소에서 카카오 로그인 시도:', hostOf(req), '허용:', allowedHosts().join(', '));
+      return backTo(res, '/fortune.html?kakao=badhost');
     }
     try {
       /* 세션을 먼저 만든다. 돌아왔을 때 '누구에게 붙일지'가 있어야 한다. */

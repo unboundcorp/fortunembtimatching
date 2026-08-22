@@ -21,9 +21,41 @@ export const ME_URL = 'https://kapi.kakao.com/v2/user/me';
 
 /* 카카오 개발자센터에 등록하는 값과 한 글자도 다르면 안 된다.
    그래서 물음표 뒤에 아무것도 붙이지 않는 깔끔한 경로를 쓴다. */
+export function hostOf(req) {
+  return String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+}
+
 export function redirectUri(req) {
-  const host = req.headers['x-forwarded-host'] || req.headers.host;
-  return `https://${host}/api/kakaocb`;
+  return `https://${hostOf(req)}/api/kakaocb`;
+}
+
+/* =====================================================================
+   돌아올 주소로 쓸 수 있는 집 주소들 (2026-08-22)
+   ---------------------------------------------------------------------
+   왜 필요한가: redirect_uri 는 손님이 접속한 주소를 그대로 쓴다. 그래서 Vercel이
+   배포마다 만들어 주는 임시 주소(…-abc123.vercel.app)로 들어와 로그인을 누르면,
+   카카오에 등록되지 않은 주소로 돌아오려 하므로 카카오가 KOE006을 띄운다.
+   손님은 '앱 관리자 설정 오류'라는 남의 말로 된 화면을 보게 된다.
+
+   ★ 그래서 우리 쪽에서 먼저 걸러, 우리 말로 안내한다. 카카오까지 보내지 않는다.
+   ★ 목록은 환경변수 KAKAO_ALLOWED_HOSTS 로 덮어쓸 수 있다(쉼표로 구분).
+     주소를 새로 붙일 때 코드를 고치고 배포하지 않아도 되게 하려는 것이다.
+   ★ 여기 적는 주소와 카카오 개발자센터의 Redirect URI 는 반드시 같이 움직여야 한다.
+     한쪽만 늘리면 다시 KOE006이 난다.
+===================================================================== */
+const DEFAULT_HOSTS = [
+  'www.inyeonjeom.kr',
+  'inyeonjeom.kr',
+  'fortunembtimatching.vercel.app',
+];
+export function allowedHosts() {
+  const raw = process.env.KAKAO_ALLOWED_HOSTS;
+  if (!raw) return DEFAULT_HOSTS;
+  const list = raw.split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
+  return list.length ? list : DEFAULT_HOSTS;
+}
+export function hostAllowed(req) {
+  return allowedHosts().indexOf(hostOf(req).toLowerCase()) >= 0;
 }
 
 export function restKey() {
