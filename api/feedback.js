@@ -23,7 +23,8 @@
    create table if not exists feedback (
      id bigserial primary key, session_id text not null, kind text, screen text,
      body text not null, contact text, mailed boolean not null default false,
-     mail_error text, created_at timestamptz not null default now()
+     mail_error text, sheeted boolean, sheet_error text,
+     created_at timestamptz not null default now()
    );
    ────────────────────────────────────────────────────────────────────── */
 import { readBody, json, methodGuard } from './_lib/http.js';
@@ -79,6 +80,44 @@ function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/* =====================================================================
+   구글 스프레드시트로 한 줄씩 보낸다 (2026-08-22 대표님 지시)
+   ---------------------------------------------------------------------
+   메일 대신 시트에 모아 보시겠다고 해서 붙였다. 받는 곳은 대표님 시트에 딸린
+   Apps Script 웹앱이고, 그 주소는 SHEET_WEBHOOK_URL 환경변수에 있다.
+   ★ 주소가 없으면 통째로 건너뛴다. 메일과 같은 방식이다 — 안 켠 것은 실패가 아니다.
+   ★ 실패해도 접수는 이미 끝나 있다. 원본은 언제나 feedback 표에 있고 시트는 사본이다.
+     그래서 절대 던지지 않는다.
+   ★ Apps Script는 응답을 리다이렉트로 준다. redirect:'follow'가 없으면 302에서 멈춘다. */
+async function sendToSheet({ body, contact, kind, screen, createdAt, sessionId }) {
+  const url = process.env.SHEET_WEBHOOK_URL;
+  if (!url) return null;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        at: createdAt,
+        kind: KINDS[kind] || '적지 않음',
+        screen: screen || '적지 않음',
+        body,
+        contact: contact || '',
+        /* 세션은 앞 8자만. 같은 사람이 여러 번 보냈는지 알아보는 용도다.
+           통째로 적으면 그 값으로 이용권까지 짚을 수 있어 시트에 남길 이유가 없다. */
+        session: sessionId ? String(sessionId).slice(0, 8) : '',
+      }),
+    });
+    if (!res.ok) return `HTTP ${res.status} ${(await res.text().catch(() => '')).slice(0, 200)}`;
+    const t = (await res.text().catch(() => '')).slice(0, 200);
+    /* Apps Script는 스크립트가 죽어도 200을 주는 일이 있다. 본문으로 다시 확인한다. */
+    if (t.indexOf('"ok":true') < 0) return `응답이 이상함: ${t}`;
+    return null;
+  } catch (err) {
+    return String((err && err.message) || err).slice(0, 200);
+  }
 }
 
 /* 메일 한 통. 성공하면 null, 실패하면 사람이 읽을 이유를 돌려준다.
@@ -191,6 +230,26 @@ export default async function handler(req, res) {
       }),
     });
     const row = saved && saved[0] ? saved[0] : null;
+
+    /* 시트로 보낸다. 실패해도 손님에게는 접수 성공이라 답한다(실제로 접수됐다). */
+    const sheetErr = await sendToSheet({
+      body: text,
+      contact: contact || null,
+      kind,
+      screen,
+      createdAt: (row && row.created_at) || new Date().toISOString(),
+      sessionId,
+    });
+    if (row && process.env.SHEET_WEBHOOK_URL) {
+      try {
+        await rest(`feedback?id=eq.${row.id}`, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ sheeted: !sheetErr, sheet_error: sheetErr || null }),
+        });
+      } catch (e) { console.error('시트 적재 표시 실패', e && e.message); }
+    }
+    if (sheetErr) console.error('개선 의견 시트 적재 실패', sheetErr);
 
     /* 메일은 그 다음. 실패해도 손님에게는 접수 성공이라 답한다(실제로 접수됐다). */
     const mailErr = await sendMail({
