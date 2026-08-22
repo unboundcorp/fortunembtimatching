@@ -36,7 +36,13 @@ function pick(obj) {
 }
 
 export default async function handler(req, res) {
-  if (methodGuard(req, res, ['POST'])) return;
+  /* ★ 2026-08-22 — 여기서 두 가지를 한꺼번에 틀렸었다(배포 뒤 실측으로 잡음).
+       ① allowed 를 배열로 넘겼다. methodGuard는 문자열과 === 로 비교하므로 영영 안 맞는다.
+       ② 반환값의 뜻을 뒤집어 읽었다. methodGuard는 '방식이 맞으면 true'다.
+     둘이 겹쳐서 이 창구는 POST에도 405를 돌려주며 통째로 죽어 있었다 —
+     문법도 통과하고 import도 되므로, 실제로 불러보기 전까지는 멀쩡해 보였다.
+     ★ 다른 창구들과 같은 모양으로 쓴다: if (!methodGuard(req, res, 'POST')) return; */
+  if (!methodGuard(req, res, 'POST')) return;
 
   let sessionId;
   try {

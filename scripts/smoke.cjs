@@ -81,6 +81,11 @@ const APIS = [
   ['/api/kakao', { action: 'status' }, [200, 503]],
   ['/api/group', {}, [400, 405]],
   ['/api/room', {}, [400, 405]],
+  /* ★ 2026-08-22 추가 — /api/sync 가 methodGuard를 잘못 써서 POST에도 405를 주며
+     통째로 죽어 있었다. 문법 검사와 import 검사는 둘 다 통과했다. 실제로 불러보는
+     이 표에 없었기 때문에 배포까지 갔다. 창구를 새로 만들면 여기 한 줄을 반드시 늘린다.
+     ★ 미로그인 세션이므로 401이 정상이다. 405가 나오면 또 같은 실수를 한 것이다. */
+  ['/api/sync', { action: 'get' }, [401]],
 ];
 
 const w = (ms) => new Promise((r) => setTimeout(r, ms));
