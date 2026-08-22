@@ -200,12 +200,7 @@ async function sendMail({ body, contact, kind, screen, createdAt }) {
    ★ 키를 안 넣어두면 이 기능은 통째로 꺼진 것으로 본다(404). 설정을 덜 한 상태가
      '아무나 통과'로 이어지면 안 된다.
 ===================================================================== */
-async function handleAnswer(req, res, body) {
-  const key = process.env.SHEET_ANSWER_KEY;
-  const given = req.headers['x-answer-key'];
-  if (!key || !given || String(given) !== String(key)) {
-    return json(res, 404, { error: 'not_found', reason: '없는 주소예요.' });
-  }
+async function saveAnswer(res, body) {
   const id = Number(body.id);
   if (!id || !Number.isFinite(id)) {
     return json(res, 400, { error: 'bad_request', reason: 'id가 필요해요.' });
@@ -233,6 +228,15 @@ async function handleAnswer(req, res, body) {
     console.error('답변 반영 실패', err && err.message);
     return json(res, 500, { error: 'server_error', reason: '지금은 반영할 수 없어요.' });
   }
+}
+
+async function handleAnswer(req, res, body) {
+  const key = process.env.SHEET_ANSWER_KEY;
+  const given = req.headers['x-answer-key'];
+  if (!key || !given || String(given) !== String(key)) {
+    return json(res, 404, { error: 'not_found', reason: '없는 주소예요.' });
+  }
+  return saveAnswer(res, body);
 }
 
 export default async function handler(req, res) {
@@ -309,6 +313,29 @@ export default async function handler(req, res) {
     } catch (err) {
       console.error('개선 의견 조회 실패', err && err.message);
       return json(res, 500, { error: 'server_error', reason: '지금은 불러올 수 없어요.' });
+    }
+  }
+
+  /* =====================================================================
+     ── 답변 달기 — 운영자만 (2026-08-22)
+     ---------------------------------------------------------------------
+     원래는 구글 시트에 답을 적고 Apps Script가 되쏘는 길만 있었다. 그런데 그 길은
+     대표님이 시트 스크립트를 갈아끼우고, 비밀값을 만들고, 트리거까지 거셔야 열린다.
+     ★ 그래서 앱 안에서 바로 답을 다는 길을 하나 더 낸다. 폰에서 시트를 편집하는 것보다
+       훨씬 편하고, 설정할 것이 하나도 없다.
+     ★ 관문은 목록 보기(list)와 똑같다 — 테스트 허가를 받은 세션만. 허가가 없으면
+       '없는 주소'처럼 404로 답한다. 이런 창구가 있다는 사실 자체를 알리지 않는다.
+     ★ 시트 쪽 길(action:'answer')은 그대로 살려 둔다. 둘은 같은 saveAnswer를 부르므로
+       어느 쪽으로 답해도 결과가 같다.
+  ===================================================================== */
+  if (action === 'reply') {
+    try {
+      const grant = await testAccessOf(sessionId);
+      if (!grant) return json(res, 404, { error: 'not_found', reason: '없는 주소예요.' });
+      return saveAnswer(res, body);
+    } catch (err) {
+      console.error('답변 저장 실패', err && err.message);
+      return json(res, 500, { error: 'server_error', reason: '지금은 저장할 수 없어요.' });
     }
   }
 
