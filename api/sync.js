@@ -57,10 +57,10 @@ export default async function handler(req, res) {
     link = await kakaoLinkOfSession(sessionId);
   } catch (err) {
     console.error('카카오 연결 조회 실패', err && err.message);
-    return json(res, 503, { error: 'store', reason: '지금은 이어보기를 쓸 수 없어요. 잠시 후 다시 시도해 주세요.' });
+    return json(res, 503, { error: 'store', reason: '지금은 기기 사이 맞추기를 쓸 수 없어요. 잠시 후 다시 시도해 주세요.' });
   }
   if (!link || !link.kakao_id) {
-    return json(res, 401, { error: 'no_link', reason: '카카오로 로그인하시면 기기 사이에서 이어볼 수 있어요.' });
+    return json(res, 401, { error: 'no_link', reason: '카카오로 로그인하시면 어느 기기에서나 그대로 보실 수 있어요.' });
   }
 
   const body = await readBody(req);
@@ -96,6 +96,6 @@ export default async function handler(req, res) {
     return json(res, 400, { error: 'bad_request', reason: '무엇을 할지 알 수 없어요.' });
   } catch (err) {
     console.error('이어보기 처리 실패', err && err.message);
-    return json(res, 503, { error: 'store', reason: '지금은 이어보기를 쓸 수 없어요. 잠시 후 다시 시도해 주세요.' });
+    return json(res, 503, { error: 'store', reason: '지금은 기기 사이 맞추기를 쓸 수 없어요. 잠시 후 다시 시도해 주세요.' });
   }
 }
