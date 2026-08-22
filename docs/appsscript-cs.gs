@@ -41,6 +41,10 @@ var APP_BASE = 'https://www.inyeonjeom.kr';
 /* 칸 제목. 순서는 처음 만들 때만 쓰이고, 그 뒤로는 제목으로 찾습니다. */
 var HEADERS = ['접수번호', '접수시각', '유형', '어느 화면', '내용', '카카오톡 아이디', '주문번호', '세션', '상태', '답변'];
 
+/* 예전 스크립트가 쓰던 제목. 이미 쌓인 시트에서 같은 뜻의 칸을 새로 만들지 않으려고 둡니다.
+   ★ 이게 없으면 '받은 시각' 옆에 '접수시각'이 하나 더 생겨서 같은 값이 두 칸에 나뉩니다. */
+var ALIASES = { '접수시각': ['받은 시각'], '유형': ['무엇을'], '카카오톡 아이디': ['연락처'] };
+
 /* 시트에 적는 말 ↔ 앱이 쓰는 값. 시트에는 사람이 읽는 말만 보입니다. */
 var STATUS_TO_CODE = { '접수됨': 'received', '확인 중': 'working', '답변 완료': 'answered', '처리 완료': 'closed' };
 var STATUS_LIST = ['접수됨', '확인 중', '답변 완료', '처리 완료'];
@@ -56,6 +60,12 @@ function ensureHeaders_(sh) {
   var row = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function (v) { return String(v || '').trim(); });
   var have = {};
   row.forEach(function (v, i) { if (v) have[v] = i + 1; });
+
+  /* 예전 제목이 있으면 그 자리를 그대로 쓴다. 칸을 새로 만들지 않는다. */
+  HEADERS.forEach(function (h) {
+    if (have[h]) return;
+    (ALIASES[h] || []).forEach(function (old) { if (have[old] && !have[h]) have[h] = have[old]; });
+  });
 
   var missing = HEADERS.filter(function (h) { return !have[h]; });
   if (missing.length) {
