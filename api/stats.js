@@ -120,12 +120,19 @@ export default async function handler(req, res) {
     }
 
     /* ── 전체 현황 ──────────────────────────────────────────────── */
-    const [orders, rooms, groups, aiUse, aiCache] = await Promise.all([
+    /* ★ 2026-08-24 대표님 지시("운영자화면에 붙일 건 다 붙이고") — 카카오 로그인·이어보기·문의도 함께 센다.
+       이 셋은 이미 표에 쌓여 있는데 현황판에 안 나와서, 대표님이 상태를 알려면 저에게 물어봐야 했다.
+       ★ 실패해도 현황판 전체를 죽이지 않는다 — 새로 붙인 칸 때문에 원래 보던 숫자가 사라지면 안 된다. */
+    const soft = (q) => rest(q).catch((e) => { console.warn('현황판 일부 조회 실패:', e && e.message); return []; });
+    const [orders, rooms, groups, aiUse, aiCache, kakao, sync, feedback] = await Promise.all([
       rest('orders?select=order_id,product_id,amount,status,created_at,paid_at&order=created_at.desc&limit=2000'),
       rest('rooms?select=room_id,created_at,joined_at&order=created_at.desc&limit=2000'),
       rest('groups?select=group_id,members,created_at&order=created_at.desc&limit=2000'),
       rest('ai_usage?select=cache_key,created_at&order=created_at.desc&limit=2000'),
       rest('ai_cache?select=cache_key,product_id,created_at&order=created_at.desc&limit=2000'),
+      soft('kakao_links?select=kakao_id,created_at&order=created_at.desc&limit=2000'),
+      soft('user_sync?select=kakao_id,rev,updated_at&order=updated_at.desc&limit=2000'),
+      soft('feedback?select=id,kind,status,created_at,replied_at&order=created_at.desc&limit=2000'),
     ]);
 
     const d1 = daysAgo(1), d7 = daysAgo(7), d30 = daysAgo(30);
@@ -180,7 +187,33 @@ export default async function handler(req, res) {
       orders: { d1: paidStat(d1), d7: paidStat(d7), d30: paidStat(d30), all: orders.length },
       ai: { d1: aiStat(d1), d7: aiStat(d7), d30: aiStat(d30),
             cached: (aiCache || []).length, reuse, costPerKrw: AI_COST_KRW },
-      recent: (orders || []).slice(0, 12).map((o) => {
+      /* 카카오 로그인 — 몇 분이 로그인해 두셨나. 결제가 로그인 뒤에 오므로 이 숫자가 곧 결제 가능 인원이다. */
+      kakao: {
+        linked: (kakao || []).length,
+        d1: within(kakao || [], 'created_at', d1).length,
+        d7: within(kakao || [], 'created_at', d7).length,
+      },
+      /* 이어보기 — 서버에 프로필·기록 사본을 둔 분의 수. */
+      sync: {
+        saved: (sync || []).length,
+        d7: within(sync || [], 'updated_at', d7).length,
+      },
+      /* 문의 — 상태별로 몇 건인가. 아직 답 안 한 것이 몇 건인지가 제일 중요하다. */
+      feedback: (function () {
+        const rows = feedback || [];
+        const by = { received: 0, working: 0, answered: 0, closed: 0 };
+        rows.forEach((f) => { const k = by[f.status] != null ? f.status : 'received'; by[k] += 1; });
+        return {
+          all: rows.length,
+          d1: within(rows, 'created_at', d1).length,
+          d7: within(rows, 'created_at', d7).length,
+          byStatus: by,
+          waiting: by.received + by.working,
+        };
+      })(),
+      /* ★ 목록을 12건에서 40건으로 늘렸다. 승인 전에서 멈춘 주문을 눈으로 훑으려면
+         12건으로는 하루치도 안 담긴다. 상태를 그대로 내려보내므로 화면에서 갈라 볼 수 있다. */
+      recent: (orders || []).slice(0, 40).map((o) => {
         const p = productOf(o.product_id);
         return { receiptId: o.order_id, name: p ? p.name : o.product_id,
                  amount: o.amount, status: o.status, at: o.paid_at || o.created_at };
