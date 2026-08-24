@@ -12,9 +12,24 @@
 
 | 폴더 | 글꼴 | 쓰임 | 파일 |
 |---|---|---|---|
-| `pretendard/` | Pretendard Variable 1.3.9 | 본문·버튼·라벨 | 92개 |
 | `noto-serif-kr/` | Noto Serif KR 600 | 제목·간지 글자 | 124개 |
 | `ibm-plex-mono/` | IBM Plex Mono 400/500 | 수치·라벨 | 4개 |
+
+## 본문 글꼴은 왜 없나
+
+한때 Pretendard Variable도 여기 담았다가 뺐다(2026-08-24, 대표님 결정).
+재보니 첫 방문에 본문 글꼴만 611~919KB를 더 받게 했다. 전체의 3분의 2다.
+본문 글꼴 차이는 작은 글씨에서 잘 안 보이는 데 비해 값이 너무 컸다.
+
+`--sans` 목록은 그대로 Pretendard를 1순위로 둔다. 기기에 깔린 분에게는 그대로 쓰이고,
+없는 분은 기기 기본 고딕으로 떨어진다. 우리가 파일을 내려주지 않을 뿐이다.
+
+명조(제목·간지)와 고정폭(숫자)만 남긴 이유는, 화면의 인상을 만드는 것이 그 둘이기 때문이다.
+
+★ 다시 담을 생각이 들면 먼저 재 볼 것: 이 앱은 굵기를 400·600·700·800 네 가지 쓴다.
+  그래서 변수 글꼴(한 파일에 모든 굵기)이 정적 글꼴 네 벌보다 이미 가볍다 —
+  "정적으로 바꾸면 가벼워진다"는 흔한 처방이 여기서는 반대로 무거워진다.
+  굵기를 두 가지로 줄이면 정적이 20%쯤 이득이지만, 그 정도로는 값을 못 한다.
 
 파일이 많은 이유는 **동적 서브셋**이기 때문이다. 글꼴 하나를 통째로 받으면 한글은 수 MB다.
 글자 범위(unicode-range)별로 잘라 두면 브라우저가 그 화면에 실제로 쓰인 글자가 든 조각만
@@ -32,18 +47,16 @@ IBM Plex Mono는 라틴 글자와 숫자만 쓰므로 latin·latin-ext만 담았
 지켜야 할 것은 저작권 표시와 라이선스 전문을 함께 배포하는 것이다. 각 폴더의
 `LICENSE.txt`가 그것이다.
 
-- Pretendard — Copyright (c) 2021 Kil Hyung-jin. Reserved Font Name "Pretendard"
 - Noto Serif KR — Copyright The Noto Project Authors
 - IBM Plex Mono — Copyright © 2017 IBM Corp. Reserved Font Name "Plex"
 
-★ Pretendard와 Plex는 **이름이 예약된(Reserved Font Name)** 글꼴이다. 파일을 우리가
+★ Plex는 **이름이 예약된(Reserved Font Name)** 글꼴이다. 파일을 우리가
 직접 고치거나 다시 서브셋을 뜨면 이름을 바꿔야 한다. 그래서 손대지 않고 배포처가 만든
 서브셋 파일을 그대로 가져왔다. 나중에 용량을 줄이려고 직접 서브셋을 뜨는 일이 생기면
 이 조건을 먼저 확인할 것.
 
 ## 받아온 곳
 
-- Pretendard: https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/woff2-dynamic-subset/
 - Noto Serif KR: https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600 (구글이 만든 서브셋 woff2)
 - IBM Plex Mono: https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500
 
