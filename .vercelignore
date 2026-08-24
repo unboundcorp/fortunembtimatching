@@ -19,3 +19,8 @@ archive/
 scripts/
 
 .DS_Store
+
+# 문서·설계 메모 — 서버 함수가 읽지 않는다(위 규칙대로 확인함: api/ 안에 'docs/' 참조 0건).
+#   빼지 않으면 그대로 공개된다 — 실제로 https://www.inyeonjeom.kr/docs/appsscript-cs.gs 가
+#   200으로 열리는 것을 확인했다. (2026-08-24)
+docs/
