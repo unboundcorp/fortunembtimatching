@@ -332,7 +332,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;}
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:16px 20px;border-bottom:1px solid var(--gold-line);
 }
-.brand{display:flex;align-items:center;gap:10px;background:none;border:0;padding:4px;margin:-4px;
+.brand{display:flex;align-items:center;gap:10px;background:none;border:0;padding:4px;margin:-4px;min-height:var(--tap);
   border-radius:12px;cursor:pointer;transition:opacity .15s,transform .15s;}
 .brand:hover{opacity:.82;}
 .brand:active{transform:scale(.97);}
@@ -377,8 +377,9 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;}
   overflow-x:auto;background:var(--panel-3);
 }
 .tab-btn{
-  /* 12px+10px + 글자 약 22px = 44px → 터치 목표 44px 이상 */
-  padding:12px 13px 10px;min-height:44px;display:inline-flex;align-items:center;
+  /* 12px+10px + 글자 약 22px = 44px → 터치 목표 44px 이상
+     ★ 2026-08-24 — 높이만 44px였고 폭은 '홈' 32px이었다. 4-1항은 44×44라 폭도 함께 잡는다. */
+  padding:12px 13px 10px;min-height:44px;min-width:var(--tap);justify-content:center;display:inline-flex;align-items:center;
   font-size:.82rem;color:var(--ink-faint);white-space:nowrap;
   border:0;border-bottom:2px solid transparent;border-radius:0;letter-spacing:0;
   transition:color .15s,background .15s,border-color .15s;
@@ -387,7 +388,11 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;}
 .tab-btn:hover{color:var(--ink);background:rgba(231,234,246,.04);}
 .tab-btn:active{opacity:.6;}
 
-main{flex:1;padding:28px 20px 96px;}
+/* ★ 2026-08-24 리디자인 4단계 (지시서 4-1) — 좌우 여백 20px 고정 + 아래 안전영역.
+   재 보니 좁은 화면에서 오히려 13~16px로 줄고 있었다. 넓은 화면 20px보다 좁은 화면이
+   더 빽빽했다는 뜻이다 — 손가락이 가장 붐비는 쪽이 여백이 제일 없었다.
+   아래 여백에 env(safe-area-inset-bottom)을 더한다. 아이폰 홈바에 마지막 줄이 가린다. */
+main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0px));}
 /* v4-C: 화면 진입 리듬을 .stamp-in(카드 등장)과 동일한 이징으로 통일 — cubic-bezier(.2,1.4,.4,1), .2~.4s 범위 */
 .view{animation:fadeUp .3s cubic-bezier(.2,1.4,.4,1) both;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
@@ -691,7 +696,7 @@ main{flex:1;padding:28px 20px 96px;}
    (자리를 화면 가운데에서 시작했으니 오른쪽 끝까지가 전부다). transform으로 되밀어
    보기에는 가운데였지만, 글자는 절반 폭 안에서 접히고 있었다. 폭을 글자 길이로 잡고
    화면 폭에서만 제한한다. */
-#toast{position:fixed;left:50%;bottom:26px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;transform:translateX(-50%) translateY(20px);background:#222B4A;border:1px solid rgba(231,234,246,.28);color:var(--ink);padding:11px 20px;border-radius:30px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:80;box-shadow:var(--shadow-sm);}
+#toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom, 0px));width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;transform:translateX(-50%) translateY(20px);background:#222B4A;border:1px solid rgba(231,234,246,.28);color:var(--ink);padding:11px 20px;border-radius:30px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:80;box-shadow:var(--shadow-sm);}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* 레이더차트 */
@@ -815,7 +820,10 @@ main{flex:1;padding:28px 20px 96px;}
 ===================================================================== */
 .site-footer{margin:34px 0 8px;padding:22px 14px 8px;border-top:1px solid rgba(231,234,246,.16);text-align:center;}
 .site-footer .fl-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 18px;margin-bottom:14px;}
-.site-footer .fl{background:none;border:0;padding:4px 2px;font-family:inherit;font-size:.84rem;
+/* ★ 2026-08-24 — 29px이라 44px 기준에 미달이었다. 글자 크기는 그대로 두고 누르는 자리만 넓힌다.
+   위아래 여백으로 키우면 줄 간격이 벌어지므로 inline-flex + min-height로 잡는다. */
+.site-footer .fl{background:none;border:0;padding:4px 6px;font-family:inherit;font-size:.84rem;
+  display:inline-flex;align-items:center;min-height:var(--tap);
   color:var(--ink-dim);cursor:pointer;text-decoration:none;line-height:1.4;}
 .site-footer .fl:hover,.site-footer .fl:focus-visible{color:var(--gold);text-decoration:underline;}
 .site-footer .biz{margin-top:16px;}
@@ -1854,7 +1862,7 @@ body.has-fab main{padding-bottom:110px;}
    변수 한 곳에서 다시 줄인다(값을 여기저기 흩어 적지 않는다). */
 @media (max-width:600px){
   :root{ --pad-card:20px; --gap-card:16px; }
-  main{padding:22px 16px 88px;}
+  main{padding:22px var(--pad-x) calc(88px + env(safe-area-inset-bottom, 0px));}
   .section-title{font-size:1.34rem;}
   /* ★ R94 — 마법사의 생년월일(연·월·일)만은 좁은 화면에서도 한 줄로 둔다.
      두 줄로 접히면 '1일'이 혼자 아래에 떨어져 무슨 값인지 안 읽힌다(실측). */
@@ -1864,7 +1872,7 @@ body.has-fab main{padding-bottom:110px;}
 }
 @media (max-width:380px){
   :root{ --pad-card:17px; --gap-card:14px; }
-  main{padding:20px 13px 88px;}
+  main{padding:20px var(--pad-x) calc(88px + env(safe-area-inset-bottom, 0px));}
   .section-title{font-size:1.22rem;}
   .page-head{margin-bottom:18px;}
   .scroll-card::before,.scroll-card::after{left:15px;right:15px;}
