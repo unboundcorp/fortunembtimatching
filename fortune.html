@@ -282,7 +282,13 @@ select,input,textarea{
 select option{background:var(--panel-2);color:var(--ink);}
 select:focus,input:focus,textarea:focus{border-color:var(--gold);outline:2px solid transparent;outline-offset:2px;box-shadow:0 0 0 3px rgba(88,68,22,.26);}
 a{color:inherit;}
-h1,h2,h3,h4{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;}
+/* ★ 2026-08-24 대표님 지시 — "대주제·소주제까지는 명조, 내용만 고딕".
+   제목은 전부 명조로 간다. 본문(p·li·버튼·입력칸)은 그대로 고딕이다.
+   ★ 명조는 굵기를 600 한 벌만 담았다(fonts/README.md 참고). 그래서 700/800을
+     달라고 해도 브라우저가 가짜 굵게를 만들어 획이 뭉갠다. 제목 굵기를 600으로 맞춘다 —
+     위계는 굵기가 아니라 크기로 만든다(지시서 5-6항과 같은 방향).
+   ★ 자간: 명조는 고딕만큼 좁히면 답답하다. -.02em → -.01em 으로 되돌린다. */
+h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;}
 /* ===== R29: 세리프(명조)를 어디에 남길 것인가 =====
    대표님 지시는 "Pretendard로 고딕 느낌", 그러면서 "한지·인장 모티프는 남긴다"였다.
    그래서 기준을 하나로 잡았다 — **글자 자체가 그림(인장·간지)인 자리만 명조로 남기고,
@@ -371,8 +377,9 @@ main{flex:1;padding:28px 20px 96px;}
   font-size:.75rem;font-weight:700;letter-spacing:.14em;
   color:var(--ink-dim);margin-bottom:7px;line-height:1.4;
 }
-.section-title{font-size:1.62rem;line-height:1.38;margin-bottom:6px;color:var(--gold);font-weight:600;}
-.section-sub{color:var(--ink-dim);font-size:.88rem;margin-bottom:20px;line-height:1.75;}
+.section-title{font-family:var(--serif);font-size:1.62rem;line-height:1.38;margin-bottom:6px;color:var(--gold);font-weight:600;letter-spacing:-.01em;}
+/* 소주제 — 제목 바로 아래 한 줄. 여기까지 명조다(대표님 지시). */
+.section-sub{font-family:var(--serif);color:var(--ink-dim);font-size:.88rem;margin-bottom:20px;line-height:1.75;letter-spacing:-.01em;}
 .page-head .section-sub{margin-bottom:0;}
 /* 카드 안에서도 같은 규칙을 쓴다 — 작은 분류(총운) 위, 큰 제목(오늘의 흐름 읽기) 아래. */
 .card-eyebrow{
