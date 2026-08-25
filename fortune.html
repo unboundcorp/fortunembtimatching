@@ -2069,10 +2069,13 @@ var PROCESSORS = [
      처리위탁·국외이전은 미리 알리지 않으면 그 자체가 위반이다. 기능을 켜기 전에 여기 적는다.
      ★ R98 (2026-08-19 대표님 지시) — 여기 적힌 항목이 실제와 달랐다. 실제로 나가는 것은
        contentPayloadFrom()이 만드는 값뿐이고, 그 함수는 닉네임·생년월일·태어난 시각 원본을
-       담지 않는다. 대운도 payload에 없다. 실제보다 넓게 적는 것도 사실과 다른 고지다.
-       이 줄과 contentPayloadFrom()은 한 쌍이다 — 한쪽만 고치지 마라. */
+       담지 않는다. 실제보다 넓게 적는 것도 사실과 다른 고지다.
+       이 줄과 contentPayloadFrom()은 한 쌍이다 — 한쪽만 고치지 마라.
+     ★ 2026-08-25 — 대운·세운을 넘기기 시작했다(대표님 승인). 그래서 아래 목록에 함께 적는다.
+       넘기는 것은 나이 구간과 그 구간의 두 글자·십성이고, 생년월일 원본은 여전히 안 나간다.
+       ("대운도 payload에 없다"고 적혀 있던 위 문장은 이제 사실이 아니라 지웠다.) */
   { name:'Anthropic PBC',      task:'유료 상세 해석 문장 생성(AI)',        region:'미국',
-    items:'성별·성격유형, 사주 계산 결과(사주 여덟 글자·오행 개수·십성·일간 강약), 궁합일 때는 두 사람 각각의 같은 항목과 두 사람 사이의 관계·점수 (닉네임·생년월일·태어난 시각 원본은 보내지 않음)' }
+    items:'성별·성격유형, 사주 계산 결과(사주 여덟 글자·오행 개수·십성·일간 강약·10년 단위 흐름의 나이 구간과 그 구간의 두 글자·올해의 두 글자), 궁합일 때는 두 사람 각각의 같은 항목과 두 사람 사이의 관계·점수 (닉네임·생년월일·태어난 시각 원본은 보내지 않음)' }
 ];
 function processorRegion(x){ return companyValue(x.region); }
 function processorsMissing(){ return PROCESSORS.some(function(x){ return companyMissing(x.region); }); }
@@ -5125,6 +5128,9 @@ function contentPayloadFrom(payload){
   if(payload.elements) out.elements = payload.elements;
   if(payload.dayMasterStrength) out.dayMasterStrength = payload.dayMasterStrength;
   if(payload.sipseong) out.sipseong = payload.sipseong;
+  /* ★ 2026-08-25 — 대운·세운. 이 줄이 없으면 아래 세 섹션이 영원히 빈 채로 나간다.
+     PROCESSORS의 Anthropic 항목과 한 쌍이다. */
+  if(payload.daewoon) out.daewoon = payload.daewoon;
   /* ★ R98 — 궁합(kind:'compat')은 사람이 둘이라 모양이 다르다. 예전에는 이 함수가
      사주 모양만 알아서 a·b·computed를 통째로 버렸고, 그래서 궁합을 서버에 태울 수가 없었다.
      여기서도 이름은 절대 담지 않는다 — 아래 pick()이 허용한 칸만 옮긴다. */
@@ -8513,8 +8519,48 @@ function interpreterNotice(state){
    반드시 [브라우저 → 내 서버 → Anthropic] 순서로 호출한다. 이 파일은 내 서버의
    엔드포인트 주소만 알고 있으면 되고 키는 서버에만 둔다.
 ===================================================================== */
+/* AI에게 넘길 대운·세운. 화면(renderDaewoon)이 쓰는 것과 같은 계산을 그대로 쓴다 —
+ 새로 계산하지 않는다. 화면과 풀이가 다른 값을 말하면 그게 제일 나쁘다.
+   성별이 없으면 대운 방향을 정할 수 없으므로 null을 돌려준다(없는 값을 지어내지 않는다). */
+function aiLuckPayload(profile, saju){
+  try{
+    if(!profile || !profile.gender || !saju || saju.birthUTCms == null) return null;
+    var dw = SajuEngine.daewoonList(saju.birthUTCms, profile.year, saju.year.stemIdx,
+               SajuEngine.STEM_YY[saju.year.stemIdx], profile.gender, saju.month.idx);
+    if(!dw || !dw.list || !dw.list.length) return null;
+    var thisYear = (new Date()).getFullYear();
+    /* 화면의 나이 계산과 같은 식이다(renderDaewoon). 다르게 세면 "지금 구간"이 어긋난다. */
+    var ageNow = thisYear - profile.year + 1;
+    var curIdx = 0;
+    for(var i=0;i<dw.list.length;i++){ if(ageNow>=dw.list[i].startAge) curIdx=i; }
+    var dayStemIdx = saju.day.stemIdx;
+    var list = dw.list.map(function(it, n){
+      return {
+        fromAge: it.startAge, toAge: it.startAge + 9,
+        stem: it.ganji.stem, branch: it.ganji.branch,
+        stemSipseong: SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[it.ganji.stemIdx], SajuEngine.STEM_YY[it.ganji.stemIdx]),
+        branchSipseong: SajuEngine.sipseongOf(dayStemIdx, SajuEngine.BRANCH_ELEM[it.ganji.branchIdx], SajuEngine.BRANCH_YY[it.ganji.branchIdx]),
+        isCurrent: n === curIdx
+      };
+    });
+    var sa = SajuEngine.saeunPillar(thisYear);
+    return {
+      startNumber: dw.daeunNumber,
+      direction: dw.forward ? '순행' : '역행',
+      ageNow: ageNow,
+      list: list,
+      thisYear: sa ? { year: thisYear, stem: sa.stem, branch: sa.branch } : null
+    };
+  }catch(e){
+    /* ★ 조용히 null을 돌려주면 대운 세 섹션이 다시 빈 채로 나가고, 아무도 모른다.
+       그게 이 결함이 여태 안 보였던 이유다. 실패하면 반드시 콘솔에 남긴다. */
+    try{ console.error('대운 payload 계산 실패 — 유료 풀이의 대운 세 섹션이 빈 채로 나갑니다', e); }catch(_){}
+    return null;
+  }
+}
+
 var Interpreter = {
-  /* =====================================================================
+/* =====================================================================
      R42 — AI 해석을 우리 서버 함수(/api/interpret)에 연결한다
      ---------------------------------------------------------------------
      ★ 열쇠(ANTHROPIC_API_KEY)는 브라우저가 모른다. 서버 함수 안에서만 쓴다.
@@ -8570,6 +8616,16 @@ var Interpreter = {
       elements: { 목:counts[0], 화:counts[1], 토:counts[2], 금:counts[3], 수:counts[4] },
       dayMasterStrength: sinGangJak(saju),
       sipseong: sipseongCounts(saju),
+      /* ★ 2026-08-25 — 대운·세운을 넘긴다. 안 넘기고 있었다.
+         유료 풀이 13개 섹션 중 셋(지나온 10년 · 지금의 10년과 올해 · 다가올 10년)이
+         대운 섹션인데, AI에게 대운을 준 적이 없었다. 받은 적 없는 것을 쓸 수는 없으니
+         그 세 섹션은 처음부터 내용이 없었다. 실제로 확인했다 —
+           · 옛 글(2026-08-22): 나이도 간지도 없이 타고난 사주 이야기를 다시 풀어 썼다(얼버무림)
+           · 새 글(2026-08-25): "구체적인 구간 정보가 주어지지 않았어요"라고 그대로 적었다
+         결제 화면은 "10년 단위 흐름(대운)을 구간마다 풀어 쓴 글"이라고 팔고 있다.
+         ★ 이 값을 넘기기 시작하면 개인정보처리방침의 Anthropic 위탁 항목에도 적어야 한다.
+           PROCESSORS의 그 줄과 여기는 한 쌍이다 — 한쪽만 고치지 마라. */
+      daewoon: aiLuckPayload(profile, saju),
       /* ★ 제목 목록을 함께 보낸다. 이게 없으면 AI가 제목을 제멋대로 지어,
          화면의 목차(로컬에서 만든 것)와 본문이 서로 다른 이름을 갖게 된다. */
       requested: { sections: 13, tone: '해요체', language: 'ko', sectionTitles: null }
