@@ -253,6 +253,14 @@
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;overflow-x:hidden;max-width:100%;font-size:110%;}
 body{
   font-family:var(--sans);
+  /* ★ 2026-08-25 — 가짜 굵게 금지.
+     우리가 담은 서체는 굵기가 몇 벌 안 된다(명조 600 한 벌 · Mono 400·500 두 벌).
+     없는 굵기를 달라고 하면 브라우저가 획을 억지로 부풀려 만들어 내는데, 한글 명조에서는
+     그게 뭉갠 글씨로 보인다. 실제로 첫 화면 제목('인연점')이 그 상태로 배포됐고,
+     로컬 검사기로는 안 잡혀 배포된 화면을 재 보고서야 찾았다.
+     이 한 줄이 그 사고를 구조적으로 막는다 — 없는 굵기는 만들지 말고 있는 것 중 가까운 걸 쓴다.
+     (지원 안 하는 옛 브라우저는 이 줄을 무시하므로 지금과 같아진다. 손해가 없다.) */
+  font-synthesis-weight:none;
   /* R29 — 350은 Pretendard Variable에서만 의미가 있고 시스템 고딕으로 떨어지면 400으로 반올림된다.
      기기마다 굵기가 달라 보이지 않게 400으로 고정한다. */
   font-weight:400;
@@ -664,7 +672,10 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .constellation circle{fill:var(--gold);opacity:0;animation:popDot .4s cubic-bezier(.2,1.4,.4,1) forwards;}
 @keyframes drawLine{to{stroke-dashoffset:0;}}
 @keyframes popDot{to{opacity:1;}}
-.onboard h1{font-size:1.9rem;font-weight:700;letter-spacing:-.03em;color:var(--gold);}
+/* ★ 2026-08-25 — 700을 달라고 하고 있었다. 우리가 담은 명조는 600 한 벌뿐이라
+   브라우저가 가짜 굵게를 만들어 첫 화면 제목('인연점') 획이 뭉개고 있었다.
+   배포된 실제 화면에서 잡았다 — 로컬 검사기로는 안 잡히는 종류다. */
+.onboard h1{font-size:1.9rem;font-weight:600;letter-spacing:-.03em;color:var(--gold);}
 .onboard p{color:var(--ink-dim);max-width:40ch;}
 
 /* 히스토리 리스트 — R22: 목록 한 줄도 "작은 카드"로 보이게 둥글리고 여백을 준다 */
