@@ -14,7 +14,13 @@ import { testAccessOf, paidOrdersOf } from './store.js';
 import { buildEntitlements } from './entitlements.js';
 
 export const MODEL = 'claude-sonnet-5';
-export const MAX_TOKENS = 12000;
+/* ★ 2026-08-25 — 12000 → 20000. 대운 세 섹션이 실제 내용으로 채워지면서 글이 길어졌고,
+   그 바람에 상한에 걸려 마지막 섹션(클로징)이 통째로 잘린 채 저장됐다(실측: 5,311자에서
+   "무리하게 " 로 끊김). 한글은 같은 길이라도 영어보다 토큰을 두세 배 먹는다 —
+   글자 수만 보고 "아직 여유 있다"고 판단하면 안 된다.
+   ★ 상한을 올리는 것만으로는 부족하다. 잘렸는지 확인하는 검사가 함께 있어야 한다
+     (api/interpret.js의 섹션 개수·stop_reason 검사). 둘 중 하나만 있으면 언젠가 또 잘린다. */
+export const MAX_TOKENS = 20000;
 export const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
 /* AI가 쓸 수 있는 상품만. 없는 상품 이름을 보내 요금을 쓰게 만들 수 없다. */
@@ -27,10 +33,12 @@ export const AI_PRODUCTS = { saju_full: 'saju', mbti_full: 'mbti', compat_full: 
     AI가 반말로 썼고, 그걸 고친 뒤에도 옛 글이 나올 뻔했다.)
    2 = 말투를 해요체로 통일한 판.
    3 = 궁합(compat_full)을 AI가 쓰기 시작한 판. 이름 자리표시자 규칙을 넣었다.
+   5 = 대운·세운을 payload에 넣은 판 (2026-08-25). 그 전에 만들어 둔 글에는 대운 세 섹션이
+       비어 있거나 잘려 있으므로, 열쇠를 바꿔 다시 만들게 한다. 지우지 않고 비켜 간다.
    4 = 전문용어를 맨몸으로 못 쓰게 한 판 (2026-08-25 대표님 지시).
        "비겁으로 자립하고 식신으로 표현하며 재성으로 다루는 결"처럼 사주를 배운 사람만
        읽을 수 있는 문장이 나오고 있었다. 이 숫자를 안 올리면 그 글이 캐시에서 그대로 나온다. */
-export const PROMPT_VERSION = 4;
+export const PROMPT_VERSION = 5;
 
 export const SYSTEM = `당신은 한국 사주명리와 MBTI를 함께 읽는 상담가입니다. 주어진 계산 결과를 바탕으로 그 사람에게만 해당하는 풀이를 씁니다.
 앞서 주어진 해석 지식 문서를 따르세요. 그 문서에 없는 개념(신살·공망·격국 등)은 언급하지 마세요.

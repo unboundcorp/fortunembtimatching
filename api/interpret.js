@@ -152,6 +152,10 @@ export default async function handler(req, res) {
 
     sseHead(res);
     let full = '';
+    /* ★ 2026-08-25 — 왜 끝났는지를 붙잡아 둔다.
+       'max_tokens'면 분량 상한에 걸려 문장 한가운데서 잘렸다는 뜻이다.
+       예전에는 이 값을 아예 안 봐서, 잘린 글이 조용히 캐시에 들어갔다. */
+    let stopReason = null;
     const reader = upstream.body.getReader();
     const dec = new TextDecoder();
     let buf = '';
@@ -173,6 +177,8 @@ export default async function handler(req, res) {
           if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
             full += ev.delta.text;
             send(res, { type: 'delta', text: ev.delta.text });
+          } else if (ev.type === 'message_delta' && ev.delta?.stop_reason) {
+            stopReason = ev.delta.stop_reason;
           } else if (ev.type === 'error') {
             console.error('anthropic 스트림 오류', ev.error?.type);
             send(res, { type: 'error', reason: '해석을 만들다가 끊겼어요.' });
@@ -183,9 +189,29 @@ export default async function handler(req, res) {
     }
 
     /* ★ 끝까지 못 받았으면 저장하지도, 횟수를 쓰지도 않는다.
-       반쪽짜리 글을 캐시에 넣으면 그 사람은 영영 반쪽만 보게 된다. */
+       반쪽짜리 글을 캐시에 넣으면 그 사람은 영영 반쪽만 보게 된다.
+       ★ 2026-08-25 — 이 자리에 검사가 "200자보다 짧은가" 하나뿐이었다. 그래서 5,311자짜리
+         잘린 글(마지막 섹션이 통째로 빠지고 문장 한가운데서 끊긴 글)이 그대로 통과해
+         캐시에 들어갔다. 다시 눌러도 캐시가 먼저 나오므로 영영 잘린 글만 보게 된다.
+         실제로 그 일이 일어났다(2026-08-25 12:47 생성분).
+         옆 창구(api/content.js)에는 이미 섹션 개수를 세는 검사가 있었다. 스트리밍 쪽만 없었다 —
+         같은 상품인데 창구에 따라 검사가 다르면 언젠가 반드시 이런 일이 난다. 맞춘다. */
+    const wantTitles = Array.isArray(payload?.requested?.sectionTitles)
+      ? payload.requested.sectionTitles.length : 0;
+    const gotHeadings = (full.match(/^##/gm) || []).length;
+
     if (full.trim().length < 200) {
       send(res, { type: 'error', reason: '해석이 너무 짧게 끝났어요. 다시 시도해 주세요.' });
+      return res.end();
+    }
+    if (stopReason === 'max_tokens') {
+      console.error('해석이 분량 상한에 걸려 잘렸습니다', full.length, '자 ·', gotHeadings, '/', wantTitles, '섹션');
+      send(res, { type: 'error', reason: '해석이 끝까지 만들어지지 않았어요. 다시 시도해 주세요.' });
+      return res.end();
+    }
+    if (wantTitles && gotHeadings < wantTitles) {
+      console.error('해석 섹션이 모자랍니다', gotHeadings, '/', wantTitles, 'stop_reason=', stopReason);
+      send(res, { type: 'error', reason: '해석이 끝까지 만들어지지 않았어요. 다시 시도해 주세요.' });
       return res.end();
     }
 
