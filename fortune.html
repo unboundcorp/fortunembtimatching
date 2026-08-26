@@ -5118,6 +5118,27 @@ function grantProductLocally(productId, receipt){
    (개인정보처리방침 제4조와 처리위탁 표의 Anthropic 항목에 적힌 목록이 바로 이 함수가
     만들어내는 항목이다. 새 항목을 추가하려면 그 두 곳을 함께 고쳐야 한다.
     ★ 조 번호가 바뀌면 이 주석도 고쳐라 — 예전에 "§2 ④"라고 적혀 있었는데 그런 조항이 없었다.) */
+/* ★ 2026-08-26 (대표님 제보: "초대링크 받은 사람 마지막에 내 사주보기라고 뜨네? 궁합 보기가 아니라!")
+   프로필을 다 채운 뒤 누르는 마지막 단추의 글자다. 예전에는 어디서 들어왔든 늘
+   "저장하고 내 운세 보기"였다. 그런데 초대 링크로 들어온 사람은 저장하면 궁합·그룹으로 가지,
+   내 사주로 가지 않는다. 단추에 적힌 곳과 실제로 가는 곳이 달랐다는 뜻이다.
+   ★ 아래 판단은 저장 처리(onclick 안의 goInvite/goMeet/goRoom/goGroupJoin/goGroup)와
+     같은 값을 본다. 한쪽만 고치면 다시 어긋난다 — 두 곳을 함께 본다. */
+function setupCameForCompat(){
+  if(SETUP && SETUP.editId) return false;
+  return !!(PENDING_GROUP_JOIN || PENDING_GROUP || PENDING_ROOM || PENDING_MEET
+            || (PENDING_INVITE && !INVITE_CONSUMED) || PENDING_SERVICE === 'compat');
+}
+function setupSaveLabel(){
+  if(SETUP && SETUP.editId) return '수정 완료';
+  return setupCameForCompat() ? '저장하고 궁합 보기' : '저장하고 내 운세 보기';
+}
+function setupSaveHint(){
+  return setupCameForCompat()
+    ? '저장하면 받으신 링크의 궁합으로 바로 이어져요. 사주 여덟 글자 풀이는 ‘내 사주’ 화면에서 언제든 보실 수 있어요.'
+    : '사주 여덟 글자 풀이는 저장하면 ‘내 사주’ 화면에서 바로 볼 수 있어요.';
+}
+
 function contentPayloadFrom(payload){
   if(!payload || typeof payload !== 'object') return null;
   var person = payload.person || {};
@@ -13605,7 +13626,7 @@ function renderSetupStep3(){
   ]));
 
   box.appendChild(el('p',{class:'section-sub', style:'margin:12px 0 0;'},
-    ['사주 여덟 글자 풀이는 저장하면 ‘내 사주’ 화면에서 바로 볼 수 있어요.']));
+    [setupSaveHint()]));
   /* ★ R94 (외부 자문 지적) — 퍼널의 마지막 버튼이 68×68 검은 원이고, 무슨 버튼인지 적은
      글자는 버튼 바깥 회색이었다. 화면 폭을 다 쓰는 버튼 하나로 바꾼다. */
   box.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:16px;',
@@ -13710,7 +13731,7 @@ function renderSetupStep3(){
       showToast('프로필이 저장됐어요.');
     }
     render();
-  }},[SETUP.editId?'수정 완료':'저장하고 내 운세 보기']));
+  }},[setupSaveLabel()]));
   box.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;',
     onclick:function(){ SETUP.step=2; render(); }},['이전']));
   box.appendChild(setupExitRow());
