@@ -1267,14 +1267,20 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
   background:var(--gold-fill);color:#FFFFFF;border:0;
   font-weight:700;font-size:.63rem;letter-spacing:-.01em;white-space:nowrap;
   box-shadow:0 4px 13px rgba(60,54,44,.22),0 1px 4px rgba(60,54,44,.12);
-  transition:transform .15s,box-shadow .15s;
+  transition:transform .15s,box-shadow .15s,opacity .15s;
 }
+/* ★ 2026-08-26 — 결제 상자가 화면에 보이는 동안에는 비켜난다.
+   이 버튼은 화면에 붙어 떠 있어서 스크롤하면 그 자리에 오는 것을 무엇이든 덮는다.
+   맨 아래 법정 표기는 has-fab 여백으로 막아 뒀지만, 글 중간에 오는 결제 상자는 무방비였다.
+   실제로 '전체 이용권 4,900원으로 한 번에' 버튼의 오른쪽을 덮고 있었다(대표님 제보 사진).
+   글자가 잘리는 것보다 나쁜 건, 그 자리를 누르면 결제창이 아니라 궁합 화면으로 튄다는 것이다. */
+.mode-fab.is-away{opacity:0;pointer-events:none;transform:translateY(8px);}
 .mode-fab:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(60,54,44,.28);}
 .mode-fab:active{transform:translateY(0) scale(.97);}
 .mode-fab svg{width:11px;height:11px;flex:none;}
 /* 떠 있는 버튼이 화면 맨 아래 글(법정 표기)을 가리지 않도록 자리를 비워 둔다. */
 body.has-fab main{padding-bottom:110px;}
-@media (prefers-reduced-motion:reduce){ .mode-fab{transition:none;} .mode-fab:hover{transform:none;} }
+@media (prefers-reduced-motion:reduce){ .mode-fab{transition:none;} .mode-fab:hover{transform:none;} .mode-fab.is-away{transform:none;} }
 
 /* 설정: 구매 내역 / 연동 */
 .biz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(231,234,246,.10);font-size:.86rem;}
@@ -19780,6 +19786,30 @@ function openMoreSheet(){
   openModal('더보기', box, [{label:'닫기', cls:'btn-ghost', onclick:function(){ closeModal(true); }}]);
 }
 
+/* ★ 2026-08-26 — 떠 있는 버튼이 결제 상자를 덮고 있는지 보고 비켜나게 한다.
+   ★ IntersectionObserver를 쓰지 않는다. 유료 풀이는 2분에 걸쳐 글이 차오르면서
+     결제 상자의 자리가 계속 바뀌는데, 관찰 대상을 언제 다시 걸어 줄지가 그때마다 문제가 된다.
+     스크롤·화면크기가 바뀔 때마다 그 자리에서 직접 재는 쪽이 어긋날 구석이 없다.
+   ★ '무엇을 피해야 하는가'의 정본은 FAB_AVOID 한 줄뿐이다.
+     새 결제 자리를 만들면 여기에 더한다 — 두 군데 적어 두면 한쪽만 고치게 된다. */
+var FAB_AVOID = '#main .locked-cta';
+function updateFabAway(){
+  var fab = document.getElementById('modeFab');
+  if(!fab) return;
+  var list = document.querySelectorAll(FAB_AVOID);
+  var vh = window.innerHeight || document.documentElement.clientHeight || 0;
+  var hide = false;
+  for(var i=0;i<list.length;i++){
+    var r = list[i].getBoundingClientRect();
+    if(r.bottom > 0 && r.top < vh){ hide = true; break; }
+  }
+  if(hide) fab.classList.add('is-away');
+  else fab.classList.remove('is-away');
+}
+try{
+  window.addEventListener('scroll', updateFabAway, {passive:true});
+  window.addEventListener('resize', updateFabAway);
+}catch(e){ /* 아주 옛 브라우저 — 못 걸어도 버튼은 그대로 뜬다 */ }
 function syncModeFab(){
   var host = document.body;
   var fab = document.getElementById('modeFab');
@@ -19892,6 +19922,10 @@ function render(){
      각 render 함수를 일일이 고치지 않고 여기서 한 번에 처리한다 —
      화면이 늘어날 때마다 푸터를 빠뜨리는 일이 없도록. */
   appendFooterOnce();
+  /* ★ 화면을 다 그린 뒤에 한 번 잰다. syncModeFab()은 render() 맨 앞에서 도는데
+     그때는 #main이 아직 비어 있어 결제 상자가 없다. 여기서 다시 봐야
+     스크롤을 하지 않아도 처음부터 비켜나 있다. */
+  try{ updateFabAway(); }catch(e){}
 }
 
 /* =====================================================================
