@@ -5183,6 +5183,61 @@ function contentPayloadFrom(payload){
   if(payload.requested) out.requested = payload.requested;
   return out;
 }
+/* =====================================================================
+   ★ 2026-08-26 (대표님 지시) — 이름 뒤 조사를 받침에 맞춰 고른다
+   ---------------------------------------------------------------------
+   AI는 이름을 모르므로 "{{a}}는", "{{a}}와" 처럼 한 가지 모양으로만 쓴다.
+   그 자리에 '가영'이 들어가면 "가영는", "가영와"가 된다 — 읽는 사람 눈에 바로 걸린다.
+   이름의 마지막 글자에 받침이 있는지 보고 짝을 바꿔 끼운다.
+
+   ★ 한글 음절이 아닌 글자로 끝나면(숫자·영문·이모지) 손대지 않는다.
+     '민수2는'을 '민수2은'으로 바꾸는 건 고치는 게 아니라 망가뜨리는 것이다.
+   ★ '으로/로'만 규칙이 다르다 — ㄹ 받침은 '로'를 쓴다(서울로, 가을로).
+===================================================================== */
+var JOSA_PAIRS = {
+  /* [받침 있을 때, 받침 없을 때] */
+  '은':['은','는'], '는':['은','는'],
+  '이':['이','가'], '가':['이','가'],
+  '을':['을','를'], '를':['을','를'],
+  '과':['과','와'], '와':['과','와'],
+  '아':['아','야'], '야':['아','야'],
+  '이나':['이나','나'], '나':['이나','나'],
+  '이란':['이란','란'], '란':['이란','란'],
+  '이랑':['이랑','랑'], '랑':['이랑','랑'],
+  '이라':['이라','라'], '라':['이라','라'],
+  '이며':['이며','며'], '며':['이며','며'],
+  '이든':['이든','든'], '든':['이든','든'],
+  '으로':['으로','로'], '로':['으로','로']
+};
+/* ★ 조사를 두 무리로 나눈다. 뒤에 무엇이 오느냐로 위험이 다르기 때문이다.
+     · 자리 표시(은/는/이/가/을/를/과/와/아/야)는 뒤에 띄어쓰기나 문장부호가 와야만 조사로 본다.
+       안 그러면 "{{a}}가족"(가영가족)의 '가'를 조사로 읽어 "가영이족"으로 망가뜨린다.
+     · 나머지(으로/이라/이나/…)는 뒤에 글자가 이어지는 게 정상이다("가영이라고", "가영으로부터").
+   ★ 긴 것부터 본다. '이나'를 '이'로 먼저 끊으면 "가영이나"가 "가영이가"가 된다. */
+var JOSA_CASE = ['은','는','이','가','을','를','과','와','아','야'];
+var JOSA_TAIL = ['으로','이나','이란','이랑','이라','이며','이든','로','나','란','랑','라','며','든'];
+var JOSA_TAIL_ALT = JOSA_TAIL.join('|');
+var JOSA_CASE_ALT = JOSA_CASE.join('|');
+/* 조사가 끝났다고 볼 수 있는 자리 — 띄어쓰기 · 문장부호 · 글 끝 */
+var JOSA_EDGE = '(?=[\\s,.、·…!?)\\]}"\'’”]|$)';
+function pickJosa(nameStr, josa){
+  var pair = JOSA_PAIRS[josa];
+  if(!pair) return josa;
+  var last = String(nameStr || '').slice(-1);
+  var c = last.charCodeAt(0);
+  if(!(c >= 0xAC00 && c <= 0xD7A3)) return josa;   /* 한글 음절이 아니면 그대로 둔다 */
+  var jong = (c - 0xAC00) % 28;                    /* 0이면 받침 없음, 8이면 ㄹ */
+  if(pair[0] === '으로') return (jong === 0 || jong === 8) ? '로' : '으로';
+  return jong ? pair[0] : pair[1];
+}
+/* {{a}} 같은 자리 하나를 이름으로 바꾸면서, 바로 뒤에 붙은 조사도 함께 고른다. */
+function replaceWithJosa(text, key, value, enc){
+  var re = new RegExp('\\{\\{\\s*' + key + '\\s*\\}\\}(?:(' + JOSA_TAIL_ALT + ')|(' + JOSA_CASE_ALT + ')' + JOSA_EDGE + ')?', 'g');
+  return text.replace(re, function(_m, tail, cas){
+    var josa = tail || cas;
+    return enc(value) + (josa ? pickJosa(value, josa) : '');
+  });
+}
 /* 서버 본문 안의 {{name}} 자리를 화면에 그릴 때 이 브라우저에서 채운다.
    이름을 서버로 보내지 않고도 "민지는 …" 같은 문장을 쓸 수 있게 하는 장치다. */
 function fillNamePlaceholder(text, name, forHtml){
@@ -5191,12 +5246,12 @@ function fillNamePlaceholder(text, name, forHtml){
   var out = String(text == null ? '' : text);
   function enc(v){ return forHtml ? escapeHtml(v || '') : String(v || ''); }
   if(name && typeof name === 'object'){
-    out = out.replace(/\{\{\s*a\s*\}\}/g, enc(name.a))
-             .replace(/\{\{\s*b\s*\}\}/g, enc(name.b))
-             .replace(/\{\{\s*name\s*\}\}/g, enc(name.name != null ? name.name : name.a));
+    out = replaceWithJosa(out, 'a', name.a, enc);
+    out = replaceWithJosa(out, 'b', name.b, enc);
+    out = replaceWithJosa(out, 'name', (name.name != null ? name.name : name.a), enc);
     return out;
   }
-  return out.replace(/\{\{\s*name\s*\}\}/g, enc(name));
+  return replaceWithJosa(out, 'name', name, enc);
 }
 async function fetchPaidSection(productId, payload, displayName){
   if(!serverContentMode()) return null;
