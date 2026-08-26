@@ -1284,6 +1284,26 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 body.has-fab main{padding-bottom:110px;}
 @media (prefers-reduced-motion:reduce){ .mode-fab{transition:none;} .mode-fab:hover{transform:none;} .mode-fab.is-away{transform:none;} }
 
+/* ★ 2026-08-26 (대표님 지시) — 연애운의 두 표.
+   ★ 좁은 화면에서 표가 몸통을 밀어내지 않게, 표만 가로로 넘긴다(wrap의 overflow-x).
+     이걸 빼면 320px에서 화면 전체가 좌우로 흔들린다. */
+.love-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0 6px;}
+.love-tbl{width:100%;min-width:300px;border-collapse:collapse;font-size:.84rem;line-height:1.65;}
+.love-tbl caption{caption-side:top;text-align:left;font-weight:600;color:var(--ink);
+  font-size:.92rem;padding:0 0 8px;}
+.love-tbl th,.love-tbl td{border:1px solid var(--gold-line);padding:8px 10px;vertical-align:top;text-align:left;}
+.love-tbl thead th{background:var(--panel-3);color:var(--ink-dim);font-weight:600;font-size:.8rem;white-space:nowrap;}
+.love-tbl tbody th{background:var(--panel-3);color:var(--ink-dim);font-weight:600;white-space:nowrap;width:1%;}
+.love-tbl td{color:var(--ink);}
+.love-tbl-note{margin:2px 0 0;font-size:.78rem;color:var(--ink-faint);}
+/* AI가 쓴 표. 연애 표와 같은 모양을 쓴다 — 같은 화면에 둘이 나란히 나올 수 있다. */
+.md-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0;}
+.md-tbl{width:100%;min-width:280px;border-collapse:collapse;font-size:.84rem;line-height:1.65;}
+.md-tbl th,.md-tbl td{border:1px solid var(--gold-line);padding:8px 10px;vertical-align:top;text-align:left;}
+.md-tbl thead th{background:var(--panel-3);color:var(--ink-dim);font-weight:600;font-size:.8rem;}
+.md-tbl tbody th{background:var(--panel-3);color:var(--ink-dim);font-weight:600;}
+.md-tbl td{color:var(--ink);}
+
 /* 설정: 구매 내역 / 연동 */
 .biz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(231,234,246,.10);font-size:.86rem;}
 .biz-row:last-child{border-bottom:0;}
@@ -2991,13 +3011,65 @@ function sanitizeHtmlToFragment(html){
   return frag;
 }
 /* 서버가 보낸 평문 문단 배열 → <p> 노드들. textContent로만 넣으므로 XSS가 원리적으로 불가능하다. */
+/* =====================================================================
+   ★ 2026-08-26 (대표님 지시: "답변 중에 시각화할 수 있는 건 해두라") — AI가 쓴 표를 실제 표로 그린다
+   ---------------------------------------------------------------------
+   AI에게 "표로 보여주라"고 시키기 전에 이 코드가 먼저 있어야 한다. 없으면 화면에
+   "| 항목 | 값 |" 같은 막대기 글자가 그대로 찍힌다. 지시만 넣고 그리는 쪽을 안 만들면
+   글이 더 나빠진다 — 시키기 전에 받을 준비를 먼저 한다.
+   ★ 칸 내용은 textContent로만 넣는다. AI가 보낸 글에 태그가 섞여 있어도 글자로만 들어간다.
+===================================================================== */
+function isMdTableLine(t){ return /^\|.*\|$/.test(String(t||'').trim()); }
+function isMdTableSep(t){
+  var x = String(t||'').trim();
+  return /^\|[\s:\-|]+\|$/.test(x) && x.indexOf('-') >= 0;
+}
+function mdCells(t){
+  var x = String(t||'').trim().replace(/^\|/, '').replace(/\|$/, '');
+  return x.split('|').map(function(c){
+    /* 칸 안의 **굵게**는 표에서 별표로 보이므로 벗긴다. 글자는 그대로 둔다. */
+    return c.trim().replace(/\*\*(.+?)\*\*/g, '$1');
+  });
+}
+function mdTableToNode(rows){
+  var wrap = document.createElement('div'); wrap.className = 'md-tbl-wrap';
+  var tbl = document.createElement('table'); tbl.className = 'md-tbl';
+  var head = rows[0], body = rows.slice(2);           /* rows[1]은 구분선 */
+  var thead = document.createElement('thead'), htr = document.createElement('tr');
+  head.forEach(function(c){ var th=document.createElement('th'); th.scope='col'; th.textContent=c; htr.appendChild(th); });
+  thead.appendChild(htr); tbl.appendChild(thead);
+  var tb = document.createElement('tbody');
+  body.forEach(function(r){
+    var tr = document.createElement('tr');
+    for(var i=0;i<head.length;i++){
+      var cell = document.createElement(i===0 ? 'th' : 'td');
+      if(i===0) cell.scope = 'row';
+      cell.textContent = r[i] == null ? '' : r[i];
+      tr.appendChild(cell);
+    }
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb); wrap.appendChild(tbl);
+  return wrap;
+}
 function paragraphsToFragment(list){
   var frag = document.createDocumentFragment();
-  (list||[]).forEach(function(t){
+  var arr = list || [];
+  for(var i=0;i<arr.length;i++){
+    var t = String(arr[i]==null?'':arr[i]);
+    /* 표는 "머리줄 + 구분선"으로 시작한다. 둘 중 하나만 있으면 표가 아니라 그냥 문장이다. */
+    if(isMdTableLine(t) && i+1 < arr.length && isMdTableSep(arr[i+1])){
+      var rows = [mdCells(t), mdCells(arr[i+1])];
+      var j = i + 2;
+      while(j < arr.length && isMdTableLine(arr[j]) && !isMdTableSep(arr[j])){ rows.push(mdCells(arr[j])); j++; }
+      frag.appendChild(mdTableToNode(rows));
+      i = j - 1;
+      continue;
+    }
     var p = document.createElement('p');
-    p.textContent = String(t==null?'':t);
+    p.textContent = t;
     frag.appendChild(p);
-  });
+  }
   return frag;
 }
 
@@ -8139,7 +8211,7 @@ function openAdminConsole(){
 /* 리포트 한 벌(목차 + 안내 띠 + 섹션)을 host 안에 그린다.
    AI 해석이 연결돼 있으면, 먼저 기본 풀이를 즉시 보여주고(빈 화면으로 기다리게 하지 않는다)
    응답이 오면 그 자리를 AI 해석으로 바꿔 끼운다. 실패하면 기본 풀이를 그대로 두고 이유를 알린다. */
-function paintReportInto(host, localSections, product, tocLabel, payloadFn, displayName){
+function paintReportInto(host, localSections, product, tocLabel, payloadFn, displayName, extras){
   var payload = null;
   try{ payload = payloadFn ? payloadFn() : null; }catch(e){ payload = null; }
 
@@ -8267,7 +8339,8 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     renderGatedSections(host, state.sections, product, {
       pendingFrom: showPending ? FREE_SECTION_COUNT : -1,
       pendingLoading: state.paidLoading,
-      onRetry: loadPaidBody
+      onRetry: loadPaidBody,
+      extras: extras || null
     });
   }
 
@@ -8546,6 +8619,17 @@ function renderGatedSections(view, sections, product, opts){
       }
     } else {
       appendSectionBody(sec, s);
+    }
+    /* ★ 2026-08-26 (대표님 지시) — 섹션 본문 뒤에 앱이 계산한 덧붙임(표 등)을 붙인다.
+       ★ 유료 본문은 AI가 통째로 갈아끼우기 때문에, 앱이 만든 표를 본문 문자열에 심어 두면
+         화면에 영영 안 나온다(실제로 그래서 표가 0개였다 — 브라우저로 확인하고 잡았다).
+       ★ 본문을 못 불러온 상태에서도 붙인다. 이 표는 앱이 직접 계산한 것이라 서버가 죽어도
+         언제나 맞는 값이다 — AI가 실패했을 때야말로 손님에게 남는 유일한 내용이다.
+         (그래서 위 if/else 밖에 둔다. 안에 뒀다가 '불러오지 못했어요' 갈래에서 사라졌다.) */
+    if(opts.extras){
+      var ex = null;
+      try{ ex = opts.extras(s.id); }catch(e){ ex = null; console.error('섹션 덧붙임 실패', s.id, e); }
+      if(ex) sec.appendChild(el('div',{class:'sec-extra', html:ex}));
     }
     /* R23 — 본문에 이미 쓰여 있는 용어에 점선 밑줄을 그어 눌러서 뜻을 볼 수 있게 한다.
        ★ 여기 오는 것은 무료 구간(또는 결제해서 열린 구간)뿐이다 — 잠긴 섹션은 위에서 return하므로
@@ -10259,6 +10343,110 @@ PB.hourKnown = {
 /* ★ R85-b (2026-08-18) — 다섯 문장 모두 십성 이름으로 시작했다("정관이 자리 잡고 있어서").
    사주를 모르면 첫 두 글자에서 막힌다(대표님 지시). 쉬운 말을 앞에, 용어는 괄호에.
    뒤 내용은 한 글자도 바꾸지 않았다 — 판정도 그대로다. */
+/* =====================================================================
+   ★ 2026-08-26 (대표님 지시) — 연애운에 두 가지를 표로 더한다
+   ---------------------------------------------------------------------
+     ① 이성들이 보는 나의 모습
+     ② 나에게 끌리는 이성과 내가 끌리는 이성의 차이
+   사주 풀이(사랑·연애운)와 성격유형 풀이(연애 스타일) 두 군데에 같은 표가 들어간다.
+   ★ 만드는 곳은 여기 하나뿐이다. 두 화면에 각각 써 두면 언젠가 한쪽만 고치게 된다 —
+     오늘 하루에만 그 종류의 사고를 네 번 봤다.
+   ★ 새로 계산하지 않는다. 이미 있는 값(오행 개수 · 십성 개수 · 성격유형 네 글자)만 읽는다.
+   ★ 표에 어려운 말을 쓰지 않는다(대표님 지시). '비겁·재성·상생' 같은 말은 여기 한 글자도 없다.
+
+   끌림의 방향을 정하는 규칙 — 지어낸 것이 아니라 한 줄로 설명되는 규칙이다.
+     · 내가 끌리는 쪽  = 내게 가장 옅은 기운을 진하게 가진 사람 (없는 것을 채우려는 끌림)
+     · 나에게 끌리는 쪽 = 내게 가장 진한 기운이 옅은 사람 (내가 채워줄 수 있어 기대는 끌림)
+   같은 규칙을 지식 문서(knowledge_saju_mbti.md) 13절에도 적어 두었다. 한쪽만 고치지 말 것.
+===================================================================== */
+var LOVE_ELEM = [
+  { first:'새로 시작하는 기운이 보여서, 활기 있고 자라나는 사람으로 보여요',
+    close:'챙겨주려는 마음이 커서, 상대의 일까지 같이 짊어지려 해요',
+    charm:'곁에 있으면 뭔가 새로 해보고 싶어지는 기운',
+    myth:'참견이 많다고 오해받기 쉬워요',
+    person:'새로 벌이고 키워 나가는 사람' },
+  { first:'표정과 말에 온도가 있어서, 밝고 눈에 띄는 사람으로 보여요',
+    close:'감정이 그대로 드러나서, 좋을 때도 서운할 때도 금방 알 수 있어요',
+    charm:'함께 있으면 자리가 환해지는 온도',
+    myth:'기분 변화가 크다고 오해받기 쉬워요',
+    person:'표현이 밝고 열이 있는 사람' },
+  { first:'쉽게 흔들리지 않아 보여서, 믿음직하고 편안한 사람으로 보여요',
+    close:'한번 마음을 주면 잘 변하지 않아서, 오래 가는 쪽이에요',
+    charm:'무슨 얘길 해도 흔들리지 않는 안정감',
+    myth:'답답하거나 느리다고 오해받기 쉬워요',
+    person:'든든하고 잘 변하지 않는 사람' },
+  { first:'선이 분명해서, 깔끔하고 단정한 사람으로 보여요',
+    close:'기준이 뚜렷해서, 아닌 건 아니라고 말해요',
+    charm:'말과 행동이 어긋나지 않는 단정함',
+    myth:'차갑거나 깐깐하다고 오해받기 쉬워요',
+    person:'기준이 분명하고 깔끔한 사람' },
+  { first:'속을 다 보이지 않아서, 차분하고 궁금해지는 사람으로 보여요',
+    close:'생각이 깊어서, 다 헤아린 뒤에 말을 꺼내요',
+    charm:'쉽게 읽히지 않아 더 알고 싶어지는 깊이',
+    myth:'속을 안 보여준다고 오해받기 쉬워요',
+    person:'깊고 조용히 헤아리는 사람' }
+];
+var LOVE_MBTI = {
+  E:{ first:'먼저 말을 걸어서, 다가가기 쉬운 사람으로 보여요' },
+  I:{ first:'말수가 적어서, 신중하고 차분한 사람으로 보여요' },
+  J:{ close:'약속과 계획을 지켜서, 믿고 맡길 수 있는 사람이 돼요' },
+  P:{ close:'상황에 맞춰 유연해서, 같이 있으면 편한 사람이 돼요' },
+  S:{ charm:'말이 구체적이고 현실적이라 함께 있으면 든든해요',
+      want:'이야기가 넓게 뻗어 나가는 사람', wantWhy:'내가 잘 안 하는 상상을 대신 해줘서' },
+  N:{ charm:'이야기가 넓게 뻗어 나가서 대화가 지루하지 않아요',
+      want:'지금 눈앞의 것을 잘 챙기는 사람', wantWhy:'내가 놓치는 현실을 대신 붙잡아줘서' },
+  T:{ myth:'차갑다고 오해받기 쉬워요. 사실은 정리해서 도우려는 거예요',
+      pull:'결정을 어려워하는 사람', pullWhy:'내가 정리해 주는 게 편해서' },
+  F:{ myth:'너무 감정적이라고 오해받기 쉬워요. 사실은 사람을 먼저 보는 거예요',
+      pull:'마음 쓰는 게 서툰 사람', pullWhy:'내가 먼저 알아봐 주는 게 고마워서' }
+};
+/* 표 하나를 만든다. 칸이 비면 아예 줄을 넣지 않는다 — 빈 칸이 있는 표가 제일 안 읽힌다. */
+function loveTable(caption, head, rows){
+  var body = rows.filter(function(r){ return r[1] || r[2]; }).map(function(r){
+    return '<tr><th scope="row">'+escapeHtml(r[0])+'</th><td>'+escapeHtml(r[1]||'—')+'</td><td>'+escapeHtml(r[2]||'—')+'</td></tr>';
+  }).join('');
+  if(!body) return '';
+  return '<div class="love-tbl-wrap"><table class="love-tbl"><caption>'+escapeHtml(caption)+'</caption>'
+    + '<thead><tr><th scope="col"></th><th scope="col">'+escapeHtml(head[0])+'</th><th scope="col">'+escapeHtml(head[1])+'</th></tr></thead>'
+    + '<tbody>'+body+'</tbody></table></div>';
+}
+/* counts = 오행 다섯 개수(목화토금수), mbti = 네 글자. 둘 중 하나만 있어도 그쪽만 그린다. */
+function buildLoveLensTables(counts, mbti){
+  var hasE = !!(counts && counts.length===5), hasM = !!(mbti && mbti.length===4);
+  if(!hasE && !hasM) return '';
+  var top=null, low=null;
+  if(hasE){
+    var mx=-1, mn=99;
+    for(var i=0;i<5;i++){ if(counts[i]>mx){mx=counts[i];top=i;} if(counts[i]<mn){mn=counts[i];low=i;} }
+    if(top===low) low=null;               /* 다섯이 모두 같으면 채울 자리가 없다 */
+  }
+  var E = hasE ? LOVE_ELEM[top] : null, L = (hasE && low!=null) ? LOVE_ELEM[low] : null;
+  var M = hasM ? {a:LOVE_MBTI[mbti[0]], b:LOVE_MBTI[mbti[1]], c:LOVE_MBTI[mbti[2]], d:LOVE_MBTI[mbti[3]]} : null;
+  var elemName = hasE ? (SajuEngine.ELEM_NAMES[top]+' 기운이 가장 진해요') : '';
+  var out = '';
+
+  out += loveTable('이성들이 보는 나의 모습', ['타고난 기운으로 보면','성격유형으로 보면'], [
+    ['첫인상',      E && E.first, M && M.a.first],
+    ['가까워지면',  E && E.close, M && M.d.close],
+    ['끌리는 점',   E && E.charm, M && M.b.charm],
+    ['오해받는 점', E && E.myth,  M && M.c.myth]
+  ]);
+
+  out += loveTable('끌림은 어느 쪽으로 흐르나요', ['내가 끌리는 사람','나에게 끌리는 사람'], [
+    ['어떤 사람',
+      [L && L.person, M && M.b.want].filter(Boolean).join(' · '),
+      [E && ('내게 진한 '+SajuEngine.ELEM_NAMES[top]+' 기운이 옅은 사람'), M && M.c.pull].filter(Boolean).join(' · ')],
+    ['왜 그런가요',
+      [L && ('내게 가장 옅은 '+SajuEngine.ELEM_NAMES[low]+' 기운을 그 사람이 진하게 갖고 있어서'), M && M.b.wantWhy].filter(Boolean).join(' · '),
+      [E && ('그 사람에게 없는 것을 내가 갖고 있어서'), M && M.c.pullWhy].filter(Boolean).join(' · ')],
+    ['조심할 점',
+      '없는 걸 채우려 끌리는 쪽이라, 처음엔 좋다가 나중엔 바로 그 다름이 불편해질 수 있어요',
+      '내가 애쓰지 않아도 상대가 기대는 구도가 되기 쉬워요. 한쪽만 주는 관계로 굳지 않게 살펴 주세요']
+  ]);
+
+  if(hasE){ out += '<p class="love-tbl-note">'+escapeHtml('여덟 글자에서 '+elemName+'.'+(low!=null?(' 가장 옅은 건 '+SajuEngine.ELEM_NAMES[low]+' 기운이에요.'):''))+'</p>'; }
+  return out;
+}
 PB.lovePattern = { // 연애운 5패턴
   jeonggwan:'나를 반듯하게 다잡는 기운(정관)이 자리 잡고 있어서, 연애에서도 예의와 신뢰를 우선으로 보는 편이에요. <strong>안정감을 주는 사람</strong>에게 마음이 잘 열려. 화려한 이벤트보다 한결같은 태도를 더 중요하게 여기고, 상대가 약속을 잘 지키는 사람인지부터 무의식적으로 살피게 돼요.',
   pyeongwan:'나를 몰아붙이는 기운(편관)이 자리 잡고 있어서, 밀고 당기는 긴장감이나 <strong>강렬한 끌림</strong>이 있는 관계에 쉽게 빠지는 편이에요. 무난하고 평탄한 관계보다는 어딘가 위태롭거나 자극적인 관계에 마음이 더 크게 흔들리는 경향이 있어서, 스스로도 놀랄 만큼 몰입하는 순간이 있을 거예요.',
@@ -10459,6 +10647,8 @@ function buildReport13(profile, saju){
   var loveHtml = '<p>'+PB.lovePattern[loveKey]+'</p>';
   if(dohwa){ loveHtml += '<p>'+seededPick(djb2(name+dayStemName+'love'), PB.dohwaExtra)+'</p>'; }
   loveHtml += '<p>'+PB.loveRelationExtra[hasChungAny?'chung':(hasHapAny?'hap':'none')]+'</p>';
+  /* ★ 2026-08-26 (대표님 지시) — 이성들이 보는 나 · 끌림의 방향 두 표. */
+  loveHtml += buildLoveLensTables(counts, profile.mbti);
   loveHtml += '<p>연애나 결혼처럼 중요한 선택은 이 풀이를 참고 자료로만 삼고, 마지막 결정은 늘 '+safeName+' 스스로의 마음을 따라야 해요.</p>';
   add('s5','사랑 · 연애운','M10 17 C2 11 2 5 6.5 4 C9 3.5 10 6 10 6 C10 6 11 3.5 13.5 4 C18 5 18 11 10 17 Z', loveHtml);
 
@@ -10943,8 +11133,18 @@ function buildMbtiReport16(profile){
   add('m4','그림자 · 솔직한 약점', MBTI_ICONS.river, '<p>'+pb.weakness+'</p><p>'+pick('weakness')+'</p>');
 
   // 5. 연애 스타일
+  /* ★ 2026-08-26 (대표님 지시) — 사주 풀이와 같은 표를 여기에도 넣는다.
+     이 화면은 사주를 안 볼 수도 있으므로(성격유형만 보러 온 사람) 오행 없이 성격유형 칸만 그려진다.
+     사주가 있으면 두 칸이 다 찬다. 만드는 곳은 buildLoveLensTables 하나뿐이다. */
+  var mLoveCounts = null;
+  /* ★ 함수 이름을 profileSaju 로 잘못 적었다가 잡았다 — 없는 함수라 try/catch가 삼켜서
+     표의 사주 칸이 조용히 비었을 것이다. 문법 검사로는 안 걸리는 종류다. 실제 이름은 getSajuResult. */
+  try{ var mSaju = getSajuResult(profile); if(mSaju) mLoveCounts = dominantElementIdx(mSaju).counts; }
+  catch(e){ mLoveCounts = null; console.error('연애 표 오행 계산 실패', e); }
   add('m5','연애 스타일', MBTI_ICONS.field,
-    '<p>'+pb.love+'</p><p>'+pick('love')+'</p><p>더 정밀한 상대와의 궁합은 사주까지 함께 보는 \'궁합 보기\'에서 확인할 수 있어요.</p>');
+    '<p>'+pb.love+'</p><p>'+pick('love')+'</p>'
+    + buildLoveLensTables(mLoveCounts, mbti)
+    + '<p>더 정밀한 상대와의 궁합은 사주까지 함께 보는 \'궁합 보기\'에서 확인할 수 있어요.</p>');
 
   // 6. 직업 적성 · 커리어
   add('m6','직업 적성 · 커리어요', MBTI_ICONS.mountain, '<p>'+pb.career+'</p><p>'+pick('career')+'</p>');
@@ -15120,8 +15320,13 @@ function renderReport13(){
 
   var sajuHost = el('div',{});
   view.appendChild(sajuHost);
+  /* ★ 2026-08-26 (대표님 지시) — 사랑·연애운 섹션 안에 '이성이 보는 나'와 '끌림의 방향' 표를 붙인다. */
+  var sajuLoveCounts = null;
+  try{ sajuLoveCounts = dominantElementIdx(saju).counts; }
+  catch(e){ console.error('연애 표 오행 계산 실패', e); }
   paintReportInto(sajuHost, report.sections, PRODUCTS.saju_full, '사주 풀이 목차',
-    function(){ return Interpreter.buildSajuPayload(p, saju); }, p.name);
+    function(){ return Interpreter.buildSajuPayload(p, saju); }, p.name,
+    function(id){ return id==='s5' ? buildLoveLensTables(sajuLoveCounts, p.mbti) : ''; });
 
   var sumCard=el('div',{class:'scroll-card'});
   sumCard.appendChild(cardHead('태어난 때를 적은 '+charCountWord(p)+' 글자', ['사주팔자']));
@@ -15155,9 +15360,14 @@ function renderMbtiReport13(){
 
   var mbtiHost = el('div',{});
   view.appendChild(mbtiHost);
+  /* ★ 사주 풀이와 같은 표를 같은 함수로 붙인다. 사주를 아직 못 구하면 성격유형 칸만 그려진다. */
+  var mbtiLoveCounts = null;
+  try{ var mSj = getSajuResult(p); if(mSj) mbtiLoveCounts = dominantElementIdx(mSj).counts; }
+  catch(e){ console.error('연애 표 오행 계산 실패', e); }
   paintReportInto(mbtiHost, report.sections, PRODUCTS.mbti_full, '성격유형 풀이 목차',
     function(){ return { kind:'mbti', person:{name:p.name, mbti:p.mbti, gender:p.gender==='M'?'남':'여'},
-      requested:{sections:13, tone:'해요체', language:'ko'} }; }, p.name);
+      requested:{sections:13, tone:'해요체', language:'ko'} }; }, p.name,
+    function(id){ return id==='m5' ? buildLoveLensTables(mbtiLoveCounts, p.mbti) : ''; });
 
   var badgeCard=el('div',{class:'scroll-card'});
   badgeCard.appendChild(el('h3',{},['4지표 요약']));
