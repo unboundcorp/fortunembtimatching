@@ -1584,8 +1584,21 @@ body.has-fab main{padding-bottom:110px;}
 .gc-why-row:hover,.gc-why-row:focus-visible{background:var(--gold-soft);}
 .gc-why-row[aria-expanded="true"]{background:var(--gold-soft);}
 .gc-why-row .k{color:var(--ink-dim);white-space:nowrap;}
-.gc-why-row .k::after{content:' ▾';margin-left:4px;font-size:1.3em;line-height:1;color:var(--gold);}
-.gc-why-row[aria-expanded="true"] .k::after{content:' ▴';}
+/* ★ 2026-08-26 (대표님 지시: "화살표 좀 키우고 클릭 유도하게 모션을 넣어봐, 잘 안 누르게 된다")
+   ─ 크기를 키우고(1.3 → 1.7em), 아직 안 펴 본 줄만 천천히 까딱이게 한다.
+   ★ 펴 놓은 줄은 움직이지 않는다 — 이미 누른 사람에게 계속 흔들어대는 건 재촉이지 안내가 아니다.
+   ★ 세 번만 움직이고 멈춘다. 끝없이 흔들리면 글을 읽는 데 방해가 된다.
+   ★ 움직임을 줄여 달라고 설정한 기기에서는 아예 안 움직인다(맨 아래 규칙). */
+.gc-why-row .k::after{content:' ▾';margin-left:5px;font-size:1.7em;line-height:1;color:var(--gold);
+  display:inline-block;animation:whyNudge 2.4s ease-in-out 3;}
+.gc-why-row[aria-expanded="true"] .k::after{content:' ▴';animation:none;}
+@keyframes whyNudge{
+  0%,72%,100%{transform:translateY(0);opacity:.85;}
+  80%{transform:translateY(3px);opacity:1;}
+  88%{transform:translateY(0);opacity:1;}
+  94%{transform:translateY(2px);opacity:1;}
+}
+@media (prefers-reduced-motion:reduce){ .gc-why-row .k::after{animation:none;} }
 .gc-why-desc{margin:0 8px 6px;padding:10px 12px;border-radius:var(--r-md);
   background:var(--panel-3);font-size:.82rem;line-height:1.7;}
 .gc-why-desc .d1{display:block;color:var(--ink);font-weight:700;}
@@ -1593,6 +1606,10 @@ body.has-fab main{padding-bottom:110px;}
 /* ★ R98 — 셋째 줄은 "이 두 사람이라서 이 점수"인 근거다. 앞의 두 줄과 구분되게 선을 하나 둔다. */
 .gc-why-desc .d3{display:block;color:var(--ink);margin-top:8px;padding-top:8px;
   border-top:1px solid var(--line);}
+/* ★ 2026-08-26 (대표님 지시) — 넷째 줄은 "그래서 두 사람이 실제로 어떻게 맞물리나"다.
+   셋째 줄(근거·숫자)과 이어지는 말이라 선을 또 긋지 않고, 왼쪽에 세로선만 세워 구분한다. */
+.gc-why-desc .d4{display:block;color:var(--ink);margin-top:8px;padding-left:10px;
+  border-left:2px solid var(--gold);}
 /* 막대 넷 아래 — 총점이 어떻게 나왔는지 식 그대로 */
 /* ★ R99 — 이름 앞 작은 캐릭터, 그림에서 누른 사람만 보이게 하는 안내. */
 .inline-char{display:inline-flex;align-items:center;justify-content:center;flex:none;
@@ -11720,6 +11737,13 @@ function buildSajuCompat(pA, pB){
   var nameA = pA.name || '이쪽', nameB = pB.name || '상대방';
   var diff = ((bElem-aElem)%5+5)%5;
   var elemScore60, elemRel, elemDetail, elemTerm;
+  /* ★ 2026-08-26 (대표님 지시: "어려운 단어 쓰지 말라니깐") — 화면에 그대로 나가는 일상어 짝.
+     elemTerm/branchTerm(비화·상생·육합·충)은 계산 표기이자 AI에게 넘기는 값이라 그대로 둔다.
+     화면은 아래 Plain/Mean 두 개만 쓴다. 반드시 같은 자리에서 함께 정한다 —
+     따로 떨어뜨려 두면 한쪽만 고치게 되고, 오늘 하루에만 그 사고를 네 번 봤다.
+       Plain = 무슨 관계인지 (이름)
+       Mean  = 그래서 두 사람 사이에서 실제로 어떻게 나타나는지 (한 줄) */
+  var elemPlain, elemMean;
   /* elemRel  = 무료 요약 화면(궁합 요약 "사주 관점 한 줄 요약")에 쓰는 한 줄.
      elemDetail = 유료 상세 화면 전용. 두 사람의 실제 일간 글자와 오행을 짚고,
                   그 관계가 생활에서 어떻게 드러나는지까지 이어서 쓴다.
@@ -11735,37 +11759,51 @@ function buildSajuCompat(pA, pB){
                  +'이 글자가 그 사람의 본바탕을 나타내는 자리예요. ';
   if(diff===0){
     elemScore60=70; elemTerm='비화(같은 오행)'; elemRel='비화(같은 기운) — 편하지만 닮은 단점도 함께 보일 수 있어요';
+    elemPlain='서로 같은 결'; elemRel=elemPlain+' — 편하지만 닮은 단점도 함께 보일 수 있어요';
+    elemMean='말이 잘 통하고 설명이 덜 필요한 대신, 잘하는 것도 못하는 것도 겹쳐요. 둘 다 미루는 일이 있으면 그 자리는 계속 비어 있게 돼요.';
     elemDetail = stemLine+'같은 '+aElemName+' 기운을 나눠 가진 사이라, 설명하지 않아도 통하는 대목이 많아요. '+
       '다만 강점이 겹치는 만큼 약점도 겹쳐요 — 둘 다 미루는 일, 둘 다 피하는 대화가 있으면 그 자리는 끝내 비어 있게 돼요. '+
       '역할을 일부러 나눠 맡고, 한쪽이 싫어하는 일을 다른 쪽이 대신 해주는 규칙을 만들어 두면 이 조합의 약점이 거의 사라져요.';
   } else if(diff===1){
     elemScore60=95; elemTerm='상생(내가 상대를 생함)'; elemRel='상생(내가 상대를 북돋는 관계) — 서로를 자연스럽게 살려주는 흐름이에요';
+    elemPlain=nameA+josaOnly(nameA,'이','가')+' 밀어주는 결'; elemRel=elemPlain+' — 서로를 자연스럽게 살려주는 흐름이에요';
+    elemMean=nameA+josaOnly(nameA,'이','가')+' 주고 '+nameB+josaOnly(nameB,'이','가')+' 받는 쪽으로 자연스럽게 흘러요. 처음엔 편한데, 오래되면 한쪽만 주는 모양으로 굳기 쉬워요.';
     elemDetail = stemLine+aElemName+josaOnly(aElemName,'이','가')+' '+bElemName+josaOnly(bElemName,'을','를')+
       ' 낳는 자리라, '+nameA+josaOnly(nameA,'이','가')+' 주고 '+nameB+josaOnly(nameB,'이','가')+' 받는 흐름이 자연스러워요. '+
       '이 방향은 관계 초반에 특히 편안하게 느껴져요. 대신 오래되면 한쪽만 계속 주는 구도로 굳기 쉬우니, '+
       nameB+josaOnly(nameB,'이','가')+' 받은 것을 말로 돌려주는 습관이 이 조합의 수명을 결정해요.';
   } else if(diff===4){
     elemScore60=90; elemTerm='상생(상대가 나를 생함)'; elemRel='상생(상대가 나를 북돋는 관계) — 기대지 않아도 자연스럽게 도움을 주고받아요';
+    elemPlain=nameB+josaOnly(nameB,'이','가')+' 밀어주는 결'; elemRel=elemPlain+' — 기대지 않아도 자연스럽게 도움을 주고받아요';
+    elemMean=nameB+josaOnly(nameB,'이','가')+' 주고 '+nameA+josaOnly(nameA,'이','가')+' 받는 쪽으로 흘러요. '+nameA+josaOnly(nameA,'은','는')+' 이 관계에서 일이 잘 풀린다고 느끼기 쉬운데, 그건 상대가 대주고 있는 몫이에요.';
     elemDetail = stemLine+bElemName+josaOnly(bElemName,'이','가')+' '+aElemName+josaOnly(aElemName,'을','를')+
       ' 낳는 자리라, '+nameB+josaOnly(nameB,'이','가')+' 주고 '+nameA+josaOnly(nameA,'이','가')+' 받는 흐름이 자연스러워요. '+
       nameA+josaOnly(nameA,'은','는')+' 이 관계에서 유난히 일이 잘 풀린다고 느낄 텐데, 그건 운이 아니라 상대가 대주고 있는 몫이에요. '+
       '그 사실을 알아차리고 말로 표현하는 순간부터 관계가 한 단계 더 단단해져요.';
   } else {
     elemScore60=45; elemTerm='상극(서로 극함)'; elemRel='상극(서로 부딪히는 기운) — 자극이 되기도 하지만 의식적으로 배려가 필요해요';
+    elemPlain='서로 누르는 결'; elemRel=elemPlain+' — 자극이 되기도 하지만 의식적으로 배려가 필요해요';
+    elemMean='같은 일을 봐도 먼저 눈에 들어오는 데가 달라요. 그래서 상대의 지적이 유난히 아픈데, 대개는 내가 놓친 자리를 정확히 짚은 거예요.';
     elemDetail = stemLine+'두 사람의 기운이 서로를 누르는 자리(상극)라, 같은 사안을 봐도 먼저 눈에 들어오는 지점이 달라요. '+
       '그래서 상대의 지적이 유난히 아프게 느껴지는데, 사실 그건 내가 놓친 자리를 정확히 짚었기 때문인 경우가 많아요. '+
       '결론을 먼저 맞추려 하지 말고 각자 무엇을 보고 있는지부터 꺼내 놓으면, 상극은 곧바로 가장 좋은 감시자 관계로 바뀌어요.';
   }
   var relBranch = SajuEngine.branchRelations([{idx:pA.saju.day.branchIdx},{idx:pB.saju.day.branchIdx}]);
-  var branchScore, branchRel, branchTerm;
+  var branchScore, branchRel, branchTerm, branchPlain, branchMean;
   /* ★ R85-b — '일지 육합', '특별한 합충 없음' 은 사주를 아는 사람만 읽을 수 있는 말이었다.
      쉬운 말을 앞에, 용어는 괄호에. branchScore/branchTerm(계산·표 값)은 한 글자도 안 바꿨다. */
   if(relBranch.hap.length>0){ branchScore=90; branchTerm='육합';
-    branchRel='두 사람의 곁에 있는 사람 자리가 서로 짝이 돼요(일지 육합) — 생활 리듬이 잘 맞는 편이에요'; }
+    branchRel='두 사람의 곁에 있는 사람 자리가 서로 짝이 돼요(일지 육합) — 생활 리듬이 잘 맞는 편이에요';
+    branchPlain='서로 맞물리는 자리'; branchRel='두 사람의 곁에 있는 사람 자리가 서로 짝이 돼요 — 생활 리듬이 잘 맞는 편이에요';
+    branchMean='자고 일어나는 때, 쉬고 싶은 때가 잘 겹쳐요. 같이 지내는 시간이 길어져도 덜 피곤한 조합이에요.'; }
   else if(relBranch.chung.length>0){ branchScore=40; branchTerm='충';
-    branchRel='두 사람의 곁에 있는 사람 자리가 정면으로 부딪혀요(일지 충) — 서로 다른 리듬 탓에 부딪히는 순간이 잦을 수 있어요'; }
+    branchRel='두 사람의 곁에 있는 사람 자리가 정면으로 부딪혀요(일지 충) — 서로 다른 리듬 탓에 부딪히는 순간이 잦을 수 있어요';
+    branchPlain='정면으로 부딪히는 자리'; branchRel='두 사람의 곁에 있는 사람 자리가 정면으로 부딪혀요 — 서로 다른 리듬 탓에 부딪히는 순간이 잦을 수 있어요';
+    branchMean='한 사람이 움직일 때 다른 사람은 쉬고 싶어져요. 함께 있을 시간과 각자 있을 시간을 미리 정해 두면 훨씬 나아져요.'; }
   else { branchScore=65; branchTerm='해당 없음';
-    branchRel='두 자리가 특별히 얽히지도, 부딪히지도 않아요 — 무난하게 맞춰가는 관계예요'; }
+    branchRel='두 자리가 특별히 얽히지도, 부딪히지도 않아요 — 무난하게 맞춰가는 관계예요';
+    branchPlain='특별히 얽히지 않는 자리';
+    branchMean='끌리지도 부딪히지도 않아요. 잘 맞는 부분은 저절로 생기는 게 아니라 서로 맞춰가며 만드는 쪽이에요.'; }
   var score = Math.round(elemScore60*0.6 + branchScore*0.4);
   var sipA = SajuEngine.sipseongOf(pA.saju.day.stemIdx, bElem, SajuEngine.STEM_YY[pB.saju.day.stemIdx]);
   /* ★ R85-b — "편관 관계에 가까워서, 관성 기운으로 …" 는 읽을 수가 없었다.
@@ -11780,7 +11818,9 @@ function buildSajuCompat(pA, pB){
        중간값을 밖에서도 읽을 수 있게 노출할 뿐이다 — 요약 화면의 일상어 막대가 이 값을 그린다.
        (표현을 바꾸느라 계산을 바꾸면 예전에 본 궁합 점수가 전부 달라진다.) */
   return {score:score, elemRel:elemRel, elemDetail:elemDetail, branchRel:branchRel, comment:comment,
-    elemScore60:elemScore60, branchScore:branchScore, elemTerm:elemTerm, branchTerm:branchTerm};
+    elemScore60:elemScore60, branchScore:branchScore, elemTerm:elemTerm, branchTerm:branchTerm,
+    /* 화면 전용 일상어. 계산에는 쓰이지 않는다. */
+    elemPlain:elemPlain, elemMean:elemMean, branchPlain:branchPlain, branchMean:branchMean};
 }
 
 /* ★ R85-d — 종합 점수의 배분을 말로 적는 곳이 두 군데다(요약 카드 · 근거 패널).
@@ -16982,29 +17022,50 @@ function compatWhyEvidence(pA, pB, res){
   if(pA.mbti && pB.mbti && pA.mbti.length===4 && pB.mbti.length===4 && typeof res.mbtiScore==='number'){
     var same=[], diff=[];
     for(var i=0;i<4;i++){ (pA.mbti[i]===pB.mbti[i] ? same : diff).push(COMPAT_AXIS_NAMES[i]); }
-    ev.mbti = pA.mbti+' × '+pB.mbti+' — 네 축 가운데 '+same.length+'개가 같아요.'
-      + (diff.length ? (' 갈리는 축은 '+diff.join(', ')+' 쪽이에요.') : '')
+    ev.mbti = pA.mbti+' × '+pB.mbti+' — 네 가지 성향 가운데 '+same.length+'개가 같아요.'
+      + (diff.length ? (' 갈리는 건 '+diff.join(', ')+' 쪽이에요.') : '')
       + ' 이 조합의 궁합표 값이 '+res.mbtiScore+'점이에요.';
+    /* ★ 2026-08-26 (대표님 지시) — "본 값이에요"에서 끝내지 말고 실제로 어떻게 맞물리는지까지. */
+    /* ★ same.length가 0일 수 있다. "같은 0개는 설명 없이도 통해요"는 말이 안 된다 —
+       실제로 ENFP × ISTJ에서 그 문장이 나왔다(실측). 0 · 4 · 그 사이를 따로 쓴다. */
+    ev.mbtiMore = !same.length
+      ? '네 가지가 모두 갈려요. 같은 일을 두고도 보는 데가 서로 달라서, 부딪히기 쉬운 만큼 서로 없는 걸 채워주기도 좋은 조합이에요.'
+      : !diff.length
+        ? '네 가지가 다 같아요. 편하게 통하는 대신, 잘하는 것도 못하는 것도 겹쳐서 빈자리가 그대로 남기 쉬워요.'
+        : ('같은 '+same.length+'개는 설명 없이도 통하는 자리예요. 갈리는 '+diff.length+'개는 서로 다르게 보는 자리라, 부딪히기도 하고 서로 없는 걸 채워주기도 해요.');
   }
 
   if(res.saju && typeof res.saju.score==='number'){
-    ev.saju = '태어난 날 윗글자끼리는 '+res.saju.elemTerm+', 아랫글자끼리는 '+res.saju.branchTerm+'.'
+    /* ★ 2026-08-26 — 화면에서 '비화 · 육합 · 충'을 뺀다. 계산값(elemTerm/branchTerm)은 그대로 두고
+       일상어 짝(elemPlain/branchPlain)만 보여준다. 두 값은 computeCompatSaju 안에서 함께 정해진다. */
+    ev.saju = '태어난 날 윗글자끼리는 '+(res.saju.elemPlain || res.saju.elemTerm)
+      + ', 아랫글자끼리는 '+(res.saju.branchPlain || res.saju.branchTerm)+'예요.'
       + ' 윗글자 '+res.saju.elemScore60+'점을 60%, 아랫글자 '+res.saju.branchScore+'점을 40%로 섞어 '+res.saju.score+'점이 됐어요.';
+    ev.sajuMore = [res.saju.elemMean, res.saju.branchMean].filter(Boolean).join(' ');
   }
 
   if(typeof res.elemScore==='number' && typeof pA.elementIdx==='number' && typeof pB.elementIdx==='number'){
     var d5 = ((pB.elementIdx-pA.elementIdx)+5)%5;
-    var rel5 = (pA.elementIdx===pB.elementIdx) ? '같은 기운(비화)'
-             : (d5===1||d5===4) ? '서로 살려주는 기운(상생)' : '서로 누르는 기운(상극)';
+    var same5 = (pA.elementIdx===pB.elementIdx), help5 = (d5===1||d5===4);
+    var rel5 = same5 ? '같은 기운' : help5 ? '서로 살려주는 기운' : '서로 누르는 기운';
     ev.elem = A+' '+SajuEngine.ELEM_NAMES[pA.elementIdx]+' 기운 · '+B+' '+SajuEngine.ELEM_NAMES[pB.elementIdx]+' 기운'
       + ' — '+rel5+'이라서 '+res.elemScore+'점이에요.';
+    ev.elemMore = same5
+      ? '가장 진한 기운이 같아요. 곁에 있으면 편한데, 둘 다 부족한 자리는 아무도 안 채워요.'
+      : help5
+        ? '한쪽의 기운이 다른 쪽을 북돋는 방향이에요. 애쓰지 않아도 기운이 흐르는 쪽이라 오래 볼수록 편해져요.'
+        : '두 기운이 서로 누르는 방향이에요. 자극이 되지만, 지칠 때는 각자 있는 시간이 필요해요.';
   }
 
   if(typeof res.zodScore==='number' && typeof pA.zodiacIdx==='number' && typeof pB.zodiacIdx==='number'){
     var dz = Math.abs(pA.zodiacIdx-pB.zodiacIdx); dz = Math.min(dz, 12-dz);
-    var relz = dz===0 ? '같은 띠' : dz===4 ? '삼합 — 예로부터 가장 잘 어울린다고 보는 자리'
-             : dz===6 ? '충 — 정면으로 맞서는 자리' : dz===3 ? '서로 스치는 자리' : '특별히 얽히지 않는 자리';
+    var relz = dz===0 ? '같은 띠' : dz===4 ? '예로부터 가장 잘 어울린다고 보는 자리'
+             : dz===6 ? '정면으로 맞서는 자리' : dz===3 ? '서로 스치는 자리' : '특별히 얽히지 않는 자리';
     ev.zod = A+' '+ZODIAC[pA.zodiacIdx]+'띠 · '+B+' '+ZODIAC[pB.zodiacIdx]+'띠 — '+relz+'라서 '+res.zodScore+'점이에요.';
+    ev.zodMore = dz===0 ? '같은 해에 태어난 띠라 자란 분위기가 비슷한 편이에요. 넷 중 비중이 가장 작아 점수를 크게 흔들지는 않아요.'
+      : dz===4 ? '예로부터 가장 잘 맞는다고 보는 짝이에요. 다만 넷 중 비중이 가장 작아 점수를 크게 올리지는 않아요.'
+      : dz===6 ? '예로부터 부딪힌다고 보는 짝이에요. 비중이 작아서 이것만으로 사이가 나쁘다고 볼 일은 아니에요.'
+      : '띠끼리는 특별히 좋지도 나쁘지도 않아요. 넷 중 비중이 가장 작은 항목이에요.';
   }
   return ev;
 }
@@ -17028,6 +17089,9 @@ function buildCompatWhyScores(total, vals, extraNote, ev){
     ];
     /* 셋째 줄 — 이 두 사람이라서 이 점수인 근거. 근거를 못 뽑는 자리(평균)에서는 아예 안 붙인다. */
     if(ev && ev[r.it.key]) descKids.push(el('span',{class:'d3'},[ev[r.it.key]]));
+    /* ★ 2026-08-26 (대표님 지시) — 넷째 줄. 셋째 줄이 "무엇으로 쟀나"라면 이건 "그래서 두 사람이
+       실제로 어떻게 맞물리나"다. 숫자와 용어만 보고 끝나지 않게 한 줄 더 준다. */
+    if(ev && ev[r.it.key+'More']) descKids.push(el('span',{class:'d4'},[ev[r.it.key+'More']]));
     var desc = el('p',{class:'gc-why-desc hidden'}, descKids);
     var row = el('button',{class:'gc-why-row', type:'button', 'aria-expanded':'false'},[
       el('span',{class:'k'},[r.it.label]),
