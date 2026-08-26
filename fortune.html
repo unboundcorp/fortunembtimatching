@@ -522,7 +522,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .settings-row{
   display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
   padding:16px 18px;min-height:60px;background:var(--panel);border:1px solid var(--gold-line);
-  border-radius:var(--r-lg);margin-bottom:12px;width:100%;text-align:left;
+  /* ★ 2026-08-26 대표님 지시 — 상자끼리 너무 붙어 보여서 12 → 16px. */
+  border-radius:var(--r-lg);margin-bottom:16px;width:100%;text-align:left;
   box-shadow:var(--shadow-soft);
   transition:border-color .15s,background .15s,transform .15s;
 }
@@ -547,7 +548,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    그 안에 또 단추를 넣으면 다시 보려다 지우는 사고가 난다. */
 .rr-row{display:flex;align-items:stretch;gap:8px;}
 .rr-row .settings-row{flex:1 1 auto;min-width:0;}
-.rr-del{flex:none;margin-bottom:12px;padding:0 14px;min-width:56px;min-height:60px;
+/* ★ margin-bottom은 .settings-row와 반드시 같아야 한다 — 다르면 옆에 선 단추만 아래로 삐져나온다. */
+.rr-del{flex:none;margin-bottom:16px;padding:0 14px;min-width:56px;min-height:60px;
   border:1px solid rgba(221,138,120,.32);border-radius:var(--r-lg);background:var(--panel);
   color:var(--red-hi);font-size:.82rem;cursor:pointer;
   transition:border-color .15s,background .15s,transform .15s;}
@@ -5757,7 +5759,8 @@ function buildPurchasePanel(){
   }
 
   if(!passActive()){
-    card.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:12px;',
+    /* ★ 2026-08-26 — 아래쪽 여백이 없어 바로 다음 상자(카카오 로그인)에 딱 붙어 있었다. */
+    card.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin:12px 0 16px;',
       onclick:function(){ openPaywall(PRODUCTS.premium_pass); }},['전체 이용권 보기 · '+formatWon(PRODUCTS.premium_pass.price)]));
   }
 
