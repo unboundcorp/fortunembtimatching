@@ -8268,8 +8268,17 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     state.sections = baseSections.map(function(base, i){
       var got = secs[i];
       if(!got || !got.paras.length) return base;
+      /* ★ 2026-08-26 — 이름 자리({{a}} {{b}})를 여기서도 채운다.
+         통짜로 받는 길(fetchPaidSection)에서만 채우고 있었고, 실제로 쓰이는 길인
+         이 흘려받기에서는 안 채웠다. 사주 풀이는 자리표시자를 안 쓰라고 시키므로
+         드러나지 않았고, 자리표시자를 쓰는 것은 궁합뿐인데 궁합 유료 해석이
+         한 번도 만들어진 적이 없어 아무도 못 봤다.
+         실제 사이트에서 처음 돌려 보고 잡았다 — 5,947자짜리 글에 {{a}} 44개, {{b}} 44개가
+         그대로 박혀 있었다. 돈을 낸 사람이 "{{a}}는 새로운 사람에게…"를 읽게 되는 상태였다.
+         ★ 채우는 규칙은 fillNamePlaceholder 하나뿐이다. 여기서 따로 치환하지 마라. */
       return { id: base.id, title: base.title, icon: base.icon,
-               paragraphs: got.paras, body: '' };
+               paragraphs: got.paras.map(function(t){ return fillNamePlaceholder(t, displayName, false); }),
+               body: '' };
     });
     state.source = 'api';
     /* ★ R92 — 다시 읽는 경우 서버는 보관해 둔 글을 한 덩어리로 한 번에 보낸다.
