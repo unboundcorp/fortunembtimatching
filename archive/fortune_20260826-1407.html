@@ -12343,47 +12343,13 @@ function openValueSheet(title, makeDraft, build, commit, opts){
     /* ★ R84 — 보던 자리를 지킨다. 예전에는 render()라서 칸 하나 고칠 때마다 맨 위로 튀었다. */
     renderKeepScroll();
   }
-  /* ★ 2026-08-26 — [확인] 버튼의 켜짐/꺼짐만 제자리에서 갱신한다. 본문은 건드리지 않는다.
-     왜 따로 뽑았나: 글자를 칠 때는 일부러 시트를 다시 그리지 않는다(포커스가 튄다).
-     그런데 다시 안 그리니 "바뀐 게 있다"는 판정이 안 서서 [확인]이 꺼진 채로 남았다.
-     그 결과 닉네임을 치고 [확인]을 눌러도 아무 반응이 없고, 한 번 더 눌러야 저장됐다
-     (첫 탭은 입력칸에서 손을 떼는 역할만 하고, 그때서야 change→redraw로 켜졌다).
-     실제 사이트에서 진짜 마우스로 눌러 확인한 증상이다. */
-  function syncConfirm(){
-    var box = $('#activeModal') && $('#activeModal').querySelector('.modal-box');
-    if(!box) return;
-    /* ★ "저장하지 않은 변경이 있어요" 줄도 여기서 붙이고 뗀다.
-       예전에는 redraw()에서만 붙였다. 그래서 [확인]을 누르는 순간(입력칸에서 손이 떨어질 때)
-       이 줄이 새로 생기면서 본문이 길어지고, 그만큼 [확인] 버튼이 아래로 밀렸다.
-       손가락을 누른 자리와 뗀 자리가 달라지니 탭이 아예 성립하지 않았다 — 그래서 두 번 눌러야 했다.
-       글자를 치는 동안 미리 붙여 두면 누르는 순간에는 자리가 움직이지 않는다. */
-    var sheetBody = box.querySelector('.sheet-body');
-    if(sheetBody){
-      var line = sheetBody.querySelector('.unsaved-line');
-      if(dirty() && !line){
-        sheetBody.appendChild(el('p',{class:'unsaved-line', role:'status'},
-          ['저장하지 않은 변경이 있어요. [확인]을 눌러야 반영돼요.']));
-      } else if(!dirty() && line){ line.parentNode.removeChild(line); }
-    }
-    var btns = box.querySelectorAll('.modal-close-row .btn');
-    var confirmBtn = btns.length ? btns[btns.length-1] : null;
-    if(confirmBtn){
-      /* ★ R33 — alwaysConfirm이면 바꾼 게 없어도 [확인]을 누를 수 있다.
-         프로필 마법사에서 필요하다. 거기서는 "고른 적이 있는가"를 따로 기록하는데,
-         기본값이 이미 내가 원하는 값이면(2000년생이거나 성별이 여자인 경우)
-         바꿀 것이 없어 [확인]이 죽고, 그러면 영영 고를 수가 없어 다음 단계로 못 간다.
-         실제로 그 상태를 만들어 보고 발견했다. */
-      if(dirty() || opts.alwaysConfirm){ confirmBtn.removeAttribute('disabled'); confirmBtn.onclick = doCommit; }
-      else { confirmBtn.setAttribute('disabled','disabled'); confirmBtn.onclick = null; }
-    }
-    MODAL_GUARD = dirty() ? warn : null;
-  }
   function redraw(){
     var body = el('div',{class:'sheet-body'});
     body.appendChild(build(draft, redraw));
-    /* 글자를 칠 때마다 [확인]만 켜 준다. 시트 안의 모든 글자칸에 한 번에 걸린다 —
-       칸마다 따로 붙이면 새 칸이 생길 때 빠뜨리게 된다. */
-    body.addEventListener('input', syncConfirm);
+    if(dirty()){
+      body.appendChild(el('p',{class:'unsaved-line', role:'status'},
+        ['저장하지 않은 변경이 있어요. [확인]을 눌러야 반영돼요.']));
+    }
     /* ★ 값이 바뀔 때마다 openModal()을 다시 부르면 모달을 통째로 헐고 다시 짓게 된다.
        openModal()은 마지막에 첫 요소로 포커스를 옮기는데, 그 첫 요소가 바로 방금 고른
        <select>다. 모바일 브라우저는 select가 포커스를 받으면 선택창을 다시 여는 경우가 있어,
@@ -12394,7 +12360,18 @@ function openValueSheet(title, makeDraft, build, commit, opts){
     var oldBody = box && box.querySelector('.sheet-body');
     if(box && oldBody){
       box.replaceChild(body, oldBody);
-      syncConfirm();
+      var btns = box.querySelectorAll('.modal-close-row .btn');
+      var confirmBtn = btns.length ? btns[btns.length-1] : null;
+      if(confirmBtn){
+        /* ★ R33 — alwaysConfirm이면 바꾼 게 없어도 [확인]을 누를 수 있다.
+           프로필 마법사에서 필요하다. 거기서는 "고른 적이 있는가"를 따로 기록하는데,
+           기본값이 이미 내가 원하는 값이면(2000년생이거나 성별이 여자인 경우)
+           바꿀 것이 없어 [확인]이 죽고, 그러면 영영 고를 수가 없어 다음 단계로 못 간다.
+           실제로 그 상태를 만들어 보고 발견했다. */
+        if(dirty() || opts.alwaysConfirm){ confirmBtn.removeAttribute('disabled'); confirmBtn.onclick = doCommit; }
+        else { confirmBtn.setAttribute('disabled','disabled'); confirmBtn.onclick = null; }
+      }
+      MODAL_GUARD = dirty() ? warn : null;
       return;
     }
     openModal(title, body, [
@@ -12405,7 +12382,7 @@ function openValueSheet(title, makeDraft, build, commit, opts){
     /* ★ 순서가 중요하다. openModal()은 안에서 closeModal(true)로 이전 모달을 걷어내는데
        그 과정에서 MODAL_GUARD를 지운다. 그래서 잠금은 반드시 openModal "뒤에" 건다.
        (처음엔 앞에 걸었다가, 시트를 다시 그리는 순간 잠금이 풀려 Esc로 닫혀 버렸다 — 실측으로 잡았다.) */
-    syncConfirm();
+    MODAL_GUARD = dirty() ? warn : null;
   }
   redraw();
 }
@@ -15704,21 +15681,6 @@ function renderCompatBody(p, draft){
      paintReportInto가 앞 세 섹션을 무료로 보여주고 나머지를 잠근다 —
      사주 풀이·성격유형 풀이와 완전히 같은 규칙이다.
 ===================================================================== */
-/* ★ 2026-08-26 — 긴 풀이 본문을 만드는 부분을 따로 뽑았다.
-   같은 것을 두 화면이 쓴다(1:1 궁합 · 모임 궁합의 심층 분석). 복사해 두면 언젠가 갈라진다 —
-   오늘만 그 종류의 사고를 네 번 봤다(AI 지침 두 파일 · 잘림 검사 두 창구 · 화면 목록 두 표 · 저장 단추). */
-function buildCompatStoryBody(pA, pB, res){
-  var box = el('div',{});
-  var host = el('div',{});
-  box.appendChild(host);
-  var report = buildCompatReport13(pA, pB, res);
-  paintReportInto(host, report.sections, PRODUCTS.compat_full, '궁합 풀이 목차',
-    function(){ return Interpreter.buildCompatPayload(pA, pB, res); },
-    { a: pA.name, b: pB.name, name: pA.name });
-  box.appendChild(copyAllButton());
-  box.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, 성격유형 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
-  return box;
-}
 function renderCompatStory(p, draft){
   var r = draft.result;
   var box = el('div',{});
@@ -15727,7 +15689,14 @@ function renderCompatStory(p, draft){
     nameOr(p.name)+' × '+nameOr(r.pB.name,'상대')+' 궁합 풀이',
     COMPAT_SECTION_TITLES.length+'개 이야기로 이어지는 긴 풀이예요. 목차를 눌러 원하는 부분으로 바로 갈 수 있어요.',
     {marginTop:'14px'}));
-  box.appendChild(buildCompatStoryBody(p, r.pB, r.res));
+  var host = el('div',{});
+  box.appendChild(host);
+  var report = buildCompatReport13(p, r.pB, r.res);
+  paintReportInto(host, report.sections, PRODUCTS.compat_full, '궁합 풀이 목차',
+    function(){ return Interpreter.buildCompatPayload(p, r.pB, r.res); },
+    { a: p.name, b: r.pB.name, name: p.name });
+  box.appendChild(copyAllButton());
+  box.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, 성격유형 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
   return box;
 }
 /* 기능10: 궁합 요약 페이지
@@ -18098,13 +18067,7 @@ function renderPairDeep(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view'});
   function back(){ ROUTE='groupCompat'; PAIR_DEEP=null; render(); }
-  var inStory = !!(PAIR_DEEP && PAIR_DEEP.story);
-  if(inStory){
-    view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ PAIR_DEEP.story=false; render(); }},
-      [dirIcon('left'), '심층 궁합 분석으로 돌아가기']));
-  } else {
-    view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:back},[dirIcon('left'), '모임 궁합으로 돌아가기']));
-  }
+  view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:back},[dirIcon('left'), '모임 궁합으로 돌아가기']));
 
   var members = gcMembers();
   var pr = null;
@@ -18128,29 +18091,9 @@ function renderPairDeep(){
   headRow.appendChild(el('span',{class:'pd-x'},['×']));
   if(av2) headRow.appendChild(av2);
   view.appendChild(headRow);
-  if(inStory){
-    /* ★ 2026-08-26 — 모임에서 들어온 두 분도 긴 풀이를 볼 수 있다.
-       1:1 궁합에만 문이 있어서 여기서는 13개 이야기로 갈 길이 아예 없었다.
-       본문은 buildCompatStoryBody 하나를 두 화면이 같이 쓴다. */
-    view.appendChild(pageHead('심층 궁합 분석 · 궁합 풀이', pr.a.name+' × '+pr.b.name+' 궁합 풀이',
-      COMPAT_SECTION_TITLES.length+'개 이야기로 이어지는 긴 풀이예요. 목차를 눌러 원하는 부분으로 바로 갈 수 있어요.',
-      {marginTop:'10px'}));
-    view.appendChild(buildCompatStoryBody(pr.a.person, pr.b.person, pr.res));
-    main.appendChild(autoTermify(view));
-    return;
-  }
   view.appendChild(pageHead('심층 궁합 분석', pr.a.name+' × '+pr.b.name,
     pr.res.combined+'점 · '+pr.res.combinedTier, {marginTop:'10px'}));
   view.appendChild(buildDeepCompatBlock(pr.a.person, pr.b.person, pr.res));
-
-  var storyCard = el('div',{class:'scroll-card'});
-  storyCard.appendChild(el('h3',{},['두 분만을 위한 긴 풀이']));
-  storyCard.appendChild(el('p',{class:'section-sub'},
-    [COMPAT_SECTION_TITLES.length+'개 이야기로, 두 분의 사주 여덟 글자와 성격유형을 함께 읽어 새로 써요.']));
-  storyCard.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ PAIR_DEEP.story=true; render(); }},
-    ['궁합 풀이 읽어보기', dirIcon('right')]));
-  view.appendChild(storyCard);
-
   view.appendChild(copyAllButton());
   view.appendChild(el('p',{class:'disclaimer'},['사주 궁합도, 성격유형 궁합도 정해진 답이 아니라 서로를 이해하는 참고 자료로 봐주세요.']));
   main.appendChild(autoTermify(view));
