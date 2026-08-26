@@ -5141,6 +5141,9 @@ function contentPayloadFrom(payload){
       if(x.mbti) o.mbti = x.mbti;
       if(x.gender) o.gender = x.gender;
       if(x.pillars) o.pillars = x.pillars;
+      /* ★ 2026-08-25 — 이 줄이 없으면 위에서 담아도 여기서 버려진다.
+         담는 곳과 통과시키는 곳이 둘이라, 한쪽만 고치면 조용히 안 나간다. */
+      if(x.elements) o.elements = x.elements;
       if(x.element) o.element = x.element;
       if(x.zodiac) o.zodiac = x.zodiac;
       return o;
@@ -8641,12 +8644,19 @@ var Interpreter = {
     var rs = res.saju || {};
     return {
       kind: 'compat',
+      /* ★ 2026-08-25 — 오행 개수를 함께 넘긴다. '함께 있을 때 흐르는 기운' 섹션은
+         두 사람의 기운이 어디가 넘치고 어디가 비었는지를 말해야 하는데, 예전에는
+         가장 짙은 기운 이름 하나(element)만 줬다. 개수를 모르면 "무엇이 비었는지"를 못 쓴다.
+         개인정보처리방침에는 이미 "두 사람 각각의 같은 항목(…오행 개수…)"으로 적혀 있다 —
+         적어 놓고 안 보내던 쪽이라, 넣어도 고지가 넓어지지 않는다. */
       a: { mbti:pA.mbti, gender: pA.gender==='M'?'남':'여',
            pillars: pA.saju ? this.buildSajuPayload(pA, pA.saju).pillars : null,
+           elements: pA.saju ? this.buildSajuPayload(pA, pA.saju).elements : null,
            element: (typeof pA.elementIdx==='number') ? SajuEngine.ELEM_NAMES[pA.elementIdx] : null,
            zodiac: pA.zodiac || null },
       b: { mbti:pB.mbti, gender: pB.gender==='M'?'남':'여',
            pillars: pB.saju ? this.buildSajuPayload(pB, pB.saju).pillars : null,
+           elements: pB.saju ? this.buildSajuPayload(pB, pB.saju).elements : null,
            element: (typeof pB.elementIdx==='number') ? SajuEngine.ELEM_NAMES[pB.elementIdx] : null,
            zodiac: pB.zodiac || null },
       computed: {
@@ -8655,7 +8665,20 @@ var Interpreter = {
         elemScore: res.elemScore, zodScore: res.zodScore,
         dayStemRelation: rs.elemTerm || null,     /* 비화 · 상생 · 상극 */
         dayBranchRelation: rs.branchTerm || null, /* 육합 · 충 · 해당 없음 */
-        weights: '성격유형 40% · 사주 40% · 오행 10% · 띠 10%'
+        /* ★ 2026-08-25 — 화면이 보여주는 다섯 칸 점수 중 둘이 여기 없었다.
+           화면에는 '서로 부족한 걸 채워줘요'와 '하루 생활 리듬이 맞아요'가 점수와 막대로 떠 있는데
+           (COMPAT_METRICS의 elemScore60 · branchScore), AI에게는 그 두 숫자를 준 적이 없다.
+           사주 쪽에서 대운을 안 넘겨 세 섹션이 비었던 것과 같은 종류의 구멍이다.
+           숫자를 모르면 AI는 그 자리를 비우거나 두루뭉술하게 넘기고, 그러면 바로 위 막대와
+           아래 글이 서로 다른 이야기를 하게 된다. 설명 문장(elemRel·branchRel)도 함께 넘긴다 —
+           같은 근거를 보고 써야 화면과 글이 어긋나지 않는다. */
+        dayStemScore: (rs.elemScore60 == null ? null : rs.elemScore60),
+        dayBranchScore: (rs.branchScore == null ? null : rs.branchScore),
+        dayStemDetail: rs.elemRel || null,
+        dayBranchDetail: rs.branchRel || null,
+        weights: '성격유형 40% · 사주 40% · 오행 10% · 띠 10%',
+        /* 사주 점수 안에서의 배분. 이 말이 없으면 AI가 60/40을 모르고 두 점수를 같은 무게로 읽는다. */
+        sajuWeights: '사주 점수 = 태어난 날 윗글자 관계 60% + 아랫글자 관계 40%'
       },
       requested: { sections: COMPAT_SECTION_TITLES.length, language:'ko', tone:'해요체',
                    sectionTitles: COMPAT_SECTION_TITLES.slice(),
