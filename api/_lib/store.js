@@ -235,8 +235,33 @@ export async function putAiCache({ cacheKey, productId, body, model }) {
      되돌릴 일도 없다.
    ★ productId를 안 주면 예전처럼 전부 센다 — 옛 호출부가 조용히 틀리지 않게 남겨 둔다. */
 export async function aiUsedCount(sessionId, productId) {
+  /* ★ 2026-08-27 (대표님 지시: "해가 바뀌면 다 리셋을 해야 되지 않나?
+     다만 우리 결제 이후에 열람 가능한 기한은 그대로 유지 해야겠지?")
+     ---------------------------------------------------------------------
+     풀이에는 올해의 두 글자(세운)와 지금 나이가 들어간다. 그래서 해가 바뀌면
+     같은 사람이라도 글이 달라져야 하고, 실제로 캐시 열쇠도 달라진다.
+
+     그런데 횟수를 처음부터 통틀어 세면, 1월 1일에 단품(1회) 손님은 이미 1을 다 쓴
+     상태라 새 글을 못 만든다. 열람 기한은 영구라고 팔아 놓고 정작 그 해의 풀이를
+     못 여는 것이다 — 파는 말과 도는 코드가 어긋난다.
+
+     그래서 '올해 만든 것'만 센다. 해가 바뀌면 셈이 0부터 다시 시작하므로
+     단품 손님은 새해에 그 해의 풀이를 한 번 받을 수 있고, 열람 기한(단품 영구·
+     이용권 7일)은 지금과 똑같이 유지된다.
+     ★ 이용권(10회)도 같은 규칙이다. 어차피 7일이라 해를 넘길 일이 거의 없다.
+
+     ★ 경계는 한국 시각으로 잡는다. 열쇠에 들어가는 연도는 브라우저가 만드는
+       (new Date()).getFullYear() — 즉 손님 폰의 시각이고, 손님은 한국에 있다.
+       서버(Vercel)는 UTC로 돌기 때문에, 서버 기준으로 세면 1월 1일 0시부터 9시까지
+       아홉 시간 동안 "열쇠는 새해인데 횟수는 작년 것"인 구간이 생긴다.
+       그 아홉 시간에 결제한 손님만 막히는, 찾기 어려운 사고가 된다. */
+  const KST = 9 * 60 * 60 * 1000;
+  const kstNow = new Date(Date.now() + KST);
+  /* 한국 기준 올해 1월 1일 0시를, 다시 UTC 시각으로 되돌린 값 */
+  const yearStart = new Date(Date.UTC(kstNow.getUTCFullYear(), 0, 1) - KST).toISOString();
   const rows = await rest(
-    `ai_usage?session_id=eq.${encodeURIComponent(sessionId)}&select=cache_key`
+    `ai_usage?session_id=eq.${encodeURIComponent(sessionId)}` +
+      `&created_at=gte.${encodeURIComponent(yearStart)}&select=cache_key`
   );
   if (!Array.isArray(rows)) return 0;
   if (!productId) return rows.length;
