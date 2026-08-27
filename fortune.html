@@ -706,7 +706,16 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 @keyframes modalFade{from{opacity:0;}to{opacity:1;}}
 @keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
 .modal-box h3{color:var(--gold);margin-bottom:12px;}
-.modal-close-row{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+.modal-close-row{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;
+  /* ★ 2026-08-27 — 창 아래에 붙여 둔다.
+     결제 안내창을 실제로 재 보니 창 안쪽 글이 1,652px인데 보이는 높이는 717px이라,
+     [결제하기]가 보이는 자리보다 841px 아래에 있었다. 돈 내러 온 사람이
+     한 화면 반을 내려야 단추를 만나는 상태였다.
+     글이 짧아 스크롤이 없는 창에서는 sticky가 아무 일도 하지 않으므로 다른 창은 그대로다. */
+  position:sticky; bottom:-24px; z-index:2;
+  padding:12px 0 24px; margin-bottom:-24px;
+  background:var(--panel-2);
+  box-shadow:0 -14px 18px -10px var(--panel-2);}
 
 /* 토스트 */
 /* ★ 2026-08-24 — 어두운 판에서는 짙은 먹 알약이 배경에 묻힌다. 한 단 밝은 면 + 또렷한 테두리로.
@@ -8277,11 +8286,21 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
 
   function armWait(){
     if(waitDone || waitOpened || waitTimer) return;
-    waitTimer = setTimeout(function(){
+    waitTimer = setTimeout(function tick(){
       waitTimer = null;
       if(waitDone || waitOpened) return;
       if(!host.isConnected) return;   /* 다른 화면으로 떠났으면 띄우지 않는다 */
-      if($('#activeModal')) return;   /* 이미 열려 있는 창을 빼앗지 않는다 */
+      if($('#activeModal')){
+        /* ★ 2026-08-27 — 이미 열려 있는 창은 빼앗지 않는다. 다만 포기하지도 않는다.
+           예전에는 여기서 그냥 return 했다. armWait은 한 번만 불리므로, 한 번 막히면
+           기다림 창은 영영 뜨지 않았다.
+           결제하고 돌아온 사람은 "결제가 완료되었어요" 창이 떠 있는 상태로 이 지점을
+           지나간다 — 즉 돈을 낸 사람만 정확히 이 구멍에 빠졌다. 실제 사이트에서 재 보니
+           4분 24초 동안 기다림 창이 한 번도 뜨지 않았다.
+           그 창이 닫힐 때까지 1초마다 다시 본다. */
+        waitTimer = setTimeout(tick, 1000);
+        return;
+      }
       openWait();
     }, WAIT_ARM_MS);
   }

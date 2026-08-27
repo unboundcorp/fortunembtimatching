@@ -20,7 +20,22 @@ export default async function handler(req, res) {
 
   try {
     const sessionId = ensureSession(req, res);
-    const orders = await paidOrdersOf(sessionId);
+
+    /* ★ 2026-08-27 — 네 가지 조회를 한꺼번에 보낸다.
+       예전에는 하나씩 차례로 기다렸다: 결제 내역 → 만든 해석 → 테스트 허가 → 최근 주문.
+       한 번에 0.5초씩이라 이 창구 하나가 2초를 잡아먹었다(실측 2.02·2.05·2.15초).
+       결제하고 돌아온 사람에게는 이 2초가 그대로 "화면이 늦게 열린다"로 보인다.
+       네 조회는 서로의 결과를 쓰지 않으므로 함께 보내도 값이 같다.
+       ★ 실패 처리는 갈래마다 예전 그대로다 — 결제 내역·테스트 허가는 실패하면 전체 실패(잠금),
+         만든 해석·최근 주문은 실패해도 무시하고 진행. 그래서 allSettled를 쓴다. */
+    const [ordersR, madeR, testR, recentR] = await Promise.allSettled([
+      paidOrdersOf(sessionId),
+      aiUsedProductIds(sessionId),
+      testAccessOf(sessionId),
+      recentOrdersOf(sessionId, 10),
+    ]);
+    if (ordersR.status === 'rejected') throw ordersR.reason;
+    const orders = ordersR.value;
     const ent = buildEntitlements(orders);
 
     /* =====================================================================
@@ -50,19 +65,19 @@ export default async function handler(req, res) {
        ★ 새로 만드는 것은 여전히 막힌다 — 이용권이 끝나면 횟수 상한이 단품 기준(1회)으로
          내려가고 이미 그만큼 썼으므로 새 생성은 거절된다.
     ===================================================================== */
-    try {
-      const madeBefore = await aiUsedProductIds(sessionId);
-      for (const pid of madeBefore) {
+    if (madeR.status === 'fulfilled') {
+      for (const pid of madeR.value) {
         const p = productOf(pid);
         if (!p || p.kind === 'pass') continue;   /* 이용권 자체를 영구로 만들지는 않는다 */
         if (!ent.items[p.id]) ent.items[p.id] = { purchasedAt: Date.now() };
       }
-    } catch (err) {
+    } else {
       /* 못 읽어도 앱은 그대로 돌아간다. 다만 만료된 이용권의 옛 해석이 잠길 뿐이다. */
-      console.warn('이미 만든 해석 조회 실패(무시하고 진행):', err && err.message);
+      console.warn('이미 만든 해석 조회 실패(무시하고 진행):', madeR.reason && madeR.reason.message);
     }
 
-    const test = await testAccessOf(sessionId);
+    if (testR.status === 'rejected') throw testR.reason;
+    const test = testR.value;
     if (test) {
       const until = test.expires_at ? new Date(test.expires_at).getTime() : Date.now() + 86400000;
       if (!ent.pass || until > ent.pass.expiresAt) {
@@ -99,9 +114,8 @@ export default async function handler(req, res) {
        ★ 앱의 normalizeEntitlements()는 모르는 키를 버리므로, 화면 쪽에서 이 값은
          따로 받아 둔다(ENT_RECENT). 권한 상태와 섞이지 않게 하려는 것이기도 하다.
     ===================================================================== */
-    try {
-      const recent = await recentOrdersOf(sessionId, 10);
-      ent.recent = recent.map((r) => ({
+    if (recentR.status === 'fulfilled') {
+      ent.recent = recentR.value.map((r) => ({
         receiptId: r.order_id,
         productId: r.product_id,
         price: r.amount,
@@ -109,8 +123,8 @@ export default async function handler(req, res) {
         at: r.created_at ? new Date(r.created_at).getTime() : null,
         paidAt: r.paid_at ? new Date(r.paid_at).getTime() : null,
       }));
-    } catch (err) {
-      console.warn('최근 주문 조회 실패(무시하고 진행):', err && err.message);
+    } else {
+      console.warn('최근 주문 조회 실패(무시하고 진행):', recentR.reason && recentR.reason.message);
       ent.recent = [];
     }
 

@@ -110,11 +110,42 @@ ${JSON.stringify(payload, null, 2)}
 ${list}`;
 }
 
+/* payload를 "칸 이름 순서에 상관없이 항상 같은 글자"로 편다.
+   ★ 2026-08-27 — 이 함수가 없어서 큰 사고가 있었다. 예전 코드는 이랬다:
+
+       JSON.stringify(payload, Object.keys(payload || {}).sort())
+
+     두 번째 인자가 배열이면 JSON.stringify는 그것을 "정렬 순서"가 아니라
+     **남길 칸 이름 목록**으로 읽고, 그 목록을 모든 깊이에 똑같이 적용한다.
+     Object.keys는 맨 위 칸 이름만 주므로, 한 겹만 들어가도 통째로 지워진다.
+
+     사주 풀이의 payload는 맨 위가 kind · person · pillars · elements ·
+     dayMasterStrength · sipseong · daewoon · requested 인데, 이 중 글자값은
+     kind('saju')와 dayMasterStrength('strong'|'weak') 둘뿐이고 나머지는 전부 객체다.
+     그래서 실제로 열쇠 재료가 된 것은 사람이 누구든 늘 이 한 줄이었다:
+
+       {"daewoon":{},"dayMasterStrength":"strong","elements":{},"kind":"saju",
+        "person":{},"pillars":{},"requested":{},"sipseong":{}}
+
+     결과: 사주 풀이는 온 세상에 열쇠가 딱 두 개(신강·신약), 성격유형 풀이와
+     궁합 풀이는 **하나뿐**이었다. 먼저 만든 사람의 글이 그 뒤 모든 사람에게
+     그대로 나갔다 — 남의 이름과 남의 사주가 적힌 글을 돈 내고 받는 상태였다.
+     실제 사이트에서 확인했다: 1975년생 남자(화 기운)가 1990년생 여자(금 기운)의
+     풀이를 "가영 님의 사주는…"으로 시작하는 채로 받았다.
+
+   깊이까지 내려가며 칸 이름을 정렬해 직접 쓴다. 배열은 순서가 뜻이므로 그대로 둔다. */
+function stableStringify(v) {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v === undefined ? null : v);
+  if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
+  const keys = Object.keys(v).sort();
+  return '{' + keys.map((k) => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}';
+}
+
 /* 캐시 열쇠는 서버가 만든다.
    ★ 브라우저가 보낸 열쇠를 믿으면, 매번 다른 열쇠를 보내 캐시를 피하고 횟수를 무한히 쓸 수 있다.
      그래서 payload 자체에서 뽑는다. 같은 사람·같은 상품이면 반드시 같은 값이 나온다. */
 export function cacheKeyOf(productId, payload) {
-  const stable = JSON.stringify(payload, Object.keys(payload || {}).sort());
+  const stable = stableStringify(payload);
   return crypto.createHash('sha256')
     .update(`${MODEL}|v${PROMPT_VERSION}|${productId}|${stable}`)
     .digest('base64url')
