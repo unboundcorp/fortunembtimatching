@@ -499,22 +499,18 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .btn-circle-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin:22px 0 6px;}
 .btn-circle{
   width:68px;height:68px;border-radius:50%;flex:none;padding:0;
-  /* ★ 2026-08-27 (대표님 지적: "이 부분 버튼이 잘 보이지 않는다 색 넣어봐")
-     예전에는 옅은 먹 원(--ink)이었다. 어두운 배경에서 흐린 회색 동그라미로 보여,
-     화면에서 제일 중요한 단추인데 아래 테두리 단추 넷보다도 눈에 덜 띄었다.
-     이 앱이 '가장 중요한 단추'에 쓰는 색(.btn-primary와 같은 --gold-fill)으로 맞춘다. */
-  background:var(--gold-fill);color:#FFFFFF;border:none;
+  /* 짙은 먹 원 + 밝은 아이콘. 색 역할이 뒤집혔을 뿐 관계(--ink 위에 --void)는 그대로다. */
+  background:var(--ink);color:var(--void);border:none;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 8px 22px rgba(185,62,42,.38), 0 0 0 6px var(--gold-soft);
+  box-shadow:0 8px 22px rgba(58,50,34,.22);
   transition:transform .15s,box-shadow .15s;
 }
-.btn-circle svg{width:26px;height:26px;stroke:#FFFFFF;fill:none;stroke-width:2;}
-.btn-circle:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(185,62,42,.46), 0 0 0 8px var(--gold-soft);}
+.btn-circle svg{width:26px;height:26px;stroke:var(--void);fill:none;stroke-width:1.6;}
+.btn-circle:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(58,50,34,.28);}
 .btn-circle:active{transform:translateY(0) scale(.96);}
 .btn-circle[disabled]{opacity:.35;cursor:not-allowed;box-shadow:none;}
 .btn-circle[disabled]:hover{transform:none;box-shadow:none;}
-/* 글씨도 흐렸다(--ink-dim). 원이 무엇을 하는 단추인지 알려주는 유일한 글자다. */
-.btn-circle-label{font-size:.88rem;color:var(--ink);font-weight:600;letter-spacing:.01em;}
+.btn-circle-label{font-size:.82rem;color:var(--ink-dim);letter-spacing:.03em;}
 
 /* ===================== v4-A 신규: row + chevron 리스트 (설정·입력 화면 공용) ===================== */
 /* ★ R44 — 한 줄에 다 안 들어가면 값을 아랫줄로 내린다.
@@ -3557,15 +3553,12 @@ function termChip(key, opts){
   var t = TERMS[key] || {short:key, long:''};
   var plain = opts.plain || t.short;
   var termText = opts.term || termLabel(key);
-  /* ★ 2026-08-27 대표님: "한자 용어 줄이고 아예 쉬운말만 남겨"
-     plainOnly를 주면 아래 용어 줄(정재(正財) · 인신 충 …)을 아예 그리지 않는다.
-     용어를 지우는 게 아니라 자리를 옮기는 것이다 — 칩을 누르면 뜨는 설명 모달과
-     용어 사전에는 그대로 남아 있어서, 다른 앱과 대조할 길은 끊기지 않는다. */
-  var kids = [ el('span',{class:'tc-plain'},[plain]) ];
-  if(!opts.plainOnly) kids.push(el('span',{class:'tc-term'},[termText]));
   return el('button',{type:'button', class:'term-chip'+(opts.cls?' '+opts.cls:''),
-    'aria-label': plain+(opts.plainOnly?'':'. 사주 용어로는 '+termText)+'. 눌러서 설명 보기',
-    onclick:function(){ openTermModal(key); }}, kids);
+    'aria-label': plain+'. 사주 용어로는 '+termText+'. 눌러서 설명 보기',
+    onclick:function(){ openTermModal(key); }},[
+    el('span',{class:'tc-plain'},[plain]),
+    el('span',{class:'tc-term'},[termText])
+  ]);
 }
 
 /* ③ 카드 제목 — 큰 제목은 일상어로, 원래 용어는 바로 아래 작은 줄에 남긴다.
@@ -3577,10 +3570,7 @@ function cardHead(plainTitle, termKeys){
     var line = el('p',{class:'card-term-line'},['사주 용어로는 ']);
     termKeys.forEach(function(k,i){
       if(i) line.appendChild(document.createTextNode(' · '));
-      /* ★ 2026-08-27 대표님: "한자 용어 줄이고 아예 쉬운말만 남겨"
-         제목 아래 줄에서 한자를 뺀다(십성(十星) → 십성). 눌러서 뜨는 설명 모달과
-         용어 사전에는 한자가 그대로 있어서, 다른 앱과 대조할 길은 그대로다. */
-      line.appendChild(termInline(k, k));
+      line.appendChild(termInline(k, termLabel(k)));
     });
     line.appendChild(document.createTextNode('. 눌러보면 뜻이 떠요.'));
     wrap.appendChild(line);
@@ -5077,17 +5067,6 @@ function handlePayFailReturn(){
    검증에 성공해도 권한을 직접 부여하지 않는다 — 다시 fetchEntitlements()로 서버 값을 받아온다.
    ★ intent:'return' 을 함께 보내, 아래 복원 요청(intent:'restore')과 서버가 구분할 수 있게 한다. */
 var RECEIPT_FROM_URL = null; /* 결제창에서 돌아오며 검증에 성공한 영수증 번호(부팅 후 1회 안내에 쓴다) */
-/* ★ 2026-08-27 (대표님 제보: "결제하고 홈으로 갔다가 다시 유료 화면으로 들어가야 뜨더라")
-   결제창은 /fortune.html?receipt=…&product=… 로 돌려보내는데, 앱은 product 값을 안 읽고
-   그냥 첫 화면(홈)을 그렸다. 방금 산 것을 보러 손님이 직접 다시 찾아 들어가야 했다.
-   ★ 어느 상품이 어느 화면인지는 이 표 하나뿐이다. 라우팅을 새로 만들지 않고 이미 있는 이름을 쓴다. */
-var PRODUCT_FROM_URL = null;
-var PAID_PRODUCT_ROUTE = {
-  saju_full:  'report13',      /* 사주 풀이 13섹션 */
-  mbti_full:  'mbtiReport',    /* 성격유형 풀이 13섹션 */
-  compat_full:'compat'         /* 궁합 — 상세는 이 화면에서 이어진다 */
-  /* premium_pass 는 특정 화면이 없다. 홈에 그대로 둔다 — 무엇을 열지 손님이 고르는 게 맞다. */
-};
 async function verifyReceiptFromUrl(){
   if(!BILLING.verifyEndpoint) return false;
   var m = /(?:^|[?&])receipt=([^&]+)/.exec(location.search);
@@ -5099,11 +5078,7 @@ async function verifyReceiptFromUrl(){
       receiptId: receiptId, productId: productId ? decodeURIComponent(productId) : null,
       intent: 'return'
     });
-    if(res && res.verified){
-      RECEIPT_FROM_URL = receiptId; rememberReceipt(receiptId);
-      /* 방금 산 것이 무엇인지 기억해 둔다. 화면 이동은 권한을 다 받아온 뒤에 한다. */
-      PRODUCT_FROM_URL = productId ? decodeURIComponent(productId) : null;
-    }
+    if(res && res.verified){ RECEIPT_FROM_URL = receiptId; rememberReceipt(receiptId); }
     return !!(res && res.verified);
   }catch(e){
     console.warn('영수증 검증 실패', e);
@@ -9872,18 +9847,18 @@ function twelveStageOf(stemIdx, branchIdx){
 }
 /* 12단계 × 1~2문장 문구뱅크 — 생로병사·윤회 사이클 비유(자연물·생애주기 톤 유지, 기존 반말 다정체와 동일). */
 var TWELVE_STAGE_LINE = {
-  장생:'<strong>장생</strong>의 기운이 도는 구간이에요 — 갓 태어난 새싹처럼 순수한 생명력으로 새로 시작하기 좋은 시기예요.',
-  목욕:'<strong>목욕</strong>의 기운이 도는 구간이에요 — 사춘기처럼 변화가 많고 매력은 넘치지만 그만큼 마음이 이리저리 흔들리기 쉬운 시기예요.',
-  관대:'<strong>관대</strong>의 기운이 도는 구간이에요 — 어른이 되어 세상에 나서듯, 자기 목소리를 내며 사회로 뛰어들기 좋은 시기예요.',
-  건록:'<strong>건록</strong>의 기운이 도는 구간이에요 — 직장에서 한창 실력을 인정받듯, 자립해서 제 몫을 해내는 힘이 절정에 오르는 시기예요.',
-  제왕:'<strong>제왕</strong>의 기운이 도는 구간이에요 — 인생에서 가장 힘이 센 정점의 시기라, 주저하지 말고 밀어붙여도 좋은 때예요.',
-  쇠:'<strong>쇠</strong>의 기운이 도는 구간이에요 — 은퇴를 앞둔 노련한 사람처럼, 힘은 서서히 빠지지만 그만큼 원숙해지는 시기예요.',
-  병:'<strong>병</strong>의 기운이 도는 구간이에요 — 몸살을 앓듯 안으로 움츠러들며 스스로를 돌아보게 되는, 예민해지기 쉬운 시기예요.',
-  사:'<strong>사</strong>의 기운이 도는 구간이에요 — 활동력이 잦아들고 멈춰 서서 마무리를 짓게 되는 시기예요.',
-  묘:'<strong>묘</strong>의 기운이 도는 구간이에요 — 씨앗을 땅에 묻어두듯, 밖으로 드러내기보다 안으로 내실을 다지며 침잠하는 시기예요.',
-  절:'<strong>절</strong>의 기운이 도는 구간이에요 — 모든 게 완전히 비워지는 시기라 허전할 수 있지만, 다음 사이클을 준비하는 휴지기이기도 해요.',
-  태:'<strong>태</strong>의 기운이 도는 구간이에요 — 씨앗이 갓 잉태되듯, 아직 드러나지 않은 잠재력을 품고 있는 시기예요.',
-  양:'<strong>양</strong>의 기운이 도는 구간이에요 — 태중에서 보호받으며 자라듯, 다음 도약을 위해 차분히 준비하는 시기예요.'
+  장생:'<strong>장생(長生)</strong>의 기운이 도는 구간이에요 — 갓 태어난 새싹처럼 순수한 생명력으로 새로 시작하기 좋은 시기예요.',
+  목욕:'<strong>목욕(沐浴)</strong>의 기운이 도는 구간이에요 — 사춘기처럼 변화가 많고 매력은 넘치지만 그만큼 마음이 이리저리 흔들리기 쉬운 시기예요.',
+  관대:'<strong>관대(冠帶)</strong>의 기운이 도는 구간이에요 — 어른이 되어 세상에 나서듯, 자기 목소리를 내며 사회로 뛰어들기 좋은 시기예요.',
+  건록:'<strong>건록(建祿)</strong>의 기운이 도는 구간이에요 — 직장에서 한창 실력을 인정받듯, 자립해서 제 몫을 해내는 힘이 절정에 오르는 시기예요.',
+  제왕:'<strong>제왕(帝旺)</strong>의 기운이 도는 구간이에요 — 인생에서 가장 힘이 센 정점의 시기라, 주저하지 말고 밀어붙여도 좋은 때예요.',
+  쇠:'<strong>쇠(衰)</strong>의 기운이 도는 구간이에요 — 은퇴를 앞둔 노련한 사람처럼, 힘은 서서히 빠지지만 그만큼 원숙해지는 시기예요.',
+  병:'<strong>병(病)</strong>의 기운이 도는 구간이에요 — 몸살을 앓듯 안으로 움츠러들며 스스로를 돌아보게 되는, 예민해지기 쉬운 시기예요.',
+  사:'<strong>사(死)</strong>의 기운이 도는 구간이에요 — 활동력이 잦아들고 멈춰 서서 마무리를 짓게 되는 시기예요.',
+  묘:'<strong>묘(墓)</strong>의 기운이 도는 구간이에요 — 씨앗을 땅에 묻어두듯, 밖으로 드러내기보다 안으로 내실을 다지며 침잠하는 시기예요.',
+  절:'<strong>절(絶)</strong>의 기운이 도는 구간이에요 — 모든 게 완전히 비워지는 시기라 허전할 수 있지만, 다음 사이클을 준비하는 휴지기이기도 해요.',
+  태:'<strong>태(胎)</strong>의 기운이 도는 구간이에요 — 씨앗이 갓 잉태되듯, 아직 드러나지 않은 잠재력을 품고 있는 시기예요.',
+  양:'<strong>양(養)</strong>의 기운이 도는 구간이에요 — 태중에서 보호받으며 자라듯, 다음 도약을 위해 차분히 준비하는 시기예요.'
 };
 
 /* v5-C 신규: 대운 구간 1개의 금전운 문장 — 십성 10종 고정 룩업. 재성(정재/편재)이면 v5-A의 "정재=안정형/편재=유동형"
@@ -14177,9 +14152,9 @@ function buildSipseongOverlay(saju){
     var stemSip = pos==='day' ? null : SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[g.stemIdx], SajuEngine.STEM_YY[g.stemIdx]);
     var branchSip = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.BRANCH_ELEM[g.branchIdx], SajuEngine.BRANCH_YY[g.branchIdx]);
     col.appendChild(stemSip
-      ? termChip(stemSip,{plain:termMini(stemSip), cls:'tchip-tight', plainOnly:true})
-      : termChip('일간',{plain:'나 자신', cls:'tchip-tight', plainOnly:true}));
-    col.appendChild(termChip(branchSip,{plain:termMini(branchSip), cls:'tchip-tight', plainOnly:true}));
+      ? termChip(stemSip,{plain:termMini(stemSip), cls:'tchip-tight'})
+      : termChip('일간',{plain:'나 자신', cls:'tchip-tight'}));
+    col.appendChild(termChip(branchSip,{plain:termMini(branchSip), cls:'tchip-tight'}));
     wrap.appendChild(col);
   });
   return wrap;
@@ -14196,12 +14171,6 @@ var REL_LABEL_BRANCH = SajuEngine.BRANCHES;
    아랫줄(원래 용어)은 그대로 둔다. 다른 앱과 대조할 방법을 지우지 않는다는 이 화면의 규칙이다. */
 var BRANCH_SEASON = ['겨울','환절기','봄','봄','환절기','여름','여름','환절기','가을','가을','환절기','겨울'];
 var ELEM_SEASON = {'목':'봄','화':'여름','토':'환절기','금':'가을','수':'겨울'};
-/* ★ 2026-08-27 대표님: "가을 글자끼리 뭉쳤다는 말이 도대체 무슨 의미인데?"
-   맞는 지적이다. '가을 기운'은 사주를 아는 사람에게만 뜻이 있는 말이라,
-   글자가 모였을 때 그게 나에게 무엇으로 나타나는지를 한 마디로 적어 둔다. */
-var ELEM_TRAIT = {'목':'새로 벌이고 키우는 힘','화':'밝게 드러내는 힘','토':'버티고 지키는 힘',
-                  '금':'자르고 정리하는 힘','수':'깊이 헤아리는 힘'};
-function elemTrait(name){ return ELEM_TRAIT[name] || (name+' 기운'); }
 function branchAnimal(idx){ return ZODIAC[idx] ? (ZODIAC[idx]+'띠 글자') : REL_LABEL_BRANCH[idx]; }
 function relationBadges(rel){
   var wrap=el('div',{class:'term-chip-row no-term'});
@@ -14220,12 +14189,10 @@ function relationBadges(rel){
   rel.samhap.forEach(function(s){
     var key = s.full ? '삼합' : '반합';
     add(key, ELEMENTS[s.elem]+'국 '+key, 'tchip-hap',
-        (s.full ? '떨어져 있던 글자 셋이 한 갈래로 묶여서, ' : '그 셋 가운데 둘이 묶여서, ')
-        + elemTrait(ELEMENTS[s.elem]) + (s.full ? '이 크게 세졌어요' : '이 조금 세졌어요'));
+        (ELEM_SEASON[ELEMENTS[s.elem]]||ELEMENTS[s.elem]) + ' 기운으로 ' + (s.full ? '셋이 모였어요' : '둘이 모였어요'));
   });
   rel.banghap.forEach(function(s){ add('방합', ELEMENTS[s.elem]+' 방합', 'tchip-hap',
-    '같은 계절('+(ELEM_SEASON[ELEMENTS[s.elem]]||ELEMENTS[s.elem])+') 글자끼리 나란히 모여서, '
-    + elemTrait(ELEMENTS[s.elem]) + '이 특히 세졌어요'); });
+    (ELEM_SEASON[ELEMENTS[s.elem]]||ELEMENTS[s.elem]) + ' 글자끼리 뭉쳤어요'); });
   rel.chung.forEach(function(pair){ add('충', two(pair)+' 충', 'tchip-chung', twoPlain(pair,'정면으로 부딪혀요')); });
   rel.pa.forEach(function(pair){ add('파', two(pair)+' 파', 'tchip-pa', twoPlain(pair,'서로 깎아요')); });
   rel.hyeong.forEach(function(h){
@@ -14243,10 +14210,10 @@ function relationBadges(rel){
   order.forEach(function(k){
     var e = seen[k];
     wrap.appendChild(termChip(e.it.key, {term: e.it.term + (e.n>1 ? ' · '+e.n+'곳' : ''), cls: e.it.cls,
-      plain: (e.it.plain || termShort(e.it.key)) + (e.n>1 ? ' ('+e.n+'곳)' : ''), plainOnly:true}));
+      plain: e.it.plain || undefined}));
   });
   if(rel.hap.length+rel.samhap.length+rel.banghap.length+rel.chung.length+rel.pa.length+rel.hyeong.length===0){
-    wrap.appendChild(termChip('합충형파',{plain:'뚜렷하게 얽히는 자리가 없어요', term:'합·충·형·파 없음', plainOnly:true}));
+    wrap.appendChild(termChip('합충형파',{plain:'뚜렷하게 얽히는 자리가 없어요', term:'합·충·형·파 없음'}));
   }
   return wrap;
 }
@@ -15027,8 +14994,8 @@ function renderSaju(){
   view.appendChild(elemCard);
 
   var sipCard=el('div',{class:'scroll-card'});
-  sipCard.appendChild(cardHead('각 글자가 나에게 어떤 자리인가요'));
-  sipCard.appendChild(el('p',{class:'section-sub'},['태어난 날의 나를 기준으로, 나머지 글자가 나에게 어떤 역할인지 보여줘요. 칸을 눌러보면 사주 용어로는 무엇인지와 더 긴 설명이 떠요.']));
+  sipCard.appendChild(cardHead('각 글자가 나에게 어떤 자리인가요', ['십성','일간']));
+  sipCard.appendChild(el('p',{class:'section-sub'},['태어난 날의 나(일간)를 기준으로 나머지 글자가 어떤 역할인지 보여줘요. 칸마다 위가 쉬운 말, 아래가 사주 용어이고 눌러보면 뜻이 떠요.']));
   sipCard.appendChild(buildSipseongOverlay(saju));
   view.appendChild(sipCard);
 
@@ -15036,7 +15003,7 @@ function renderSaju(){
   if(saju.hour) branchList.push({idx:saju.hour.branchIdx});
   var rel = SajuEngine.branchRelations(branchList);
   var relCard=el('div',{class:'scroll-card'});
-  relCard.appendChild(cardHead('글자끼리 어떻게 얽혀 있나요'));
+  relCard.appendChild(cardHead('글자끼리 어떻게 얽혀 있나요', ['지지','합충형파']));
   relCard.appendChild(el('p',{class:'section-sub'},['태어난 해·달·날·시의 띠 글자 넷(태어난 시각을 모르면 셋)이 서로 짝이 되는지 부딪히는지 본 결과예요. 아무것도 없으면 특별히 얽힌 자리가 없다는 뜻이에요.']));
   relCard.appendChild(relationBadges(rel));
   view.appendChild(relCard);
@@ -20571,18 +20538,6 @@ scheduleCharWarm();
       render();
       /* 결제창에서 돌아온 직후에도 영수증 번호를 보여주고 저장하라고 안내한다.
          (checkoutUrl 리다이렉트 방식에서는 이 경로가 결제 성공을 처음 알게 되는 자리다.) */
-      /* ★ 2026-08-27 — 방금 산 화면으로 바로 데려간다. 안내 창은 그 화면 위에 뜬다.
-         ★ 권한을 확인한 뒤에만 옮긴다. 권한이 아직이면 잠긴 화면으로 데려가는 셈이 된다. */
-      if(PRODUCT_FROM_URL){
-        var toRoute = PAID_PRODUCT_ROUTE[PRODUCT_FROM_URL];
-        if(toRoute && hasAccess(PRODUCT_FROM_URL) && activeProfile()){
-          ROUTE = toRoute;
-          if(PRODUCT_FROM_URL === 'compat_full'){ setMode('compat'); }
-          else if(PRODUCT_FROM_URL !== 'mbti_full'){ setMode('self'); }
-          render();
-        }
-        PRODUCT_FROM_URL = null;
-      }
       if(RECEIPT_FROM_URL){ openReceiptSavedModal(RECEIPT_FROM_URL, {title:'결제가 확인됐어요. 유료 해석이 열렸어요.'}); RECEIPT_FROM_URL = null; }
       /* ★ R72 — 카카오에서 돌아왔으면 무슨 일이 있었는지 말해 준다.
          조용히 넘어가면 연결이 됐는지 안 됐는지 이용자가 알 수가 없다. */

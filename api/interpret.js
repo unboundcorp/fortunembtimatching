@@ -116,7 +116,8 @@ export default async function handler(req, res) {
     /* ── 3. 횟수 ── */
     const already = await aiAlreadyUsed(sessionId, cacheKey);
     if (!already) {
-      const used = await aiUsedCount(sessionId);
+      /* ★ 2026-08-27 — 상품별로 센다. 안 그러면 두 개째 산 손님이 곧바로 막힌다(store.js 주석 참고). */
+      const used = await aiUsedCount(sessionId, productId);
       const quota = allowed.viaPass ? aiQuotaOf('pass') : aiQuotaOf(product.kind);
       if (used >= quota) {
         return json(res, 429, {

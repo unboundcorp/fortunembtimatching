@@ -220,12 +220,40 @@ export async function putAiCache({ cacheKey, productId, body, model }) {
 
 /* 이 사람이 '새로 만든' 해석이 몇 개인가.
    ★ 세는 단위는 호출 횟수가 아니라 서로 다른 해석의 수(session_id + cache_key 한 쌍)다.
-     그래야 만들다 끊겨서 다시 눌러도 한 번으로 친다. */
-export async function aiUsedCount(sessionId) {
+     그래야 만들다 끊겨서 다시 눌러도 한 번으로 친다.
+
+   ★ 2026-08-27 — productId를 받는다. 안 받으면 세션 전체를 세는데, 그게 실제 사고였다.
+     단품 하나의 횟수는 1회다. 그런데 상품을 가리지 않고 세는 바람에
+       ① 사주 풀이를 사서 한 번 본다  → 1회 씀
+       ② 궁합 상세를 또 산다          → 이미 1 ≥ 1 이라 곧바로 429
+       ③ 돈은 나갔는데 아무것도 안 열린다
+     두 개째 사는 손님은 무조건 이 사고를 당하고 있었다.
+     (대표님이 결제하신 뒤 '본문을 불러오지 못했어요'가 뜬 것도 같은 이유다 — 실측으로 잡았다.)
+
+   ★ 표를 바꾸지 않고 고친다. ai_usage에는 상품 칸이 없지만 ai_cache에는 있다.
+     같은 cache_key로 이어 붙여 그 상품의 것만 센다. 마이그레이션이 필요 없으므로
+     되돌릴 일도 없다.
+   ★ productId를 안 주면 예전처럼 전부 센다 — 옛 호출부가 조용히 틀리지 않게 남겨 둔다. */
+export async function aiUsedCount(sessionId, productId) {
   const rows = await rest(
     `ai_usage?session_id=eq.${encodeURIComponent(sessionId)}&select=cache_key`
   );
-  return Array.isArray(rows) ? rows.length : 0;
+  if (!Array.isArray(rows)) return 0;
+  if (!productId) return rows.length;
+  /* 열쇠는 base64url(A-Z a-z 0-9 _ -)뿐이다. 그 밖의 글자가 섞인 것은 버린다 —
+     우리가 만드는 조회 주소에 이상한 값이 끼어들 여지를 아예 없앤다. */
+  const keys = rows
+    .map((r) => (r && r.cache_key ? String(r.cache_key) : ''))
+    .filter((k) => /^[A-Za-z0-9_-]+$/.test(k));
+  if (!keys.length) return 0;
+
+  /* 이 열쇠들 중 '그 상품'으로 만들어진 것만 골라 센다. */
+  const inList = keys.join(',');
+  const mine = await rest(
+    `ai_cache?product_id=eq.${encodeURIComponent(productId)}&cache_key=in.(${inList})&select=cache_key`
+  );
+  if (!Array.isArray(mine)) return rows.length;   /* 못 물어봤으면 넉넉하게 막는 쪽(옛 방식) */
+  return mine.length;
 }
 
 /* =====================================================================
