@@ -8843,11 +8843,18 @@ var Interpreter = {
     var counts = dominantElementIdx(saju).counts;
     return {
       kind: 'saju',
+      /* ★ 2026-08-27 — 닉네임과 생년월일·태어난 시각 원본을 뺐다.
+         개인정보처리방침 제4조와 처리위탁 표에 "닉네임과 생년월일·태어난 시각 원본은
+         AI에 전송하지 않습니다"라고 적어 두고, 정작 이 창구는 둘 다 보내고 있었다.
+         (예비 창구 /api/content 는 contentPayloadFrom()으로 걸렀는데, 실제로 쓰이는
+          흘려받기 창구 /api/interpret 은 안 걸렀다 — {{a}} 사고와 같은 모양이다.)
+         증거는 서버에 남은 글이다: "가영 님의 사주는…"으로 시작한다. AI가 이름을 알았다.
+         ★ 시스템 지침 6번은 이미 "이름은 주어지지 않습니다"를 전제로 쓰여 있었다.
+           payload만 그 전제를 어기고 있었으므로, 지침이 아니라 payload를 맞춘다.
+         ★ 여덟 글자(pillars)는 그대로 보낸다 — 풀이를 쓰는 데 실제로 필요한 값이고,
+           처리방침의 위탁 목록에도 그렇게 적혀 있다. */
       person: {
-        name: profile.name || '',
-        gender: profile.gender === 'M' ? '남' : '여',
-        birth: { year:profile.year, month:profile.month, day:profile.day,
-                 time: profile.birthTime || null, calendar: profile.calendarType || 'solar' }
+        gender: profile.gender === 'M' ? '남' : '여'
       },
       pillars: {
         year:  { stem:SajuEngine.STEMS[saju.year.stemIdx],  branch:SajuEngine.BRANCHES[saju.year.branchIdx] },
@@ -8870,7 +8877,8 @@ var Interpreter = {
       daewoon: aiLuckPayload(profile, saju),
       /* ★ 제목 목록을 함께 보낸다. 이게 없으면 AI가 제목을 제멋대로 지어,
          화면의 목차(로컬에서 만든 것)와 본문이 서로 다른 이름을 갖게 된다. */
-      requested: { sections: 13, tone: '해요체', language: 'ko', sectionTitles: null }
+      requested: { sections: 13, tone: '해요체', language: 'ko', sectionTitles: null,
+                   namePlaceholders: '이 사람을 가리킬 때는 {{name}} 을 그대로 쓰세요. 실제 이름은 앱이 채워요.' }
     };
   },
 
@@ -15417,8 +15425,11 @@ function renderMbtiReport13(){
   try{ var mSj = getSajuResult(p); if(mSj) mbtiLoveCounts = dominantElementIdx(mSj).counts; }
   catch(e){ console.error('연애 표 오행 계산 실패', e); }
   paintReportInto(mbtiHost, report.sections, PRODUCTS.mbti_full, '성격유형 풀이 목차',
-    function(){ return { kind:'mbti', person:{name:p.name, mbti:p.mbti, gender:p.gender==='M'?'남':'여'},
-      requested:{sections:13, tone:'해요체', language:'ko'} }; }, p.name,
+    /* ★ 2026-08-27 — 닉네임을 뺐다. 사주 payload와 같은 이유다(개인정보처리방침 제4조).
+       이름 부를 자리는 {{name}} 으로 받아 화면에서 채운다. */
+    function(){ return { kind:'mbti', person:{mbti:p.mbti, gender:p.gender==='M'?'남':'여'},
+      requested:{sections:13, tone:'해요체', language:'ko',
+                 namePlaceholders:'이 사람을 가리킬 때는 {{name}} 을 그대로 쓰세요. 실제 이름은 앱이 채워요.'} }; }, p.name,
     function(id){ return id==='m5' ? buildLoveLensTables(mbtiLoveCounts, p.mbti) : ''; });
 
   var badgeCard=el('div',{class:'scroll-card'});
