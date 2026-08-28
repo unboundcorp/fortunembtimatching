@@ -85,7 +85,6 @@
   --w-container:1120px;      /* 전체 폭 */
   --w-read:680px;            /* 읽기 컬럼 */
   --tap:44px;                /* 누르는 것의 최소 크기 */
-  --tabbar-h:46px;           /* 화면 위에 붙어 있는 메뉴 띠 높이 — 목차가 이만큼 내려 붙는다 */
 
   /* ── 글자 크기 (지시서 3항) ──
      모바일 값을 기본으로 두고 넓은 화면에서 키운다. 모바일에서 12px 밑으로 내려가지 않는다. */
@@ -251,12 +250,7 @@
    이 앱의 글자 크기는 211곳이 전부 rem이라, 뿌리 하나만 올리면 전체가 같은 비율로 커진다
    (여백은 px라 그대로 있는다 — 글자만 커지고 배치는 안 흔들린다는 뜻이다).
    %로 적는 이유: 브라우저 글자 크기를 키워 쓰는 분의 설정을 덮어쓰지 않기 위해서다. */
-/* ★ 2026-08-28 — overflow-x를 hidden에서 clip으로 바꿨다.
-   hidden은 그 요소를 "스크롤 상자"로 만들어 버려서, 안쪽의 position:sticky가 통째로 죽는다.
-   실제로 메뉴 띠에 sticky를 줬는데 화면 위에 안 붙고 그대로 흘러가 버렸다(실측: 바닥에서 y=-4058).
-   clip은 넘치는 것을 잘라내는 건 같지만 스크롤 상자를 만들지 않아 sticky가 산다.
-   가로로 넘치는 것을 막으려던 원래 목적은 그대로다. */
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;overflow-x:clip;max-width:100%;font-size:110%;}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;overflow-x:hidden;max-width:100%;font-size:110%;}
 body{
   font-family:var(--sans);
   /* ★ 2026-08-25 — 가짜 굵게 금지.
@@ -295,7 +289,7 @@ body{
   /* R22 — 줄간격을 1.6에서 1.75로 넓혔다. "귀엽게"의 절반은 여백이라, 색을 건드리지 않고
      분위기를 바꿀 수 있는 가장 큰 손잡이가 줄간격·모서리·여백 세 가지다. */
   line-height:1.75;
-  overflow-x:clip;   /* ★ 2026-08-28 — hidden이면 sticky가 죽는다(위 html 주석 참고) */
+  overflow-x:hidden;
   /* 어두운 바탕에서는 antialiased가 글자를 또렷하게 했지만, 밝은 바탕에서는 획을 가늘게 만들어
      대비를 깎아먹는다(같은 색인데 흐려 보인다). 밝은 화면에서는 기본 렌더링이 낫다. */
 }
@@ -338,15 +332,6 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;}
 .hidden{display:none !important;}
 .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
 :focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
-/* ★ 2026-08-28 (UX 점검) — 화면을 옮길 때 낭독기·키보드 위치를 맞추려고
-   #main과 모달 상자에 프로그램으로 포커스를 준다(각각 main.focus(), box.focus()).
-   그런데 위 :focus-visible 규칙이 그 둘에도 걸려서, 본문 영역이나 창 전체를
-   주황 2px 테두리가 통째로 둘러쌌다. 손님 눈에는 그리다 만 화면으로 보인다
-   (실측: main 960px 폭에 outline 2px solid rgb(221,138,120), 모바일에서도 동일).
-   이 둘은 누르는 것이 아니므로 테두리를 지운다 — 포커스가 옮겨가는 것 자체는 그대로다.
-   안쪽의 진짜 누를 것들은 위 규칙을 그대로 받는다. */
-#main:focus, #main:focus-visible,
-.modal-box:focus, .modal-box:focus-visible{outline:none;}
 [hidden]{display:none !important;}
 
 /* ===================== 레이아웃 ===================== */
@@ -382,15 +367,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;}
 .icon-btn:hover{background:var(--gold-soft);}
 .icon-btn:active{transform:scale(.94);}
 
-/* ★ 2026-08-28 (UX 점검) — 메뉴 띠를 화면 위에 붙여 둔다.
-   예전에는 position:static 이라 스크롤과 함께 통째로 사라졌다. 그런데 이 앱의
-   한 화면은 아주 길다 — 모바일 실측으로 '내 사주' 4,892px, '오늘' 4,559px이다.
-   즉 화면 바닥에서 다른 탭으로 가려면 약 4,900px(화면 5.8개분)을 되감아 올라와야 했다.
-   실제로 끝까지 내리면 화면에 남는 고정 요소가 떠다니는 단추 하나뿐이었다.
-   ★ 위 로고 줄(.app-header)은 함께 붙이지 않는다. 둘 다 붙이면 모바일에서
-     세로 110px가 늘 잠긴다. 길을 찾는 데 필요한 건 메뉴 띠 쪽이다.
-   ★ z-index는 30 — 떠다니는 단추(40)와 모달(50)보다 아래여야 그 둘이 안 가린다. */
-.tabbar-wrap{position:sticky;top:0;z-index:30;background:var(--panel-3);border-bottom:1px solid var(--gold-line);}
+.tabbar-wrap{position:relative;border-bottom:1px solid var(--gold-line);}
 .tabbar-wrap::after{
   content:"";position:absolute;top:0;right:0;bottom:0;width:26px;
   background:linear-gradient(90deg, transparent, var(--panel-3) 80%);
@@ -660,31 +637,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .seg-toggle button[aria-pressed="true"]{background:var(--gold-soft);color:var(--gold);font-weight:600;}
 /* R22 — 체크박스 줄도 손가락으로 누를 수 있는 크기(44px)로. 라벨까지 눌리는 건 for= 덕에 이미 된다. */
 .chk-row{display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--ink-dim);margin-top:8px;min-height:44px;}
-/* ★ 2026-08-28 (UX 점검) — 브라우저 기본 체크박스를 그대로 쓰고 있었다.
-   color-scheme:dark 를 걸어 두긴 했지만 기본 컨트롤의 모양은 브라우저·기기마다 달라서,
-   어두운 판 위에서 "안 켜진 것"인지 "못 누르는 것"인지 헷갈린다는 지적이 나왔다.
-   design_system.md 5절이 금지하는 자리이기도 하다. 직접 그린다.
-   ★ 전역 규칙(select,input,textarea{min-height:var(--tap)})이 height:22px를 덮어써서
-     상자가 세로로 두 배가 되어 있었다. min-height:0으로 그것부터 푼다.
-     누르는 목표 44px는 .chk-row 쪽(min-height:44px)과 label 여백이 이미 맡고 있다. */
-.chk-row input[type=checkbox]{
-  appearance:none;-webkit-appearance:none;
-  width:22px;height:22px;min-height:0;flex:none;margin:0;cursor:pointer;box-sizing:border-box;
-  /* 위 전역 규칙(select,input,textarea)의 padding:10px 12px 가 여기까지 와서
-     상자를 26x22 직사각형으로 만들고 있었다. 이 칸은 글자를 담지 않으므로 여백을 없앤다. */
-  padding:0;
-  border:1.5px solid var(--field-line);border-radius:6px;background:var(--panel-2);
-  display:inline-grid;place-content:center;transition:background .12s,border-color .12s;
-}
-.chk-row input[type=checkbox]::before{
-  content:"";width:12px;height:12px;transform:scale(0);transition:transform .12s ease-out;
-  background:var(--base);
-  clip-path:polygon(14% 45%, 0 60%, 40% 100%, 100% 22%, 85% 8%, 38% 70%);
-}
-.chk-row input[type=checkbox]:checked{background:var(--gold);border-color:var(--gold);}
-.chk-row input[type=checkbox]:checked::before{transform:scale(1);}
-.chk-row input[type=checkbox]:hover{border-color:var(--gold);}
-.chk-row input[type=checkbox]:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
+.chk-row input{accent-color:var(--gold);width:22px;height:22px;flex:none;}
 .chk-row label{cursor:pointer;padding:6px 0;}
 
 /* 별점 */
@@ -961,9 +914,6 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .pillar-table{display:grid;grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));gap:10px;margin:14px 0;}
 .pillar-col{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;}
 .pillar-col .col-label{font-size:.72rem;color:var(--ink-dim);}
-/* ★ 2026-08-28 — 십성 표 안에 얹는 글자(신·경·사·진). 위 사주팔자 표와 짝지어 읽으라고 둔다.
-   역할 이름보다 커야 "무엇에 대한 설명인지"가 먼저 읽힌다. */
-.ss-ch{font-size:1.05rem;color:var(--gold);line-height:1;margin-top:2px;}
 .pillar-seal{
   width:100%;aspect-ratio:1/1;max-width:78px;border-radius:14px;border:1px solid rgba(231,234,246,.22);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
@@ -1064,19 +1014,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 
 /* 목차 앵커 */
 /* R29 — sticky로 떠 있는 띠라 반투명하면 밑의 글자가 비쳐 읽기 어렵다. 불투명 카드색 + 그림자로 띄운다. */
-.toc-nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px;border:1px solid rgba(231,234,246,.14);border-radius:var(--r-lg);background:var(--panel);box-shadow:var(--shadow-soft);margin-bottom:20px;position:sticky;
-  /* ★ 2026-08-28 — 메뉴 띠가 sticky가 되면서 top:8px면 그 아래에 깔려 잘린다.
-     띠 높이(--tabbar-h)만큼 내려 붙인다. */
-  top:calc(var(--tabbar-h) + 8px);z-index:5;max-height:196px;overflow-y:auto;
-  /* ★ 2026-08-28 (UX 점검) — 목차가 196px에서 툭 잘려 있고 더 있다는 표시가 없었다.
-     실측(390px): 궁합 풀이는 안쪽 내용이 644px라 13개 중 3개만 보이고 448px가 숨는다.
-     잘리는 자리가 하필 칩 글자 한가운데라 그리다 만 화면처럼 보인다.
-     아래쪽을 흐리게 해서 "더 있다"를 알린다. 모바일은 스크롤막대가 안 보이기 때문에
-     이 표시가 없으면 스크롤되는 곳인 줄을 알 방법이 없다. */
-  -webkit-mask-image:linear-gradient(to bottom, #000 calc(100% - 20px), transparent 100%);
-  mask-image:linear-gradient(to bottom, #000 calc(100% - 20px), transparent 100%);}
-/* 다 내려온 뒤에는 흐림을 걷는다(마지막 줄이 흐린 채로 남지 않게). */
-.toc-nav.at-end{-webkit-mask-image:none;mask-image:none;}
+.toc-nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px;border:1px solid rgba(231,234,246,.14);border-radius:var(--r-lg);background:var(--panel);box-shadow:var(--shadow-soft);margin-bottom:20px;position:sticky;top:8px;z-index:5;max-height:196px;overflow-y:auto;}
 /* R22 — 목차 칩도 44px 이상. 알약 모양은 예전부터 이 형태였고, 높이만 손가락 크기에 맞췄다. */
 .toc-nav a{font-size:.74rem;padding:0 14px;min-height:var(--tap);display:inline-flex;align-items:center;gap:2px;border:1px solid var(--gold-line);background:var(--panel-3);border-radius:var(--r-frame);color:var(--ink-dim);white-space:nowrap;transition:color .15s,border-color .15s,background .15s;}
 .toc-nav a:hover{color:var(--gold);border-color:var(--gold);background:var(--gold-soft);}
@@ -1103,14 +1041,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 }
 
 /* 대운 타임라인 */
-/* ★ 2026-08-28 — 가로로 더 있다는 신호가 하나도 없었다(화살표·점·다음 카드 살짝 보이기 전부 없음).
-   스냅을 주어 손가락을 떼면 카드가 제자리에 서게 하고, 오른쪽에 페이드를 깔아 "더 있다"를 알린다. */
-.daewoon-wrap{position:relative;}
-.daewoon-wrap::after{content:"";position:absolute;top:0;right:0;bottom:0;width:28px;pointer-events:none;
-  background:linear-gradient(90deg, transparent, var(--panel) 85%);}
-.daewoon-scroll{display:flex;gap:10px;overflow-x:auto;padding:16px 4px 20px;
-  scroll-snap-type:x proximity;scroll-padding-left:4px;}
-.daewoon-item{scroll-snap-align:center;}
+.daewoon-scroll{display:flex;gap:10px;overflow-x:auto;padding:16px 4px 20px;}
 .daewoon-item{flex:none;width:92px;min-height:44px;text-align:center;border:1px solid rgba(231,234,246,.18);border-radius:var(--r-md);padding:12px 7px;background:var(--panel-3);transition:border-color .15s,background .15s,transform .15s;}
 .daewoon-item:hover{border-color:var(--gold);background:var(--gold-soft);}
 .daewoon-item:active{transform:scale(.97);}
@@ -1328,10 +1259,6 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
   transition:border-color .15s,background .15s;}
 .hd-row:hover,.hd-row:focus-visible{border-color:var(--gold);background:var(--gold-soft);}
 .hd-row:active{background:rgba(231,234,246,.10);}
-/* ★ 2026-08-28 — 세 줄 중 이 줄 하나만 무게를 올린다. 배경을 한 단 밝히고 테두리에 색을 준다.
-   새 색을 만들지 않고 이미 있는 토큰(--panel-3 · --gold)만 쓴다. */
-.hd-row-accent{background:var(--panel-3);border-color:var(--gold);}
-.hd-row-accent:hover,.hd-row-accent:focus-visible{background:var(--gold-soft);}
 .hd-row .t{font-size:1.02rem;font-weight:700;color:var(--ink);}
 .hd-row .s{font-size:.86rem;color:var(--ink-faint);margin-top:3px;}
 .hd-row .price{font-size:1rem;font-weight:700;color:var(--gold);white-space:nowrap;font-variant-numeric:tabular-nums;}
@@ -1654,14 +1581,9 @@ body.has-fab main{padding-bottom:110px;}
 .inline-pick-val{font-size:.86rem;color:var(--ink-dim);}
 
 /* R74 — 테스트 키일 때 결제창 맨 위에 뜨는 띠 */
-/* ★ 2026-08-28 (UX 점검) — 앱에서 가장 안 읽히는 글이 하필 가장 중요한 안전 고지였다.
-   밝은 살구색(--red-hi #EF8A80) 위에 흰 글자라 대비가 2.44:1 — AA 기준(4.5:1)의 절반이다.
-   여기 적힌 말이 "카드번호나 주민등록번호를 넣지 마세요"다.
-   --red-hi 토큰 주석은 원래 "바탕 7.76:1"이라고 적혀 있다. 즉 이 색은 어두운 글자와
-   짝지으라고 만든 색인데, 여기서만 흰 글자를 얹고 있었다. 원래 짝으로 되돌린다(7.76:1). */
-.pay-testbar{background:var(--red-hi);color:var(--base);border-radius:12px;padding:12px 14px;margin-bottom:14px;}
-.pay-testbar strong{display:block;font-size:.95rem;font-weight:800;margin-bottom:4px;color:var(--base);}
-.pay-testbar p{font-size:.82rem;line-height:1.6;margin:0;color:var(--base);word-break:keep-all;}
+.pay-testbar{background:var(--red-hi);color:var(--void);border-radius:12px;padding:12px 14px;margin-bottom:14px;}
+.pay-testbar strong{display:block;font-size:.95rem;font-weight:800;margin-bottom:4px;}
+.pay-testbar p{font-size:.82rem;line-height:1.6;margin:0;color:#fff;word-break:keep-all;}
 
 /* R68 — 링크 보낸 뒤 기다리는 카드 */
 .watch-card{border:1px solid var(--gold-line);background:var(--gold-soft);}
@@ -1689,16 +1611,12 @@ body.has-fab main{padding-bottom:110px;}
 .gc-why[open] summary::after{content:' ▴';}
 .gc-why-tbl{display:grid;gap:2px;margin-top:6px;}
 /* ★ R97 — 줄이 버튼이다. 눌러서 그 항목의 뜻을 편다. 눌리는 것임을 모양으로도 알린다. */
-/* ★ 2026-08-28 (UX 점검) — 라벨 열이 auto라 이름이 길수록 막대가 짧아졌다.
-   실측(390px): 성격유형 81점 막대 60px / 띠 65점 막대 116px — 낮은 점수 막대가 두 배 길다.
-   막대 시작 x도 85·188·198·219로 제각각이라 네 줄을 눈으로 비교할 수가 없었다.
-   라벨 열을 고정 폭으로 묶어 네 줄의 막대 시작점과 폭을 같게 만든다. */
-.gc-why-row{display:grid;grid-template-columns:9.5em 1fr auto auto;align-items:center;gap:8px;font-size:.8rem;
+.gc-why-row{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:8px;font-size:.8rem;
   width:100%;text-align:left;background:none;border:0;border-radius:var(--r-md);
   padding:9px 8px;min-height:44px;font-family:inherit;transition:background .15s;}
 .gc-why-row:hover,.gc-why-row:focus-visible{background:var(--gold-soft);}
 .gc-why-row[aria-expanded="true"]{background:var(--gold-soft);}
-.gc-why-row .k{color:var(--ink-dim);white-space:normal;word-break:keep-all;line-height:1.35;}
+.gc-why-row .k{color:var(--ink-dim);white-space:nowrap;}
 /* ★ 2026-08-26 (대표님 지시: "화살표 좀 키우고 클릭 유도하게 모션을 넣어봐, 잘 안 누르게 된다")
    ─ 크기를 키우고(1.3 → 1.7em), 아직 안 펴 본 줄만 천천히 까딱이게 한다.
    ★ 펴 놓은 줄은 움직이지 않는다 — 이미 누른 사람에게 계속 흔들어대는 건 재촉이지 안내가 아니다.
@@ -1785,7 +1703,7 @@ body.has-fab main{padding-bottom:110px;}
 .gc-why-row .bar i{display:block;height:100%;border-radius:999px;}
 .gc-why-row .v{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
 .gc-why-row .wt{color:var(--ink-faint);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:32px;text-align:right;}
-@media (max-width:380px){ .gc-why-row{grid-template-columns:8.5em 1fr auto;} .gc-why-row .wt{display:none;} }
+@media (max-width:380px){ .gc-why-row{grid-template-columns:auto 1fr auto;} .gc-why-row .wt{display:none;} }
 .invite-link-row{display:flex;gap:8px;align-items:stretch;margin:4px 0 14px;}
 .invite-link-row input{flex:1;min-width:0;border:1px solid var(--field-line);border-radius:var(--r-md);
   background:var(--panel-2);color:var(--ink-dim);padding:12px 14px;font-size:.86rem;
@@ -1835,18 +1753,8 @@ body.has-fab main{padding-bottom:110px;}
 .svc-card:active{transform:translateY(0);box-shadow:var(--shadow-soft);}
 /* ★ R90 — 첫 화면에서 만 14세 확인 전에는 카드가 잠긴다. 눌러도 안 되는 것을
    멀쩡해 보이게 두면 눌러보고 아무 일도 안 일어나서 고장으로 읽힌다. */
-.svc-card[disabled],.svc-card[aria-disabled="true"]{opacity:.55;box-shadow:none;}
-.svc-card[disabled]:hover,.svc-card[aria-disabled="true"]:hover{transform:none;border-color:var(--gold-line);}
-/* ★ 2026-08-28 — 확인을 안 하고 카드를 누르면 확인 줄을 두 번 깜빡여 어디를 봐야 하는지 알린다.
-   움직임을 싫어하는 설정이면 깜빡이지 않고 테두리만 남긴다. */
-@keyframes chkNudge{
-  0%,100%{box-shadow:0 0 0 0 rgba(221,138,120,0);}
-  30%,70%{box-shadow:0 0 0 3px rgba(221,138,120,.45);}
-}
-.chk-row.chk-nudge{border-radius:12px;animation:chkNudge 1s ease-in-out 2;}
-@media (prefers-reduced-motion: reduce){
-  .chk-row.chk-nudge{animation:none;box-shadow:0 0 0 3px rgba(221,138,120,.45);}
-}
+.svc-card[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none;}
+.svc-card[disabled]:hover{transform:none;border-color:var(--gold-line);}
 /* 명조는 600 한 벌만 담았다 — 700을 달라고 하면 가짜 굵게가 되어 획이 뭉갠다. */
 .onboard-lead{font-family:var(--serif);font-size:1.42rem;font-weight:600;line-height:1.45;
   letter-spacing:-.02em;color:var(--ink);text-align:center;margin:4px 0 4px;word-break:keep-all;}
@@ -5694,12 +5602,8 @@ function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles){
     cta.appendChild(ul);
   }
 
-  /* ★ 2026-08-28 (UX 점검) — 이름이 '더보기 · 1,900원'이었다.
-     '더보기'는 아래 탭 메뉴의 이름이기도 해서, 1,900원짜리 결제 버튼이 메뉴 여는 버튼으로 읽힌다.
-     게다가 같은 상품(궁합)인데 요약 화면에서는 '궁합 상세 열기 · 1,900원'이라 이름이 둘이었다.
-     상품 이름을 그대로 써서 한 가지로 통일한다. */
   var btn = el('button',{class:'btn btn-primary', onclick:function(){ openPaywall(product); }},
-    [product.name+' 열기 · '+formatWon(product.price)]);
+    ['더보기 · '+formatWon(product.price)]);
   cta.appendChild(btn);
   cta.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ openPaywall(PRODUCTS.premium_pass); }},
     ['전체 이용권 '+formatWon(PRODUCTS.premium_pass.price)+'으로 한 번에 열기']));
@@ -8734,18 +8638,6 @@ function buildGatedToc(sections, product, ariaLabel){
         onclick:function(e){ e.preventDefault(); openPaywall(product); }},[lockIcon('잠김'), label]));
     }
   });
-  /* ★ 2026-08-28 — 다 내려오면 아래 흐림을 걷는다. 마지막 줄이 흐린 채로 남으면
-     그것대로 "아직 더 있다"는 거짓 신호가 된다. 스크롤이 없는 화면(데스크톱)에서는
-     처음부터 걷어 둔다. */
-  function tocFade(){
-    try{
-      var more = toc.scrollHeight - toc.clientHeight;
-      var atEnd = more <= 1 || (toc.scrollTop >= more - 2);
-      toc.classList.toggle('at-end', atEnd);
-    }catch(e){}
-  }
-  toc.addEventListener('scroll', tocFade, {passive:true});
-  setTimeout(tocFade, 0);
   return toc;
 }
 
@@ -11333,7 +11225,7 @@ function buildMbtiReport16(profile){
     + '<p>더 정밀한 상대와의 궁합은 사주까지 함께 보는 \'궁합 보기\'에서 확인할 수 있어요.</p>');
 
   // 6. 직업 적성 · 커리어
-  add('m6','직업 적성 · 커리어', MBTI_ICONS.mountain, '<p>'+pb.career+'</p><p>'+pick('career')+'</p>');
+  add('m6','직업 적성 · 커리어요', MBTI_ICONS.mountain, '<p>'+pb.career+'</p><p>'+pick('career')+'</p>');
 
   // 7. 금전관
   add('m7','금전관', MBTI_ICONS.river,
@@ -12167,8 +12059,8 @@ function buildSajuCompat(pA, pB){
       nameA+josaOnly(nameA,'은','는')+' 이 관계에서 유난히 일이 잘 풀린다고 느낄 텐데, 그건 운이 아니라 상대가 대주고 있는 몫이에요. '+
       '그 사실을 알아차리고 말로 표현하는 순간부터 관계가 한 단계 더 단단해져요.';
   } else {
-    elemScore60=45; elemTerm='상극(서로 극함)'; elemRel='상극(서로 부딪히는 기운) — 자극이 되기도 하지만 의식적으로 배려가 필요해요.';
-    elemPlain='서로 누르는 결'; elemRel=elemPlain+' — 자극이 되기도 하지만 의식적으로 배려가 필요해요.';
+    elemScore60=45; elemTerm='상극(서로 극함)'; elemRel='상극(서로 부딪히는 기운) — 자극이 되기도 하지만 의식적으로 배려가 필요해요';
+    elemPlain='서로 누르는 결'; elemRel=elemPlain+' — 자극이 되기도 하지만 의식적으로 배려가 필요해요';
     elemMean='같은 일을 봐도 먼저 눈에 들어오는 데가 달라요. 그래서 상대의 지적이 유난히 아픈데, 대개는 내가 놓친 자리를 정확히 짚은 거예요.';
     elemDetail = stemLine+'두 사람의 기운이 서로를 누르는 자리(상극)라, 같은 사안을 봐도 먼저 눈에 들어오는 지점이 달라요. '+
       '그래서 상대의 지적이 유난히 아프게 느껴지는데, 사실 그건 내가 놓친 자리를 정확히 짚었기 때문인 경우가 많아요. '+
@@ -12275,20 +12167,9 @@ function compatMetricWord(m, v){ return m.word ? m.word(v) : (v>=75 ? m.words[0]
    오행 5색은 뜻이 있어 그대로 두고, 뜻이 없는 이 자리는 '색'이 아니라 '진하기'로 단계를 말한다.
    트랙(--track) 위 실측 대비: 진한 인주 7.40:1 · 옅은 인주 3.42:1 · 먹 7:1 이상.
    (막대는 그림이라 3:1이 기준이다. 옛 올리브가 3.45였으니 눈에 띄는 정도는 그대로다.) */
-/* ★ 2026-08-28 (UX 점검) — 색이 점수와 반대로 눈에 띄고 있었다.
-   막대가 놓이는 홈(--track #222B4A) 대비로 재 보면 이랬다:
-     75점 이상  --gold                5.28 : 1
-     50~74점    rgba(132,21,34,.62)   1.13 : 1   ← 거의 안 보임
-     50점 미만  --ink-faint           4.06 : 1
-   즉 65점 막대가 40점 막대보다 안 보였다. "막대가 길수록 잘 맞는다"고 써 놓고
-   색은 반대로 말하는 상태였고, 중간 구간은 비글자 대비 최소선(3:1)에도 한참 못 미쳤다.
-   밝기 순서를 점수 순서와 같게 맞춘다. 새 색은 만들지 않고 있는 토큰만 쓴다.
-     75점 이상  --gold-2    6.57 : 1
-     50~74점    --gold      5.28 : 1
-     50점 미만  --ink-faint 4.06 : 1   (따뜻한 색 = 맞는 쪽, 차가운 색 = 아닌 쪽) */
 function compatBarColor(v){
-  return v>=75 ? 'var(--gold-2)'
-       : (v>=50 ? 'var(--gold)'
+  return v>=75 ? 'var(--gold)'
+       : (v>=50 ? 'rgba(132,21,34,.62)'
                 : 'var(--ink-faint)');
 }
 /* 종합 점수 한 줄 — 등급(combinedTier)에서만 고른다. 새 판정이 아니다. */
@@ -13380,28 +13261,9 @@ function renderOnboarding(){
   /* ★ R90 — 여기 있던 소개 문단을 걷었다. 바로 다음 화면(홈)이 같은 문단을 또 보여줘서
      처음 온 사람이 같은 글을 두 번 읽었다. 이제 그 홈 카드를 이 화면으로 끌어올린다. */
   var svcCards = [];
-  var chkRow = null;   /* 아래에서 만든다. 확인 안 하고 카드를 누르면 이 줄을 깜빡인다. */
   function onbCard(title, desc, mode){
-    /* ★ 2026-08-28 (UX 점검) — 예전에는 disabled 였다.
-       그러면 클릭 이벤트 자체가 안 생겨서, 확인 전에 카드를 눌러도 화면에 아무 일도
-       일어나지 않았다(실측: 누른 뒤 글자 한 자도 안 바뀌고 알림도 없음).
-       화면에 있는 단서는 흐림(opacity)뿐인데 어두운 배경에서는 그 차이가 잘 안 보이고,
-       "체크해야 눌립니다"라는 말은 어디에도 없었다. 처음 온 사람이 첫 1분 안에
-       원인을 모른 채 막히는 자리다.
-       그래서 누를 수는 있게 두고, 왜 안 되는지 그 자리에서 말해 준다.
-       ★ 실제로 못 넘어가게 막는 것은 그대로다 — aria-disabled로 낭독기에도 알린다. */
-    var c = el('button',{class:'svc-card', type:'button', 'aria-disabled':'true', onclick:function(){
-      if(!ageOk){
-        showToast('만 14세 이상 확인에 먼저 체크해 주세요.');
-        if(chkRow){
-          chkRow.classList.remove('chk-nudge');
-          void chkRow.offsetWidth;          /* 애니메이션을 다시 트는 통상 수법 */
-          chkRow.classList.add('chk-nudge');
-          var box = chkRow.querySelector('input');
-          if(box) try{ box.focus({preventScroll:true}); }catch(e){ box.focus(); }
-        }
-        return;
-      }
+    var c = el('button',{class:'svc-card', type:'button', disabled:'disabled', onclick:function(){
+      if(!ageOk) return;
       STATE.onboarded = true; saveState();
       startService(mode);
     }});
@@ -13449,21 +13311,21 @@ function renderOnboarding(){
   chk.addEventListener('change', function(e){
     ageOk = !!e.target.checked;
     if(ageOk) startBtn.removeAttribute('disabled'); else startBtn.setAttribute('disabled','disabled');
-    /* ★ R90 — 카드도 같이 열고 닫는다. 확인 전에 눌리면 안 물어본 것과 같다.
-       ★ 2026-08-28 — disabled 대신 aria-disabled를 쓴다(위 onbCard 주석 참고). */
+    /* ★ R90 — 카드도 같이 열고 닫는다. 확인 전에 눌리면 안 물어본 것과 같다. */
     svcCards.forEach(function(c){
-      c.setAttribute('aria-disabled', ageOk ? 'false' : 'true');
+      if(ageOk) c.removeAttribute('disabled'); else c.setAttribute('disabled','disabled');
     });
-    if(ageOk && chkRow) chkRow.classList.remove('chk-nudge');
   });
   /* ★ R90 — 확인 줄을 카드보다 위에 둔다.
      아래에 두면 작은 화면(390×667)에서 접힘 밑으로 내려가, 손님은 '카드가 회색인데 왜 안 눌리지'만
      보게 된다(실측: 카드는 y=654에서 끝나는데 확인 줄이 y=778이었다).
      묻는 것이 먼저이고 고르는 것이 그다음이다. */
-  chkRow = el('div',{class:'chk-row', style:'justify-content:center;margin:2px 0 12px;'},[
-    chk, el('label',{for:'ageOk14'},['만 14세 이상이에요.'])
-  ]);
-  wrap.insertBefore(chkRow, svcCards.length ? svcCards[0] : null);
+  wrap.insertBefore(
+    el('div',{class:'chk-row', style:'justify-content:center;margin:2px 0 12px;'},[
+      chk, el('label',{for:'ageOk14'},['만 14세 이상이에요.'])
+    ]),
+    svcCards.length ? svcCards[0] : null
+  );
   /* ★ R90 — 초대받아 온 사람에게만 버튼을 둔다. 그 사람은 고를 것이 이미 정해져 있다.
      그냥 온 사람은 위 카드가 곧 시작이라 버튼이 하나 더 있으면 무엇을 눌러야 할지 헷갈린다. */
   if(invited) wrap.appendChild(startBtn);
@@ -13717,42 +13579,20 @@ function renderSetupBirth(){
   var tBody = el('div',{});
   if(!SETUP.timeUnknown){
     var tRow = el('div',{class:'row2'});
-    /* ★ 2026-08-28 (UX 점검) — 아직 안 고른 상태인데 화면에는 "12시 00분"으로 보였다.
-       SETUP.hour의 기본값이 12라 12시 옵션이 선택된 모양으로 그려지는데,
-       실제 상태(SETUP._set.time)는 거짓이라 [다음]은 계속 막히고
-       "태어난 시각을 골라주세요"만 뜬다. 손님 눈에는 다 골랐는데 안 넘어가는 화면이다.
-       특히 12시 정각에 태어난 사람은 값을 다른 것으로 바꿨다 되돌려야만 넘어간다(실측 확인).
-       안 골랐으면 안 골랐다고 보이게, 맨 앞에 빈 항목을 두고 그걸 고른 상태로 시작한다.
-       ★ 고르고 나면(=_set.time) 빈 항목은 만들지 않는다 — 되돌아갈 자리가 아니다. */
-    var timePicked = !!SETUP._set.time;
     var hSel = el('select',{'aria-label':'태어난 시'});
-    if(!timePicked){
-      var hPh = el('option',{value:''},['— 시 —']);
-      hPh.setAttribute('selected','selected');
-      hSel.appendChild(hPh);
-    }
     for(var h=0;h<24;h++){
       var oh = el('option',{value:h},[pad2(h)+'시']);
-      if(timePicked && h===SETUP.hour) oh.setAttribute('selected','selected');
+      if(h===SETUP.hour) oh.setAttribute('selected','selected');
       hSel.appendChild(oh);
     }
-    hSel.addEventListener('change', function(e){
-      if(e.target.value==='') return;
-      SETUP.hour=parseInt(e.target.value,10); SETUP._set.time=true; renderKeepScroll(); });
+    hSel.addEventListener('change', function(e){ SETUP.hour=parseInt(e.target.value,10); SETUP._set.time=true; renderKeepScroll(); });
     var miSel = el('select',{'aria-label':'태어난 분'});
-    if(!timePicked){
-      var miPh = el('option',{value:''},['— 분 —']);
-      miPh.setAttribute('selected','selected');
-      miSel.appendChild(miPh);
-    }
     for(var mi=0;mi<60;mi++){
       var omi = el('option',{value:mi},[pad2(mi)+'분']);
-      if(timePicked && mi===SETUP.minute) omi.setAttribute('selected','selected');
+      if(mi===SETUP.minute) omi.setAttribute('selected','selected');
       miSel.appendChild(omi);
     }
-    miSel.addEventListener('change', function(e){
-      if(e.target.value==='') return;
-      SETUP.minute=parseInt(e.target.value,10); SETUP._set.time=true; renderKeepScroll(); });
+    miSel.addEventListener('change', function(e){ SETUP.minute=parseInt(e.target.value,10); SETUP._set.time=true; renderKeepScroll(); });
     tRow.appendChild(el('div',{},[hSel]));
     tRow.appendChild(el('div',{},[miSel]));
     tBody.appendChild(tRow);
@@ -14383,26 +14223,15 @@ function buildElemBars(counts){
 function buildSipseongOverlay(saju){
   var dayStemIdx = saju.day.stemIdx;
   var cols = saju.hour ? ['hour','day','month','year'] : ['day','month','year'];
-  /* ★ 2026-08-28 (UX 점검) — 이 카드에 정작 '글자'가 없었다.
-     제목은 "각 글자가 나에게 어떤 자리인가요"인데 칸 안에는
-     "겨루는 힘 / 맡은 자리 / 나 자신 / 혼자 파는 힘"만 있었다. 어느 글자 얘기인지
-     화면 어디에서도 알 수 없고, 칩을 눌러 뜨는 설명창도 끝내 안 알려준다.
-     바로 위 사주팔자 표에는 신·경·사·진이 다 있는데 이 표만 맨 역할 이름 여덟 개였다.
-     칸 이름(태어난 날…)과 해당 글자를 얹어, 위 표와 눈으로 짝지을 수 있게 한다.
-     ★ 한자는 넣지 않는다 — 대표님 지시로 이 화면에서 뺐다. 위 사주팔자 표에 있다. */
-  var plainMap = {year:'태어난 해', month:'태어난 달', day:'태어난 날', hour:'태어난 시각'};
   var wrap=el('div',{class:'pillar-table no-term', style:'--cols:'+cols.length+';margin-top:4px;'});
   cols.forEach(function(pos){
     var g=saju[pos];
     var col=el('div',{class:'pillar-col'});
-    col.appendChild(el('div',{class:'col-label'},[plainMap[pos]]));
     var stemSip = pos==='day' ? null : SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[g.stemIdx], SajuEngine.STEM_YY[g.stemIdx]);
     var branchSip = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.BRANCH_ELEM[g.branchIdx], SajuEngine.BRANCH_YY[g.branchIdx]);
-    col.appendChild(el('div',{class:'ss-ch'},[SajuEngine.STEMS[g.stemIdx]]));
     col.appendChild(stemSip
       ? termChip(stemSip,{plain:termMini(stemSip), cls:'tchip-tight', plainOnly:true})
       : termChip('일간',{plain:'나 자신', cls:'tchip-tight', plainOnly:true}));
-    col.appendChild(el('div',{class:'ss-ch'},[SajuEngine.BRANCHES[g.branchIdx]]));
     col.appendChild(termChip(branchSip,{plain:termMini(branchSip), cls:'tchip-tight', plainOnly:true}));
     wrap.appendChild(col);
   });
@@ -14878,12 +14707,8 @@ function renderHomeDash(p){
   }
 
   /* ── ③ 다음 갈 곳 ── */
-  /* ★ 2026-08-28 (UX 점검) — accent=true면 한 단 올려 그린다.
-     세 줄이 배경색·테두리·높이(76px)·글자 크기까지 전부 똑같아서, 돈을 받는 줄이
-     무료 기능 둘과 눈으로 구분되지 않았다(실측: 셋 다 rgb(19,26,46) / 76px).
-     design_system.md 4절 "카드를 여러 개 나열할 때 전부 같은 무게로 두지 마세요"에 걸린다. */
-  function hdRow(title, sub, right, go, accent){
-    var b = el('button',{class:'hd-row'+(accent?' hd-row-accent':''), type:'button', onclick:go});
+  function hdRow(title, sub, right, go){
+    var b = el('button',{class:'hd-row', type:'button', onclick:go});
     var l = el('div',{});
     l.appendChild(el('div',{class:'t'},[title]));
     if(sub) l.appendChild(el('div',{class:'s'},[sub]));
@@ -14903,7 +14728,7 @@ function renderHomeDash(p){
   var opened = hasAccess(PRODUCTS.saju_full.id);
   view.appendChild(hdRow('내 사주 전체 풀이','13개 섹션 · 월별 운세 · 대운 구간',
     el('span',{class:'price'+(opened?' open':'')},[opened ? '열려 있어요' : formatWon(PRODUCTS.saju_full.price)]),
-    function(){ setMode('self'); ROUTE='report13'; render(); }, true));
+    function(){ setMode('self'); ROUTE='report13'; render(); }));
 
   main.appendChild(autoTermify(view));
 }
@@ -15353,20 +15178,6 @@ function renderSaju(){
     scroll.appendChild(box);
   });
   dwCard.appendChild(scroll);
-  /* ★ 2026-08-28 (UX 점검) — 지금 지나는 구간을 화면 안으로 끌어온다.
-     모바일에서 이 띠는 전체 916px인데 보이는 폭이 308px뿐이고 스크롤이 0에서 시작한다.
-     그래서 화면에는 3세~/13세~/23세~ 세 장만 보이고 셋 다 자물쇠인데,
-     바로 위 문장은 "지금 지나는 구간을 열어두었어요"라고 말한다.
-     무료로 볼 수 있는 유일한 카드가 화면 밖에 숨어 있던 셈이다(실측으로 확인).
-     ★ scrollIntoView는 페이지 전체를 함께 움직여 버린다. 띠 안에서만 옮긴다. */
-  setTimeout(function(){
-    try{
-      var cur = scroll.querySelector('.daewoon-item.current');
-      if(!cur || scroll.scrollWidth <= scroll.clientWidth) return;
-      var want = cur.offsetLeft - (scroll.clientWidth - cur.offsetWidth) / 2;
-      scroll.scrollLeft = Math.max(0, Math.min(want, scroll.scrollWidth - scroll.clientWidth));
-    }catch(e){ console.warn('대운 띠 위치 맞추기 실패', e); }
-  }, 0);
   /* 잠긴 구간이 있으면 다른 유료 지점과 똑같은 잠금 카드로 결제를 안내한다. */
   if(!dwUnlocked && dw.list.length > 1){
     var dBlock = lockedBlock(PRODUCTS.saju_full, '', '대운 구간 상세');
@@ -16498,7 +16309,7 @@ function renderCompatSummary(p, draft){
     var upList = el('ul',{class:'upsell-opens'});
     (PRODUCTS.compat_full.opens||[]).forEach(function(t){ upList.appendChild(el('li',{},[t])); });
     upsell.appendChild(upList);
-    upsell.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ openPaywall(PRODUCTS.compat_full); }},[PRODUCTS.compat_full.name+' 열기 · '+formatWon(PRODUCTS.compat_full.price)]));
+    upsell.appendChild(el('button',{class:'btn btn-primary', onclick:function(){ openPaywall(PRODUCTS.compat_full); }},['궁합 상세 열기 · '+formatWon(PRODUCTS.compat_full.price)]));
     box.appendChild(upsell);
   }
 
@@ -20402,11 +20213,7 @@ function openMoreSheet(){
      스크롤·화면크기가 바뀔 때마다 그 자리에서 직접 재는 쪽이 어긋날 구석이 없다.
    ★ '무엇을 피해야 하는가'의 정본은 FAB_AVOID 한 줄뿐이다.
      새 결제 자리를 만들면 여기에 더한다 — 두 군데 적어 두면 한쪽만 고치게 된다. */
-/* ★ 2026-08-28 (UX 점검) — .compat-upsell 을 더했다.
-   궁합 요약 화면의 결제 버튼("궁합 상세 열기 · 1,900원")은 .locked-cta 밖에 있어서
-   이 회피 장치가 안 걸렸고, 떠 있는 단추가 그 버튼을 44x34px 덮어
-   "1,900원"이 "1,90("으로 잘려 보였다(실측). 돈 받는 버튼을 가리는 건 가장 나쁜 겹침이다. */
-var FAB_AVOID = '#main .locked-cta, #main .compat-upsell';
+var FAB_AVOID = '#main .locked-cta';
 function updateFabAway(){
   var fab = document.getElementById('modeFab');
   if(!fab) return;
