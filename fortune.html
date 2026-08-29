@@ -1395,9 +1395,23 @@ body.has-fab main{padding-bottom:110px;}
 .biz-row:last-child{border-bottom:0;}
 .biz-row .k{color:var(--ink-dim);}
 .biz-row .v{color:var(--ink);font-weight:600;text-align:right;}
+/* ★ 2026-08-29 (대표님 제보: "태어난 시각 고르면 왜 줌으로 화면배율이 달라지냐?")
+   글자 크기가 .85rem(=14.96px)이었다. 아이폰 사파리는 글자가 16px보다 작은 입력칸에
+   손이 닿는 순간 화면을 통째로 확대한다. 그리고 저절로 돌아오지 않는다 —
+   그 뒤로는 오른쪽이 잘린 화면을 계속 보게 된다.
+   대표님은 시각을 고를 때라고 하셨지만, 실제로 확대를 부르는 것은 바로 위 생년월일 칸이다
+   (시·분 셀렉트는 16.72px이라 확대를 안 부른다). 거기서 확대된 채로 아래로 내려온 것이다.
+   다른 입력칸과 같은 .95rem(16.72px)으로 맞춘다. */
 .biz-input{width:100%;padding:12px 14px;min-height:46px;border-radius:var(--r-md);border:1px solid var(--field-line);
-  background:var(--panel-2);color:var(--ink);font-size:.85rem;margin-top:6px;}
+  background:var(--panel-2);color:var(--ink);font-size:.95rem;margin-top:6px;}
 .biz-hint{font-size:.76rem;color:var(--ink-faint);line-height:1.65;margin-top:6px;}
+/* ★ 2026-08-29 — 안전망. 손가락으로 쓰는 기기에서는 글씨를 넣는 칸이 16px 아래로 못 내려간다.
+   위 .biz-input 하나만 고치면 다음에 새 입력칸을 만들 때 같은 사고가 또 난다.
+   체크박스·라디오는 글자를 넣는 칸이 아니라 제외한다(직접 그린 모양이 커져 버린다). */
+@media (pointer: coarse){
+  input:not([type="checkbox"]):not([type="radio"]),
+  select, textarea{ font-size: max(16px, .95rem); }
+}
 
 /* =====================================================================
    개선 의견 쓰기 (R84, 2026-08-14)
@@ -5046,15 +5060,19 @@ function syncMergeList(local, remote){
   });
   return out;
 }
-/* 영수증 메모는 id가 없다. 글자 그대로 견줘 중복만 걷어낸다. */
+/* ★ 2026-08-29 — 여기서 같은 영수증 번호가 화면에 다섯 번 찍히는 일이 있었다.
+   예전 코드는 "영수증 메모는 id가 없다"는 전제로 {id, at} 통째를 JSON.stringify 해서
+   견줬는데, 메모에는 id가 **있고**(rememberReceipt 가 {id, at} 로 넣는다) at 은 적어 둔
+   시각이라 기기마다 다르다. 그래서 같은 번호인데도 at 이 다르면 다른 것으로 보고
+   계속 쌓였다. 로그인·동기화를 반복할수록 줄이 늘어난다.
+   메모의 정체성은 영수증 번호 하나뿐이다. id 로만 견준다. */
 function syncMergeMemos(local, remote){
-  var out = (local||[]).slice(), seen = {};
-  out.forEach(function(x){ try{ seen[JSON.stringify(x)] = 1; }catch(e){} });
-  (remote||[]).forEach(function(x){
-    var k; try{ k = JSON.stringify(x); }catch(e){ return; }
-    if(seen[k]) return;
-    out.push(x); seen[k] = 1;
+  var out = [], seen = {};
+  (local||[]).concat(remote||[]).forEach(function(x){
+    if(!x || !x.id || seen[x.id]) return;
+    seen[x.id] = 1; out.push(x);
   });
+  if(out.length > RECEIPT_MEMO_MAX) out.length = RECEIPT_MEMO_MAX;
   return out;
 }
 function syncMerge(remote){
@@ -5312,7 +5330,19 @@ function rememberReceipt(receiptId){
   if(STATE.receiptMemos.length > RECEIPT_MEMO_MAX) STATE.receiptMemos.length = RECEIPT_MEMO_MAX;
   saveState();
 }
-function receiptMemos(){ return Array.isArray(STATE.receiptMemos) ? STATE.receiptMemos : []; }
+/* ★ 이미 중복이 저장돼 버린 브라우저가 있다(위 syncMergeMemos 사고). 읽을 때 걷어낸다.
+   저장본까지 고쳐 두어야 다음 동기화 때 다시 퍼지지 않는다. */
+function receiptMemos(){
+  var raw = Array.isArray(STATE.receiptMemos) ? STATE.receiptMemos : [];
+  var out = [], seen = {};
+  raw.forEach(function(x){
+    if(!x || !x.id || seen[x.id]) return;
+    seen[x.id] = 1; out.push(x);
+  });
+  if(out.length > RECEIPT_MEMO_MAX) out.length = RECEIPT_MEMO_MAX;
+  if(out.length !== raw.length){ STATE.receiptMemos = out; try{ saveState(); }catch(e){} }
+  return out;
+}
 /* 지금 이 상태에서 복원이 동작할 수 있는지. 안 되면 왜 안 되는지까지 돌려준다
    (버튼만 띄워두고 눌러도 아무 일 없는 화면이 제일 나쁘다). */
 function restoreAvailability(){
