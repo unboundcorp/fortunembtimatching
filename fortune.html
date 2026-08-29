@@ -5117,9 +5117,56 @@ function syncPull(){
     return false;
   });
 }
-function kakaoStart(){
+/* ★ 2026-08-29 (대표님 제보: "내 사주에서 결제 누르고 카카오 로그인 하니깐 다시 홈 화면으로 가네?")
+   카카오는 주소창을 통째로 갈아타는 이동이라, 돌아오면 앱이 처음부터 다시 켜진다.
+   그런데 떠나기 전에 어디에 있었는지를 아무 데도 안 적어 둬서 돌아오면 늘 홈이었다.
+   결제하려던 사람은 로그인 한 번 하고 나면 자기가 뭘 하려던 참이었는지 화면에서 사라진다.
+   떠나기 전에 자리를 적어 두고, 돌아와서 그 자리로 되돌린다.
+   ★ sessionStorage를 쓴다 — 이 탭에서만 살고 탭을 닫으면 저절로 사라진다.
+     쓸 수 없는 환경(시크릿 모드 등)이면 조용히 넘어간다. 예전과 같아질 뿐이다. */
+var KAKAO_BACK_KEY = 'inyeon.kakaoBack';
+function kakaoStart(productId){
+  try{
+    sessionStorage.setItem(KAKAO_BACK_KEY, JSON.stringify({
+      route: ROUTE || null,
+      mode: (typeof MODE !== 'undefined') ? MODE : null,
+      product: (typeof productId === 'string') ? productId : null,
+      at: Date.now()
+    }));
+  }catch(e){ /* 저장 못 해도 로그인은 그대로 진행된다 */ }
   /* 서버가 카카오로 보내 준다. 브라우저는 열쇠를 모른다. */
   try{ location.href = '/api/kakao?step=start'; }catch(e){}
+}
+/* 카카오에서 돌아온 뒤, 떠나기 전 자리로 되돌린다.
+   ★ 권한을 다 받아온 뒤에 부른다 — 그래야 "이미 열렸는지"를 보고 결제창을 다시 띄울지 정한다. */
+function restoreAfterKakao(){
+  var saved = null;
+  try{
+    var raw = sessionStorage.getItem(KAKAO_BACK_KEY);
+    sessionStorage.removeItem(KAKAO_BACK_KEY);
+    if(raw) saved = JSON.parse(raw);
+  }catch(e){ return; }
+  if(!saved) return;
+  /* 오래된 기록은 쓰지 않는다(탭을 켜 둔 채 한참 뒤에 돌아온 경우). */
+  if(!saved.at || Date.now() - saved.at > 10 * 60 * 1000) return;
+  try{
+    if(saved.mode === 'self' || saved.mode === 'compat') setMode(saved.mode);
+    if(saved.route) ROUTE = saved.route;
+    render();
+    /* 결제하려다 로그인하러 갔던 경우 — 아직 안 열렸으면 결제창을 다시 띄운다. */
+    if(saved.product && PRODUCTS[saved.product]){
+      if(!hasAccess(saved.product)){
+        openPaywall(PRODUCTS[saved.product]);
+      }else{
+        /* ★ 2026-08-29 (대표님 제보: "다시 카드 결제 하러 가니깐 이미 열려있대")
+           로그인해 보니 예전에 산 것이 딸려온 경우다. 동작은 맞지만,
+           결제하려고 로그인한 사람에게 아무 설명 없이 "열려 있어요"만 보이면
+           돈을 두 번 낸 건지 뭔지 알 수가 없다. 왜 열려 있는지 말해 준다.
+           ★ 결제창을 다시 띄우지는 않는다 — 이미 가진 것을 또 팔면 안 된다. */
+        showToast('로그인하니 전에 결제하신 ' + PRODUCTS[saved.product].name + '이(가) 확인됐어요. 다시 결제하지 않으셔도 돼요.');
+      }
+    }
+  }catch(e){ console.warn('카카오 복귀 자리 되돌리기 실패', e); }
 }
 function kakaoUnlink(){
   return fetch('/api/kakao', {
@@ -5607,7 +5654,7 @@ function openPayLoginModal(product){
     '카카오에서 받는 것은 회원번호 하나뿐입니다. 이름·이메일·전화번호는 받지 않습니다.'
   ]));
   openModal('카카오 로그인이 필요해요', body, [
-    {label:'카카오로 로그인', cls:'btn-primary', onclick:kakaoStart},
+    {label:'카카오로 로그인', cls:'btn-primary', onclick:function(){ kakaoStart(product && product.id); }},
     {label:'닫기', cls:'btn-ghost', onclick:closeModal}
   ], {overlay:true});
 }
@@ -20904,6 +20951,11 @@ scheduleCharWarm();
           showToast('카카오 로그인에 실패했어요. 잠시 후 다시 시도해 주세요.');
         }
       }
+      /* ★ 2026-08-29 — 카카오에서 돌아왔으면 떠나기 전 자리로 되돌린다.
+         권한 조회가 끝난 뒤라 "이미 열렸는지"를 보고 결제창을 다시 띄울지 정할 수 있다.
+         결제 복귀(applyPaidReturn)로 이미 화면을 옮겼으면 그쪽이 우선이다 —
+         그때는 아래가 덮어쓰지 않도록 kret이 있을 때만 부른다. */
+      if(kret && kret.kind === 'ok'){ restoreAfterKakao(); }
       /* ★ R86 — 결제가 안 됐다는 안내는 맨 마지막에 띄운다.
          카카오 토스트보다 뒤여야 모달이 그 위에 온다. */
       showPayFail();
