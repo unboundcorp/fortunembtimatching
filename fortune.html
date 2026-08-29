@@ -6110,9 +6110,23 @@ function buildPurchasePanel(){
   }
 
   /* 이 브라우저가 기억하는 영수증 번호. 권한의 근거가 아니라 "옮겨 적으라"고 보여주는 메모다. */
+  /* ★ 2026-08-29 대표님 지시 — 번호를 펼쳐 놓지 않고 접어 둔다.
+     결제는 카카오 로그인한 분만 할 수 있고(api/checkout.js 가 401로 막는다),
+     기기를 바꿔 로그인하면 예전 결제가 저절로 따라온다(api/kakaocb.js moveOrdersToSession).
+     그래서 이 번호를 쓸 일은 "로그아웃한 뒤 브라우저 데이터까지 지운" 한 경우뿐이다.
+     드물게 쓰는 마지막 보험을 설정 화면 한복판에 길게 늘어놓을 이유가 없다.
+     기능은 그대로 두고 보이기만 접는다 — 약관 제5조·환불 제6조가 이 번호로 복원할 수
+     있다고 약속하고 있으므로 없애면 약관과 어긋난다. */
   var memos = receiptMemos();
   if(memos.length){
-    card.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;color:var(--gold);'},[
+    var fold = buildFoldPanel({
+      id:'receiptMemoFold',
+      label:'영수증 번호 보기 ('+memos.length+'개)',
+      openLabel:'영수증 번호 접기',
+      regionLabel:'이 브라우저에 기록된 영수증 번호',
+      btnStyle:'margin-top:10px;'
+    });
+    fold.panel.appendChild(el('p',{class:'biz-hint', style:'color:var(--gold);'},[
       /* ★ R83 — '다른 곳에도 적어 두세요'라는 당부를 뺐다 (대표님 지시).
          숙제를 얹는 말이었다. 무엇에 쓰는 번호인지만 담담히 적는다. */
       '이 브라우저에 기록된 영수증 번호예요. 기기를 바꾸셨을 때 이 번호로 이용권을 되살릴 수 있어요.'
@@ -6123,8 +6137,9 @@ function buildPurchasePanel(){
       row.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'flex:none;',
         'aria-label':'영수증 번호 '+mm.id+' 복사',
         onclick:(function(v){ return function(){ copyText(v); }; })(mm.id)},['복사']));
-      card.appendChild(row);
+      fold.panel.appendChild(row);
     });
+    card.appendChild(fold.wrap);
   }
 
   if(e.purchases.length){
