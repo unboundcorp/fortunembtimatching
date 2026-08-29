@@ -18,6 +18,11 @@ import { AUTH_URL, redirectUri, restKey, newState, stateCookie, addCookie, hostA
 export default async function handler(req, res) {
   /* ── 로그인 시작 — 카카오로 보낸다 ─────────────────────────────── */
   if (req.method === 'GET') {
+    /* ?account=1 — 카카오톡 앱을 건너뛰고 카카오계정 로그인 화면으로 보낸다(아래 주석 참고). */
+    let viaAccount = false;
+    try {
+      viaAccount = new URL(req.url, 'http://x').searchParams.get('account') === '1';
+    } catch { /* 주소를 못 읽으면 평소대로 간다 */ }
     try {
       restKey();
     } catch (err) {
@@ -43,6 +48,18 @@ export default async function handler(req, res) {
         state: st,
         /* scope를 적지 않는다 — 회원번호는 동의 없이도 늘 온다. */
       });
+      /* ★ 2026-08-29 — ?account=1 이면 카카오톡 앱을 거치지 않고 카카오계정(아이디·비밀번호)
+         화면으로 바로 보낸다.
+
+         왜 필요한가. 카카오는 로그인을 시작한 IP를 auth_tran_id에 묶어 두고, 돌아왔을 때
+         IP가 다르면 "접속 정보를 확인해 주세요"로 막는다. 그런데 아이폰의 iCloud 비공개
+         릴레이가 켜져 있으면 **사파리만** 애플 중계서버를 거치고 카카오톡 앱은 안 거친다.
+         같은 폰인데 두 IP가 달라서, 앱으로 넘어갔다 오는 순간 무조건 막힌다.
+         비공개 릴레이를 끄라고 손님에게 시킬 수는 없다.
+
+         브라우저를 벗어나지 않으면 IP가 바뀔 일 자체가 없다. 그래서 앱 로그인이 실패한
+         손님에게만 이 길을 내준다. 기본은 그대로 앱 로그인이다 — 대부분은 그게 더 편하다. */
+      if (viaAccount) q.set('through_account', 'true');
       return backTo(res, `${AUTH_URL}?${q.toString()}`);
     } catch (err) {
       console.error('카카오 시작 실패:', err && err.message);
