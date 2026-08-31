@@ -480,15 +480,6 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 }
 
 /* ===================== 버튼 ===================== */
-/* ★ 2026-08-31 프론트팀 지적("이런거 전체적으로 괄호는 아래 내리거나 좀 더 예쁘게 수정") —
-   버튼 이름 끝에 붙은 괄호 설명이 좁은 화면에서 아무 데서나 줄바꿈돼 읽기 나빴다
-   (예: "그림으로 한눈에 보기 (기운 균형 · / 인연 매듭 · 연결선)").
-   괄호를 없애고 아랫줄에 작은 글씨로 내린다. 줄이 어디서 끊길지 우리가 정한다. */
-/* 용어 버튼과 그것을 감싼 괄호는 한 덩어리로 — 닫는 괄호만 다음 줄로 떨어지지 않게 한다. */
-.term-nowrap{white-space:nowrap;}
-.btn-lines{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  line-height:1.32;min-width:0;text-align:center;}
-.btn-lines .l2{font-size:.78rem;font-weight:500;opacity:.82;letter-spacing:-.01em;}
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:8px;
   /* R22 — 모서리 12→16, 최소 높이 48px 고정(터치 목표) */
@@ -1746,11 +1737,7 @@ body.has-fab main{padding-bottom:110px;}
    실측(390px): 성격유형 81점 막대 60px / 띠 65점 막대 116px — 낮은 점수 막대가 두 배 길다.
    막대 시작 x도 85·188·198·219로 제각각이라 네 줄을 눈으로 비교할 수가 없었다.
    라벨 열을 고정 폭으로 묶어 네 줄의 막대 시작점과 폭을 같게 만든다. */
-/* ★ 2026-08-31 프론트팀 지적("토글 배치 좀 신경써서 디자인 수정") —
-   ▾가 라벨 글자 뒤에 인라인으로 붙어 있었다. 라벨이 두 줄로 접히면 ▾도 따라 내려가서
-   네 줄의 화살표가 제각각 다른 자리에 놓였다(사진에서 지적된 그 모양).
-   ▾ 전용 칸을 맨 오른쪽에 두어 네 줄이 세로로 딱 맞게 한다. */
-.gc-why-row{display:grid;grid-template-columns:9.5em 1fr auto auto 1.1em;align-items:center;gap:8px;font-size:.8rem;
+.gc-why-row{display:grid;grid-template-columns:9.5em 1fr auto auto;align-items:center;gap:8px;font-size:.8rem;
   width:100%;text-align:left;background:none;border:0;border-radius:var(--r-md);
   padding:9px 8px;min-height:44px;font-family:inherit;transition:background .15s;}
 .gc-why-row:hover,.gc-why-row:focus-visible{background:var(--gold-soft);}
@@ -1761,17 +1748,16 @@ body.has-fab main{padding-bottom:110px;}
    ★ 펴 놓은 줄은 움직이지 않는다 — 이미 누른 사람에게 계속 흔들어대는 건 재촉이지 안내가 아니다.
    ★ 세 번만 움직이고 멈춘다. 끝없이 흔들리면 글을 읽는 데 방해가 된다.
    ★ 움직임을 줄여 달라고 설정한 기기에서는 아예 안 움직인다(맨 아래 규칙). */
-.gc-why-row .ar::after{content:'▾';font-size:1.7em;line-height:1;color:var(--gold);
+.gc-why-row .k::after{content:' ▾';margin-left:5px;font-size:1.7em;line-height:1;color:var(--gold);
   display:inline-block;animation:whyNudge 2.4s ease-in-out 3;}
-.gc-why-row[aria-expanded="true"] .ar::after{content:'▴';animation:none;}
-.gc-why-row .ar{display:flex;align-items:center;justify-content:flex-end;}
+.gc-why-row[aria-expanded="true"] .k::after{content:' ▴';animation:none;}
 @keyframes whyNudge{
   0%,72%,100%{transform:translateY(0);opacity:.85;}
   80%{transform:translateY(3px);opacity:1;}
   88%{transform:translateY(0);opacity:1;}
   94%{transform:translateY(2px);opacity:1;}
 }
-@media (prefers-reduced-motion:reduce){ .gc-why-row .ar::after{animation:none;} }
+@media (prefers-reduced-motion:reduce){ .gc-why-row .k::after{animation:none;} }
 .gc-why-desc{margin:0 8px 6px;padding:10px 12px;border-radius:var(--r-md);
   background:var(--panel-3);font-size:.82rem;line-height:1.7;}
 .gc-why-desc .d1{display:block;color:var(--ink);font-weight:700;}
@@ -3816,32 +3802,10 @@ function autoTermify(root){
          앞글자는 볼 수 있다 — 용어 하나하나에 부정 예측을 덧붙이는 방식보다 이게 근본이다. */
       var prev = m.index > 0 ? v.charAt(m.index-1) : '';
       if(prev && prev >= '가' && prev <= '힣'){ continue; }
-      var before = (m.index > last) ? v.slice(last, m.index) : '';
+      if(m.index > last) frag.appendChild(document.createTextNode(v.slice(last, m.index)));
       var key = TERM_ALIAS[m[0]] || m[0];
-      var termNode = TERMS[key] ? termInline(key, m[0]) : document.createTextNode(m[0]);
-      /* ★ 2026-08-31 프론트팀 지적("괄호는 아래 내리거나 좀 더 예쁘게") —
-         "타고난 다섯 기운(오행) 92점"이 "…기운(오행" / ") 92점"으로 잘려 나왔다.
-         용어를 버튼으로 바꾸느라 글자 마디를 셋으로 쪼개는데, 브라우저는 그 사이에서
-         줄을 바꿀 수 있다. 그래서 닫는 괄호만 다음 줄로 떨어졌다.
-         괄호를 용어와 한 덩어리로 묶어 그 사이에서는 줄이 안 바뀌게 한다.
-         ★ 문구를 하나씩 고치지 않고 여기서 막는다 — "(용어)" 꼴은 앱 곳곳에 있다. */
-      var hasOpen  = before.slice(-1) === '(';
-      var hasClose = v.charAt(m.index + m[0].length) === ')';
-      if(hasOpen || hasClose){
-        if(hasOpen) before = before.slice(0, -1);
-        if(before) frag.appendChild(document.createTextNode(before));
-        var wrap = document.createElement('span');
-        wrap.className = 'term-nowrap';
-        if(hasOpen) wrap.appendChild(document.createTextNode('('));
-        wrap.appendChild(termNode);
-        if(hasClose) wrap.appendChild(document.createTextNode(')'));
-        frag.appendChild(wrap);
-        last = m.index + m[0].length + (hasClose ? 1 : 0);
-      } else {
-        if(before) frag.appendChild(document.createTextNode(before));
-        frag.appendChild(termNode);
-        last = m.index + m[0].length;
-      }
+      frag.appendChild(TERMS[key] ? termInline(key, m[0]) : document.createTextNode(m[0]));
+      last = m.index + m[0].length;
     }
     if(last < v.length) frag.appendChild(document.createTextNode(v.slice(last)));
     pe.replaceChild(frag, tn);
@@ -14186,18 +14150,56 @@ function renderSetupBirth(){
      ★ 타이핑 중에는 화면을 다시 그리지 않는다. renderKeepScroll을 부르면 입력칸이
        새로 만들어져서 글자를 한 자 칠 때마다 커서가 날아간다(실제로 그렇게 된다).
        그래서 SETUP 값과 안내 문구만 직접 갈아 끼운다. */
+  var dateInput = el('input',{ type:'tel', inputmode:'numeric', maxlength:'10',
+    class:'biz-input', 'aria-label':'생년월일 여덟 자리',
+    placeholder:'예) 1990-01-01', autocomplete:'bday',
+    value: SETUP._set.date ? (SETUP.year+'-'+pad2(SETUP.month)+'-'+pad2(SETUP.day)) : '' });
+  var dateMsg = el('p',{class:'biz-hint', style:'margin-top:8px;', role:'status'},['']);
   var dateHeadVal = null;   /* setupField가 만든 '지금 값' 자리. 아래에서 붙잡는다. */
-  /* ★ 실제 만드는 일은 buildTypedDateInput()이 한다. 궁합 입력·프로필 수정도 같은 함수를 쓴다 —
-     예전에는 여기에만 있어서, 다른 두 곳은 옛날 목록 방식으로 남아 있었다(R103 주석 참고). */
-  var dPick = buildTypedDateInput({
-    year:SETUP.year, month:SETUP.month, day:SETUP.day, isSet:!!SETUP._set.date,
-    isLunar:function(){ return SETUP.calendarType==='lunar'; },
-    onValid:function(yy,mm,dd){
-      SETUP.year = yy; SETUP.month = mm; SETUP.day = dd; SETUP._set.date = true;
-      if(dateHeadVal) dateHeadVal.textContent = yy+'. '+mm+'. '+dd;
+
+  function dateApply(){
+    var digits = String(dateInput.value||'').replace(/[^0-9]/g,'').slice(0,8);
+    /* 치는 동안 하이픈을 넣어 준다. 커서는 늘 끝에 있으므로 그대로 두면 된다. */
+    var shown = digits.length > 6 ? (digits.slice(0,4)+'-'+digits.slice(4,6)+'-'+digits.slice(6))
+              : digits.length > 4 ? (digits.slice(0,4)+'-'+digits.slice(4))
+              : digits;
+    /* ★ 값을 갈아 끼우면 커서가 끝으로 튄다. 그래서 커서가 이미 끝에 있을 때만 손댄다.
+       가운데를 고치는 중(예: 월만 지우고 다시 치는 중)에는 건드리지 않는다 —
+       안 그러면 한 글자 지울 때마다 커서가 맨 뒤로 달아난다. */
+    var atEnd = (dateInput.selectionStart == null) || (dateInput.selectionStart === dateInput.value.length);
+    if(dateInput.value !== shown && atEnd) dateInput.value = shown;
+
+    if(digits.length < 8){
+      dateMsg.textContent = digits.length ? '여덟 자리를 다 넣어주세요. 예를 들어 1990년 1월 1일이면 19900101이에요.' : '';
+      dateMsg.classList.remove('warn-text');
+      return;
     }
-  });
-  var dBody = dPick.node;
+    var yy = parseInt(digits.slice(0,4),10), mm = parseInt(digits.slice(4,6),10), dd = parseInt(digits.slice(6,8),10);
+    var thisYear = new Date().getFullYear();
+    var maxD = (SETUP.calendarType==='lunar') ? 30 : daysInMonth(yy, mm);
+    var bad = null;
+    if(yy < 1900 || yy > thisYear) bad = '태어난 해는 1900년부터 '+thisYear+'년까지 넣을 수 있어요.';
+    else if(mm < 1 || mm > 12) bad = mm+'월은 없어요. 1월부터 12월까지 넣어주세요.';
+    else if(dd < 1 || dd > maxD) bad = yy+'년 '+mm+'월은 '+maxD+'일까지예요.';
+    else if(SETUP.calendarType==='lunar' && (yy<1900 || yy>2100)) bad = '음력은 1900~2100년만 계산할 수 있어요.';
+
+    if(bad){
+      dateMsg.textContent = bad;
+      dateMsg.classList.add('warn-text');
+      return;
+    }
+    dateMsg.textContent = '';
+    dateMsg.classList.remove('warn-text');
+    SETUP.year = yy; SETUP.month = mm; SETUP.day = dd; SETUP._set.date = true;
+    if(dateHeadVal) dateHeadVal.textContent = yy+'. '+mm+'. '+dd;
+  }
+  dateInput.addEventListener('input', dateApply);
+  /* 칸을 벗어날 때 한 번 더 본다 — 붙여넣기로 넣은 값도 여기서 걸린다. */
+  dateInput.addEventListener('blur', dateApply);
+
+  var dBody = el('div',{});
+  dBody.appendChild(dateInput);
+  dBody.appendChild(dateMsg);
   var dField = setupField('생년월일',
     SETUP._set.date ? (SETUP.year+'. '+SETUP.month+'. '+SETUP.day) : '숫자 여덟 자리', dBody,
     '숫자만 치시면 돼요. 1990년 1월 1일이면 19900101.');
@@ -14358,7 +14360,7 @@ function renderSetupMbti(){
     }
     box.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){
       SETUP.testMode=true; SETUP.testQIdx=0; SETUP.testAnswers=[]; render();
-    }},[btnLines('모르겠어요 — 간단 테스트로 알아보기','8문항이에요')]));
+    }},['모르겠어요 — 간단 테스트로 알아보기 (8문항)']));
   } else {
     var qi=SETUP.testQIdx;
     var q=MBTI_TEST_Q[qi];
@@ -14448,26 +14450,32 @@ function renderSetupStep2_legacy(){
   var dateValue = SETUP._set.date ? (SETUP.year+'-'+pad2(SETUP.month)+'-'+pad2(SETUP.day)) : '눌러서 고르기';
   box.appendChild(settingsRow('생년월일', dateValue, function(){
     openValueSheet('생년월일',
-      function(){ return {year:SETUP.year, month:SETUP.month, day:SETUP.day, _ok:!!SETUP._set.date}; },
+      function(){ return {year:SETUP.year, month:SETUP.month, day:SETUP.day}; },
       function(d, redraw){
         var body=el('div',{});
-        var f = buildTypedDateInput({
-          year:d.year, month:d.month, day:d.day, isSet:!!SETUP._set.date,
-          isLunar:function(){ return SETUP.calendarType==='lunar'; },
-          onValid:function(y,m,dd){ d.year=y; d.month=m; d.day=dd; d._ok=true; },
-          onInvalid:function(){ d._ok=false; }
-        });
-        body.appendChild(el('p',{class:'section-sub', style:'margin-top:0;'},
-          ['숫자만 치시면 돼요. 1990년 1월 1일이면 19900101.']));
-        body.appendChild(f.node);
+        var row=el('div',{class:'row3'});
+        var years=[]; for(var y=new Date().getFullYear(); y>=1900; y--) years.push(y);
+        var ySel=el('select',{'aria-label':'출생 연도'});
+        years.forEach(function(y){ var o=el('option',{value:y},[y+'년']); if(y===d.year) o.setAttribute('selected','selected'); ySel.appendChild(o); });
+        ySel.addEventListener('change', function(e){ d.year=parseInt(e.target.value,10); clampDay({calendarType:SETUP.calendarType, year:d.year, month:d.month, day:d.day}); redraw(); });
+
+        var mSel=el('select',{'aria-label':'출생 월'});
+        for(var m=1;m<=12;m++){ var om=el('option',{value:m},[m+'월']); if(m===d.month) om.setAttribute('selected','selected'); mSel.appendChild(om); }
+        mSel.addEventListener('change', function(e){ d.month=parseInt(e.target.value,10); redraw(); });
+
+        var dSel=el('select',{'aria-label':'출생 일'});
+        var dim=SETUP.calendarType==='lunar'?30:daysInMonth(d.year,d.month);
+        if(d.day>dim) d.day=dim;
+        for(var dd=1;dd<=dim;dd++){ var od=el('option',{value:dd},[dd+'일']); if(dd===d.day) od.setAttribute('selected','selected'); dSel.appendChild(od); }
+        dSel.addEventListener('change', function(e){ d.day=parseInt(e.target.value,10); redraw(); });
+
+        row.appendChild(el('div',{},[ySel]));
+        row.appendChild(el('div',{},[mSel]));
+        row.appendChild(el('div',{},[dSel]));
+        body.appendChild(row);
         return body;
       },
-      function(d){
-        /* 여덟 자리를 다 안 넣었으면 예전 값을 그대로 둔다 — 반쯤 친 값으로 사주를 계산하면 안 된다. */
-        if(!d._ok && !SETUP._set.date){ showToast('생년월일을 여덟 자리로 넣어주세요.'); return; }
-        if(!d._ok){ showToast('생년월일이 여덟 자리가 아니라 이전 값을 그대로 뒀어요.'); return; }
-        SETUP.year=d.year; SETUP.month=d.month; SETUP.day=d.day; clampDay(SETUP); SETUP._set.date=true;
-      },
+      function(d){ SETUP.year=d.year; SETUP.month=d.month; SETUP.day=d.day; clampDay(SETUP); SETUP._set.date=true; },
       {savedToast:'생년월일을 저장했어요.', alwaysConfirm:true});
   }));
 
@@ -14915,81 +14923,6 @@ var ELEM_TRAIT = {'목':'새로 벌이고 키우는 힘','화':'밝게 드러내
                   '금':'자르고 정리하는 힘','수':'깊이 헤아리는 힘'};
 function elemTrait(name){ return ELEM_TRAIT[name] || (name+' 기운'); }
 function branchAnimal(idx){ return ZODIAC[idx] ? (ZODIAC[idx]+'띠 글자') : REL_LABEL_BRANCH[idx]; }
-/* =====================================================================
-   R103 — 생년월일은 목록에서 고르지 않고 숫자 여덟 자리를 그대로 친다
-   ---------------------------------------------------------------------
-   2026-08-22 대표님 지시("생년월일 그냥 사람이 직접 쓰게 하는 걸로 바꿔")로 만든 방식인데,
-   그때 **프로필 만들기 한 곳에만 넣고** 궁합 입력과 프로필 수정에는 안 넣었다.
-   그래서 같은 앱 안에서 한쪽은 치고 한쪽은 고르는 상태로 아홉 날을 보냈고,
-   2026-08-31 프론트팀이 "궁합쪽은 생년월일 입력말고 선택"으로 지적했다.
-   ★ 이제 세 곳이 이 함수 하나를 쓴다. 복사해서 네 번째를 만들지 마라.
-
-   o = { year, month, day, isSet, isLunar:fn(), ariaLabel, onValid:fn(y,m,d), onInvalid:fn() }
-   반환 { node, input, apply, ok() }
-
-   ★ 치는 동안에는 화면을 다시 그리지 않는다. 다시 그리면 입력칸이 새로 만들어져
-     글자 한 자마다 커서가 날아간다(실제로 그렇게 됐다). 안내 문구만 직접 갈아 끼운다.
-===================================================================== */
-function buildTypedDateInput(o){
-  o = o || {};
-  var ok = !!o.isSet;
-  var input = el('input',{ type:'tel', inputmode:'numeric', maxlength:'10',
-    class:'biz-input', 'aria-label':(o.ariaLabel || '생년월일 여덟 자리'),
-    placeholder:'예) 1990-01-01', autocomplete:'bday',
-    value: o.isSet ? (o.year+'-'+pad2(o.month)+'-'+pad2(o.day)) : '' });
-  var msg = el('p',{class:'biz-hint', style:'margin-top:8px;', role:'status'},['']);
-  function fail(text){
-    ok = false;
-    msg.textContent = text || '';
-    if(text) msg.classList.add('warn-text'); else msg.classList.remove('warn-text');
-    if(o.onInvalid) o.onInvalid();
-  }
-  function apply(){
-    var digits = String(input.value||'').replace(/[^0-9]/g,'').slice(0,8);
-    /* 치는 동안 하이픈을 넣어 준다. 커서가 끝에 있을 때만 손댄다 —
-       가운데를 고치는 중에 값을 갈아 끼우면 커서가 맨 뒤로 달아난다. */
-    var shown = digits.length > 6 ? (digits.slice(0,4)+'-'+digits.slice(4,6)+'-'+digits.slice(6))
-              : digits.length > 4 ? (digits.slice(0,4)+'-'+digits.slice(4))
-              : digits;
-    var atEnd = (input.selectionStart == null) || (input.selectionStart === input.value.length);
-    if(input.value !== shown && atEnd) input.value = shown;
-
-    if(digits.length < 8){
-      fail(digits.length ? '여덟 자리를 다 넣어주세요. 예를 들어 1990년 1월 1일이면 19900101이에요.' : '');
-      msg.classList.remove('warn-text');
-      return;
-    }
-    var yy = parseInt(digits.slice(0,4),10), mm = parseInt(digits.slice(4,6),10), dd = parseInt(digits.slice(6,8),10);
-    var thisYear = new Date().getFullYear();
-    var lunar = !!(o.isLunar && o.isLunar());
-    var maxD = lunar ? 30 : daysInMonth(yy, mm);
-    var bad = null;
-    if(yy < 1900 || yy > thisYear) bad = '태어난 해는 1900년부터 '+thisYear+'년까지 넣을 수 있어요.';
-    else if(mm < 1 || mm > 12) bad = mm+'월은 없어요. 1월부터 12월까지 넣어주세요.';
-    else if(dd < 1 || dd > maxD) bad = yy+'년 '+mm+'월은 '+maxD+'일까지예요.';
-    else if(lunar && (yy<1900 || yy>2100)) bad = '음력은 1900~2100년만 계산할 수 있어요.';
-    if(bad){ fail(bad); return; }
-
-    ok = true;
-    msg.textContent = ''; msg.classList.remove('warn-text');
-    if(o.onValid) o.onValid(yy, mm, dd);
-  }
-  input.addEventListener('input', apply);
-  /* 칸을 벗어날 때 한 번 더 본다 — 붙여넣기로 넣은 값도 여기서 걸린다. */
-  input.addEventListener('blur', apply);
-  var box = el('div',{});
-  box.appendChild(input);
-  box.appendChild(msg);
-  return { node:box, input:input, apply:apply, ok:function(){ return ok; } };
-}
-/* 버튼 이름을 두 줄로. 윗줄이 무엇을 하는지, 아랫줄이 그 부연이다.
-   ★ 괄호를 다시 쓰지 마라 — 괄호는 어디서 끊길지 우리가 못 정한다. */
-function btnLines(main, sub){
-  return el('span',{class:'btn-lines'},[
-    el('span',{class:'l1'},[main]),
-    el('span',{class:'l2'},[sub])
-  ]);
-}
 function relationBadges(rel){
   var wrap=el('div',{class:'term-chip-row no-term'});
   /* 같은 짝이 순서만 바꿔 들어오면(인신 / 신인) 아래 합치기가 못 알아본다.
@@ -15823,13 +15756,14 @@ function renderSaju(){
   sipCard.appendChild(buildSipseongOverlay(saju));
   view.appendChild(sipCard);
 
-  /* ★ 2026-08-31 대표님 지시 — '글자끼리 어떻게 얽혀 있나요' 카드를 뺐다.
-     ("이 부분은 설명이 어렵다 그냥 지워라")
-     지지의 합·충을 "토끼띠 글자와 개띠 글자가 짝이 돼요 (2곳)" 같은 배지로 보여주던 자리다.
-     쉬운 말로 바꿔 놓아도 그래서 뭐가 좋고 나쁜지가 안 읽혔다.
-     ★ 계산(SajuEngine.branchRelations)은 그대로 둔다 — 오늘의 운세·월별 흐름·궁합이
-       같은 함수를 쓰고 있어서 지우면 그쪽이 통째로 죽는다. 화면에서만 뺐다.
-     ★ relationBadges()는 이제 부르는 곳이 없다. 되살릴 때 필요하므로 지우지 않았다. */
+  var branchList = [{idx:saju.year.branchIdx},{idx:saju.month.branchIdx},{idx:saju.day.branchIdx}];
+  if(saju.hour) branchList.push({idx:saju.hour.branchIdx});
+  var rel = SajuEngine.branchRelations(branchList);
+  var relCard=el('div',{class:'scroll-card'});
+  relCard.appendChild(cardHead('글자끼리 어떻게 얽혀 있나요'));
+  relCard.appendChild(el('p',{class:'section-sub'},['태어난 해·달·날·시의 띠 글자 넷(태어난 시각을 모르면 셋)이 서로 짝이 되는지 부딪히는지 본 결과예요. 아무것도 없으면 특별히 얽힌 자리가 없다는 뜻이에요.']));
+  relCard.appendChild(relationBadges(rel));
+  view.appendChild(relCard);
 
   var dwCard=el('div',{class:'scroll-card'});
   dwCard.appendChild(cardHead('10년마다 바뀌는 큰 흐름', ['대운','대운수']));
@@ -16534,7 +16468,7 @@ function renderCompat(){
         view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;', onclick:function(){
           GC_SOURCE='profiles'; GC_SEL=null; GC_RANK={order:'best', shown:GC_RANK_STEP};
           ROUTE='groupCompat'; render();
-        }},[svgIcon('M10 3 L16 7 L14 15 L6 15 L4 7 Z M10 3 L10 15 M4 7 L14 15 M16 7 L6 15','btn-lead-icon'), btnLines('저장된 프로필로 모으기','최대 '+GC_MAX+'명')]));
+        }},[svgIcon('M10 3 L16 7 L14 15 L6 15 L4 7 Z M10 3 L10 15 M4 7 L14 15 M16 7 L6 15','btn-lead-icon'), '저장된 프로필로 모으기 (최대 '+GC_MAX+'명)']));
       } else {
         /* 프로필이 하나뿐이어도 막다른 길로 두지 않는다 — 링크로 모으는 길이 있다. */
         view.appendChild(el('p',{class:'biz-hint'},
@@ -16549,7 +16483,7 @@ function renderCompat(){
       /* ★ R56 — 버튼 이름을 '누가 넣는지'로 바꿨다(대표님 지시).
          '초대 링크 만들기'는 만드는 사람 입장의 말이고, 정작 고민되는 건
          '상대 정보를 내가 넣어야 하나, 상대가 넣나'다. 그 갈림을 그대로 이름에 담는다. */
-      view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('상대방이 직접 입력하기','링크를 보내면 그분이 넣어요')]));
+      view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '상대방이 직접 입력하기 (링크 보내기)']));
       /* ★ R56 — 아래 입력 칸에 이름을 붙인다(대표님 지시). 위 버튼(상대가 넣기)과
          아래 칸(내가 넣기)이 같은 일을 다른 방법으로 하는 것인데, 아래에는 이름이 없어
          둘의 관계가 안 보였다. */
@@ -16662,26 +16596,27 @@ function renderCompatForm(){
     ? (COMPAT_DRAFT.year+'-'+pad2(COMPAT_DRAFT.month)+'-'+pad2(COMPAT_DRAFT.day)) : '눌러서 고르기';
   box.appendChild(settingsRow((PL+' 생년월일'), partnerDateValue, function(){
     openValueSheet((PL+' 생년월일'),
-      function(){ return {year:COMPAT_DRAFT.year, month:COMPAT_DRAFT.month, day:COMPAT_DRAFT.day, _ok:!!COMPAT_DRAFT._set.date}; },
+      function(){ return {year:COMPAT_DRAFT.year, month:COMPAT_DRAFT.month, day:COMPAT_DRAFT.day}; },
       function(d, redraw){
         var body=el('div',{});
-        var f = buildTypedDateInput({
-          year:d.year, month:d.month, day:d.day, isSet:!!COMPAT_DRAFT._set.date,
-          ariaLabel:'상대 생년월일 여덟 자리',
-          isLunar:function(){ return COMPAT_DRAFT.calendarType==='lunar'; },
-          onValid:function(y,m,dd){ d.year=y; d.month=m; d.day=dd; d._ok=true; },
-          onInvalid:function(){ d._ok=false; }
-        });
-        body.appendChild(el('p',{class:'section-sub', style:'margin-top:0;'},
-          ['숫자만 치시면 돼요. 1990년 1월 1일이면 19900101.']));
-        body.appendChild(f.node);
+        var row=el('div',{class:'row3'});
+        var years=[]; for(var y=new Date().getFullYear(); y>=1900; y--) years.push(y);
+        var ySel=el('select',{'aria-label':'상대 출생 연도'});
+        years.forEach(function(y){ var o=el('option',{value:y},[y+'년']); if(y===d.year) o.setAttribute('selected','selected'); ySel.appendChild(o); });
+        ySel.addEventListener('change', function(e){ d.year=parseInt(e.target.value,10); redraw(); });
+        var mSel=el('select',{'aria-label':'상대 출생 월'});
+        for(var m=1;m<=12;m++){ var om=el('option',{value:m},[m+'월']); if(m===d.month) om.setAttribute('selected','selected'); mSel.appendChild(om); }
+        mSel.addEventListener('change', function(e){ d.month=parseInt(e.target.value,10); redraw(); });
+        var dSel=el('select',{'aria-label':'상대 출생 일'});
+        var dim=COMPAT_DRAFT.calendarType==='lunar'?30:daysInMonth(d.year,d.month);
+        if(d.day>dim) d.day=dim;
+        for(var dd=1;dd<=dim;dd++){ var od=el('option',{value:dd},[dd+'일']); if(dd===d.day) od.setAttribute('selected','selected'); dSel.appendChild(od); }
+        dSel.addEventListener('change', function(e){ d.day=parseInt(e.target.value,10); redraw(); });
+        row.appendChild(el('div',{},[ySel])); row.appendChild(el('div',{},[mSel])); row.appendChild(el('div',{},[dSel]));
+        body.appendChild(row);
         return body;
       },
-      function(d){
-        if(!d._ok && !COMPAT_DRAFT._set.date){ showToast('생년월일을 여덟 자리로 넣어주세요.'); return; }
-        if(!d._ok){ showToast('생년월일이 여덟 자리가 아니라 이전 값을 그대로 뒀어요.'); return; }
-        COMPAT_DRAFT.year=d.year; COMPAT_DRAFT.month=d.month; COMPAT_DRAFT.day=d.day; COMPAT_DRAFT._set.date=true;
-      },
+      function(d){ COMPAT_DRAFT.year=d.year; COMPAT_DRAFT.month=d.month; COMPAT_DRAFT.day=d.day; COMPAT_DRAFT._set.date=true; },
       {savedToast:(PL+' 생년월일을 저장했어요.'), alwaysConfirm:true});
   }));
 
@@ -16847,12 +16782,6 @@ function submitCompat(opts){
     if(STATE.compatHistory.length>200) STATE.compatHistory.length=200;
     saveState();
     render();
-    /* ★ 2026-08-31 프론트팀 지적 — "궁합보기 누르면 맨위에 점수 말고 여기부터 보임".
-       입력 칸이 여덟 줄이라 [궁합 풀어보기]는 화면 맨 아래에 있다. 거기서 누르면
-       스크롤 위치가 그대로 남아, 결과 화면이 점수가 아니라 한참 아래부터 보였다.
-       이 앱은 화면을 옮길 때마다 render() 다음에 이 줄을 같이 부르는데
-       (window.scrollTo(0,0)를 부르는 자리가 스무 곳쯤 된다) 여기만 빠져 있었다. */
-    window.scrollTo(0,0);
   }
 }
 /* 궁합 기록에 담을 "입력값". 여기에 문장은 한 줄도 들어가지 않는다 — 이름·MBTI·성별과
@@ -17081,7 +17010,7 @@ function renderCompatSummary(p, draft){
     saju: r.res.saju && r.res.saju.score,
     elem: r.res.elemScore,
     zod:  r.res.zodScore
-  }, '', compatWhyEvidence(p, r.pB, r.res), r.res.relation);
+  }, '', compatWhyEvidence(p, r.pB, r.res));
   if(mixWhy) mixCard.appendChild(mixWhy);
   box.appendChild(mixCard);
 
@@ -17100,7 +17029,7 @@ function renderCompatSummary(p, draft){
   storyCard.appendChild(el('h3',{},['두 분만을 위한 긴 풀이']));
   storyCard.appendChild(el('p',{class:'section-sub'},
     [COMPAT_SECTION_TITLES.length+'개 이야기로, 두 분의 사주 여덟 글자와 성격유형을 함께 읽어 새로 써요. 앞 '+FREE_SECTION_COUNT+'개는 그냥 보실 수 있어요.']));
-  storyCard.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ COMPAT_SUB='story'; render(); window.scrollTo(0,0); }},
+  storyCard.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ COMPAT_SUB='story'; render(); }},
     ['궁합 풀이 읽어보기', dirIcon('right')]));
   box.appendChild(storyCard);
 
@@ -17109,16 +17038,16 @@ function renderCompatSummary(p, draft){
   var sajuCol=el('div',{class:'scroll-card'});
   sajuCol.appendChild(el('h3',{},['타고난 기운으로 더 보기']));
   sajuCol.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['두 사람의 기운이 어떻게 맞물리는지, 어떤 자리에서 부딪히는지 문장으로 풀어드려요.']));
-  sajuCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='saju'; render(); window.scrollTo(0,0); }},[compatLockMark(), '사주 궁합 자세히 보기', dirIcon('right')]));
+  sajuCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='saju'; render(); }},[compatLockMark(), '사주 궁합 자세히 보기', dirIcon('right')]));
   var mbtiCol=el('div',{class:'scroll-card'});
   mbtiCol.appendChild(el('h3',{},['성격으로 더 보기']));
   mbtiCol.appendChild(el('p',{},[r.res.categories.chemistry]));
-  mbtiCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='mbti'; render(); window.scrollTo(0,0); }},[compatLockMark(), '성격유형 궁합 자세히 보기', dirIcon('right')]));
+  mbtiCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='mbti'; render(); }},[compatLockMark(), '성격유형 궁합 자세히 보기', dirIcon('right')]));
   sumGrid.appendChild(sajuCol); sumGrid.appendChild(mbtiCol);
   box.appendChild(sumGrid);
 
   /* 버튼 이름도 일상어로. '합충선' 같은 말은 이 화면(무료 요약)에 남기지 않는다. */
-  box.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ COMPAT_SUB='visual'; render(); window.scrollTo(0,0); }},[compatLockMark(), btnLines('그림으로 한눈에 보기','기운 균형 · 인연 매듭 · 연결선')]));
+  box.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ COMPAT_SUB='visual'; render(); }},[compatLockMark(), '그림으로 한눈에 보기 (기운 균형 · 인연 매듭 · 연결선)']));
 
   if(!hasAccess(PRODUCTS.compat_full.id)){
     /* 무료로 어디까지 본 것인지, 결제하면 무엇이 더 열리는지 요약 화면에서 바로 알려준다.
@@ -18108,22 +18037,18 @@ function buildGroupRankPanel(pairs){
 /* 네 항목이 각각 무슨 뜻인지 — 눌러서 펴 보는 설명. 점수 단계에 따라 한마디도 함께 바뀐다.
    ★ 단계 기준(75/50)은 compatMetricWord와 같은 값을 쓴다. 같은 앱에서 같은 점수가
      한쪽은 "잘 맞음", 다른 쪽은 "보통"으로 읽히면 안 된다. */
-/* ★ 비중(w)은 여기 적지 않는다. 어떤 사이인지에 따라 달라지므로 COMPAT_RELATIONS에서 가져온다.
-   it.key('mbti'·'saju'·'elem'·'zod')가 그대로 비중의 이름이다.
-   ★ 2026-08-31 — 여기에 40/40/10/10이 박혀 있었다. 화면 네 곳을 고치면서 이 다섯 번째를 놓쳐,
-     연인으로 봐도 "왜 N점인가요?" 안에서는 40%라고 적히고 있었다. */
 var COMPAT_WHY_ITEMS = [
-  { key:'mbti', label:'성격유형이 맞는 정도',
+  { key:'mbti', label:'성격유형이 맞는 정도', w:40,
     desc:'성격유형 열여섯 가지끼리 얼마나 잘 맞는 짝인지 본 값이에요. 종합 점수에서 가장 크게 반영돼요.',
     words:['말이 잘 통하고 함께 있을 때 힘이 나는 편이에요',
            '대화의 결이 무난히 맞는 편이에요',
            '말이 어긋날 때가 있어 한 번 더 설명이 필요한 편이에요'] },
-  { key:'saju', label:'사주 여덟 글자가 맞는 정도',
+  { key:'saju', label:'사주 여덟 글자가 맞는 정도', w:40,
     desc:'태어난 때를 적은 여덟 글자가 서로 어떻게 맞물리는지 본 값이에요. 짝이 되는 자리와 부딪히는 자리를 함께 세요.',
     words:['서로 맞물리는 자리가 많은 편이에요',
            '크게 부딪히지 않고 무난한 편이에요',
            '부딪히는 자리가 있어 조심할 대목이 있어요'] },
-  { key:'elem', label:'타고난 다섯 기운(오행)',
+  { key:'elem', label:'타고난 다섯 기운(오행)', w:10,
     desc:'두 사람에게 가장 진한 기운이 서로를 살려주는지, 눌러 지치게 하는지 본 값이에요.',
     words:['한쪽이 비면 다른 쪽이 채워주는 사이예요',
            '결이 닮아 있는 그대로 편한 사이예요',
@@ -18131,7 +18056,7 @@ var COMPAT_WHY_ITEMS = [
     /* ★ R98 — 이 항목은 92(상생)·75(비화)·40(상극) 세 값만 나온다. 공통 기준(75 이상=첫 문구)을
        그대로 쓰면 비화(75)에 상생 문구가 붙는다. 실제로 그렇게 나가고 있었다. */
     word:function(v){ return v>=90 ? this.words[0] : (v>=70 ? this.words[1] : this.words[2]); } },
-  { key:'zod', label:'띠',
+  { key:'zod', label:'띠', w:10,
     desc:'태어난 해의 띠끼리 예로부터 잘 맞는다고 보는 짝인지 본 값이에요. 넷 중 비중이 가장 작아요.',
     words:['예로부터 잘 맞는다고 보는 짝이에요',
            '특별히 좋지도 나쁘지도 않은 짝이에요',
@@ -18198,8 +18123,7 @@ function compatWhyEvidence(pA, pB, res){
   }
   return ev;
 }
-function buildCompatWhyScores(total, vals, extraNote, ev, relationKey){
-  var relW = relationOf(relationKey).w;
+function buildCompatWhyScores(total, vals, extraNote, ev){
   var rows = COMPAT_WHY_ITEMS
     .map(function(it){ return {it:it, v:vals[it.key]}; })
     .filter(function(r){ return typeof r.v === 'number'; });
@@ -18207,7 +18131,7 @@ function buildCompatWhyScores(total, vals, extraNote, ev, relationKey){
 
   var why = el('details',{class:'gc-why'});
   why.appendChild(el('summary',{},['왜 '+total+'점인가요?']));
-  var wSum = rows.reduce(function(x,r){ return x + relW[r.it.key]; }, 0) || 1;
+  var wSum = rows.reduce(function(x,r){ return x + r.it.w; }, 0) || 1;
   var tbl = el('div',{class:'gc-why-tbl'});
   rows.forEach(function(r){
     /* ★ R97 (2026-08-19 대표님 지시) — "저 막대를 눌러서 어떤 점이 잘 맞는지 볼 수 있게".
@@ -18228,8 +18152,7 @@ function buildCompatWhyScores(total, vals, extraNote, ev, relationKey){
       el('span',{class:'bar', role:'img','aria-label':r.it.label+' '+r.v+'점 (100점 기준)'},[
         el('i',{style:'width:'+r.v+'%;background:'+compatBarColor(r.v)+';'}) ]),
       el('span',{class:'v'},[r.v+'점']),
-      el('span',{class:'wt'},[Math.round(relW[r.it.key]/wSum*100)+'%']),
-      el('span',{class:'ar','aria-hidden':'true'},[])
+      el('span',{class:'wt'},[Math.round(r.it.w/wSum*100)+'%'])
     ]);
     row.addEventListener('click', function(){
       var open = this.getAttribute('aria-expanded')==='true';
@@ -18248,10 +18171,7 @@ function buildCompatWhyScores(total, vals, extraNote, ev, relationKey){
     var lo = rows.reduce(function(x,r){ return r.v<x.v?r:x; }, rows[0]);
     if(hi.it.key !== lo.it.key && hi.v !== lo.v){
       why.appendChild(el('p',{class:'section-sub', style:'margin-top:10px;'},[
-        /* ★ 2026-08-31 — 예전에는 "타고난 다섯 기운(오행)(40점)가 깎았어요"로 나왔다.
-           괄호가 두 번 겹치고(항목 이름 자체에 괄호가 있다) 조사도 틀린다(받침에 따라 '이/가').
-           아래쪽 '정리하면' 절이 이미 같은 문제를 줄표로 풀어 놨다 — 같은 방식을 쓴다. */
-        '가장 끌어올린 자리 — '+hi.it.label+' '+hi.v+'점. 가장 깎은 자리 — '+lo.it.label+' '+lo.v+'점.'
+        hi.it.label+'('+hi.v+'점)가 점수를 끌어올렸고, '+lo.it.label+'('+lo.v+'점)가 깎았어요.'
       ]));
     }
   }
@@ -18261,12 +18181,12 @@ function buildCompatWhyScores(total, vals, extraNote, ev, relationKey){
   var calcBox = el('div',{class:'gc-why-calc'});
   calcBox.appendChild(el('div',{class:'gc-calc-title'},['이 점수는 이렇게 나왔어요']));
   var rawSum = 0, wTot = 0;
-  rows.forEach(function(r){ rawSum += r.v * relW[r.it.key]; wTot += relW[r.it.key]; });
+  rows.forEach(function(r){ rawSum += r.v * r.it.w; wTot += r.it.w; });
   var raw = rawSum / (wTot || 1);
   rows.forEach(function(r){
     calcBox.appendChild(el('div',{class:'gc-calc-line'},[
       el('span',{},[r.it.label]),
-      el('b',{},[r.v + '점 × ' + Math.round(relW[r.it.key]/wSum*100) + '%'])
+      el('b',{},[r.v + '점 × ' + Math.round(r.it.w/wSum*100) + '%'])
     ]));
   });
   calcBox.appendChild(el('div',{class:'gc-calc-sum'},[
@@ -18713,7 +18633,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
         saju: pr.res.saju && pr.res.saju.score,
         elem: pr.res.elemScore,
         zod:  pr.res.zodScore
-      }, '', compatWhyEvidence(pr.a.person, pr.b.person, pr.res), pr.res.relation);
+      }, '', compatWhyEvidence(pr.a.person, pr.b.person, pr.res));
       if(pWhy) blk.appendChild(pWhy);
       /* ★ R99 — 쌍마다 '심층 궁합 분석'을 바로 아래 붙인다. 예전에는 카드 맨 아래에
          '쌍별 상세 이어보기' 하나로 뭉쳐 있어서, 어느 쌍의 이야기인지도 흐릿했다. */
@@ -19569,7 +19489,7 @@ function renderGroupCompat(){
       zod:  avgAllOf(function(pr){ return pr.res.zodScore; })
     /* ★ R98 (대표님 지시) — 평균 계산을 설명하는 문장은 뺐다.
        이 숫자 바로 위에 "N명 · 전체 평균 궁합 지수"라고 이미 적혀 있다. */
-    }, '', null, GC_RELATION);
+    }, '');
     if(why) gaugeCard.appendChild(why);
   })();
   view.appendChild(gaugeCard);
@@ -19626,7 +19546,7 @@ function renderGroupCompat(){
   if(!fromLink){
     view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:16px;', onclick:function(){
       openMeetLinkModal(members.map(function(m){ return STATE.profiles.filter(function(p){ return p.id===m.id; })[0]; }).filter(Boolean));
-    }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('그룹 링크 만들기','지금 멤버 그대로')]));
+    }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '그룹 링크 만들기 (지금 멤버 그대로)']));
   }
 
   /* =====================================================================
