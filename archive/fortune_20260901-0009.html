@@ -504,9 +504,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 ===================================================================== */
 #main p, #main li,
 #main .section-sub, #main .biz-hint, #main .warn-box, #main .cm-verdict-line,
-#main .gc-why-desc span, #main .dw-now,
-/* 용어 사전은 p가 아니라 div를 쓴다. 실제로 여기만 1440px에서 57자까지 늘어나 있었다. */
-#main .gl-plain, #main .gl-term, #main .gl-long, #main .gl-src, #main .sup-sla{
+#main .gc-why-desc span, #main .dw-now{
   max-width:40em;
 }
 /* 제목은 조금 더 넉넉히 — 짧아서 40자를 넘길 일이 드물고, 억지로 접으면 더 나빠진다. */
@@ -947,13 +945,10 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .site-footer .fl-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 18px;margin-bottom:14px;}
 /* ★ 2026-08-24 — 29px이라 44px 기준에 미달이었다. 글자 크기는 그대로 두고 누르는 자리만 넓힌다.
    위아래 여백으로 키우면 줄 간격이 벌어지므로 inline-flex + min-height로 잡는다. */
-/* ★ 2026-08-31 점검 — 이 규칙이 .site-footer 안에만 걸려 있었다. 같은 .fl 버튼이
-   프로필 만들기 화면에도 있는데 거기서는 스타일을 못 받아 높이가 21px이었다(실측).
-   법적 고지로 가는 링크라 어디에 있든 누를 수 있어야 한다 — 선택자에서 푸터를 뺀다. */
-.fl{background:none;border:0;padding:4px 6px;font-family:inherit;font-size:.84rem;
+.site-footer .fl{background:none;border:0;padding:4px 6px;font-family:inherit;font-size:.84rem;
   display:inline-flex;align-items:center;min-height:var(--tap);
   color:var(--ink-dim);cursor:pointer;text-decoration:none;line-height:1.4;}
-.fl:hover,.fl:focus-visible{color:var(--gold);text-decoration:underline;}
+.site-footer .fl:hover,.site-footer .fl:focus-visible{color:var(--gold);text-decoration:underline;}
 .site-footer .biz{margin-top:16px;}
 .site-footer .biz p{font-size:.68rem;color:var(--ink-faint);line-height:1.75;margin:0;
   /* 한국어는 낱말 안에서 끊지 않는다. 주소처럼 긴 줄도 띄어쓰기 자리에서만 넘어간다. */
@@ -1384,10 +1379,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .hd-cardhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   border-bottom:1px solid var(--gold-line);padding-bottom:10px;margin-bottom:14px;}
 .hd-cardhead h3{margin:0;font-size:1.06rem;}
-/* ★ 2026-08-31 점검 — 누를 자리가 68×30px였다. 손가락으로 누르기엔 낮다(권장 44px).
-   글자 크기와 자리는 그대로 두고 위아래 여백만 키워 누를 면적을 넓힌다. */
-.hd-more{font-size:.86rem;color:var(--gold);font-weight:700;background:none;border:0;padding:12px 4px;
-  white-space:nowrap;min-height:44px;display:inline-flex;align-items:center;}
+.hd-more{font-size:.86rem;color:var(--gold);font-weight:700;background:none;border:0;padding:6px 2px;
+  white-space:nowrap;min-height:auto;}
 .hd-more:hover{text-decoration:underline;}
 .hd-elem{display:flex;height:10px;border-radius:999px;overflow:hidden;margin:16px 0 10px;background:var(--track);}
 .hd-elem i{display:block;height:100%;}
@@ -11227,12 +11220,7 @@ PB.closingTail = '오늘을 만든 것도, 앞날을 만들어갈 것도 결국 
 /* ---- 13섹션 리포트 조립 (기능6) ----
    각 섹션은 "서로 다른 문구 배열"에서 골라 조합하므로 실제 체감 변주 수는 조합 곱으로 커진다(SPEC 설계 의도). */
 function buildReport13(profile, saju){
-  /* ★ 2026-08-31 점검 — 여기만 이름을 '님' 없이 불렀다. 다른 화면은 전부 '가영님'인데
-     정작 돈 내고 읽는 13장에서만 "가영은 두드릴수록…"으로 이름을 툭 불렀다.
-     ★ 이름이 없을 때의 기본값도 '너'였다 — 반말이다. '이분'으로 바꿨다.
-     ★ 조사는 T()가 받침으로 갈라 붙인다. '님'과 '이분' 둘 다 받침이 있어 그대로 맞는다. */
-  var rawName = (profile.name||'').trim();
-  var name = rawName ? (rawName + '님') : '이분';
+  var name = (profile.name||'').trim() || '너';
   var safeName = escapeHtml(name); // 리포트 문구는 el({html:...})로 렌더되므로 사용자 입력(이름)은 반드시 이스케이프 후 삽입(XSS 방지)
   var dayStemIdx = saju.day.stemIdx;
   var dayStemName = SajuEngine.STEMS[dayStemIdx];
@@ -11759,9 +11747,7 @@ function buildMbtiCompatTrend(mbti){
    profile.mbti만 조회 키로 쓰고 새 입력 UI는 만들지 않는다. */
 function buildMbtiReport16(profile){
   var mbti = profile.mbti;
-  /* ★ 사주 풀이와 같은 규칙(위 buildReport13 주석 참고). 한쪽만 고치면 또 갈라진다. */
-  var rawName = (profile.name||'').trim();
-  var name = rawName ? (rawName + '님') : '이분';
+  var name = (profile.name||'').trim() || '너';
   var safeName = escapeHtml(name);
   var sym = MBTI_SYMBOL[mbti];
   var pb = MBTI_PB[mbti];
@@ -12085,8 +12071,7 @@ function buildTodaySummary(fortune){
   }
 
   /* ③ 오늘 가장 힘이 실리는 자리 */
-  /* ★ '점'은 받침이 있으니 '이에요'다. '(…점)예요'로 나가고 있었다(2026-08-31 점검). */
-  out.push('오늘 가장 힘이 실리는 쪽은 ' + labelOf[best] + '(' + sc[best] + '점)이에요. '
+  out.push('오늘 가장 힘이 실리는 쪽은 ' + labelOf[best] + '(' + sc[best] + '점)예요. '
     + todayWhy(best, b, true) + '. ' + (sc[best] >= 60 ? TODAY_CAT_HIGH[best] : TODAY_CAT_LOW[best]));
 
   /* ④ 오늘 가장 낮은 자리 — 다섯 항목이 전부 같은 점수면 이 문단을 빼고 그 사실을 적는다.
@@ -12096,7 +12081,7 @@ function buildTodaySummary(fortune){
   if(worst !== best){
     var low = sc[worst] < 60;
     out.push((low ? '반대로 오늘 가장 조심할 쪽은 ' : '다섯 중 상대적으로 낮은 쪽은 ')
-      + labelOf[worst] + '(' + sc[worst] + '점)이에요. '
+      + labelOf[worst] + '(' + sc[worst] + '점)예요. '
       + todayWhy(worst, b, true) + '. '
       + (low ? TODAY_CAT_LOW[worst] : (TODAY_CAT_HIGH[worst] + ' 낮다고 해도 나쁜 자리는 아니에요.')));
   } else {
@@ -12150,14 +12135,10 @@ function todayWhy(key, b){
   if(key==='total')  return TODAY_TOTAL_WHY[b.totalTier]
                             + (short ? '' : ' · 내 기운은 오늘 ' + b.stageName + ' 자리');
   if(key==='love')   return TODAY_LOVE_WHY[b.loveTier];
-  /* ★ 2026-08-31 점검 — '나를 받쳐 주는 기운예요'로 나가고 있었다. 받침이 있으면 '이에요'다.
-     R24에서 같은 실수를 한 번 잡았고(괄호로 끝나는 문자열의 조사), 그때 만든 함수가 있다. */
   if(key==='money')  return '오늘 날짜의 윗글자는 ' + (SIP_GROUP_PLAIN[b.sipGroup] || b.sipGroup)
-                            + josaOnlyText(SIP_GROUP_PLAIN[b.sipGroup] || b.sipGroup, '이에요', '예요')
-                            + '(' + b.sipName + ')';
+                            + '예요(' + b.sipName + ')';
   if(key==='work')   return '오늘 날짜의 윗글자는 ' + (SIP_GROUP_PLAIN[b.sipGroup] || b.sipGroup)
-                            + josaOnlyText(SIP_GROUP_PLAIN[b.sipGroup] || b.sipGroup, '이에요', '예요')
-                            + '(' + b.sipName + ' · ' + b.sipGroup + ')';
+                            + '예요(' + b.sipName + ' · ' + b.sipGroup + ')';
   if(key==='health') return TODAY_HEALTH_WHY[b.healthTier] + ' (오늘 ' + b.todayElemName + ' · 가장 여린 ' + b.weakestName + ' · 가장 진한 ' + b.mostName + ')';
   return null;
 }
@@ -12199,13 +12180,8 @@ function getTodayFortune(profile){
     var prev = result.items[cat.key];
     /* 문장은 예전 그대로 문구뱅크에서 뽑는다(이번 작업 범위가 아니다).
        이미 만들어 둔 오늘치가 있으면 그 문장을 그대로 쓴다. */
-    /* ★ 2026-08-31 대표님 지시 — 다섯 항목 중 네 곳에 "따뜻한 마음으로"가 똑같이 붙고 있었다.
-       (seed>>>2)%4 가 항목이 달라져도 같은 값으로 자주 떨어졌기 때문이다.
-       항목 번호(ci)를 그대로 더해 네 글자를 돌려 쓴다 — 이웃한 항목은 반드시 다른 말이 나온다.
-       날마다 시작 글자가 달라지도록 그날 씨앗도 함께 더한다. */
-    var flavorKey = profile.mbti[ (ci + (seedBase >>> 2)) % 4 ];
     var text = prev ? prev.text
-                    : (MBTI_FLAVOR[ flavorKey ] + ' ' + seededPick(seed, FORTUNE_PHRASES[cat.key]));
+                    : (MBTI_FLAVOR[ profile.mbti[(seed>>>2)%4] ] + ' ' + seededPick(seed, FORTUNE_PHRASES[cat.key]));
     /* ★ 별점: 예전 `1 + (seed % 5)`(난수)를 버리고 계산된 점수에서 뽑는다.
        사주를 못 구해 계산이 안 되면(생년월일 정보 부족 등) 점수를 지어내지 않고
        stars를 null로 두어 화면이 "아직 계산할 수 없음"을 말하게 한다. */
@@ -13658,9 +13634,7 @@ function buildTimeAdjustTable(spec){
     /* 분 단위 숫자 뒤 조사는 한국어로 읽었을 때의 받침으로 갈린다(13:39 → "구" 받침 없음).
        기존 josaNum()을 그대로 쓴다. 날짜가 덧붙는 경우(effDateNote)에는 ')' 뒤라 '입니다'로 받는다. */
     plain = '입력하신 '+pad2(spec.hour)+':'+pad2(spec.minute)+'을 그날 해가 떠 있던 위치에 맞추면 '+fmtHm(ta.eff)+effDateNote+
-            /* ★ 2026-08-31 점검 — 이 화면에서 이 문장만 합니다체였다('입니다' · '계산했습니다').
-               같은 함수의 아래 갈래는 '계산했어요'다. 앱 전체가 해요체다. */
-            josaNum(ta.eff.minute,'이에요.','예요.')+' 이 시각으로 계산했어요.';
+            (effDateNote ? '입니다.' : josaNum(ta.eff.minute,'이에요.','예요.'))+' 이 시각으로 계산했습니다.';
     plain += changeWord ? (' 맞추지 않으면 '+changeWord) : ' 맞추지 않아도 결과는 같은 시각이에요.';
   } else {
     plain = '지금은 맞추기를 꺼 두셔서, 입력하신 '+pad2(spec.hour)+':'+pad2(spec.minute)+'을 그대로 써서 계산했어요.';
@@ -15643,10 +15617,14 @@ function renderHome(){
      쓰지 않는 것을 안 밝히면 "MBTI를 넣었는데 뭐가 달라졌는지 모르겠다"가 된다. */
   view.appendChild(basisChip(['사주(오늘의 일진)']));
 
-  /* ★ 2026-08-31 대표님 지시 — 캐릭터 카드를 뺐다(R22로 넣었던 것).
-     "금(金) · 서릿날 / 맺고 끊는 결이 있어요…"가 내 사주 화면에 똑같이 또 있어서,
-     탭 두 개를 오가면 같은 소개를 두 번 읽게 됐다. 캐릭터는 내 사주와 캐릭터 도감에 남아 있다.
-     ★ 되살릴 때는 buildCharHero(charKeyForDayStem(getSajuResult(p)), 112, …) 세 줄이면 된다. */
+  /* ★ R22 — 홈은 이 앱에서 가장 자주 열리는 화면인데 여기만 캐릭터가 0개였다(R19 실측).
+     일간(日干) 오행 캐릭터를 세운다. 사주 화면과 같은 함수·같은 그림이라 새로 만든 것이 없고,
+     이 카드에는 계산 근거도 결제도 없다. 사주 계산이 안 되는 프로필이면 그냥 건너뛴다. */
+  var homeCharKey = charKeyForDayStem(getSajuResult(p));
+  if(homeCharKey){
+    var homeHero = buildCharHero(homeCharKey, 112, '오늘도 이 결로 하루를 읽어드릴게요.');
+    if(homeHero) view.appendChild(homeHero);
+  }
 
   if(fortune.todayIljin){
     /* R22 — 작은 분류(오늘의 일진) 위, 큰 제목(간지) 아래. 예전에는 제목이 '오늘의 일진'이고
@@ -15789,15 +15767,12 @@ function renderReport(){
      ★ 되살릴 때는 이 자리에 elCard 다섯 줄을 되돌리면 된다(git 3faf000 이전 판 참고). */
 
   var letters=p.mbti.split('');
-  /* ★ 2026-08-31 대표님 지시 — '강점' 칸을 뺐다.
-     그 칸은 바로 위 '성격유형 4지표 해설' 네 칸의 문장을 그대로 이어 붙인 것이라,
-     스크롤을 내리면 방금 읽은 글을 글자 하나까지 똑같이 다시 읽게 됐다.
-     (INDICATOR[l].strength — 4지표 해설이 쓰는 바로 그 값이다.)
-     주의점과 추천 행동은 위에 없는 내용이라 남긴다. */
+  var strengths = letters.map(function(l){return INDICATOR[l].strength;}).join(' ');
   var cautions = letters.map(function(l){return INDICATOR[l].caution;}).join(' ');
   var advice = buildAdvice(p.mbti);
 
-  var report=el('div',{class:'grid2'});
+  var report=el('div',{class:'grid3'});
+  report.appendChild(reportCol('강점', strengths));
   report.appendChild(reportCol('주의점', cautions));
   report.appendChild(reportCol('추천 행동', advice));
   view.appendChild(report);
@@ -16856,11 +16831,8 @@ function renderCompatForm(){
   /* ★ R41 — 예전에는 MBTI만 있으면 눌렸다. 그래서 생년월일·성별을 안 고른 채 눌러도
      기본값(2000-01-01, 여자)으로 사주 궁합이 나왔다. 화면에는 그 사실이 안 적혀 있어
      받아든 사람은 자기가 넣은 값으로 나온 결과라고 믿는다. 안 고른 게 있으면 막는다. */
-  /* ★ 2026-08-31 점검 — '어떤 사이인지'를 이 목록에 넣었더니 "상대방 어떤 사이인지 · 성격유형…"
-     이라는 말이 됐다. 사이는 상대방 정보가 아니라 두 사람 사이의 것이고, 고르는 자리도
-     이 칸이 아니라 화면 위다. 줄을 나눠서 각각 제 자리를 가리키게 한다. */
-  var needRelation = !COMPAT_DRAFT._set.relation;
   var missing = [];
+  if(!COMPAT_DRAFT._set.relation) missing.push('어떤 사이인지');
   if(!COMPAT_DRAFT.mbti)        missing.push('성격유형');
   if(!COMPAT_DRAFT._set.date)   missing.push('생년월일');
   if(!COMPAT_DRAFT._set.time)   missing.push('태어난 시각');
@@ -16868,21 +16840,15 @@ function renderCompatForm(){
   /* ★ R84 — 출생지도 여기 넣는다. 내 프로필 쪽(R71)에서 이미 막고 있던 것을 궁합에도 맞췄다.
      태어난 시각을 모르면 보정할 시각 자체가 없으므로 그때는 묻지 않는다. */
   if(COMPAT_DRAFT._set.time && !COMPAT_DRAFT.timeUnknown && !COMPAT_DRAFT._set.place) missing.push('출생지');
-  var canSubmit = (missing.length === 0) && !needRelation;
+  var canSubmit = missing.length === 0;
   box.appendChild(circleCTA(CTA_ICON.heart, '궁합 풀어보기', function(){
     if(!canSubmit) return;
     submitCompat();
   }, !canSubmit));
   if(!canSubmit){
-    if(needRelation){
-      box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin-top:-4px;'},
-        ['화면 위에서 어떤 사이인지 먼저 골라주세요.']));
-    }
-    if(missing.length){
-      box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin-top:-4px;'},
-        /* ★ R84 — '을(를)'을 그대로 찍고 있었다(테스터 지적). 앱에 이미 있는 조사 판정을 쓴다. */
-        [PL+' '+missing.join(' · ')+josaOnly(missing[missing.length-1],'을','를')+' 채우면 궁합을 볼 수 있어요.']));
-    }
+    box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin-top:-4px;'},
+      /* ★ R84 — '을(를)'을 그대로 찍고 있었다(테스터 지적). 앱에 이미 있는 조사 판정을 쓴다. */
+      [PL+' '+missing.join(' · ')+josaOnly(missing[missing.length-1],'을','를')+' 채우면 궁합을 볼 수 있어요.']));
   }
   return box;
 }
