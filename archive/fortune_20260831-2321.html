@@ -484,41 +484,6 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    버튼 이름 끝에 붙은 괄호 설명이 좁은 화면에서 아무 데서나 줄바꿈돼 읽기 나빴다
    (예: "그림으로 한눈에 보기 (기운 균형 · / 인연 매듭 · 연결선)").
    괄호를 없애고 아랫줄에 작은 글씨로 내린다. 줄이 어디서 끊길지 우리가 정한다. */
-/* =====================================================================
-   읽는 호흡 — 한 줄 길이를 묶는다 (2026-08-31 대표님 지시)
-   ---------------------------------------------------------------------
-   화면 폭 네 가지로 실제로 재 본 결과다(글자 수 = 문단 폭 ÷ 글자 크기).
-
-     390px   한 줄 21~27자   ← 편함
-     768px   한 줄 최대 58자, 25개 문단 중 10개가 45자 초과
-     1024px  한 줄 최대 75자, 25개 중 22개가 45자 초과 · 10개는 55자 초과
-     1440px  1024px와 같음 (#app이 960px에서 멈추므로)
-
-   한글은 한 줄 35~40자가 편하고, 45자를 넘으면 눈이 다음 줄 첫 글자를 못 찾는다.
-   화면이 넓다고 글줄까지 늘일 이유가 없다 — 넓어진 자리는 여백으로 둔다.
-
-   ★ 글자 크기 기준(em)으로 묶는다. 큰 글씨든 작은 안내글이든 '한 줄 40자'로 같아진다.
-     px로 묶으면 작은 글씨가 한 줄에 60자씩 들어간다.
-   ★ 가운데 정렬된 글은 좌우 여백을 자동으로 나눠 준다. 안 그러면 폭만 줄고
-     글이 왼쪽으로 쏠려 가운데 정렬이 깨진다.
-===================================================================== */
-#main p, #main li,
-#main .section-sub, #main .biz-hint, #main .warn-box, #main .cm-verdict-line,
-#main .gc-why-desc span, #main .dw-now{
-  max-width:40em;
-}
-/* 제목은 조금 더 넉넉히 — 짧아서 40자를 넘길 일이 드물고, 억지로 접으면 더 나빠진다. */
-#main h1, #main h2, #main h3{ max-width:34em; }
-/* 가운데 정렬된 글(인라인 style로 지정된 것 포함)은 상자도 가운데로. */
-#main [style*="text-align:center"], #main .cm-verdict-line,
-.envelope-wrap p, .envelope-wrap .warn-box, .envelope-wrap .section-sub,
-.onboard p{
-  margin-left:auto; margin-right:auto;
-}
-/* 마지막 줄에 한 낱말만 덜렁 남는 것을 브라우저가 알아서 피하게 한다.
-   (지원 안 하는 브라우저는 그냥 무시하고 예전대로 그린다 — 깨지지 않는다) */
-#main p, #main li, #main .section-sub, #main .biz-hint, #main .warn-box{ text-wrap:pretty; }
-#main h1, #main h2, #main h3{ text-wrap:balance; }
 /* 용어 버튼과 그것을 감싼 괄호는 한 덩어리로 — 닫는 괄호만 다음 줄로 떨어지지 않게 한다. */
 .term-nowrap{white-space:nowrap;}
 .btn-lines{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
@@ -4754,8 +4719,6 @@ var PENDING_ROOM = (/[#&]r=([A-Za-z0-9_-]{10,})/.exec(INVITE_HASH_RAW) || [])[1]
 /* R34 — 저장된 그룹 주소(#g=). 주소에는 뜻 없는 번호만 들어간다. */
 /* R35 — 접수 주소(#gj=)를 먼저 본다. #gj= 는 '[#&]g=' 에는 걸리지 않지만(g 앞이 #이 아니라 j),
    순서를 분명히 해 두어야 나중에 정규식을 손댈 때 헷갈리지 않는다. */
-/* ★ 링크에 실려 온 '어떤 사이인가'(#rel=). 받는 사람은 고르지 않는다 — 보낸 사람이 정한다. */
-var PENDING_LINK_RELATION = (/[#&]rel=(friend|lover|coworker)\b/.exec(INVITE_HASH_RAW) || [])[1] || null;
 var PENDING_GROUP_JOIN = PATH_GROUP_JOIN
   || (/[#&]gj=([A-Za-z0-9_-]{8,})/.exec(INVITE_HASH_RAW) || [])[1] || null;
 var PENDING_GROUP = PENDING_GROUP_JOIN ? null
@@ -15761,10 +15724,12 @@ function renderReport(){
   indCard.appendChild(grid);
   view.appendChild(indCard);
 
-  /* ★ 2026-08-31 대표님 지적("성격유형에 사주가 또 왜나와?") — 오행 카드를 뺐다.
-     '타고난 기운의 결 — 금 (여덟 글자 중 가장 많은 기운)' + 다섯 기운 막대는
-     내 사주 탭에 이미 같은 것이 있다. 성격유형 화면은 성격유형만 이야기한다.
-     ★ 되살릴 때는 이 자리에 elCard 다섯 줄을 되돌리면 된다(git 3faf000 이전 판 참고). */
+  var elCard=el('div',{class:'scroll-card'});
+  elCard.appendChild(cardHead('타고난 기운의 결 — '+p.element+' ('+charCountWord(p)+' 글자 중 가장 많은 기운)', ['오행']));
+  elCard.appendChild(el('p',{},[ELEMENT_TRAIT[p.element]]));
+  var saju = getSajuResult(p);
+  if(saju){ elCard.appendChild(buildElemBars(dominantElementIdx(saju).counts)); }
+  view.appendChild(elCard);
 
   var letters=p.mbti.split('');
   var strengths = letters.map(function(l){return INDICATOR[l].strength;}).join(' ');
@@ -16575,43 +16540,16 @@ function renderCompat(){
         view.appendChild(el('p',{class:'biz-hint'},
           ['저장된 프로필이 '+STATE.profiles.length+'명이라 프로필로는 아직 그룹을 만들 수 없어요. 아래 링크를 보내 모으시면 돼요.']));
       }
-      /* 모임도 어떤 사이인지 먼저 정하고 링크를 보낸다 — 받는 분 화면에 그대로 뜬다. */
-      view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['이 모임은 어떤 사이인가요']));
-      var gseg = el('div',{class:'seg-toggle', style:'margin-bottom:8px;', role:'group','aria-label':'이 모임은 어떤 사이인가요'});
-      COMPAT_RELATIONS.forEach(function(r){
-        gseg.appendChild(el('button',{type:'button','aria-pressed':GC_RELATION===r.key?'true':'false',
-          onclick:function(){ if(GC_RELATION===r.key) return; GC_RELATION=r.key;
-            GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); }},[r.label]));
-      });
-      view.appendChild(gseg);
-      view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p, GC_RELATION); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '링크를 보내 모으기']));
+      view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '링크를 보내 모으기']));
       view.appendChild(el('p',{class:'biz-hint'},
         ['같은 링크 하나로 여러 분을 부를 수 있어요. 받은 분이 자기 정보를 넣으면 바로 그룹에 들어와요.']));
     } else {
       var recent = buildRecentRoomsCard();
       if(recent) view.appendChild(recent);
-      /* ★ 2026-08-31 대표님 지시 — "내가 링크를 보낼 때 관계를 설정해서 보내게".
-         관계는 두 길(링크로 보내기 · 내가 직접 입력) 모두에 걸리므로 갈림길보다 앞에 둔다.
-         예전에는 아래 입력 칸 안에 있어서, 링크를 보내는 사람은 관계를 정할 기회가 없었다. */
-      view.appendChild(settingsRow('어떤 사이인가요',
-        COMPAT_DRAFT._set.relation ? relationLabel(COMPAT_DRAFT.relation) : '눌러서 고르기',
-        function(){ openRelationSheet(); }));
-      view.appendChild(el('p',{class:'biz-hint', style:'margin:-6px 0 14px;'},
-        [COMPAT_DRAFT._set.relation
-          ? ('이 사이로 풀이하고 점수를 내요. 링크를 보내면 받는 분 화면에도 '+relationLabel(COMPAT_DRAFT.relation)+'으로 표시돼요.')
-          : '먼저 어떤 사이인지 골라주세요. 링크에도 함께 담겨 가요.']));
       /* ★ R56 — 버튼 이름을 '누가 넣는지'로 바꿨다(대표님 지시).
          '초대 링크 만들기'는 만드는 사람 입장의 말이고, 정작 고민되는 건
          '상대 정보를 내가 넣어야 하나, 상대가 넣나'다. 그 갈림을 그대로 이름에 담는다. */
-      view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;', onclick:function(){
-        /* 관계를 안 고른 채로는 링크를 만들지 않는다 — 만들어 보내고 나면 고칠 수가 없다.
-           막고 끝내지 말고 고르는 창을 바로 열어 준다. */
-        if(!COMPAT_DRAFT._set.relation){
-          showToast('먼저 어떤 사이인지 골라주세요. 링크에 함께 담겨 가요.');
-          openRelationSheet(); return;
-        }
-        openInviteLinkModal(p, COMPAT_DRAFT.relation);
-      }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('상대방이 직접 입력하기','링크를 보내면 그분이 넣어요')]));
+      view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('상대방이 직접 입력하기','링크를 보내면 그분이 넣어요')]));
       /* ★ R56 — 아래 입력 칸에 이름을 붙인다(대표님 지시). 위 버튼(상대가 넣기)과
          아래 칸(내가 넣기)이 같은 일을 다른 방법으로 하는 것인데, 아래에는 이름이 없어
          둘의 관계가 안 보였다. */
@@ -16642,9 +16580,9 @@ function renderCompatForm(){
      ★ R41과 같은 규칙을 따른다 — 안 고른 것을 고른 것처럼 보여주지 않는다.
        기본값(친구)을 미리 적어 두면 연인으로 보려던 사람이 그냥 지나치고,
        그러면 본인이 고르지 않은 비중으로 점수가 나온다. */
-  /* ★ 2026-08-31 대표님 지시 — 이 줄은 여기(직접 입력 칸)가 아니라 화면 위,
-     [상대방이 직접 입력하기] 버튼보다 앞에 있다(renderCompat 참고).
-     여기 있으면 링크로 보내는 길을 고른 사람은 관계를 정할 기회가 없다. */
+  box.appendChild(settingsRow('어떤 사이인가요',
+    COMPAT_DRAFT._set.relation ? relationLabel(COMPAT_DRAFT.relation) : '눌러서 고르기',
+    function(){ openRelationSheet(); }));
 
   /* row 1: 상대방 닉네임 */
   box.appendChild(settingsRow((PL+' 닉네임'), COMPAT_DRAFT.name || '눌러서 고르기', function(){
@@ -19180,26 +19118,9 @@ function confirmDeleteGroup(){
    ★ 참여에는 PIN을 요구하지 않는다. 요구하면 접수라는 말이 성립하지 않는다.
      대신 참여 전에 "무엇이 올라가고 누가 볼 수 있는지"를 반드시 보여주고 동의를 받는다.
 ===================================================================== */
-/* ★ 2026-08-31 — 어떤 사이로 보는지를 링크에 함께 실어 보낸다(대표님 지시).
-   ★ 주소의 # 뒤는 브라우저가 서버로 보내지 않는다. 그래서 관계는 우리 서버 기록에 남지 않고
-     링크를 받은 사람의 화면에서만 읽힌다 — 개인정보 고지가 넓어지지 않는다. */
-function groupJoinLink(id, relationKey){
-  var rel = (relationKey && relationOf(relationKey).key === relationKey) ? relationKey : null;
-  return location.origin + '/j/' + id + (rel ? ('#rel=' + rel) : '');
-}
+function groupJoinLink(id){ return location.origin + '/j/' + id; }
 
 var GROUP_JOIN_STATE = {busy:false, error:null, done:false, name:null, lookedUp:false};
-/* ★ 링크에 사이가 실려 왔으면 그것으로 시작한다(모임·둘이서 공통).
-   ★ 부팅 순서상 GC_RELATION 선언(아래쪽)보다 이 파일에서 늦게 실행되는 곳에서 심어야 한다 —
-     그래서 여기서 하지 않고 applyLinkRelation()을 만들어 부팅 절에서 부른다. */
-function applyLinkRelation(){
-  if(!PENDING_LINK_RELATION) return;
-  try{
-    GC_RELATION = PENDING_LINK_RELATION;
-    GC_PAIRS_CACHE = {key:null, pairs:null, ms:0, computed:0};
-    if(COMPAT_DRAFT){ COMPAT_DRAFT.relation = PENDING_LINK_RELATION; COMPAT_DRAFT._set.relation = true; }
-  }catch(e){ console.warn('링크에 실려 온 사이를 적용하지 못했어요', e); }
-}
 
 function renderGroupJoin(){
   var main=$('#main'); main.innerHTML='';
@@ -19235,10 +19156,6 @@ function renderGroupJoin(){
   wrap.appendChild(el('p',{class:'section-sub'},[
     me ? (nameOr(me.name)+'님으로 참여해요. 다른 프로필로 하시려면 화면 위에서 프로필을 바꿔주세요.') : ''
   ]));
-  if(PENDING_LINK_RELATION){
-    wrap.appendChild(el('p',{class:'section-sub'},
-      ['보내신 분이 ' + relationLabel(PENDING_LINK_RELATION) + ' 사이로 정하셨어요. 그 기준으로 풀이하고 점수를 내드려요.']));
-  }
   /* ★ 무엇이 올라가고 누가 볼 수 있는지를 참여 "전에" 보여준다. 누른 뒤에 알리면 늦다. */
   wrap.appendChild(el('p',{class:'warn-box'},[
     /* ★ R47 — 세 줄로 줄였다(대표님 지시). 항목을 하나하나 나열하니 아무도 안 읽었다.
@@ -20112,10 +20029,9 @@ function startRoomWait(roomId, link, ttlHours){
      다른 사람을 끌어들이면 안 되기 때문이다.
    ★ 서버 쪽 쓰레기도 같이 준다. 눌러 보기만 해도 그룹이 쌓이던 것을 막는다.
 ===================================================================== */
-function openInviteLinkModal(profile, relationKey){
-  var relForLink = (relationKey && relationOf(relationKey).key === relationKey) ? relationKey : null;
+function openInviteLinkModal(profile){
   var base = location.href.split('#')[0];
-  var fallback = base + '#' + INVITE_VER + '=' + encodeInvite(profile) + (relForLink ? ('&rel=' + relForLink) : '');
+  var fallback = base + '#' + INVITE_VER + '=' + encodeInvite(profile);
   var autoName = (profile.name ? profile.name + '님의 궁합' : '내 궁합');
   var pending = STATE.pendingInviteGroup;
 
@@ -20131,11 +20047,11 @@ function openInviteLinkModal(profile, relationKey){
            이미 거기 있다. 안 그리면 손님이 탭을 한 번 눌러야 나타난다(실측으로 잡음).
            창은 #modalRoot에 따로 떠 있어서 여기서 다시 그려도 닫히지 않는다. */
         if(ROUTE==='compat') render();
-        showInviteModal(profile, groupJoinLink(d.groupId, relForLink), true, d.ttlDays, relForLink);
+        showInviteModal(profile, groupJoinLink(d.groupId), true, d.ttlDays);
       });
   }
 
-  if(!pending){ makeNew().catch(function(){ showInviteModal(profile, fallback, false, 0, relForLink); }); return; }
+  if(!pending){ makeNew().catch(function(){ showInviteModal(profile, fallback, false, 0); }); return; }
 
   /* 만들어 둔 링크가 아직 비어 있으면(나 혼자면) 그것을 그대로 쓴다. */
   groupFetch({action:'get', groupId:pending})
@@ -20145,24 +20061,16 @@ function openInviteLinkModal(profile, relationKey){
       GROUP_VIEW = {id:pending, name:(d.name || autoName)};
       rememberGroup(pending, GROUP_VIEW.name, null, n);
       if(ROUTE==='compat') render();
-      showInviteModal(profile, groupJoinLink(pending, relForLink), true, d.ttlDays, relForLink);
+      showInviteModal(profile, groupJoinLink(pending), true, d.ttlDays);
     })
     .catch(function(){
       STATE.pendingInviteGroup = null; saveState();
-      makeNew().catch(function(){ showInviteModal(profile, fallback, false, 0, relForLink); });
+      makeNew().catch(function(){ showInviteModal(profile, fallback, false, 0); });
     });
 }
-function showInviteModal(profile, link, live, ttlHours, relationKey){
+function showInviteModal(profile, link, live, ttlHours){
   hideToast();   /* ★ R93 — 링크가 나왔으니 '만드는 중' 안내를 여기서 걷는다 */
   var body=el('div',{});
-  /* ★ 이 안내는 갈래(live/fallback) 밖에 둔다. 안쪽에 두면 한쪽에만 붙어,
-     같은 링크인데 어떤 때는 무슨 사이인지 안 적히는 일이 생긴다(실측으로 잡음). */
-  function relLine(){
-    return relationKey
-      ? el('p',{class:'biz-hint', style:'margin-top:8px;'},
-          ['이 링크는 ' + relationLabel(relationKey) + ' 사이로 보는 궁합이에요. 받는 분 화면에도 그렇게 뜨고, 그분이 따로 고르지 않아도 돼요.'])
-      : null;
-  }
   /* ★ R95 — 이 창에서 할 일은 하나다: 링크를 보내는 것. 그래서 링크를 맨 위에 둔다.
      설명은 두 줄로 줄이고, 고지는 지우지 않고 접는다(지우면 고지가 아니게 된다). */
   function linkRow(){
@@ -20175,7 +20083,6 @@ function showInviteModal(profile, link, live, ttlHours, relationKey){
   /* ★ 이 문장은 실제 동작과 정확히 같아야 한다. 방이 만들어졌을 때와 아닐 때가 다르다. */
   if(live){
     body.appendChild(linkRow());
-    (function(){ var r=relLine(); if(r) body.appendChild(r); })();
     body.appendChild(el('p',{},['받은 분이 정보를 넣는 순간 '+profile.name+'님 화면에도 함께 나타나요. 두 명이든 '+GC_MAX+'명이든 이 링크 하나면 돼요.']));
     /* ★ R65 — 대표님이 주신 문장으로. 항목을 하나하나 나열하니 아무도 안 읽었다.
        읽히지 않는 고지는 고지가 아니다. 자세한 항목은 개인정보처리방침에 그대로 있다.
@@ -20208,10 +20115,7 @@ function showInviteModal(profile, link, live, ttlHours, relationKey){
       '지금은 실시간 연결을 쓸 수 없어 예전 방식으로 만들었어요. 결과는 링크를 연 상대방 화면에만 나오고 '+profile.name+'님 화면은 바뀌지 않아요. 이 링크 주소 안에는 '+ownerLabel(profile.name)+' '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 그대로 담기니 궁합을 볼 상대에게만 보내주세요.'
     ]));
   }
-  if(!live){
-    body.appendChild(linkRow());
-    (function(){ var r=relLine(); if(r) body.appendChild(r); })();
-  }
+  if(!live) body.appendChild(linkRow());
   openModal('궁합 초대 링크', body, [
     {label:'닫기', cls:'btn-ghost', onclick:closeModal},
     {label:'공유하기', cls:'btn-primary', onclick:function(){
@@ -20331,11 +20235,6 @@ function renderInviteAccept(){
   wrap.appendChild(el('button',{class:'btn btn-primary', onclick:function(){
     COMPAT_DRAFT = defaultCompatDraft();
     if(PENDING_INVITE){
-      /* ★ 2026-08-31 — 보낸 분이 정한 사이를 그대로 쓴다. 받는 분은 고르지 않는다. */
-      if(PENDING_LINK_RELATION){
-        COMPAT_DRAFT.relation = PENDING_LINK_RELATION;
-        COMPAT_DRAFT._set.relation = true;
-      }
       COMPAT_DRAFT.name = PENDING_INVITE.n||'';
       COMPAT_DRAFT.mbti = PENDING_INVITE.m||null;
       COMPAT_DRAFT.year = PENDING_INVITE.y; COMPAT_DRAFT.month = PENDING_INVITE.mo; COMPAT_DRAFT.day = PENDING_INVITE.d;
@@ -21445,9 +21344,6 @@ primeEntitlements();
    프로필이 없으면 앱이 설정 마법사부터 띄우기 때문이다(초대 링크도 원래 같은 조건이다). */
 /* 표(INVITE_FIELDS)가 준비된 지금에서야 두 링크를 푼다. 위에서 주소만 챙겨 뒀다. */
 PENDING_INVITE = decodeInviteFromHash(INVITE_HASH_RAW);
-/* ★ 링크에 실려 온 '어떤 사이인가'를 여기서 심는다. GC_RELATION·COMPAT_DRAFT 선언이
-   모두 끝난 뒤라야 한다 — 위에서 부르면 선언 전이라 값이 날아간다. */
-applyLinkRelation();
 var MEET_HASH_PRESENT = /[#&]meet=/.test(location.hash||'');
 PENDING_MEET = decodeMeetFromHash(location.hash);
 /* ★ 읽기에 실패한(깨진·옛 형식) 링크도 지운다. 파싱이 안 됐다고 개인정보가 사라지는 게 아니다 —
