@@ -217,6 +217,7 @@
   --gold-gradient:linear-gradient(135deg,#1f1c17,#1f1c17);
   --gold-soft:rgba(175,43,37,.08);     /* 낙관색을 아주 옅게 깐 면 */
   --gold-line:#d8d0c0;                 /* 괘선 — 시안의 '선 (기본)'. 그림자를 대신한다 */
+  --line:#d8d0c0;                      /* ★ 2026-09-02 — 10군데에서 var(--line)을 쓰는데 정의가 없어 그 괘선들이 통째로 안 그려지고 있었다 */
   /* 입력칸 테두리만 따로 둔다. 장식 헤어라인(--gold-line)은 1.4:1이라 "이게 입력칸이구나"를
      알려주지 못한다. 폼 컨트롤 경계는 3:1이 필요하므로 웜그레이 실선으로 분리했다(3.46:1). */
   /* ★ 시안의 '선 (진함)' #c9c0ae는 종이 위 1.49:1이라 '여기가 입력칸이다'를 못 알린다.
@@ -703,7 +704,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    "코드만 보고는 못 고르겠다"가 여기서 막히는 이유였다. 두 칸으로 넓혀 별명을 함께 적는다. */
 .mbti-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:18px 0;}
 .mbti-cell{
-  border:1px solid rgba(31,28,23,0.132);border-radius:var(--r-md);
+  border:1px solid var(--gold-line);border-radius:var(--r-md);
   display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
   min-height:58px;padding:10px 12px;text-align:left;font-family:var(--sans);
   font-weight:700;font-size:1.05rem;letter-spacing:-.01em;color:var(--ink-dim);background:var(--panel-3);
@@ -711,8 +712,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 }
 .mbti-cell .mc-code{font-size:.98rem;font-weight:700;}
 .mbti-cell .mc-tag{font-size:.76rem;font-weight:400;line-height:1.4;margin-top:2px;opacity:.9;}
-.mbti-cell:hover{border-color:var(--gold);color:var(--ink);background:var(--gold-soft);}
-.mbti-cell[aria-pressed="true"]{background:var(--gold-gradient);border-color:transparent;color:var(--void);}
+.mbti-cell:hover{border-color:var(--ink);color:var(--ink);background:var(--panel-2);}
+.mbti-cell[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--panel-2);}
 @media (max-width:360px){.mbti-grid{gap:6px;}.mbti-cell{padding:9px 10px;}.mbti-cell .mc-tag{font-size:.72rem;}}
 
 /* ===================== 폼 공통 ===================== */
@@ -736,12 +737,24 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .hour-btn:hover{border-color:var(--gold);color:var(--ink);background:var(--gold-soft);}
 .hour-btn:active{transform:scale(.95);}
 .hour-btn[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
-.progress-track{height:6px;background:var(--track);border-radius:var(--r-pill);overflow:hidden;margin-bottom:20px;}
-.progress-fill{height:100%;border-radius:var(--r-pill);background:var(--red-hi);transition:width .3s ease;}
+.progress-track{height:2px;background:var(--track);border-radius:0;overflow:hidden;margin-bottom:20px;}
+.progress-fill{height:100%;border-radius:0;background:var(--ink);transition:width .3s ease;}
+/* 단계 표시 — 시안대로 칸마다 괘선을 긋고 지금 칸만 먹으로 진하게 한다.
+   예전 알약 막대는 "몇 번째인지"만 알려줬고 "무엇을 넣는 단계인지"는 못 알려줬다. */
+.step-rail{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.step-rail .sr-item{padding-top:9px;border-top:2px solid var(--track);}
+.step-rail .sr-num{display:block;font-family:var(--serif);font-size:.78rem;line-height:1.3;letter-spacing:.08em;color:var(--ink-faint);}
+.step-rail .sr-label{display:block;font-size:.8rem;line-height:1.4;letter-spacing:-.01em;color:var(--ink-faint);margin-top:2px;}
+.step-rail .sr-item.done{border-top-color:var(--ink-dim);}
+.step-rail .sr-item.done .sr-num,.step-rail .sr-item.done .sr-label{color:var(--ink-dim);}
+.step-rail .sr-item.now{border-top-color:var(--ink);}
+.step-rail .sr-item.now .sr-num{color:var(--brand);}
+.step-rail .sr-item.now .sr-label{color:var(--ink);font-weight:600;}
 .seg-toggle{display:flex;border:1px solid var(--gold-line);background:var(--panel-3);border-radius:var(--r-frame);overflow:hidden;width:max-content;}
 .seg-toggle button{padding:12px 20px;min-height:44px;font-size:.85rem;color:var(--ink-dim);transition:background .15s,color .15s;}
 .seg-toggle button:active{opacity:.7;}
-.seg-toggle button[aria-pressed="true"]{background:var(--gold-soft);color:var(--gold);font-weight:600;}
+.seg-toggle button+button{border-left:1px solid var(--gold-line);}
+.seg-toggle button[aria-pressed="true"]{background:var(--ink);color:var(--panel-2);font-weight:600;}
 /* ★ 2026-09-01 — 어떤 사이인가는 넷(친구·연인·직장 동료·가족)이라 한 줄에 안 들어간다.
    width:max-content로 두면 좁은 화면에서 그대로 잘려 나간다. 2×2로 놓고, 넓은 화면에서만 한 줄로. */
 .seg-rel{display:grid;grid-template-columns:repeat(2,1fr);width:100%;}
@@ -1809,7 +1822,7 @@ body.has-fab main{padding-bottom:110px;}
 .inline-pick{padding:12px 0;border-top:1px solid var(--line);}
 .inline-pick-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;}
 .inline-pick-label{font-weight:600;font-size:.95rem;color:var(--ink);}
-.inline-pick-val{font-size:.86rem;color:var(--ink-dim);}
+.inline-pick-val{font-size:.86rem;color:var(--ink-dim);font-family:var(--serif);}
 
 /* R74 — 테스트 키일 때 결제창 맨 위에 뜨는 띠 */
 /* ★ 2026-08-28 (UX 점검) — 앱에서 가장 안 읽히는 글이 하필 가장 중요한 안전 고지였다.
@@ -2231,6 +2244,9 @@ body.has-fab main{padding-bottom:110px;}
   /* 화면 제목·큰 버튼은 지면 가운데를 넘지 않게 둔다 — 1312px를 가득 채운 버튼은 눌러야 할
      것처럼 안 보인다(실측이 아니라 시안의 데스크톱 버튼 폭이 그렇다). */
   #main > .view > .btn-block{max-width:520px;}
+  /* 프로필 만들기는 두 단으로 펴지 않는다 — 입력은 한 줄기로 따라가는 화면이고,
+     넓은 화면에서 그대로 두면 이름표와 값이 1,650px 양끝으로 갈라진다. */
+  #main > .view.setup-view{max-width:680px;margin:0 auto;columns:auto;}
   .page-head, .landing-intro{max-width:44em;}
 }
 
@@ -14445,11 +14461,24 @@ function leaveSetupWizard(){
   if(setupDirty()){ confirmModal('저장하지 않은 변경이 있어요. 저장하지 않고 나갈까요?', go, '나가기'); return; }
   go();
 }
+/* 세 칸 단계 표시. 한자 숫자는 시안의 머리글자 장식이고, 무엇을 넣는 칸인지는 한글로 적는다. */
+var SETUP_STEPS=[['一','사주 정보'],['二','성격유형'],['三','확인']];
+function stepRail(step){
+  var rail=el('div',{class:'step-rail','aria-label':'3단계 중 '+step+'단계'});
+  SETUP_STEPS.forEach(function(pair,i){
+    var n=i+1;
+    var cls='sr-item'+(n<step?' done':(n===step?' now':''));
+    rail.appendChild(el('div',{class:cls, 'aria-current': n===step?'step':null},[
+      el('span',{class:'sr-num'},[pair[0]]),
+      el('span',{class:'sr-label'},[pair[1]])
+    ]));
+  });
+  return rail;
+}
 function renderSetup(){
   var main=$('#main'); main.innerHTML='';
-  var view=el('div',{class:'view'});
-  var progress=el('div',{class:'progress-track'},[el('div',{class:'progress-fill',style:'width:'+(SETUP.step*33)+'%'})]);
-  view.appendChild(progress);
+  var view=el('div',{class:'view setup-view'});
+  view.appendChild(stepRail(SETUP.step));
   /* ★ R94 — 1단계가 사주 정보, 2단계가 성격유형이다(순서를 뒤집었다). */
   if(SETUP.step===1) view.appendChild(renderSetupBirth());
   else if(SETUP.step===2) view.appendChild(renderSetupMbti());
@@ -14490,7 +14519,7 @@ function setupField(label, valueText, contentNode, hint){
 }
 function renderSetupBirth(){
   var box=el('div',{});
-  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 1/3':'프로필 만들기 · 1/3', '언제 태어나셨어요?',
+  box.appendChild(pageHead(SETUP.editId?'프로필 수정':'프로필 만들기', '언제 태어나셨어요?',
     '사주 여덟 글자를 계산하는 데 쓰여요.'));
 
   /* ── 양력 / 음력 ── 기본값(양력)이 대다수에게 맞아 막지 않는다 ── */
@@ -14675,7 +14704,7 @@ function renderSetupBirth(){
 }
 function renderSetupMbti(){
   var box=el('div',{});
-  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 2/3':'프로필 만들기 · 2/3', '성격유형을 골라주세요',
+  box.appendChild(pageHead(SETUP.editId?'프로필 수정':'프로필 만들기', '성격유형을 골라주세요',
     '아시면 바로 고르시고, 모르시면 아래 8문항으로 알아보실 수 있어요.'));
 
   if(!SETUP.testMode){
@@ -14974,7 +15003,7 @@ function computeSetupSaju(){
 }
 function renderSetupStep3(){
   var box=el('div',{});
-  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 3/3':'프로필 만들기 · 3/3', '이 정보가 맞나요?'));
+  box.appendChild(pageHead(SETUP.editId?'프로필 수정':'프로필 만들기', '이 정보가 맞나요?'));
   var computed = computeSetupSaju();
   if(!computed){
     box.appendChild(el('p',{class:'warn-box'},['입력한 음력 날짜를 변환할 수 없어요. 이전 단계로 돌아가 날짜를 다시 확인해주세요.']));
