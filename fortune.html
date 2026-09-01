@@ -1660,7 +1660,11 @@ body.has-fab main{padding-bottom:110px;}
 .compat-side h4{text-align:center;font-size:.9rem;color:var(--ink-dim);margin-bottom:8px;}
 .compat-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;}
 @media (max-width:640px){.compat-summary-grid{grid-template-columns:1fr;}}
-.tier-label{display:inline-block;margin-top:4px;padding:5px 14px;border-radius:20px;background:var(--gold-soft);border:1px solid rgba(31,28,23,0.132);color:var(--gold);font-family:var(--sans);font-weight:700;font-size:.95rem;letter-spacing:-.01em;}
+/* ★ 2026-09-01 리뉴얼 — 시안의 등급 배지는 '밝은 종이면 + 1px 등급색 테두리 + 등급색 글자'다.
+   알약(20px)이 아니라 각진 상자다. 색은 쓰는 자리에서 등급에 맞춰 넣는다(--tier). */
+.tier-label{display:inline-block;margin-top:4px;padding:6px 16px;border-radius:0;
+  background:var(--ink-700);border:1px solid var(--tier,var(--gold));color:var(--tier,var(--gold));
+  font-family:var(--sans);font-weight:700;font-size:.95rem;letter-spacing:-.01em;}
 
 /* ===================== R21: 궁합 항목별 지표(일상어 막대) + 접어 둔 전문 용어 =====================
    지표 자체는 새 계산이 아니다 — computeCompat/buildSajuCompat이 이미 내던 하위 점수를
@@ -2094,7 +2098,13 @@ body.has-fab main{padding-bottom:110px;}
 /* R29 — 캐릭터 윤곽선은 currentColor다. 칩이 놓이는 자리마다 물려받는 글자색이 달라서
    밝은 바탕에서 실루엣이 날아갈 수 있다. 캐릭터를 담는 자리 전부에 color:var(--ink)를 못 박는다. */
 .char-chip{width:40px;height:40px;border-radius:50%;background:var(--ink-700);border:1px solid var(--gold-line);padding:1px;color:var(--ink);}
+/* ★ 2026-09-01 리뉴얼 — 시안은 두 캐릭터를 등급 색 선으로 잇는다. 그 선이 '인연'의 표시다.
+   줄이 접히면(좁은 화면) 선을 감춘다 — 위아래로 놓인 두 사람 사이에 가로선을 그으면 뜻이 어긋난다. */
 .char-pair{display:flex;justify-content:center;align-items:flex-start;gap:16px;flex-wrap:wrap;margin:4px 0 16px;}
+.char-pair.cp-linked{position:relative;gap:34px;}
+.char-pair.cp-linked::before{content:'';position:absolute;left:50%;top:52px;width:34px;height:var(--tierw,2px);
+  transform:translateX(-50%);background:var(--tier,var(--ink));pointer-events:none;}
+@media (max-width:359px){ .char-pair.cp-linked{gap:16px;} .char-pair.cp-linked::before{display:none;} }
 .char-pair .cp-side{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:160px;text-align:center;}
 .char-pair .cp-side .char-svg{color:var(--ink);}
 .char-pair .cp-name{font-size:.92rem;font-weight:600;}
@@ -10267,8 +10277,9 @@ function buildCharHero(key, size, note){
 }
 /* 궁합 화면에서 두 사람을 나란히 세운다. 각자 MBTI 캐릭터를 쓰고, 일간 오행은 아래 한 줄로만 적는다
    (오행 캐릭터까지 네 마리를 세우면 화면이 시끄러워지고 320px에서 무너진다). */
-function buildCompatCharPair(nameA, pA, pB){
-  var wrap = el('div',{class:'char-pair'});
+function buildCompatCharPair(nameA, pA, pB, tier){
+  var wrap = el('div',{class:'char-pair'+(tier?' cp-linked':'')});
+  if(tier) wrap.setAttribute('style','--tier:'+gcTierColor(tier)+';--tierw:'+((GC_TIER_WIDTH[tier]||2)+'px')+';');
   [[nameA||pA.name, pA],[pB.name, pB]].forEach(function(pair){
     var who = pair[1];
     var key = charKeyForMbti(who.mbti);
@@ -17324,7 +17335,8 @@ function renderCompatSummary(p, draft){
   /* ① 종합 점수 하나를 크게 */
   box.appendChild(el('div',{class:'gauge-label'},['종합 궁합 점수']));
   box.appendChild(el('div',{style:'display:flex;justify-content:center;'},[buildDonutGauge(r.res.combined, 152)]));
-  box.appendChild(el('div',{style:'text-align:center;'},[el('span',{class:'tier-label'},[r.res.combinedTier])]));
+  box.appendChild(el('div',{style:'text-align:center;'},[el('span',{class:'tier-label',
+    style:'--tier:'+gcTierTextColor(r.res.combinedTier)+';'},[r.res.combinedTier])]));
   box.appendChild(el('p',{class:'cm-verdict-line'},[COMPAT_TIER_LINE[r.res.combinedTier] || '']));
   /* ★ 2026-08-31 — 어떤 사이로 봤는지, 그래서 무엇을 무겁게 봤는지 결과에도 적는다.
      고른 자리(입력 화면)에만 있고 결과에 없으면 "왜 이 점수지?"에 답을 못 한다.
@@ -17359,7 +17371,7 @@ function renderCompatSummary(p, draft){
   }
 
   /* R19 — 두 사람의 캐릭터를 나란히. 그림과 이름뿐이라 궁합 상세(유료)와는 무관하다. */
-  box.appendChild(buildCompatCharPair(p.name, r.pA, r.pB));
+  box.appendChild(buildCompatCharPair(p.name, r.pA, r.pB, r.res.combinedTier));
 
   /* R34 — 이 궁합의 주소. 저장해 두면 새로고침하거나 다른 기기에서도 다시 열 수 있다.
      방을 거쳐 온 결과일 때만 주소가 있다(직접 입력한 궁합은 서버에 없다). */
@@ -17958,13 +17970,32 @@ var GC_TIER_ORDER = ['찰떡 인연','강한 인연','무난한 인연','엇갈�
    이름표 글자로도 쓰이는 색이라 그림 기준(3:1)이 아니라 본문 기준(7:1)으로 잡았다.
    아래 다섯 색은 전부 페이지 배경 대비 6:1 이상이다(계산해서 골랐다). 새 팔레트를 만든 게 아니라
    원래 있던 금박/주색/인디고/회갈 계열을 그대로 밝기만 올린 값이다. */
+/* ★ 2026-09-01 리뉴얼 — 시안이 등급마다 선 색·굵기·점선 여부를 정해 두었다.
+   oklch로 적힌 값을 sRGB로 옮겼다(옛 브라우저에서도 같은 색이 나오게).
+     찰떡 oklch(.45 .19 28)=#A50002 · 강한 선 (.55 .15 45)=#B64E10 / 글 (.5 .16 40)=#AA3700
+     무난 #1f1c17(먹) · 엇갈린 선 (.52 .07 90)=#796737 / 글 (.48 .07 90)=#6D5C2C
+     상극 #8d8474(점선 5 4) / 글 #6f6656
+   ★ 선에 쓰는 색과 글자에 쓰는 색이 다른 등급이 있다 — 선은 그림(3:1)이고 글자는 본문(4.5:1)이라
+     기준이 다르기 때문이다. 두 벌을 따로 둔다. */
 var GC_TIER_COLORS = {
-  '찰떡 인연':'#98003C', /* 브랜드 분홍 — 가장 좋은 등급이 브랜드색을 갖는다 */
-  '강한 인연':'#98232F', /* 붉은 계열 — 바탕 7.61:1 */
-  '무난한 인연':'#3A3C72', /* 인디고 */
-  '엇갈린 인연':'#554B3B', /* 회갈색 */
-  '상극 인연':'#41505E'  /* 저채도 청회색 */
+  '찰떡 인연':'#A50002',
+  '강한 인연':'#B64E10',
+  '무난한 인연':'#1f1c17',
+  '엇갈린 인연':'#796737',
+  '상극 인연':'#8d8474'
 };
+/* 글자로 쓸 때의 색(종이 위 4.5:1 이상). 선 색을 그대로 글자에 쓰면 두 등급이 흐려진다. */
+var GC_TIER_TEXT_COLORS = {
+  '찰떡 인연':'#A50002',
+  '강한 인연':'#AA3700',
+  '무난한 인연':'#1f1c17',
+  '엇갈린 인연':'#6D5C2C',
+  '상극 인연':'#6f6656'
+};
+function gcTierColor(t){ return GC_TIER_COLORS[t] || '#1f1c17'; }
+function gcTierTextColor(t){ return GC_TIER_TEXT_COLORS[t] || GC_TIER_COLORS[t] || '#1f1c17'; }
+/* 등급마다 선 굵기가 다르다(시안). 상극만 점선이다. */
+var GC_TIER_WIDTH = {'찰떡 인연':3, '강한 인연':2.5, '무난한 인연':2, '엇갈린 인연':2, '상극 인연':2};
 /* R21·R23 규칙: 화면에는 일상어를 먼저 크게, 원래 등급 이름은 뒤에 작게.
    선 위 이름표는 자리가 좁아 일상어만 쓰고, 등급 이름은 바로 아래 범례에서 짝지어 보여준다. */
 /* ★ R36 — 예전에는 등급 이름(천생연분형)과 그림 위 일상어(천생연분)를 따로 뒀다.
@@ -18295,11 +18326,11 @@ function buildGroupCompatGraph(members, pairs, onSelect){
       var list = el('div',{});
       job.hi.lines.slice().sort(byScoreDesc).forEach(function(pr){
         var row = el('div',{class:'gc-rank-row'});
-        row.appendChild(el('span',{class:'gr-no'},[el('span',{style:'display:inline-block;width:9px;height:9px;border-radius:50%;background:'+GC_TIER_COLORS[pr.res.combinedTier]+';'})]));
+        row.appendChild(el('span',{class:'gr-no'},[el('span',{style:'display:inline-block;width:9px;height:9px;border-radius:50%;background:'+gcTierColor(pr.res.combinedTier)+';'})]));
         row.appendChild(el('span',{class:'gr-who'},[pr.a.name+' × '+pr.b.name]));
         row.appendChild(el('span',{class:'gr-val'},[
           pr.res.combined+'점',
-          el('span',{class:'gr-plain', style:'color:'+GC_TIER_COLORS[pr.res.combinedTier]+';'},[gcPlain(pr.res.combinedTier)])
+          el('span',{class:'gr-plain', style:'color:'+gcTierTextColor(pr.res.combinedTier)+';'},[gcPlain(pr.res.combinedTier)])
         ]));
         list.appendChild(row);
       });
@@ -18320,8 +18351,13 @@ function buildGroupCompatGraph(members, pairs, onSelect){
       var line=document.createElementNS(ns,'line');
       line.setAttribute('x1',a.x.toFixed(2)); line.setAttribute('y1',a.y.toFixed(2));
       line.setAttribute('x2',b.x.toFixed(2)); line.setAttribute('y2',b.y.toFixed(2));
-      line.setAttribute('stroke', GC_TIER_COLORS[pr.res.combinedTier]);
-      line.setAttribute('stroke-width', on ? (sel!=null ? '2.4' : '2') : '1.1');
+      /* ★ 2026-09-01 리뉴얼 — 등급마다 굵기가 다르고 상극만 점선이다(시안).
+         고른 사람 기준으로 볼 때(sel)만 한 단 더 굵게 그린다 — 그때는 선이 몇 개 안 남는다. */
+      var tier = pr.res.combinedTier;
+      var baseW = GC_TIER_WIDTH[tier] || 2;
+      line.setAttribute('stroke', gcTierColor(tier));
+      line.setAttribute('stroke-width', on ? String(sel!=null ? baseW+0.4 : baseW) : '1.1');
+      if(tier === '상극 인연') line.setAttribute('stroke-dasharray','5 4');
       line.setAttribute('stroke-linecap','round');
       line.setAttribute('vector-effect','non-scaling-stroke');
       line.setAttribute('class','gc-line');
@@ -18331,7 +18367,7 @@ function buildGroupCompatGraph(members, pairs, onSelect){
     /* 이름표를 일단 다 붙여 둔다(안 보이게). 자리는 바로 아래 rAF에서 실제 크기를 재 정한다. */
     var items = hi.labels.map(function(pr){
       var sp = el('span',{class:'gc-tag',
-        style:'left:50%;top:50%;visibility:hidden;color:'+GC_TIER_COLORS[pr.res.combinedTier]+';'},
+        style:'left:50%;top:50%;visibility:hidden;color:'+gcTierTextColor(pr.res.combinedTier)+';'},
         [gcPlain(pr.res.combinedTier)]);
       tagLayer.appendChild(sp);
       return {el:sp, pr:pr, a:pos[pr.ai], b:pos[pr.bi]};
@@ -18381,7 +18417,7 @@ function buildGroupCompatGraph(members, pairs, onSelect){
   var legend=el('div',{class:'gc-legend'});
   GC_TIER_ORDER.forEach(function(t){
     legend.appendChild(el('span',{},[
-      el('span',{class:'dot', style:'background:'+GC_TIER_COLORS[t]+';'}),
+      el('span',{class:'dot', style:'background:'+gcTierColor(t)+';'}),
       t,
       el('span',{class:'gl-term'},[TIER_RANGE[t] || ''])
     ]));
@@ -18421,7 +18457,7 @@ function buildGroupRankPanel(pairs){
       row.appendChild(el('span',{class:'gr-who'},[pr.a.name+' × '+pr.b.name]));
       row.appendChild(el('span',{class:'gr-val'},[
         pr.res.combined+'점',
-        el('span',{class:'gr-plain', style:'color:'+GC_TIER_COLORS[pr.res.combinedTier]+';'},[gcPlain(pr.res.combinedTier)])
+        el('span',{class:'gr-plain', style:'color:'+gcTierTextColor(pr.res.combinedTier)+';'},[gcPlain(pr.res.combinedTier)])
       ]));
       listBox.appendChild(row);
     });
@@ -19045,7 +19081,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
       var pav = inlineCharAvatar(other, 28);
       if(pav) ph.appendChild(pav);
       ph.appendChild(el('b',{},[other.name+'와의 궁합']));
-      ph.appendChild(el('span',{class:'badge', style:'border-color:'+GC_TIER_COLORS[pTier]+';color:'+GC_TIER_COLORS[pTier]+';'},[pTier]));
+      ph.appendChild(el('span',{class:'badge', style:'border-color:'+gcTierColor(pTier)+';color:'+gcTierTextColor(pTier)+';'},[pTier]));
       blk.appendChild(ph);
       blk.appendChild(el('div',{class:'gc-score'},[
         el('b',{},[String(pr.res.combined)]), el('span',{},['점'])
