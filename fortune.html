@@ -675,7 +675,9 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 /* white-space:nowrap가 없으면 '74점'이 '74' / '점' 두 줄로 접힌다.
    left:50%로 절대 배치된 요소는 남은 폭(컨테이너의 절반)만 쓸 수 있어서, 글자를 키운 만큼 접힌다.
    실측 스크린샷에서 잡았다. */
-.donut-gauge-num{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:2.1rem;font-weight:500;color:var(--ink);text-align:center;line-height:1.05;white-space:nowrap;}
+/* ★ 2026-09-01 리뉴얼 — 시안의 큰 점수는 명조 700이다(Mono가 아니다).
+   line-height는 시안대로 .9로 좁혀 숫자가 원 한가운데 앉게 한다. */
+.donut-gauge-num{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:var(--serif);font-variant-numeric:tabular-nums;font-size:2.4rem;font-weight:700;color:var(--ink);text-align:center;line-height:.95;white-space:nowrap;letter-spacing:-.01em;}
 .donut-gauge-num small{display:block;font-family:var(--sans);font-size:.62rem;color:var(--ink-dim);font-weight:400;margin-top:3px;letter-spacing:.06em;}
 
 /* ===================== R22: 큰 숫자 + 뒤에 색 원 하나 (도넛이 아닌 자리용) =====================
@@ -1064,7 +1066,16 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
   grid-template-rows:repeat(var(--rows,3),auto);gap:10px;margin:14px 0;}
 .pillar-col{display:grid;grid-template-rows:subgrid;grid-row:span var(--rows,3);
   justify-items:center;align-content:start;gap:8px;min-width:0;}
-.pillar-col .col-label{font-size:.72rem;color:var(--ink-dim);}
+/* ★ 2026-09-01 — 위 .col-label과 같은 이유. 사주팔자 표의 칸 이름은 termChip 안에 있어서
+   선택자가 다르다. 여기도 '태어난' 한 마디 폭으로 묶어 넷이 같은 자리에서 접히게 한다. */
+.pillar-col .term-chip .tc-plain{max-width:4.2em;text-align:center;line-height:1.45;letter-spacing:-.01em;}
+/* ★ 2026-09-01 대표님 지시 — "줄바꿈을 할 때가 있고 안 할 때가 있다".
+   네 칸 이름 중 '태어난 시각'만 두 줄로 접히고 '태어난 해·달·날'은 한 줄이라
+   글자 칸의 윗변이 들쭉날쭉했다. 폭을 '태어난' 한 마디에 맞춰 묶어서 **넷 다 같은 자리에서
+   접히게** 한다 — 한 줄에 욱여넣는 것보다 이 편이 읽는 흐름에 맞는다.
+   자간을 조금 좁혀(-.01em) 좁은 화면에서도 '태어난'이 한 줄에 들어가게 했다. */
+.pillar-col .col-label{font-size:.72rem;color:var(--ink-dim);
+  max-width:4.2em;margin:0 auto;text-align:center;line-height:1.45;letter-spacing:-.01em;}
 /* ★ 2026-08-28 — 십성 표 안에 얹는 글자(신·경·사·진). 위 사주팔자 표와 짝지어 읽으라고 둔다.
    역할 이름보다 커야 "무엇에 대한 설명인지"가 먼저 읽힌다. */
 .ss-ch{font-size:1.05rem;color:var(--gold);line-height:1;margin-top:2px;}
@@ -10106,14 +10117,38 @@ function charKeyForDayStem(saju){
    404가 아니라 앱 HTML을 200으로 돌려준다 — 브라우저는 그림인 줄 알고 받았다가
    그림이 아니라서 깨진 아이콘을 띄운다. 실패 요청 검사에도 안 걸린다(200이니까).
    링크로 들어온 사람 화면에서 캐릭터가 전부 깨져 있었다. */
-function charImgSrc(key){ return '/char/' + key + '.webp'; }
+/* =====================================================================
+   ★ 2026-09-01 리뉴얼 — 캐릭터가 성격유형 16종 × 남·여 32컷으로 늘었다.
+   ---------------------------------------------------------------------
+   시안(design_handoff_inyeonjeom_renewal)의 그림을 그대로 쓴다.
+   ★ 키(mENFP·e0…)는 바꾸지 않았다. 화면 코드 수십 곳이 이 키로 CHARACTERS를 찾고 있어서,
+     키를 건드리면 그 전부를 함께 고쳐야 한다. **파일 이름에만 성별을 붙인다.**
+       mENFP-f.webp / mENFP-m.webp   그리고 성별을 모를 때 쓰는 mENFP.webp(= 여자 그림)
+   ★ 오행 다섯(e0~e4)은 성별이 없다. 그림 하나를 남녀가 함께 쓴다.
+   ★ 성별은 사주 계산에 이미 받고 있는 값(profile.gender: 'M'|'F')을 그대로 쓴다.
+     캐릭터 때문에 질문을 새로 하나 늘리지 않는다 — 이미 아는 것을 다시 묻지 않는다.
+   ===================================================================== */
+function charIsMbtiKey(key){ return /^m[A-Z]{4}$/.test(String(key||'')); }
+/* 그림 파일을 가리키는 이름. 캐시 열쇠로도 이것을 쓴다 —
+   키(mENFP) 하나에 그림이 둘이므로, 캐시를 키로 잡으면 남녀가 서로 덮어쓴다. */
+function charImgId(key, gender){
+  if(!charIsMbtiKey(key)) return key;
+  var g = gender;
+  if(g === undefined || g === null){
+    var ap = null;
+    try{ ap = (typeof activeProfile === 'function') ? activeProfile() : null; }catch(e){}
+    g = ap && ap.gender;
+  }
+  return key + (g === 'M' ? '-m' : '-f');
+}
+function charImgSrc(key, gender){ return '/char/' + charImgId(key, gender) + '.webp'; }
 
 function buildCharSvg(key, size, opts){
   opts = opts || {};
   var spec = CHARACTERS[key];
   var px = size || 120;
   return el('img', {
-    src: charImgSrc(key),
+    src: charImgSrc(key, opts.gender),
     width: String(px), height: String(px),
     alt: opts.label || ((spec ? spec.name : '') + ' 캐릭터'),
     /* ★ R70 — loading:'lazy'를 뗐다(대표님 지적: 탭 누르면 캐릭터가 1~2초 뒤에 뜬다).
@@ -10147,7 +10182,9 @@ var CHAR_WARMED = false;
 function warmCharCache(){
   if(CHAR_WARMED) return;
   CHAR_WARMED = true;
-  var keys = Object.keys(CHARACTERS || {});
+  /* ★ 2026-09-01 — 성별이 생겨 그림이 37장이 됐다. 전부 미리 받으면 첫 화면과 회선을 다툰다.
+     지금 프로필의 성별 것만 받는다(21장). 다른 성별 그림은 실제로 필요한 자리에서 그때 받는다. */
+  var keys = Object.keys(CHARACTERS || {}).map(function(k){ return charImgId(k); });
   var i = 0;
   function next(){
     if(i >= keys.length) return;
@@ -10175,7 +10212,9 @@ function scheduleCharWarm(){
   if(window.requestIdleCallback) requestIdleCallback(go, {timeout:3000});
   else setTimeout(go, 1200);
 }
-function charImage(key, onReady){
+function charImage(key, onReady, gender){
+  /* ★ 캐시 열쇠는 키가 아니라 그림 이름이다. 키로 잡으면 남녀 그림이 서로 덮어쓴다. */
+  key = charImgId(key, gender);
   var im = CHAR_IMG_CACHE[key];
   if(im){
     if(im._ok){ if(onReady) onReady(); return im; }
@@ -10220,7 +10259,7 @@ function buildCompatCharPair(nameA, pA, pB){
     var who = pair[1];
     var key = charKeyForMbti(who.mbti);
     var side = el('div',{class:'cp-side'});
-    if(key) side.appendChild(buildCharSvg(key, 112, {label: pair[0]+'님의 '+who.mbti+' 캐릭터'}));
+    if(key) side.appendChild(buildCharSvg(key, 112, {label: pair[0]+'님의 '+who.mbti+' 캐릭터', gender: who.gender}));
     side.appendChild(el('div',{class:'cp-name'},[pair[0]]));
     var elemKey = charKeyForDayStem(who.saju);
     /* R21 — 이 함수는 궁합 요약(무료 첫 화면)에서만 쓴다. '일간'은 사주를 모르면 읽히지 않는 말이라
@@ -13411,8 +13450,8 @@ function buildDonutGauge(score, size, label){
   /* R85 — 브랜드를 분홍으로 바꾼 R29 때 이 두 줄이 안 따라왔다. 청동색(#57431A/#7A5F22)이
      그대로 남아, 온 화면이 분홍인데 궁합 점수판만 갈색 링이었다. 지금 팔레트로 맞춘다.
      --gold-gradient(135deg #AA0648→#8E0038)와 같은 두 끝값을 쓴다 — 새 색을 만들지 않았다. */
-  var s1=document.createElementNS(ns,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#AA0648');
-  var s2=document.createElementNS(ns,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#8E0038');
+  var s1=document.createElementNS(ns,'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#AF2B25');
+  var s2=document.createElementNS(ns,'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#AF2B25');
   grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.appendChild(defs);
   var track=document.createElementNS(ns,'circle');
   track.setAttribute('cx',c); track.setAttribute('cy',c); track.setAttribute('r',r);
@@ -18077,7 +18116,7 @@ function buildGroupCompatGraph(members, pairs, onSelect){
       'aria-pressed':'false', 'aria-label':nameOr(m.name,'이 사람')+' 기준으로 궁합 보기'});
     var av = el('div',{class:'gc-avatar'});
     var ck = charKeyForMbti(m.mbti) || charKeyForElementIdx(m.elementIdx);
-    if(ck) av.appendChild(buildCharSvg(ck, 100, {mini:true, label:ownerLabel(m.name)+' 캐릭터'}));
+    if(ck) av.appendChild(buildCharSvg(ck, 100, {mini:true, label:ownerLabel(m.name)+' 캐릭터', gender:m.gender}));
     else av.appendChild(el('span',{},[(m.name||'?').trim().slice(0,1) || '?']));
     btn.appendChild(av);
     btn.appendChild(el('div',{class:'gc-label'},[m.name]));
@@ -18808,7 +18847,7 @@ function inlineCharAvatar(m, size){
   var ck = charKeyForMbti(m && m.mbti) || charKeyForElementIdx(m && m.elementIdx);
   if(!ck) return null;
   var box = el('span',{class:'inline-char', 'aria-hidden':'true'});
-  box.appendChild(buildCharSvg(ck, size || 34, {mini:true}));
+  box.appendChild(buildCharSvg(ck, size || 34, {mini:true, gender: m && m.gender}));
   return box;
 }
 var DEEP_UID = 0;
