@@ -127,7 +127,22 @@ export default async function handler(req, res) {
       }
     }
 
-    /* ── 4. 만든다 ── */
+    /* ── 4. 만든다 ──
+       ★ 2026-09-02 — 여기서 머리를 먼저 보내고 살아 있다는 신호를 흘린다.
+         예전에는 Anthropic이 첫 글자를 줄 때까지 브라우저에 한 바이트도 안 갔다.
+         화면 쪽에는 "45초 동안 글자가 안 오면 끊고 다시 받는다"는 감시가 있어서,
+         글 한 편에 70초가 걸리는 이 서버에서는 **매번 45초에 끊겼다.**
+         실측(라이브, 2026-09-02): 요청 7.3초 → 45초 무응답 → 52.4초에 끊김.
+         끊겨도 이 함수는 계속 돌아 글을 다 쓰고 캐시에 넣으므로, 손님은 아무것도 못 보고
+         돈만 나갔다. 신호를 보내면 감시가 "살아 있다"로 판단해 안 끊는다.
+       ★ 머리를 먼저 보내면 그 뒤로는 JSON 오류를 못 쓴다. 아래 upstream 실패도
+         사건(type:'error')으로 알린다. */
+    sseHead(res);
+    send(res, { type: 'ping' });
+    const beat = setInterval(() => { try { send(res, { type: 'ping' }); } catch (e) {} }, 10000);
+    const stopBeat = () => { if (beat) clearInterval(beat); };
+    res.on('close', stopBeat);
+
     const upstream = await fetch(ANTHROPIC_URL, {
       method: 'POST',
       headers: {
@@ -148,10 +163,11 @@ export default async function handler(req, res) {
       const detail = (await upstream.text().catch(() => '')).slice(0, 200);
       /* ★ 응답 본문을 그대로 손님에게 보여주지 않는다. 열쇠나 내부 사정이 섞여 나갈 수 있다. */
       console.error('anthropic 오류', upstream.status, detail);
-      return json(res, 502, { error: 'upstream', reason: '해석을 만들지 못했어요. 잠시 후 다시 시도해 주세요.' });
+      stopBeat();
+      send(res, { type: 'error', reason: '해석을 만들지 못했어요. 잠시 후 다시 시도해 주세요.' });
+      return res.end();
     }
 
-    sseHead(res);
     let full = '';
     /* ★ 2026-08-25 — 왜 끝났는지를 붙잡아 둔다.
        'max_tokens'면 분량 상한에 걸려 문장 한가운데서 잘렸다는 뜻이다.
@@ -182,6 +198,7 @@ export default async function handler(req, res) {
             stopReason = ev.delta.stop_reason;
           } else if (ev.type === 'error') {
             console.error('anthropic 스트림 오류', ev.error?.type);
+            stopBeat();
             send(res, { type: 'error', reason: '해석을 만들다가 끊겼어요.' });
             return res.end();
           }
@@ -201,6 +218,7 @@ export default async function handler(req, res) {
       ? payload.requested.sectionTitles.length : 0;
     const gotHeadings = (full.match(/^##/gm) || []).length;
 
+    stopBeat();
     if (full.trim().length < 200) {
       send(res, { type: 'error', reason: '해석이 너무 짧게 끝났어요. 다시 시도해 주세요.' });
       return res.end();

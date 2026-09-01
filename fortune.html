@@ -5174,12 +5174,17 @@ function adminSimResponse(url, payload){
 
 /* 결제 서버에 보내는 JSON 요청 공통 처리. 타임아웃이 반드시 걸린다.
    실패는 전부 throw로 올라가고, 호출부는 예외 없이 "잠금"으로 되돌린다. */
-function billingFetchJson(url, payload){
+/* ★ 2026-09-02 — 세 번째 인자로 제한 시간을 따로 줄 수 있게 했다.
+   결제·이용권 조회는 10초가 맞다(느리면 그건 고장이다). 그런데 유료 본문(contentEndpoint)은
+   AI가 글을 새로 쓰는 통로라 1~3분이 정상이다. 그 자리에 10초를 두면 **성공할 수가 없다** —
+   실측(라이브): 흘려받기가 끊긴 뒤 이 통로로 넘어갔는데 정확히 10초 만에 또 끊겼다. */
+function billingFetchJson(url, payload, timeoutMs){
   /* 관리자 시뮬레이션 주소로 나가는 요청만 여기서 가로챈다(실제 주소는 그대로 네트워크로 나간다). */
   var simulated = adminSimResponse(url, payload);
   if(simulated) return simulated;
   var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-  var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, BILLING.timeoutMs) : null;
+  var timer = ctrl ? setTimeout(function(){ ctrl.abort(); },
+                                (typeof timeoutMs === 'number' && timeoutMs > 0) ? timeoutMs : BILLING.timeoutMs) : null;
   function done(){ if(timer) clearTimeout(timer); }
   return fetch(url, {
     method:'POST',
@@ -5992,11 +5997,13 @@ function fillNamePlaceholder(text, name, forHtml){
   }
   return replaceWithJosa(out, 'name', name, enc);
 }
+/* 유료 본문을 통짜로 받는 통로의 제한 시간. 흘려받기(240초)와 같은 눈금으로 둔다. */
+var PAID_BODY_TIMEOUT_MS = 240000;
 async function fetchPaidSection(productId, payload, displayName){
   if(!serverContentMode()) return null;
   var data = await billingFetchJson(BILLING.contentEndpoint, {
     productId: productId, sectionFrom: FREE_SECTION_COUNT, payload: contentPayloadFrom(payload)
-  });
+  }, PAID_BODY_TIMEOUT_MS);
   if(!data || !Array.isArray(data.sections)) throw new Error('유료 본문 형식이 올바르지 않아요.');
   if(!data.sections.length) throw new Error('서버가 유료 본문을 하나도 돌려주지 않았어요.');
   return data.sections.map(function(s, i){
@@ -9687,7 +9694,14 @@ var Interpreter = {
        끊기면 아래 catch가 받아서 통짜 경로로 다시 받아온다. 서버가 이미 다 썼으면
        보관해 둔 글이 그대로 오므로 기다림도 돈도 더 들지 않는다.
     ===================================================================== */
-    var STALL_MS = 45000;        /* 이만큼 아무 글자도 안 오면 멎은 것으로 본다 */
+    /* ★ 2026-09-02 — 45초였다. 그런데 이 서버는 글 한 편을 쓰는 데 약 70초가 걸린다.
+       45초에 끊으면 **끝날 수가 없다.** 실측(라이브): 요청 7.3초 → 45초 무응답 → 52.4초 끊김 →
+       대비 통로도 10초 만에 끊김 → 화면은 "13개 중 3개 완성"에 멈춘 채로 남았다.
+       끊겨도 서버는 계속 돌아 글을 다 쓰고 저장하므로, 손님은 아무것도 못 보고 돈만 나갔다.
+       (한 화면에 두 벌이 저장된 것을 DB에서 확인했다 — 약 250원.)
+       이제 서버가 10초마다 '살아 있다' 신호를 보내므로 진짜로 끊긴 것만 여기 걸린다.
+       150초는 그 신호까지 끊겼을 때의 마지막 그물이다. */
+    var STALL_MS = 150000;       /* 이만큼 아무것도 안 오면 멎은 것으로 본다 */
     var STALL_BACK_MS = 8000;    /* 화면에 돌아왔을 때는 더 짧게 본다(재워졌다 깬 직후다) */
     var lastAt = Date.now();
     var stalled = false;
