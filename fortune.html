@@ -16666,17 +16666,14 @@ function renderCompat(){
 
       var savedG = buildSavedGroupsCard();
       if(savedG) view.appendChild(savedG);
-      if(STATE.profiles.length>=2){
-        view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;', onclick:function(){
-          GC_SOURCE='profiles'; GC_SEL=null; GC_RANK={order:'best', shown:GC_RANK_STEP};
-          ROUTE='groupCompat'; render();
-        }},[svgIcon('M10 3 L16 7 L14 15 L6 15 L4 7 Z M10 3 L10 15 M4 7 L14 15 M16 7 L6 15','btn-lead-icon'), btnLines('저장된 프로필로 모으기','최대 '+GC_MAX+'명')]));
-      } else {
-        /* 프로필이 하나뿐이어도 막다른 길로 두지 않는다 — 링크로 모으는 길이 있다. */
-        view.appendChild(el('p',{class:'biz-hint'},
-          ['저장된 프로필이 '+STATE.profiles.length+'명이라 프로필로는 아직 그룹을 만들 수 없어요. 아래 링크를 보내 모으시면 돼요.']));
-      }
-      view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p, GC_RELATION); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '링크를 보내 모으기']));
+      /* ★ 2026-09-01 대표님 지시(2번안) — 궁합은 링크로만 모은다.
+         [저장된 프로필로 모으기]를 뺐다. 저장된 프로필 자체는 그대로 두고
+         (다른 사람 사주 봐주기 · 프로필 전환에서 계속 쓴다) 궁합에서만 안 쓴다.
+         이유: 저장된 프로필로 모으면 상대가 자기 정보를 넣은 것이 아니라
+         내가 대신 적어 둔 값으로 궁합이 나간다. 링크로 받으면 본인이 넣은 값이다.
+         ★ 되살릴 때는 이 자리에 GC_SOURCE='profiles'로 groupCompat으로 보내는 버튼을
+           다시 놓으면 된다. renderGroupCompat의 프로필 갈래는 지우지 않고 그대로 뒀다. */
+      view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;', onclick:function(){ openInviteLinkModal(p, GC_RELATION); }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '링크를 보내 모으기']));
       view.appendChild(el('p',{class:'biz-hint'},
         ['같은 링크 하나로 여러 분을 부를 수 있어요. 받은 분이 자기 정보를 넣으면 바로 그룹에 들어와요.']));
     } else {
@@ -19658,10 +19655,13 @@ function renderGroupCompat(){
   var view=el('div',{class:'view'});
   var fromLink = (GC_SOURCE==='link' && PENDING_MEET);
 
+  /* ★ 2026-09-01 — 예전에는 링크로 들어온 그룹에서 뒤로가면 '내 프로필로 그룹 보기'로 갔다.
+     궁합에서 프로필로 모으는 길을 뺐으므로(대표님 2번안) 그 자리는 이제 갈 곳이 아니다.
+     어느 경우든 궁합 보기로 돌아간다. */
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
-    if(fromLink){ GC_SOURCE='profiles'; GC_SEL=null; GROUP_VIEW=null; PENDING_MEET=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); return; }
-    GROUP_VIEW=null; ROUTE='compat'; render();
-  }},[dirIcon('left'), fromLink ? '내 프로필로 그룹 보기' : '궁합 보기로 돌아가기']));
+    if(fromLink){ GC_SEL=null; PENDING_MEET=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; }
+    GROUP_VIEW=null; ROUTE='compat'; render(); window.scrollTo(0,0);
+  }},[dirIcon('left'), '궁합 보기로 돌아가기']));
   view.appendChild(pageHead('궁합 보기 · 그룹',
     (GROUP_VIEW && GROUP_VIEW.name) ? GROUP_VIEW.name : (fromLink ? '받은 그룹 궁합' : '모두의 궁합 보기'),
     null, {marginTop:'14px'}));
