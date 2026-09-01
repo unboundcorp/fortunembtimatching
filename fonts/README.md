@@ -64,3 +64,16 @@ IBM Plex Mono는 라틴 글자와 숫자만 쓰므로 latin·latin-ext만 담았
 
 `src.css`는 배포처가 준 @font-face 원본이고, 실제로 앱이 쓰는 것은 fortune.html 안에
 합쳐 넣은 사본이다. 파일을 다시 받으면 fortune.html 쪽도 함께 갱신해야 한다.
+
+## Gowun Batang 400·700 (2026-09-01 추가)
+
+리뉴얼 시안이 지정한 제목·숫자·한자 서체입니다.
+
+- 라이선스: SIL Open Font License 1.1 — 저작자 Yanghee Ryu
+- 받은 곳: Google Fonts (fonts.gstatic.com). **구글에서 직접 부르지 않고 파일을 받아 우리 서버에서 내려줍니다.**
+  처리방침 제5조("외부에서 불러오는 이미지·글꼴·스크립트가 없습니다")를 지키기 위해서입니다.
+- 조각 190개(동적 서브셋). 브라우저는 그 화면에 실제로 쓰인 글자가 든 조각만 받습니다.
+  실측: 첫 화면에서 27조각을 받습니다(전체 3.3MB가 매번 내려가는 게 아닙니다).
+- 다시 받아야 하면:
+  `curl -A "<데스크톱 브라우저 UA>" "https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap"`
+  로 CSS를 받아 그 안의 woff2 주소를 전부 내려받고, fonts.css 의 @font-face 주소를 /fonts/gowun-batang/ 로 바꿉니다.

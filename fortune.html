@@ -251,7 +251,12 @@
   /* ★ 2026-08-24 리디자인 1단계 — 제목 서체를 Noto Serif KR로 바꾼다(지시서 3항).
      기기에 있으면 그것을, 없으면 fonts/ 에 둔 우리 사본을 쓴다. 뒤의 명조 계열은
      혹시 우리 파일도 못 받았을 때를 위한 마지막 그물이다. */
-  --serif:'Noto Serif KR','Nanum Myeongjo','AppleMyungjo','Batang','Songti SC',serif;
+  /* ★ 2026-09-01 리뉴얼 — 시안이 지정한 제목 서체는 Gowun Batang이다.
+     우리 서버(fonts/gowun-batang)에서 내려준다. 못 받으면 지금까지 쓰던 Noto Serif KR로,
+     그것도 없으면 기기의 명조로 내려간다 — 어느 단계에서든 명조 결은 유지된다.
+     ★ Gowun Batang은 400·700 두 벌을 담았다. body의 font-synthesis:none 규칙이 있으므로
+       없는 굵기를 달라고 하지 않는다(가짜 굵게 금지). */
+  --serif:'Gowun Batang','Noto Serif KR','Nanum Myeongjo','AppleMyungjo','Batang','Songti SC',serif;
   /* 수치·라벨용. 자릿수가 흔들리지 않아야 숫자를 세로로 훑을 수 있다. */
   --mono:'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,'Liberation Mono',monospace;
   /* R29 폰트 — 대표님이 고르신 방식 ⓐ: 이름만 지정하고 없으면 기기 기본 고딕으로 떨어진다.
