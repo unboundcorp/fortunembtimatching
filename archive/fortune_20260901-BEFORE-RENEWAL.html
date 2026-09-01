@@ -40,55 +40,44 @@
      지금 붙이면 열아홉 화면이 한꺼번에 반쯤 바뀐 채로 남는다.
 ===================================================================== */
 :root{
-  /* ★ 2026-09-01 리뉴얼 1단계 — 시안(design_handoff_inyeonjeom_renewal)의 종이 판으로 갈아탄다.
-     이름(--ink-900 …)은 그대로 둔다. 이 파일 곳곳에서 "가장 깊은 면"이라는 뜻으로 쓰이고 있어
-     이름을 바꾸면 수백 곳을 함께 고쳐야 한다. 값만 바꾼다.
-     ★ 값은 시안 README의 확정값 그대로다. 지어낸 색이 하나도 없다. */
-  /* ── 종이 판 ── */
-  --ink-900:#efe9dd;        /* 종이 배경 — 모든 화면의 기본 */
-  --ink-800:#efe9dd;        /* 카드도 같은 지면이다. 괘선으로만 가른다 */
-  --ink-700:#f6f2e9;        /* 종이 밝은 면 — 강조 블록·리스트 셀·입력 */
-  --line-dark:#d8d0c0;      /* 선 (기본) */
-  --line-dark-strong:#c9c0ae; /* 선 (진함) — 보조 버튼 테두리 */
+  /* ── 어두운 판 ── */
+  --ink-900:#0C1020; --ink-800:#131A2E; --ink-700:#1B2340;
+  --line-dark:#222B4A; --line-dark-strong:#2A3454;
 
-  /* ── 한 단 어두운 면 (데스크톱 우측 컬럼 등) ── */
-  --paper:#e9e2d4; --paper-raised:#f6f2e9; --line-light:#ddd5c5;
+  /* ── 밝은 판 ── */
+  --paper:#F0F2F8; --paper-raised:#FFFFFF; --line-light:#D3D8E8;
 
-  /* ── 글자 ── (이름은 그대로, 값은 먹 계열로) */
-  --on-dark:#1f1c17; --on-dark-2:#5d574c;
+  /* ── 글자 ── */
+  --on-dark:#E7EAF6; --on-dark-2:#9AA3C4;
   /* 지시서 #6F7AA0 → 가장 밝은 판(#1B2340)에서 3.65:1로 본문 기준 미달이었다.
      밝기를 올려 4.51:1로 맞췄다. 가장 어두운 판에서는 5.5:1이다. */
-  --on-dark-3:#8a8272;
-  --on-light:#1f1c17; --on-light-2:#5d574c; --on-light-3:#8a8272;
+  --on-dark-3:#808AAB;
+  --on-light:#10141F; --on-light-2:#3A4160; --on-light-3:#5C6483;
 
   /* ── 강조 — 선·포인트 전용 ── */
-  --flux-cyan:#AF2B25; --flux-violet:#8D622B;
-  --flux-grad:linear-gradient(90deg,#AF2B25,#8D622B);
+  --flux-cyan:#57D8E8; --flux-violet:#9B7BF0;
+  --flux-grad:linear-gradient(90deg,#57D8E8,#9B7BF0);
   /* 인주색. 밝은 판에서는 지시서 값 그대로 4.43:1(대형 가능), 어두운 판에서는
      3.11:1까지 떨어져 따로 밝은 짝을 둔다. 화면당 1회 규칙은 그대로다. */
-  --cinnabar:#AF2B25; --cinnabar-on-dark:#AF2B25;
+  --cinnabar:#C4452F; --cinnabar-on-dark:#D76C59;
   /* 금빛은 밝은 판에서 2.16:1이라 글자로 못 쓴다. 선·테두리 전용이다. */
-  --gilt:#8D622B;
+  --gilt:#C9A227;
 
   /* ── 다섯 기운 ──
      같은 색을 판에 따라 두 벌 둔다. 한 벌로는 어느 한쪽에서 반드시 안 보인다 —
      실측: 수(--wx-5)는 어두운 판에서 2.90:1, 금(--wx-4)은 밝은 판에서 1.96:1이었다. */
-  /* ★ 시안의 오행 5색. oklch로 적혀 있던 값을 sRGB로 옮겼다(옛 브라우저에서도 같은 색이 나오게).
-       목 oklch(.46 .08 160)=#286648 · 화 (.48 .18 28)=#AC1B18 · 토 (.53 .09 70)=#8D622B
-       금 (.46 .02 250)=#505963 · 수 (.42 .09 250)=#214F7C
-     종이 판 하나만 쓰므로 세 벌(기본·어두운판·밝은판)이 전부 같은 값이다. */
-  --wx-1:#286648; --wx-2:#AC1B18; --wx-3:#8D622B; --wx-4:#505963; --wx-5:#214F7C;
-  --wx-1-on-dark:#286648; --wx-2-on-dark:#AC1B18; --wx-3-on-dark:#8D622B;
-  --wx-4-on-dark:#505963; --wx-5-on-dark:#214F7C;
+  --wx-1:#3E8E7E; --wx-2:#C4452F; --wx-3:#C9A227; --wx-4:#A8AFC4; --wx-5:#3B5BA5;
+  /* 어두운 판 위에 글자로 얹을 때 (전부 4.5:1 이상) */
+  --wx-1-on-dark:#439987; --wx-2-on-dark:#D76C59; --wx-3-on-dark:#C9A227;
+  --wx-4-on-dark:#A8AFC4; --wx-5-on-dark:#6E8ACB;
   /* 밝은 판 위에 글자로 얹을 때 (전부 4.5:1 이상)
      지시서의 --wx-3-text(#8A6B12)·--wx-4-text(#6B7288)는 각각 4.48·4.28로
      아슬하게 미달이라 한 단 더 내렸다. */
-  --wx-1-text:#286648; --wx-2-text:#AC1B18; --wx-3-text:#8D622B;
-  --wx-4-text:#505963; --wx-5-text:#214F7C;
+  --wx-1-text:#357A6D; --wx-2-text:#C2442F; --wx-3-text:#856B1A;
+  --wx-4-text:#626D90; --wx-5-text:#3B5BA5;
 
-  /* ── 모서리 ── ★ 시안: "모서리는 각(角)". 둥근 카드를 쓰지 않는다.
-     원형(999px)은 낙관 배지·아바타에만 남긴다(--r-pill). */
-  --r-frame:0px;
+  /* ── 모서리 ── */
+  --r-frame:4px;
 
   /* ── 여백 (8pt) ── */
   --sp-1:8px; --sp-2:16px; --sp-3:24px; --sp-4:32px; --sp-6:48px; --sp-8:64px; --sp-12:96px;
@@ -152,12 +141,12 @@
          좌표·같은 색으로 맞췄다. 로고를 또 바꾸면 이 두 곳을 함께 고쳐야 한다.
        그래서 원색은 "그림"(로고·아이콘)에만 쓰고, 글자로 쓰는 브랜드색은 한참 어둡게 내렸다.
        같은 분홍 계열이되 역할에 따라 밝기를 나눈다 — 이게 이번 교체의 핵심이다. */
-  --void:#efe9dd;          /* 채운 면(먹) 위에 얹는 글자 — 종이색. 먹 위 14.04:1 */
-  --base:#efe9dd;          /* 페이지 바탕 = --ink-900 */
-  --panel:#efe9dd;         /* 카드 — 지면과 같은 색. 그림자 대신 괘선으로 가른다(시안 규칙) */
-  --panel-2:#f6f2e9;       /* 모달·입력칸 = 종이 밝은 면 */
-  --panel-3:#f6f2e9;       /* 카드 안에 한 단 눌러 앉히는 면 = --ink-700 */
-  --track:#ddd5c5;         /* 막대·게이지의 빈 홈 = 선(연함) */
+  --void:#FFFFFF;          /* 채운 면 위에 얹는 밝은 글자 */
+  --base:#0C1020;          /* 페이지 바탕 = --ink-900 */
+  --panel:#131A2E;         /* 카드 = --ink-800 */
+  --panel-2:#131A2E;       /* 모달·입력칸 */
+  --panel-3:#1B2340;       /* 카드 안에 한 단 눌러 앉히는 면 = --ink-700 */
+  --track:#222B4A;         /* 막대·게이지의 빈 홈 = --line-dark */
   /* ★ 2026-08-24 — 화면을 어둡게 뒤집으면서 로고 색을 한 단 올렸다.
      원색 #B41E30은 이 바탕에서 2.85:1이라, 하트 마크가 진흙처럼 가라앉고
      옆의 글자(인연점)와 아예 다른 빨강으로 보였다(3배 확대 스크린샷에서 확인).
@@ -166,22 +155,16 @@
        여기는 "어두운 면 위에 빨간 마크"다. 역할이 반대라 같은 값을 쓰면 한쪽이 반드시 죽는다.
        ★ 모양(BRAND_MARK_PATHS 좌표)은 여전히 파비콘과 같아야 한다. 그건 안 건드렸다.
      원색이 필요하면(밝은 면 위에 얹을 때) #B41E30을 쓴다. */
-  /* ★ 밝은 면으로 돌아왔으므로 로고 원색을 그대로 쓴다.
-     위 주석이 "원색이 필요하면(밝은 면 위에 얹을 때) #B41E30을 쓴다"고 적어 둔 그 값이다. */
-  --brand:#B41E30;         /* 종이 6.02:1 */
-  --brand-2:#8F1626;       /* 로고의 짙은 쪽 — 장식용 */
-  --ink:#1f1c17;           /* 먹. 종이 14.04:1 / 밝은 면 15.20:1 */
+  --brand:#E05068;         /* 바탕 4.97:1 / 카드 4.54:1 */
+  --brand-2:#EA7285;       /* 로고의 밝은 쪽 — 장식용 */
+  --ink:#E7EAF6;           /* = --on-dark. 바탕 15.76:1 / 카드 14.40:1 */
   /* 설명 글자. 밝은 바탕으로 뒤집으면서 "밝게"가 아니라 "어둡게" 가야 한다 —
      방향만 바뀌었지 기준은 그대로 본문 AAA(7:1)다. 바탕 8.70:1 / 카드 9.50:1. */
-  --ink-dim:#5d574c;       /* 본문 보조. 종이 5.92:1 / 밝은 면 6.41:1 */
+  --ink-dim:#9AA3C4;       /* = --on-dark-2. 바탕 7.57:1 / 카드 6.92:1 */
   /* 결제·보안 고지문. 위계(--ink > --ink-dim > --ink-faint)는 유지하되
      가장 흐린 이 색도 7:1을 넘긴다 — 바탕 7.30:1 / 카드 7.97:1.
      밝은 바탕에서는 세 단계 간격이 어두울 때보다 좁아 보인다(그건 아래 SELF_CHECK에 적었다). */
-  /* ★ 시안의 '라벨/캡션' 값은 #8a8272(종이 3.15:1)인데, 이 앱에서 --ink-faint는
-     결제·보안 고지문 같은 '읽어야 하는 작은 글'에도 쓰인다. 3.15:1은 그 자리에 못 쓴다.
-     그래서 시안의 '본문 보조'와 '라벨' 사이 값으로 한 단 내렸다 — 종이 4.62:1(AA 통과).
-     순수 장식 라벨에만 쓰는 자리라면 시안 값 #8a8272를 그 자리에서 직접 쓰면 된다. */
-  --ink-faint:#736c5f;     /* 종이 4.62:1 / 밝은 면 5.00:1 */
+  --ink-faint:#808AAB;     /* = --on-dark-3. 바탕 5.53:1 / 카드 5.05:1 (본문 AA) */
   /* 금박. 밝은 바탕에 밝은 금색을 그대로 쓰면 사라지므로 채도·명도를 낮춘 청동빛으로 내렸다.
      글자로도 쓰이는 색이라 7:1을 넘겨야 한다.
      ★ 처음 잡은 값(#5F4A1C)은 "카드 위"만 보고 정해서 7.4:1이었는데, 실제로 이 색이 가장 많이
@@ -196,44 +179,32 @@
        그래서 한 단 더 내리고, 깔리는 면의 알파도 함께 낮춘다. #98003C — 바탕 8.30:1. */
   /* 어두운 판에서는 인주를 밝은 쪽으로 올려야 글자로 쓸 수 있다.
      지시서의 --cinnabar(#C4452F)는 이 바탕에서 3.82:1로 본문 미달이라 한 단 올렸다. */
-  /* ★ 낙관 붉은색. 시안 oklch(0.5 0.17 28)을 sRGB로 옮긴 값이다.
-     이 앱에서 --gold는 이름과 달리 "강조색"이라는 뜻으로 150곳에 쓰인다. 이름은 그대로 두고
-     값만 낙관색으로 바꾼다 — 이름을 바꾸면 그 150곳을 함께 고쳐야 한다. */
-  --gold:#AF2B25;   /* 종이 5.44:1 / 밝은 면 5.88:1 */
-  --gold-2:#8F221D; /* 한 단 짙은 짝 — 장식용 */
+  --gold:#DD8A78;   /* 바탕 7.19:1 / 카드 6.57:1 / 눌린 면 5.86:1 */
+  --gold-2:#E8A192; /* 한 단 밝은 짝 — 장식용 */
   /* ★ 글자로 쓰는 인주(--gold)와 면으로 쓰는 인주(--gold-fill)를 갈라 둔다.
      하나로 두면 반드시 한쪽이 깨진다 — 밝은 #DD8A78 면에 흰 글자는 3.40:1(미달)이고,
      짙은 #B93E2A 글자는 이 어두운 바탕에서 2.9:1(미달)이다. 역할이 반대라서 값도 반대다. */
-  /* ★ 시안의 주 버튼은 붉은 면이 아니라 **먹 면 + 종이색 글자**다.
-     --gold-fill은 이 앱에서 "채운 버튼 면"이라는 뜻이므로 먹으로 바꾼다(종이색 글자 14.04:1).
-     붉은색은 채우는 색이 아니라 **짚는 색**으로만 쓴다 — 그게 낙관의 쓰임이다. */
-  --gold-fill:#1f1c17;   /* 채운 버튼 면 = 먹. 그 위 종이색 글자 14.04:1 */
-  --gold-fill-2:#3a352d; /* 눌렀을 때 한 단 옅게 */
+  --gold-fill:#B93E2A;   /* 채운 버튼 면. 그 위 흰 글자 5.66:1 */
+  --gold-fill-2:#CE4A33; /* 눌렀을 때 한 단 밝게 */
   /* 그라데이션은 "거의 단색 + 미세한 광택"으로 좁혔다. 넓게 잡으면 밝은 쪽 끝에서
      그 위에 얹은 흰 글자가 7:1 아래로 떨어진다(실제로 재서 좁혔다 — 밝은 끝 7.13:1). */
   /* 버튼처럼 "면"으로 쓰는 자리는 조금 밝아도 된다 — 그 위 글자가 흰색이기 때문이다.
      #C81E59 위 흰 글자 5.55:1 (보통 글자 AA·큰 글자 AAA). */
-  /* ★ 시안에 그라데이션이 없다. 단색 먹으로 눕힌다(값은 --gold-fill과 같다). */
-  --gold-gradient:linear-gradient(135deg,#1f1c17,#1f1c17);
-  --gold-soft:rgba(175,43,37,.08);     /* 낙관색을 아주 옅게 깐 면 */
-  --gold-line:#d8d0c0;                 /* 괘선 — 시안의 '선 (기본)'. 그림자를 대신한다 */
+  --gold-gradient:linear-gradient(135deg,#CE4A33,#A6321F);  /* 흰 글자 기준 밝은 끝 4.45:1 — 면 전용, 큰 글자만 */
+  --gold-soft:rgba(221,138,120,.13);
+  --gold-line:rgba(231,234,246,.14);   /* 어두운 판 위 헤어라인 */
   /* 입력칸 테두리만 따로 둔다. 장식 헤어라인(--gold-line)은 1.4:1이라 "이게 입력칸이구나"를
      알려주지 못한다. 폼 컨트롤 경계는 3:1이 필요하므로 웜그레이 실선으로 분리했다(3.46:1). */
-  /* ★ 시안의 '선 (진함)' #c9c0ae는 종이 위 1.49:1이라 '여기가 입력칸이다'를 못 알린다.
-     폼 컨트롤 경계는 3:1이 필요하므로 한 단 진한 웜그레이로 분리했다 — 어두운 판에서
-     같은 이유로 --field-line을 따로 두었던 것과 같은 판단이다. */
-  --field-line:#8a8272;    /* 종이 3.15:1 — 폼 컨트롤 경계 기준(3:1) 통과 */
-  --red:rgba(175,43,37,.35);
+  --field-line:#666F94;    /* 어두운 카드 위 3.51:1 — 폼 컨트롤 경계 기준(3:1) 통과 */
+  --red:rgba(239,138,128,.42);
   /* ★ 경고·잠금 글자로도 쓰이므로 본문 기준(7:1)을 넘겨야 한다.
      처음 #B21E3C로 잡았다가 6.34:1인 것을 재보고 한 단 내렸다. #9C1533 — 바탕 7.76:1. */
-  --red-hi:#9B1A15;        /* 경고. 종이 6.87:1 / 밝은 면 7.43:1 */
-  --ok:#286648;            /* 오행 목과 같은 초록. 종이 5.63:1 */
+  --red-hi:#EF8A80;        /* 경고. 바탕 7.76:1 / 카드 7.09:1 */
+  --ok:#5FBFA3;            /* 바탕 8.52:1 / 카드 7.79:1 */
   /* 그림자는 테두리를 대신해 카드를 띄우는 수단이다. 밝은 바탕에서는 검정 알파를
      10% 안팎까지 낮춰야 얼룩이 아니라 "떠 있는 느낌"이 된다. */
-  /* ★ 시안: "그림자 없음. 면 구분은 배경 단계 차이 + 1px 선 + 여백으로만."
-     겹쳐 뜨는 창(모달)만 예외로 아주 옅게 남긴다 — 아래 화면과 구분이 안 되면 못 쓴다. */
-  --shadow:0 8px 28px rgba(31,28,23,.10);
-  --shadow-sm:0 0 0 0 rgba(0,0,0,0);
+  --shadow:0 16px 40px rgba(12,16,32,.14),0 2px 6px rgba(12,16,32,.07);
+  --shadow-sm:0 4px 14px rgba(12,16,32,.10);
   /* R22 — 카드에만 쓰는 부드러운 그림자. 기존 --shadow-sm보다 넓고 옅어서 "떠 있는 느낌"만 준다.
      새 색을 만든 게 아니다: 검정 알파값만 조정한 것이라 팔레트는 그대로다. */
   /* ★ R90 — 시안은 "그림자 대신 괘선"이다. 카드를 띄우지 않고 지면에 눕힌다.
@@ -245,8 +216,8 @@
   /* ★ 로고 글자가 끝이 둥근 서체다. 모서리를 더 둥글려 그 결을 화면 전체에 맞춘다. */
   /* ★ R90 — 시안(인연점 리디자인 문서)의 지면 규칙에 맞춘다: 카드 4px, 그림자 대신 괘선.
      둥근 모서리 24px는 앱 느낌이고, 만세력 지면은 각이 진 종이다. */
-  --r-lg:0px;    /* 카드 = --r-frame. 시안: 모서리는 각(角) */
-  --r-md:0px;    /* 타일·입력칸·작은 상자 */
+  --r-lg:4px;    /* 카드 = --r-frame */
+  --r-md:4px;    /* 타일·입력칸·작은 상자 */
   --r-pill:999px;
   /* ★ 2026-08-24 리디자인 1단계 — 제목 서체를 Noto Serif KR로 바꾼다(지시서 3항).
      기기에 있으면 그것을, 없으면 fonts/ 에 둔 우리 사본을 쓴다. 뒤의 명조 계열은
@@ -268,8 +239,8 @@
        아무 변화가 없다. 즉 지적의 처방은 이 앱에서 이득이 0이고 손해가 있다.
        (자간 -.005em은 Pretendard 기준으로 잡았지만 애플 고딕에서도 어색하지 않은 값이다.) */
   --sans:'Pretendard Variable','Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',Roboto,'Malgun Gothic','Segoe UI',system-ui,sans-serif;
-  --pA:#AF2B25; /* 프로필A 라인색 — 낙관 붉은색 */
-  --pB:#214F7C; /* 프로필B 라인색 — 수(水)의 남색. 낙관 옆에서 확실히 구분된다 */
+  --pA:#DD8A78; /* 프로필A 라인색 — 인주 */
+  --pB:#6E8ACB; /* 프로필B 라인색 — 청람. 인주 옆에서 확실히 구분된다 */
   /* 오행 5색. 밝은 바탕에서 사라지지 않도록 전부 어둡고 채도를 낮췄다.
      특히 금(金)은 예전 #cfd3d8(밝은 은색)이라 밝은 바탕에서 1.3:1로 아예 안 보였다.
      지금은 바탕 대비 4.4~5.5:1 — 그림 요소 기준(3:1)을 넉넉히 넘는다. */
@@ -317,8 +288,8 @@ body{
      그 자리에 놓인 --gold 글자가 6.91~6.95:1(자체 기준 7:1 미달)로 떨어지는 것을 실측했다.
      색을 바꾸지 않고 바탕이 어두워지는 폭만 줄이는 쪽을 골랐다 — 팔레트는 그대로 두고 싶었다. */
   background-image:
-    radial-gradient(ellipse at 15% -10%, rgba(31,28,23,0.018), transparent 55%),
-    radial-gradient(ellipse at 100% 0%, rgba(31,28,23,0.015), transparent 45%);
+    radial-gradient(ellipse at 15% -10%, rgba(231,234,246,.03), transparent 55%),
+    radial-gradient(ellipse at 100% 0%, rgba(231,234,246,.025), transparent 45%);
   color:var(--ink);
   min-height:100vh;
   /* R22 — 줄간격을 1.6에서 1.75로 넓혔다. "귀엽게"의 절반은 여백이라, 색을 건드리지 않고
@@ -448,7 +419,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;}
   transition:color .15s,background .15s,border-color .15s;
 }
 .tab-btn[aria-current="page"]{color:var(--gold);background:var(--panel-2);border-bottom-color:var(--brand);font-weight:700;}
-.tab-btn:hover{color:var(--ink);background:rgba(31,28,23,0.024);}
+.tab-btn:hover{color:var(--ink);background:rgba(231,234,246,.04);}
 .tab-btn:active{opacity:.6;}
 
 /* ★ 2026-08-24 리디자인 4단계 (지시서 4-1) — 좌우 여백 20px 고정 + 아래 안전영역.
@@ -585,7 +556,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 
 /* ===================== 인장 원형 버튼 → v4-A: 가는 골드 라인 프레임으로 재조정 ===================== */
 .seal-btn{
-  width:64px;height:64px;border-radius:50%;border:1px solid rgba(31,28,23,0.168);background:var(--panel-3);
+  width:64px;height:64px;border-radius:50%;border:1px solid rgba(231,234,246,.28);background:var(--panel-3);
   color:var(--ink-dim);display:flex;align-items:center;justify-content:center;
   font-family:var(--sans);font-weight:400;font-size:.82rem;text-align:center;line-height:1.15;
   transition:border-color .15s,color .15s,transform .15s;
@@ -629,8 +600,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
   box-shadow:var(--shadow-soft);
   transition:border-color .15s,background .15s,transform .15s;
 }
-.settings-row:hover,.settings-row:focus-visible{border-color:var(--gold);background:rgba(31,28,23,0.036);}
-.settings-row:active{transform:scale(.98);background:rgba(31,28,23,0.06);}
+.settings-row:hover,.settings-row:focus-visible{border-color:var(--gold);background:rgba(231,234,246,.06);}
+.settings-row:active{transform:scale(.98);background:rgba(231,234,246,.10);}
 /* ★ R33 — 값이 잘리던 원인은 여기였다. 라벨이 flex:none이라 절대 줄지 않아서
    라벨이 길면 값(남자 / 1996-01-01)이 밀려나 "남..." 처럼 잘렸다(대표님 제보).
    줄어드는 쪽을 값에서 라벨로 바꾼다 — 값은 짧고 반드시 읽혀야 하는 정보이고,
@@ -694,7 +665,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    "코드만 보고는 못 고르겠다"가 여기서 막히는 이유였다. 두 칸으로 넓혀 별명을 함께 적는다. */
 .mbti-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:18px 0;}
 .mbti-cell{
-  border:1px solid rgba(31,28,23,0.132);border-radius:var(--r-md);
+  border:1px solid rgba(231,234,246,.22);border-radius:var(--r-md);
   display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
   min-height:58px;padding:10px 12px;text-align:left;font-family:var(--sans);
   font-weight:700;font-size:1.05rem;letter-spacing:-.01em;color:var(--ink-dim);background:var(--panel-3);
@@ -723,7 +694,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .row3 select,.row2 select,.inline-pick select{width:100%;}
 .row3.row3-keep select{padding-left:8px;padding-right:8px;}
 .hour-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px;}
-.hour-btn{padding:11px 6px;min-height:44px;font-size:.78rem;border:1px solid rgba(31,28,23,0.156);background:var(--panel-3);border-radius:var(--r-md);color:var(--ink-dim);transition:border-color .15s,background .15s,color .15s,transform .15s;}
+.hour-btn{padding:11px 6px;min-height:44px;font-size:.78rem;border:1px solid rgba(231,234,246,.26);background:var(--panel-3);border-radius:var(--r-md);color:var(--ink-dim);transition:border-color .15s,background .15s,color .15s,transform .15s;}
 .hour-btn:hover{border-color:var(--gold);color:var(--ink);background:var(--gold-soft);}
 .hour-btn:active{transform:scale(.95);}
 .hour-btn[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
@@ -792,7 +763,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 @media (max-width:700px){.grid2,.grid3{grid-template-columns:1fr;}}
 
 /* 요약 카드 4분할 */
-.stat-mini{background:var(--panel-3);border:1px solid rgba(31,28,23,0.084);border-radius:var(--r-md);padding:14px 12px;text-align:center;}
+.stat-mini{background:var(--panel-3);border:1px solid rgba(231,234,246,.14);border-radius:var(--r-md);padding:14px 12px;text-align:center;}
 .stat-mini .k{font-size:.72rem;color:var(--ink-dim);margin-bottom:5px;}
 .stat-mini .v{font-family:var(--sans);font-weight:700;font-size:1.15rem;letter-spacing:-.02em;color:var(--gold);}
 
@@ -815,7 +786,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .onboard p{color:var(--ink-dim);max-width:40ch;}
 
 /* 히스토리 리스트 — R22: 목록 한 줄도 "작은 카드"로 보이게 둥글리고 여백을 준다 */
-.hist-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border:1px solid rgba(31,28,23,0.084);border-radius:var(--r-md);margin-bottom:10px;background:var(--panel-3);transition:border-color .15s,background .15s;}
+.hist-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border:1px solid rgba(231,234,246,.14);border-radius:var(--r-md);margin-bottom:10px;background:var(--panel-3);transition:border-color .15s,background .15s;}
 .hist-item:hover{border-color:var(--gold);background:var(--gold-soft);}
 .hist-item .meta{font-size:.78rem;color:var(--ink-dim);line-height:1.6;}
 .hist-actions{display:flex;gap:6px;}
@@ -829,7 +800,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    밝은 화면에서 42%였던 이유는 "그 이상 덮으면 무겁다"였는데, 어두운 판에서는 반대로
    42%로는 뒤가 앞처럼 보인다(둘 다 어두우니까). 더 짙고 차가운 쪽으로 올린다. */
 .modal-backdrop{position:fixed;inset:0;background:rgba(4,6,14,.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;animation:modalFade .2s ease both;}
-.modal-box{background:var(--panel-2);border:1px solid rgba(31,28,23,0.084);border-radius:var(--r-lg);max-width:480px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:var(--shadow);animation:modalIn .3s cubic-bezier(.2,1.4,.4,1) both;}
+.modal-box{background:var(--panel-2);border:1px solid rgba(231,234,246,.14);border-radius:var(--r-lg);max-width:480px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;box-shadow:var(--shadow);animation:modalIn .3s cubic-bezier(.2,1.4,.4,1) both;}
 @keyframes modalFade{from{opacity:0;}to{opacity:1;}}
 @keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
 .modal-box h3{color:var(--gold);margin-bottom:12px;}
@@ -855,7 +826,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    (자리를 화면 가운데에서 시작했으니 오른쪽 끝까지가 전부다). transform으로 되밀어
    보기에는 가운데였지만, 글자는 절반 폭 안에서 접히고 있었다. 폭을 글자 길이로 잡고
    화면 폭에서만 제한한다. */
-#toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom, 0px));width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;transform:translateX(-50%) translateY(20px);background:#1f1c17;border:1px solid rgba(31,28,23,0.168);color:var(--ink);padding:11px 20px;border-radius:30px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:80;box-shadow:var(--shadow-sm);}
+#toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom, 0px));width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;transform:translateX(-50%) translateY(20px);background:#222B4A;border:1px solid rgba(231,234,246,.28);color:var(--ink);padding:11px 20px;border-radius:30px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:80;box-shadow:var(--shadow-sm);}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* 레이더차트 */
@@ -965,7 +936,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .gauge-num{font-family:var(--sans);font-weight:700;letter-spacing:-.03em;font-size:2.6rem;color:var(--gold);text-align:center;}
 .gauge-label{text-align:center;color:var(--ink-dim);font-size:.85rem;margin-bottom:6px;}
 
-.disclaimer{font-size:.8rem;color:var(--ink-dim);text-align:center;margin-top:26px;line-height:1.8;border-top:1px dashed rgba(31,28,23,0.18);padding-top:16px;}
+.disclaimer{font-size:.8rem;color:var(--ink-dim);text-align:center;margin-top:26px;line-height:1.8;border-top:1px dashed rgba(231,234,246,.30);padding-top:16px;}
 /* R32 — .disclaimer-wrap(계산 한계 고지 + 접이식) 규칙은 지웠다. 그 덩어리를 화면에서 뺐기 때문이다.
    ★ .disclaimer 자체는 남긴다 — MBTI·캐릭터·용어사전·궁합 고지 7곳이 아직 이 클래스를 쓴다. */
 
@@ -977,7 +948,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
      그래서 글자를 작게·연하게 두되 대비는 4.5:1 위로 유지한다(--ink-faint).
      "눈에 안 띈다"와 "못 읽는다"는 다르고, 지켜야 할 선은 후자다.
 ===================================================================== */
-.site-footer{margin:34px 0 8px;padding:22px 14px 8px;border-top:1px solid rgba(31,28,23,0.096);text-align:center;}
+.site-footer{margin:34px 0 8px;padding:22px 14px 8px;border-top:1px solid rgba(231,234,246,.16);text-align:center;}
 .site-footer .fl-row{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 18px;margin-bottom:14px;}
 /* ★ 2026-08-24 — 29px이라 44px 기준에 미달이었다. 글자 크기는 그대로 두고 누르는 자리만 넓힌다.
    위아래 여백으로 키우면 줄 간격이 벌어지므로 inline-flex + min-height로 잡는다. */
@@ -1016,18 +987,18 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .reason-list li{position:relative;padding:6px 0 6px 16px;font-size:.88rem;line-height:1.7;color:var(--ink);}
 .reason-list li::before{content:'';position:absolute;left:2px;top:15px;width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.65;}
 .share-preview{display:flex;justify-content:center;margin:18px 0;}
-.share-preview canvas{border:1px solid rgba(31,28,23,0.144);border-radius:var(--r-md);max-width:100%;height:auto;box-shadow:var(--shadow-soft);}
+.share-preview canvas{border:1px solid rgba(231,234,246,.24);border-radius:var(--r-md);max-width:100%;height:auto;box-shadow:var(--shadow-soft);}
 
 .empty-state{text-align:center;padding:48px 18px;color:var(--ink-dim);}
 .empty-state .glyph{font-size:2.4rem;color:var(--gold);margin-bottom:10px;}
 /* R22 — 빈 화면의 '印' 글자 자리에 캐릭터를 세운다. 화면이 비어 있을 때야말로
    말 없이 분위기를 만들 수 있는 자리이고, 여기에는 계산 근거·고지·결제가 없다. */
 .empty-state .empty-char{display:flex;justify-content:center;margin-bottom:14px;}
-.empty-state .empty-char .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(31,28,23,0.132);padding:8px;color:var(--ink);}
+.empty-state .empty-char .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(231,234,246,.22);padding:8px;color:var(--ink);}
 .empty-state h3{font-size:1.12rem;color:var(--ink);margin-bottom:6px;font-weight:600;}
 .empty-state .section-sub{margin-bottom:18px;}
 
-.profile-list-item{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:1px solid rgba(31,28,23,0.096);border-radius:var(--r-md);margin-bottom:10px;}
+.profile-list-item{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:1px solid rgba(231,234,246,.16);border-radius:var(--r-md);margin-bottom:10px;}
 .profile-list-item.active{border-color:var(--red-hi);}
 
 /* ===================== v2: 사주팔자 인장 표 ===================== */
@@ -1064,7 +1035,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    역할 이름보다 커야 "무엇에 대한 설명인지"가 먼저 읽힌다. */
 .ss-ch{font-size:1.05rem;color:var(--gold);line-height:1;margin-top:2px;}
 .pillar-seal{
-  width:100%;aspect-ratio:1/1;max-width:78px;border-radius:14px;border:1px solid rgba(31,28,23,0.132);
+  width:100%;aspect-ratio:1/1;max-width:78px;border-radius:14px;border:1px solid rgba(231,234,246,.22);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
   background:var(--panel-3);position:relative;
 }
@@ -1102,7 +1073,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    원래 용어(일주)는 Mono로 — 3항이 라벨을 Mono로 잡았다. */
 .pillar-table-scroll .term-chip.tchip-tight .tc-plain{color:var(--on-dark);}
 .pillar-table-scroll .term-chip.tchip-tight .tc-term{color:var(--on-dark-3);font-family:var(--mono);letter-spacing:-.02em;}
-.pillar-table-scroll .term-chip.tchip-tight:hover{border-color:var(--line-dark-strong);background:rgba(31,28,23,0.036);}
+.pillar-table-scroll .term-chip.tchip-tight:hover{border-color:var(--line-dark-strong);background:rgba(231,234,246,.06);}
 /* 각진 프레임. 둥근 14px은 앱 타일이고, 만세력 칸은 각이 진 종이다. */
 .pillar-table-scroll .pillar-seal{border-radius:var(--r-frame);background:transparent;border-color:var(--line-dark-strong);}
 .pillar-table-scroll .pillar-seal .ch{color:var(--on-dark);}
@@ -1163,7 +1134,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 
 /* 목차 앵커 */
 /* R29 — sticky로 떠 있는 띠라 반투명하면 밑의 글자가 비쳐 읽기 어렵다. 불투명 카드색 + 그림자로 띄운다. */
-.toc-nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px;border:1px solid rgba(31,28,23,0.084);border-radius:var(--r-lg);background:var(--panel);box-shadow:var(--shadow-soft);margin-bottom:20px;}
+.toc-nav{display:flex;flex-wrap:wrap;gap:8px;padding:14px;border:1px solid rgba(231,234,246,.14);border-radius:var(--r-lg);background:var(--panel);box-shadow:var(--shadow-soft);margin-bottom:20px;}
 /* ★ 2026-08-29 (대표님 지적: "위에 왜 자꾸 짤려서 따라와")
    여기 있던 sticky·max-height:196px·아래쪽 흐림을 전부 걷어냈다. 셋 다 2026-08-28에
    내가 넣은 것이고, 셋이 겹쳐서 이런 화면이 됐다.
@@ -1203,7 +1174,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .icon-dot{
   display:inline-flex;align-items:center;justify-content:center;flex:none;
   width:36px;height:36px;border-radius:50%;
-  background:var(--gold-soft);border:1px solid rgba(31,28,23,0.132);color:var(--gold);
+  background:var(--gold-soft);border:1px solid rgba(231,234,246,.22);color:var(--gold);
 }
 
 /* 대운 타임라인 */
@@ -1215,7 +1186,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .daewoon-scroll{display:flex;gap:10px;overflow-x:auto;padding:16px 4px 20px;
   scroll-snap-type:x proximity;scroll-padding-left:4px;}
 .daewoon-item{scroll-snap-align:center;}
-.daewoon-item{flex:none;width:92px;min-height:44px;text-align:center;border:1px solid rgba(31,28,23,0.108);border-radius:var(--r-md);padding:12px 7px;background:var(--panel-3);transition:border-color .15s,background .15s,transform .15s;}
+.daewoon-item{flex:none;width:92px;min-height:44px;text-align:center;border:1px solid rgba(231,234,246,.18);border-radius:var(--r-md);padding:12px 7px;background:var(--panel-3);transition:border-color .15s,background .15s,transform .15s;}
 .daewoon-item:hover{border-color:var(--gold);background:var(--gold-soft);}
 .daewoon-item:active{transform:scale(.97);}
 .daewoon-item.current{border-color:var(--red-hi);background:rgba(221,138,120,.07);}
@@ -1234,7 +1205,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 0 4px;}
 @media (min-width:480px){ .month-grid{grid-template-columns:repeat(4,1fr);} }
 .month-cell{
-  text-align:center;border:1px solid rgba(31,28,23,0.108);border-radius:var(--r-md);padding:12px 5px 13px;min-height:44px;
+  text-align:center;border:1px solid rgba(231,234,246,.18);border-radius:var(--r-md);padding:12px 5px 13px;min-height:44px;
   background:var(--panel-3);transition:border-color .15s,background .15s,transform .15s;
 }
 .month-cell:hover{border-color:var(--gold);background:var(--gold-soft);}
@@ -1268,13 +1239,13 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    색 수를 늘리지 않는 쪽이 대표님이 말한 "고급스러움"에 맞다. */
 .unsaved-line{font-size:.8rem;color:var(--red-hi);margin-top:10px;line-height:1.5;}
 /* 마이그레이션 안내 — 조용히 바꾸지 않았다는 사실을 사용자 화면에 남긴다 */
-.migrate-box{border:1px solid rgba(31,28,23,0.144);background:var(--gold-soft);border-radius:var(--r-md);padding:14px 16px;margin:14px 0;font-size:.84rem;line-height:1.8;color:var(--ink);}
+.migrate-box{border:1px solid rgba(231,234,246,.24);background:var(--gold-soft);border-radius:var(--r-md);padding:14px 16px;margin:14px 0;font-size:.84rem;line-height:1.8;color:var(--ink);}
 .migrate-box strong{color:var(--gold);display:block;margin-bottom:4px;}
 
 /* ===================== v4: 유료 구간(페이월) ===================== */
 /* 잠긴 구간은 "가려져 있다"가 눈에 보여야 한다. 내용을 통째로 지우면
    무엇을 사는 건지 알 수 없고, 다 보여주면 잠글 이유가 없다. */
-.locked-block{position:relative;margin:20px 0;border:1px dashed rgba(31,28,23,0.204);border-radius:var(--r-lg);overflow:hidden;background:var(--panel);box-shadow:var(--shadow-soft);}
+.locked-block{position:relative;margin:20px 0;border:1px dashed rgba(231,234,246,.34);border-radius:var(--r-lg);overflow:hidden;background:var(--panel);box-shadow:var(--shadow-soft);}
 .locked-count{padding:10px 16px 0;font-size:.78rem;color:var(--gold);letter-spacing:.02em;}
 .locked-teaser{position:relative;padding:12px 16px 0;color:var(--ink-dim);font-size:.9rem;line-height:1.7;
   max-height:76px;overflow:hidden;
@@ -1292,7 +1263,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .locked-icon .lock-icon{width:1.6rem;height:1.6rem;margin-right:0;vertical-align:middle;}
 .locked-title{font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
 .locked-desc{font-size:.84rem;color:var(--ink-dim);margin-bottom:12px;line-height:1.6;}
-.compat-upsell{margin-top:20px;padding:20px 18px;border:1px solid rgba(31,28,23,0.144);border-radius:var(--r-lg);background:var(--gold-soft);text-align:center;}
+.compat-upsell{margin-top:20px;padding:20px 18px;border:1px solid rgba(231,234,246,.24);border-radius:var(--r-lg);background:var(--gold-soft);text-align:center;}
 .compat-upsell p{font-size:.86rem;color:var(--ink-dim);line-height:1.7;margin-bottom:12px;}
 /* ★ R84 — 결제 전 "무엇을 받는지" 목록. 가운데 정렬 카드 안이지만 목록만은 왼쪽으로 맞춘다 —
    여러 줄짜리 항목을 가운데 정렬하면 줄머리가 들쭉날쭉해서 훑어 읽을 수가 없다. */
@@ -1304,7 +1275,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
   border-radius:50%;background:var(--gold);}
 
 /* 결제 화면 */
-.pay-product{text-align:center;padding:6px 0 14px;border-bottom:1px solid rgba(31,28,23,0.144);margin-bottom:14px;}
+.pay-product{text-align:center;padding:6px 0 14px;border-bottom:1px solid rgba(231,234,246,.24);margin-bottom:14px;}
 .pay-name{font-size:1.05rem;font-weight:600;color:var(--ink);}
 .pay-price{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;color:var(--gold);margin:6px 0;}
 .pay-desc{font-size:.85rem;color:var(--ink-dim);line-height:1.6;}
@@ -1353,15 +1324,15 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .legal-links button{font-size:.8rem;padding:7px 12px;}
 .pay-legal-line{font-size:.78rem;color:var(--ink-faint);line-height:1.6;margin-top:10px;}
 /* 영수증(복원) 번호 — 옮겨 적어야 하는 값이라 눈에 띄고 선택하기 쉬워야 한다 */
-.receipt-code{margin-top:8px;padding:14px 16px;border:1px dashed rgba(31,28,23,0.204);border-radius:var(--r-md);
-  background:rgba(31,28,23,0.03);user-select:all;-webkit-user-select:all;}
+.receipt-code{margin-top:8px;padding:14px 16px;border:1px dashed rgba(231,234,246,.34);border-radius:var(--r-md);
+  background:rgba(231,234,246,.05);user-select:all;-webkit-user-select:all;}
 .receipt-code code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.95rem;
   color:var(--gold);word-break:break-all;letter-spacing:.03em;}
 
 /* 지금 풀이를 무엇이 만들고 있는지 알리는 띠 */
 .interp-notice{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
   padding:12px 16px;margin:16px 0;border-radius:var(--r-md);background:var(--panel-3);
-  border:1px solid rgba(31,28,23,0.06);font-size:.8rem;color:var(--ink-dim);line-height:1.6;}
+  border:1px solid rgba(231,234,246,.10);font-size:.8rem;color:var(--ink-dim);line-height:1.6;}
 .interp-notice.on{border-color:var(--gold-line);}
 .interp-notice.warn{border-color:var(--red);}
 .interp-badge{flex:0 0 auto;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:3px;
@@ -1433,7 +1404,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
   padding:16px 18px;min-height:64px;margin-bottom:12px;
   transition:border-color .15s,background .15s;}
 .hd-row:hover,.hd-row:focus-visible{border-color:var(--gold);background:var(--gold-soft);}
-.hd-row:active{background:rgba(31,28,23,0.06);}
+.hd-row:active{background:rgba(231,234,246,.10);}
 /* ★ 2026-08-28 — 세 줄 중 이 줄 하나만 무게를 올린다. 배경을 한 단 밝히고 테두리에 색을 준다.
    새 색을 만들지 않고 이미 있는 토큰(--panel-3 · --gold)만 쓴다. */
 .hd-row-accent{background:var(--panel-3);border-color:var(--gold);}
@@ -1497,7 +1468,7 @@ body.has-fab main{padding-bottom:110px;}
 .md-tbl td{color:var(--ink);}
 
 /* 설정: 구매 내역 / 연동 */
-.biz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,28,23,0.06);font-size:.86rem;}
+.biz-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(231,234,246,.10);font-size:.86rem;}
 .biz-row:last-child{border-bottom:0;}
 .biz-row .k{color:var(--ink-dim);}
 .biz-row .v{color:var(--ink);font-weight:600;text-align:right;}
@@ -1557,7 +1528,7 @@ body.has-fab main{padding-bottom:110px;}
 .fb-count.over{color:var(--red-hi);font-weight:600;}
 .fb-msg{font-size:.84rem;line-height:1.7;margin:12px 0 0;}
 .fb-msg.err{color:var(--red-hi);}
-.fb-done{text-align:center;padding:26px 18px;border:1px solid rgba(31,28,23,0.144);border-radius:var(--r-lg);
+.fb-done{text-align:center;padding:26px 18px;border:1px solid rgba(231,234,246,.24);border-radius:var(--r-lg);
   background:var(--gold-soft);}
 .fb-done h3{font-size:1.05rem;color:var(--ink);margin-bottom:8px;}
 .fb-done p{font-size:.86rem;color:var(--ink-dim);line-height:1.7;margin:0 0 14px;}
@@ -1577,7 +1548,7 @@ body.has-fab main{padding-bottom:110px;}
 .sup-card:hover{border-color:var(--gold);}
 .sup-card:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
 .sup-card .sup-ico{flex:none;width:38px;height:38px;border-radius:12px;display:flex;align-items:center;
-  justify-content:center;font-size:1.15rem;background:var(--gold-soft);border:1px solid rgba(31,28,23,0.108);}
+  justify-content:center;font-size:1.15rem;background:var(--gold-soft);border:1px solid rgba(231,234,246,.18);}
 .sup-card .sup-txt{flex:1;min-width:0;}
 .sup-card .sup-t{display:block;font-size:.92rem;font-weight:700;color:var(--ink);line-height:1.45;}
 .sup-card .sup-s{display:block;font-size:.78rem;color:var(--ink-faint);line-height:1.6;margin-top:3px;}
@@ -1591,7 +1562,7 @@ body.has-fab main{padding-bottom:110px;}
 .sup-mine:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
 
 /* 접수 순서·걸리는 시간을 접수 전에 미리 알린다. 이 한 칸이 "왜 답이 없냐"는 재문의를 줄인다. */
-.sup-sla{border:1px dashed rgba(31,28,23,0.18);border-radius:var(--r-md);padding:13px 15px;margin-bottom:16px;
+.sup-sla{border:1px dashed rgba(231,234,246,.3);border-radius:var(--r-md);padding:13px 15px;margin-bottom:16px;
   font-size:.8rem;color:var(--ink-dim);line-height:1.75;}
 
 /* 문의 한 건 — 내 문의 내역 */
@@ -1602,17 +1573,17 @@ body.has-fab main{padding-bottom:110px;}
 .sup-tk-at{font-size:.72rem;color:var(--ink-faint);margin-left:auto;}
 .sup-tk-body{font-size:.85rem;color:var(--ink-dim);line-height:1.75;margin:0;white-space:pre-wrap;}
 .sup-tk-reply{margin-top:12px;padding:12px 14px;border-radius:var(--r-md);background:var(--gold-soft);
-  border:1px solid rgba(31,28,23,0.12);}
+  border:1px solid rgba(231,234,246,.2);}
 .sup-tk-reply strong{display:block;font-size:.78rem;color:var(--gold);margin-bottom:5px;}
 .sup-tk-reply p{font-size:.85rem;color:var(--ink);line-height:1.75;margin:0;white-space:pre-wrap;}
 .sup-chip{display:inline-block;padding:3px 10px;border-radius:3px;font-size:.72rem;font-weight:700;
   border:1px solid var(--field-line);background:var(--panel-3);color:var(--ink-dim);}
-.sup-chip.received{border-color:rgba(31,28,23,0.168);}
-.sup-chip.working{border-color:rgba(31,28,23,0.24);background:var(--gold-soft);color:var(--gold);}
+.sup-chip.received{border-color:rgba(231,234,246,.28);}
+.sup-chip.working{border-color:rgba(231,234,246,.4);background:var(--gold-soft);color:var(--gold);}
 .sup-chip.answered,.sup-chip.closed{border-color:rgba(67,153,135,.4);background:rgba(67,153,135,.1);color:var(--green-hi,#3c7850);}
 
 /* 주문 한 줄 — 결제·이용권 확인 */
-.sup-ord{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-top:1px solid rgba(31,28,23,0.096);}
+.sup-ord{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-top:1px solid rgba(231,234,246,.16);}
 .sup-ord:first-of-type{border-top:none;}
 .sup-ord .sup-ord-m{flex:1;min-width:0;}
 .sup-ord .sup-ord-n{font-size:.85rem;color:var(--ink);font-weight:600;line-height:1.5;}
@@ -1621,11 +1592,11 @@ body.has-fab main{padding-bottom:110px;}
 .sup-verdict{border-radius:var(--r-lg);padding:15px 17px;margin-bottom:16px;line-height:1.75;font-size:.86rem;}
 .sup-verdict strong{display:block;font-size:.95rem;margin-bottom:6px;}
 .sup-verdict.ok{background:rgba(67,153,135,.1);border:1px solid rgba(67,153,135,.3);color:var(--ink);}
-.sup-verdict.warn{background:var(--gold-soft);border:1px solid rgba(31,28,23,0.168);color:var(--ink);}
+.sup-verdict.warn{background:var(--gold-soft);border:1px solid rgba(231,234,246,.28);color:var(--ink);}
 .sup-verdict.bad{background:rgba(150,60,40,.08);border:1px solid rgba(150,60,40,.32);color:var(--ink);}
 
 /* 운영 현황판에서 받은 의견을 읽는 자리 */
-.fb-item{padding:12px 0;border-top:1px solid rgba(31,28,23,0.096);}
+.fb-item{padding:12px 0;border-top:1px solid rgba(231,234,246,.16);}
 .fb-item-meta{font-size:.74rem;color:var(--ink-faint);line-height:1.6;margin:0;}
 .fb-item-body{font-size:.88rem;color:var(--ink);line-height:1.75;margin:6px 0;white-space:pre-wrap;}
 
@@ -1635,7 +1606,7 @@ body.has-fab main{padding-bottom:110px;}
 .compat-side h4{text-align:center;font-size:.9rem;color:var(--ink-dim);margin-bottom:8px;}
 .compat-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;}
 @media (max-width:640px){.compat-summary-grid{grid-template-columns:1fr;}}
-.tier-label{display:inline-block;margin-top:4px;padding:5px 14px;border-radius:20px;background:var(--gold-soft);border:1px solid rgba(31,28,23,0.132);color:var(--gold);font-family:var(--sans);font-weight:700;font-size:.95rem;letter-spacing:-.01em;}
+.tier-label{display:inline-block;margin-top:4px;padding:5px 14px;border-radius:20px;background:var(--gold-soft);border:1px solid rgba(231,234,246,.22);color:var(--gold);font-family:var(--sans);font-weight:700;font-size:.95rem;letter-spacing:-.01em;}
 
 /* ===================== R21: 궁합 항목별 지표(일상어 막대) + 접어 둔 전문 용어 =====================
    지표 자체는 새 계산이 아니다 — computeCompat/buildSajuCompat이 이미 내던 하위 점수를
@@ -1647,12 +1618,12 @@ body.has-fab main{padding-bottom:110px;}
 /* ★ 색은 앱에 이미 있는 것을 쓴다. 처음에 rgba(0,0,0,.05)로 적었더니 어두운 바탕에 묻혀
    칩인지 그냥 글자인지 구별이 안 됐다(스크린샷으로 발견). */
 .compat-rel-chip{display:inline-block;padding:5px 12px;border-radius:999px;background:var(--gold-soft);
-  border:1px solid rgba(31,28,23,0.096);color:var(--gold);font-size:.86rem;font-weight:700;line-height:1.5;}
+  border:1px solid rgba(231,234,246,.16);color:var(--gold);font-size:.86rem;font-weight:700;line-height:1.5;}
 .compat-rel-change{background:none;border:0;padding:5px 8px;color:var(--ink-faint);
   font-size:.86rem;font-weight:600;text-decoration:underline;cursor:pointer;min-height:32px;}
 .cm-mix{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 2px;}
 /* R22 — 두 칸을 "숫자가 주인공"인 타일로. 라벨은 작은 회색, 숫자는 크고 뒤에 색 원. */
-.cm-mix-cell{padding:16px 13px 14px;border:1px solid rgba(31,28,23,0.084);border-radius:var(--r-md);background:var(--panel-3);text-align:center;}
+.cm-mix-cell{padding:16px 13px 14px;border:1px solid rgba(231,234,246,.14);border-radius:var(--r-md);background:var(--panel-3);text-align:center;}
 .cm-mix-k{font-size:.74rem;font-weight:700;letter-spacing:.08em;color:var(--ink-dim);margin-bottom:6px;}
 .cm-mix-v{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;font-size:1.15rem;color:var(--gold);}
 .cm-mix-note{font-size:.78rem;color:var(--ink-faint);line-height:1.8;margin-top:11px;}
@@ -1667,10 +1638,10 @@ body.has-fab main{padding-bottom:110px;}
 .cm-src{color:var(--ink-faint);flex:none;}
 /* "왜 이런 결과가 나왔나요?" — 합충형파·십성·간지 같은 용어는 전부 이 안으로 옮겨 접어 둔다.
    지운 게 아니라 자리를 옮긴 것이다(아는 사람에게는 이게 근거다). */
-.why-panel{margin-top:14px;padding:16px 17px;border:1px solid rgba(31,28,23,0.084);border-radius:var(--r-md);background:var(--panel-3);}
+.why-panel{margin-top:14px;padding:16px 17px;border:1px solid rgba(231,234,246,.14);border-radius:var(--r-md);background:var(--panel-3);}
 .why-panel h4{font-size:.88rem;color:var(--gold);margin:14px 0 6px;font-weight:600;}
 .why-panel h4:first-child{margin-top:0;}
-.why-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(31,28,23,0.06);font-size:.82rem;}
+.why-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(231,234,246,.10);font-size:.82rem;}
 .why-row:last-child{border-bottom:0;}
 .why-row .why-k{color:var(--ink-dim);}
 .why-row .why-v{color:var(--ink);text-align:right;word-break:keep-all;}
@@ -1683,7 +1654,7 @@ body.has-fab main{padding-bottom:110px;}
    무료 요약 지표이고, 구간별 상세 문장의 잠금 규칙은 건드리지 않는다. */
 .dw-flow{margin:10px 0 2px;}
 .dw-flow svg{width:100%;height:auto;display:block;}
-.dw-peak{border:1px solid rgba(31,28,23,0.144);background:var(--gold-soft);border-radius:var(--r-md);padding:16px 17px;margin:14px 0 4px;font-size:.9rem;line-height:1.9;color:var(--ink);}
+.dw-peak{border:1px solid rgba(231,234,246,.24);background:var(--gold-soft);border-radius:var(--r-md);padding:16px 17px;margin:14px 0 4px;font-size:.9rem;line-height:1.9;color:var(--ink);}
 .dw-peak strong{color:var(--gold);}
 /* R29 — 밝은 바탕에서 --gold-soft는 아주 옅은 미색이라 --ink-dim이 그 위에서 8.4:1이다.
    R21에 따로 만들었던 밝은 회색(#b7ada0)은 이유가 사라졌으므로 변수로 되돌린다. */
@@ -1693,7 +1664,7 @@ body.has-fab main{padding-bottom:110px;}
 .daewoon-item .dw-strnum{font-size:.64rem;color:var(--ink-dim);}
 /* 가장 큰 구간 표시. .current(빨간 테두리)와 겹쳐도 서로 지우지 않도록 테두리가 아닌 안쪽 선으로 그린다. */
 .daewoon-item.peak{box-shadow:inset 0 0 0 1px var(--gold);}
-.dw-why-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid rgba(31,28,23,0.06);font-size:.82rem;}
+.dw-why-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid rgba(231,234,246,.10);font-size:.82rem;}
 .dw-why-row:last-child{border-bottom:0;}
 .dw-why-row .dwy-k{color:var(--ink);}
 .dwy-parts{width:100%;font-size:.75rem;color:var(--ink-faint);line-height:1.6;}
@@ -1728,13 +1699,13 @@ body.has-fab main{padding-bottom:110px;}
 .gc-node.dim .gc-avatar{opacity:.34;}
 .gc-node.dim .gc-label{color:var(--ink-faint);}
 .gc-avatar{width:var(--gc-av,clamp(44px,10vw,58px));height:var(--gc-av,clamp(44px,10vw,58px));
-  border-radius:50%;border:2px solid rgba(31,28,23,0.168);background:var(--panel-3);
+  border-radius:50%;border:2px solid rgba(231,234,246,.28);background:var(--panel-3);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
   font-family:var(--sans);font-weight:700;font-size:1rem;color:var(--ink);
   transition:border-color .15s,box-shadow .15s;}
 .gc-avatar .char-svg{width:100%;height:100%;}
 .gc-node:hover .gc-avatar{border-color:var(--gold);}
-.gc-node:focus-visible .gc-avatar{border-color:var(--gold);box-shadow:0 0 0 3px rgba(31,28,23,0.156);}
+.gc-node:focus-visible .gc-avatar{border-color:var(--gold);box-shadow:0 0 0 3px rgba(231,234,246,.26);}
 .gc-node[aria-pressed="true"] .gc-avatar{border-color:var(--red-hi);box-shadow:0 0 0 3px rgba(221,138,120,.18);}
 /* ★ R32 — 이름표가 SVG 관계선·다른 사람 얼굴 위에 그대로 얹혀 최저 1.18:1까지 떨어졌다(검수 실측).
    글자색을 바꿔도 밑에 무엇이 지나갈지 알 수 없으므로, 글자 뒤에 종이색 알약을 깔아
@@ -1754,7 +1725,7 @@ body.has-fab main{padding-bottom:110px;}
 /* R21·R23 규칙 그대로 — 일상어를 앞에 크게, 원래 등급 이름은 뒤에 작게. */
 .gc-legend .gl-term{color:var(--ink-faint);font-size:.68rem;margin-left:4px;}
 .gc-cards{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-card);margin-top:24px;}
-.gc-pair-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px dashed rgba(31,28,23,0.168);font-size:.82rem;}
+.gc-pair-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px dashed rgba(231,234,246,.28);font-size:.82rem;}
 /* 그룹 멤버 고르기 칩 */
 .gc-members{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 2px;}
 .gc-member{min-height:var(--tap);padding:9px 14px;border-radius:var(--r-frame);border:1px solid var(--gold-line);background:var(--panel-3);
@@ -1762,7 +1733,7 @@ body.has-fab main{padding-bottom:110px;}
 .gc-member:hover{border-color:var(--gold);color:var(--ink);}
 .gc-member[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
 /* 전체 순위 목록 */
-.gc-rank-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,28,23,0.06);font-size:.85rem;}
+.gc-rank-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(231,234,246,.10);font-size:.85rem;}
 .gc-rank-row:last-child{border-bottom:0;}
 .gc-rank-row .gr-no{color:var(--ink-faint);font-size:.74rem;flex:none;min-width:1.8em;padding-top:2px;}
 .gc-rank-row .gr-who{flex:1;min-width:0;word-break:keep-all;}
@@ -2038,14 +2009,14 @@ body.has-fab main{padding-bottom:110px;}
 .admin-flag .af-open:hover{background:rgba(255,237,232,.22);}
 @media (max-width:420px){ .admin-flag{font-size:.68rem;padding:6px 10px;gap:6px;} }
 
-.admin-sec{border:1px solid rgba(31,28,23,0.096);border-radius:var(--r-md);padding:14px 16px;margin-bottom:14px;background:var(--panel-3);}
+.admin-sec{border:1px solid rgba(231,234,246,.16);border-radius:var(--r-md);padding:14px 16px;margin-bottom:14px;background:var(--panel-3);}
 .admin-sec > h4{color:var(--gold);font-size:.9rem;margin-bottom:8px;font-weight:600;}
 .admin-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
 .admin-chip{padding:11px 15px;min-height:var(--tap);display:inline-flex;align-items:center;border-radius:var(--r-frame);border:1px solid var(--gold-line);background:var(--panel);color:var(--ink-dim);
   font-size:.76rem;transition:background .15s,color .15s,border-color .15s;}
 .admin-chip:hover{border-color:var(--gold);color:var(--ink);}
 .admin-chip[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
-.admin-log{margin-top:8px;padding:10px;border-radius:8px;background:var(--panel-2);border:1px solid rgba(31,28,23,0.072);
+.admin-log{margin-top:8px;padding:10px;border-radius:8px;background:var(--panel-2);border:1px solid rgba(231,234,246,.12);
   font-size:.74rem;line-height:1.7;color:var(--ink-dim);max-height:190px;overflow:auto;
   white-space:pre-wrap;word-break:break-word;}
 
@@ -2055,7 +2026,7 @@ body.has-fab main{padding-bottom:110px;}
 /* R22 — 캐릭터를 "옅은 원 안에" 앉힌다. 레퍼런스의 동그란 아이콘 배경과 같은 규칙이고,
    덕분에 어두운 배경에서 캐릭터 실루엣이 훨씬 또렷하게 떠오른다. 색은 --gold-soft/--gold-line뿐. */
 .char-hero{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
-.char-hero .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(31,28,23,0.132);padding:6px;color:var(--ink);}
+.char-hero .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(231,234,246,.22);padding:6px;color:var(--ink);}
 .char-hero .ch-text{flex:1 1 200px;min-width:170px;}
 .char-hero .ch-name{font-family:var(--sans);font-size:1.18rem;letter-spacing:-.02em;color:var(--gold);margin-bottom:6px;font-weight:700;}
 .char-hero .ch-line{font-size:.94rem;line-height:1.9;}
@@ -2063,25 +2034,25 @@ body.has-fab main{padding-bottom:110px;}
 /* 목록 행의 작은 칩. 34→40으로 키우고 같은 원 배경을 준다(작아서 안 보이던 문제를 함께 해결). */
 /* R29 — 캐릭터 윤곽선은 currentColor다. 칩이 놓이는 자리마다 물려받는 글자색이 달라서
    밝은 바탕에서 실루엣이 날아갈 수 있다. 캐릭터를 담는 자리 전부에 color:var(--ink)를 못 박는다. */
-.char-chip{width:40px;height:40px;border-radius:50%;background:var(--gold-soft);border:1px solid rgba(31,28,23,0.132);padding:2px;color:var(--ink);}
+.char-chip{width:40px;height:40px;border-radius:50%;background:var(--gold-soft);border:1px solid rgba(231,234,246,.22);padding:2px;color:var(--ink);}
 .char-pair{display:flex;justify-content:center;align-items:flex-start;gap:16px;flex-wrap:wrap;margin:4px 0 16px;}
 .char-pair .cp-side{display:flex;flex-direction:column;align-items:center;gap:6px;max-width:160px;text-align:center;}
-.char-pair .cp-side .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(31,28,23,0.132);padding:6px;color:var(--ink);}
+.char-pair .cp-side .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(231,234,246,.22);padding:6px;color:var(--ink);}
 .char-pair .cp-name{font-size:.92rem;font-weight:600;}
 .char-pair .cp-sub{font-size:.74rem;color:var(--ink-dim);line-height:1.6;}
 /* 온보딩 첫 화면에 세우는 캐릭터 셋 — 이 앱이 무엇인지 말보다 먼저 알려주는 자리다. */
 .char-row{display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap;}
-.char-row .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(31,28,23,0.132);padding:6px;color:var(--ink);}
+.char-row .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(231,234,246,.22);padding:6px;color:var(--ink);}
 /* 최소 폭 96→88. 여백을 키운 뒤 96px로 두었더니 390px에서 2열로 접혀 도감이 두 배로 길어졌다
    (실측 스크린샷에서 잡았다). 88px면 390px에서 3열, 320px에서 2열 — R19·R21 때와 같은 접힘이다. */
 .char-dex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:12px;margin-top:14px;}
 .char-dex-item{display:flex;flex-direction:column;align-items:center;gap:7px;padding:13px 6px 14px;
-  border:1px solid rgba(31,28,23,0.084);border-radius:var(--r-lg);background:var(--panel);min-height:44px;color:var(--ink);
+  border:1px solid rgba(231,234,246,.14);border-radius:var(--r-lg);background:var(--panel);min-height:44px;color:var(--ink);
   box-shadow:var(--shadow-soft);
   transition:border-color .15s,background .15s,transform .15s;}
 .char-dex-item:hover{border-color:var(--gold);background:var(--gold-soft);}
 .char-dex-item:active{transform:scale(.97);}
-.char-dex-item .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(31,28,23,0.132);padding:4px;color:var(--ink);}
+.char-dex-item .char-svg{border-radius:50%;background:var(--gold-soft);border:1px solid rgba(231,234,246,.22);padding:4px;color:var(--ink);}
 .char-dex-item .cd-name{font-size:.8rem;line-height:1.4;font-weight:600;}
 .char-dex-item.mine{border-color:var(--gold);background:var(--gold-soft);}
 .char-dex-item .cd-mine{font-size:.68rem;color:var(--gold);border:1px solid currentColor;border-radius:3px;padding:2px 9px;}
@@ -2111,7 +2082,7 @@ body.has-fab main{padding-bottom:110px;}
 .term-chip{
   display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;
   min-height:44px;padding:7px 13px;text-align:left;cursor:pointer;
-  border:1px solid rgba(31,28,23,0.132);border-radius:var(--r-md);background:var(--panel-3);
+  border:1px solid rgba(231,234,246,.22);border-radius:var(--r-md);background:var(--panel-3);
   transition:border-color .15s,background .15s;
 }
 .term-chip:hover{border-color:var(--gold);background:var(--gold-soft);}
@@ -2122,7 +2093,7 @@ body.has-fab main{padding-bottom:110px;}
 .term-chip.tchip-hap{border-color:rgba(67,153,135,.55);}
 .term-chip.tchip-chung{border-color:rgba(221,138,120,.55);}
 .term-chip.tchip-pa{border-color:rgba(110,138,203,.55);}
-.term-chip.tchip-hyeong{border-color:rgba(31,28,23,0.33);}
+.term-chip.tchip-hyeong{border-color:rgba(231,234,246,.55);}
 .term-chip-row{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0;}
 /* 좁은 칸용(사주 네 기둥 표의 칸 이름·그 위에 얹는 십성 칸). 칸이 좁아 mini(더 짧은 일상어)를 쓰고,
    테두리와 배경을 지워 표를 어지럽히지 않는다. 누를 수 있다는 표시는 점선 밑줄이 계속 맡는다. */
@@ -2130,7 +2101,7 @@ body.has-fab main{padding-bottom:110px;}
   width:100%;min-width:0;flex:none;min-height:45px;align-items:center;text-align:center;padding:5px 3px;gap:1px;
   border-color:transparent;background:none;
 }
-.term-chip.tchip-tight:hover{border-color:rgba(31,28,23,0.18);background:var(--gold-soft);}
+.term-chip.tchip-tight:hover{border-color:rgba(231,234,246,.30);background:var(--gold-soft);}
 /* ★ 2026-08-24 리디자인 3단계 — 지시서 3항의 하한선(모바일 12px 미만 금지)에 맞춘다.
    .62rem은 10.9px이라 미달이었다. .7rem = 12.3px. 위 일상어는 한 단 올려 위계를 남긴다. */
 .term-chip.tchip-tight .tc-plain{font-size:.78rem;line-height:1.3;}
@@ -2150,7 +2121,7 @@ body.has-fab main{padding-bottom:110px;}
 /* 용어 사전 화면 */
 .gl-tools{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-bottom:6px;}
 .gl-count{font-size:.8rem;color:var(--ink-dim);}
-.gl-item{padding:14px 0;border-bottom:1px solid rgba(31,28,23,0.06);}
+.gl-item{padding:14px 0;border-bottom:1px solid rgba(231,234,246,.10);}
 .gl-item:last-child{border-bottom:0;}
 .gl-plain{font-size:1rem;color:var(--ink);font-weight:600;line-height:1.55;}
 .gl-term{font-size:.76rem;color:var(--gold);margin-top:3px;}
@@ -10812,7 +10783,7 @@ function daeunStrengthList(saju, dwList, counts, gangjak){
    viewBox 고정 + width:100%라 320px에서도 그대로 줄어들 뿐 깨지지 않는다. */
 /* ★ R87 (2026-08-18) — 이 그래프만 옛 청동 테마 색이 그대로 남아 있었다.
    앱 전체는 분홍(--pA #98003C)으로 갈아탔는데 여기만 #584416(올리브)·#8F2413(벽돌)·
-   rgba(31,28,23,0.06)(베이지 면)을 글자로 박아 두어, 분홍 화면 위에 이 그래프 하나만
+   rgba(231,234,246,.10)(베이지 면)을 글자로 박아 두어, 분홍 화면 위에 이 그래프 하나만
    갈색으로 떠 있었다(실제로 캡처해서 확인).
    R85에서 궁합 오행 레이더의 같은 문제를 고쳤는데 이 그래프는 빠져 있었다.
    ★ 색을 글자로 박지 말고 토큰을 쓸 것. 테마를 또 바꾸면 여기만 다시 남는다. */
@@ -21180,14 +21151,12 @@ function shareCardCharKeys(kind, profile, data){
    따로 놀 이유가 없다. 오히려 같은 색이어야 카드를 본 사람이 앱에 들어왔을 때 같은 서비스로 읽힌다.
    ★ 여기 값은 :root의 --base / --ink / --ink-faint / --brand / --gold와 짝이다.
      Canvas는 CSS 변수를 못 읽으므로 숫자를 옮겨 적는다 — 한쪽만 고치지 마라. */
-/* ★ 2026-09-01 리뉴얼 — 앱이 종이 판으로 바뀌었으므로 공유 카드도 같이 옮긴다.
-   카드만 어두운 채로 두면 카톡에서 본 그림과 눌러 들어온 화면이 다른 서비스로 보인다. */
-var CARD_BG   = '#efe9dd';            /* 지면  = --base */
-var CARD_INK  = '#1f1c17';            /* 글자  = --ink */
-var CARD_DIM  = '#736c5f';            /* 흐린 글씨 = --ink-faint */
-var CARD_SEAL = '#B41E30';            /* 로고색 = --brand */
-var CARD_ACC  = '#AF2B25';            /* 낙관(글자 강조) = --gold */
-var CARD_LINE = 'rgba(31,28,23,0.156)'; /* 먹 괘선 */
+var CARD_BG   = '#0C1020';            /* 지면  = --base */
+var CARD_INK  = '#E7EAF6';            /* 글자  = --ink */
+var CARD_DIM  = '#808AAB';            /* 흐린 글씨 = --ink-faint */
+var CARD_SEAL = '#E05068';            /* 로고색 = --brand */
+var CARD_ACC  = '#DD8A78';            /* 인주(글자 강조) = --gold */
+var CARD_LINE = 'rgba(231,234,246,.26)'; /* 먹 괘선 */
 var CARD_SANS  = "'Pretendard Variable','Pretendard','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif";
 var CARD_SERIF = "'Nanum Myeongjo','AppleMyungjo','Batang',serif";
 function drawShareCard(canvas, kind, profile, data){
