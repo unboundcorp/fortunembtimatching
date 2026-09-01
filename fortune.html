@@ -2203,6 +2203,37 @@ body.has-fab main{padding-bottom:110px;}
 .gl-long{font-size:.87rem;color:var(--ink-dim);margin-top:7px;line-height:1.8;}
 .gl-src{font-size:.74rem;color:var(--ink-faint);margin-top:6px;}
 
+/* =====================================================================
+   ★ 2026-09-01 리뉴얼 — 넓은 화면(PC)에서는 두 칸으로 편다 (대표님 지시)
+   ---------------------------------------------------------------------
+   시안은 모바일 390px와 데스크톱 1440px 두 벌이다. 파일을 둘로 나누지 않고
+   **폭에 따라 갈라지게** 만든다 — 글과 기능은 한 벌만 두어야 한쪽만 고치는 사고가 안 난다.
+
+   규칙은 둘뿐이다.
+     ① 카드(.scroll-card)만 두 칸으로 나뉜다.
+     ② 나머지(제목·날짜·버튼·목록 줄)는 한 줄을 다 쓴다.
+   그래서 새로 만든 화면도 이 규칙만 따르면 저절로 두 칸이 된다.
+
+   ★ 1080px 아래로는 아무것도 바뀌지 않는다 — 지금까지의 모바일 화면 그대로다.
+   ★ 카드 안쪽 구조는 건드리지 않는다. 카드는 자기 폭에 맞춰 이미 접힌다.
+===================================================================== */
+@media (min-width:1080px){
+  #app{max-width:1312px;}
+  main{padding:40px 64px calc(120px + env(safe-area-inset-bottom, 0px));}
+  /* ★ 격자(grid)가 아니라 단(column)을 쓴다. 격자로 하면 옆 칸 카드가 길 때 짧은 쪽 아래가
+     통째로 비어 버린다(실측했다). 단은 카드가 아래로 흘러 들어가 빈자리를 스스로 메운다. */
+  #main > .view{columns:2;column-gap:40px;}
+  /* 기본은 한 줄 전체(단을 가로지른다). 카드만 단 안에서 흐른다. */
+  #main > .view > *{column-span:all;}
+  #main > .view > .scroll-card{column-span:none;break-inside:avoid;-webkit-column-break-inside:avoid;}
+  /* 두 칸으로 갈리면 읽기 폭(40em)이 칸보다 넓어 글이 칸을 넘어 보인다. 칸에 맞춘다. */
+  #main .scroll-card p, #main .scroll-card li{max-width:none;}
+  /* 화면 제목·큰 버튼은 지면 가운데를 넘지 않게 둔다 — 1312px를 가득 채운 버튼은 눌러야 할
+     것처럼 안 보인다(실측이 아니라 시안의 데스크톱 버튼 폭이 그렇다). */
+  #main > .view > .btn-block{max-width:520px;}
+  .page-head, .landing-intro{max-width:44em;}
+}
+
 /* ===================== R22: 좁은 화면에서 여백을 되돌린다 =====================
    여백을 키우면 제일 먼저 깨지는 곳이 320~390px다. 그래서 카드 안쪽 여백·카드 간격을
    변수 한 곳에서 다시 줄인다(값을 여기저기 흩어 적지 않는다). */
