@@ -1409,12 +1409,12 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    ★ 숫자는 전부 기존 계산(getTodayFortune / getSajuResult)에서 그대로 가져온다.
      홈에서 따로 계산하면 언젠가 '오늘의 운세' 화면의 숫자와 어긋난다. */
 .hd-date{font-family:var(--serif);font-size:.86rem;letter-spacing:.1em;color:var(--ink-faint);margin:0 0 14px;}
-.hd-top{display:flex;align-items:center;gap:14px;}
+.hd-top{display:flex;align-items:center;gap:16px;}
 /* ★ 오행 배지를 캐릭터 오른쪽 아래에 겹쳐 얹는다(시안 규칙). */
 .hd-figure{flex:none;position:relative;}
-/* 배지는 캐릭터 밖으로 조금 나가 앉아야 '얹은 것'으로 읽힌다. 그림 안쪽에 걸치면
-   캐릭터가 들고 있는 물건처럼 보인다(실제로 그렇게 보였다). */
-.hd-elem-badge{position:absolute;right:-16px;bottom:-10px;display:block;line-height:0;}
+/* 배지는 캐릭터의 오른쪽 아래 모서리에 살짝 걸치게 둔다(시안 규칙).
+   더 바깥으로 내보내면 옆 글줄과 겹쳐 캐릭터가 아니라 글자에 붙은 그림처럼 보인다. */
+.hd-elem-badge{position:absolute;right:-2px;bottom:0;display:block;line-height:0;}
 .hd-head{min-width:0;}
 .hd-who{font-size:.9rem;color:var(--ink-dim);margin:0 0 2px;}
 /* ★ 2026-08-24 리디자인 2단계 — 점수는 Mono로. 아래 다섯 칸 점수와 같은 서체로 묶어야
@@ -15656,10 +15656,10 @@ function renderHomeDash(p){
     var ekey = charKeyForDayStem(saju);
     if(mkey || ekey){
       var fig = el('div',{class:'hd-figure'});
-      fig.appendChild(buildCharSvg(mkey || ekey, 108, {label: ownerLabel(p.name)+' 캐릭터'}));
+      fig.appendChild(buildCharSvg(mkey || ekey, 120, {label: ownerLabel(p.name)+' 캐릭터'}));
       if(mkey && ekey){
         var bdg = el('span',{class:'hd-elem-badge', 'aria-hidden':'true'});
-        bdg.appendChild(buildCharSvg(ekey, 44));
+        bdg.appendChild(buildCharSvg(ekey, 42));
         fig.appendChild(bdg);
       }
       top.appendChild(fig);
