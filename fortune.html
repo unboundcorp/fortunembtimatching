@@ -1803,7 +1803,7 @@ body.has-fab main{padding-bottom:110px;}
 .brand-top{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:4px;}
 .brand-top-mark{width:96px;height:96px;border-radius:50%;background:var(--gold-soft);
   display:flex;align-items:center;justify-content:center;flex:none;}
-.brand-top-name{font-family:var(--serif);font-size:1.24rem;font-weight:600;letter-spacing:-.015em;color:var(--brand);}
+.brand-top-name{font-family:var(--serif);font-size:1.24rem;font-weight:700;letter-spacing:.1em;margin-right:-.1em;color:var(--brand);}
 
 /* R79 — 프로필 만들기에서 카드 안에 바로 두는 선택칸 (시트를 열지 않는다) */
 .inline-pick{padding:12px 0;border-top:1px solid var(--line);}
@@ -2111,6 +2111,11 @@ body.has-fab main{padding-bottom:110px;}
 .char-pair .cp-sub{font-size:.74rem;color:var(--ink-dim);line-height:1.6;}
 /* 온보딩 첫 화면에 세우는 캐릭터 셋 — 이 앱이 무엇인지 말보다 먼저 알려주는 자리다. */
 .char-row{display:flex;justify-content:center;align-items:center;gap:14px;flex-wrap:wrap;}
+/* 시안의 첫 화면 띠 — 밝은 종이면 위에 캐릭터를 조금씩 겹쳐 세운다. */
+.char-row-band{background:var(--ink-700);padding:12px 10px;margin:18px 0 8px;gap:0;flex-wrap:nowrap;}
+.char-row-band .char-svg{margin-right:-10px;}
+.char-row-band .char-svg:last-child{margin-right:0;}
+.onboard-charnote{font-size:.78rem;color:var(--ink-faint);text-align:center;margin:0 0 6px;line-height:1.6;}
 .char-row .char-svg{color:var(--ink);}
 /* 최소 폭 96→88. 여백을 키운 뒤 96px로 두었더니 390px에서 2열로 접혀 도감이 두 배로 길어졌다
    (실측 스크린샷에서 잡았다). 88px면 390px에서 3열, 320px에서 2열 — R19·R21 때와 같은 접힘이다. */
@@ -14178,12 +14183,19 @@ function renderOnboarding(){
     invitedLead ? '닉네임과 생년월일만 넣으면 바로 결과가 나와요.'
                 : '생년월일만 넣으면 오늘의 운세부터 나와요. 회원가입도, 앱 설치도 없이.'
   ]));
-  var introKeys = ['e0','e1','e4'];
-  var introRow = el('div',{class:'char-row'});
-  introKeys.forEach(function(k){
-    if(CHARACTERS[k]) introRow.appendChild(buildCharSvg(k, 54, {mini:true, label:CHARACTERS[k].name+' 캐릭터'}));
+  /* ★ 2026-09-01 리뉴얼 — 시안의 첫 화면은 밝은 종이 띠 위에 성격유형 캐릭터 넷을
+     조금씩 겹쳐 세우고, 그 아래 한 줄로 "내 캐릭터가 어떻게 정해지는지"를 말한다.
+     예전에는 오행 그림 셋(나무·불·물)이었는데, 그건 사주를 아는 사람에게만 뜻이 있고
+     처음 온 사람에게는 그냥 아이콘 셋이다. 사람 그림이 먼저 보이는 편이 낫다. */
+  var introKeys = ['mENFP','mISTJ','mINFJ','mESTP'];
+  var introRow = el('div',{class:'char-row char-row-band'});
+  introKeys.forEach(function(k, i){
+    if(CHARACTERS[k]) introRow.appendChild(buildCharSvg(k, 74, {label:CHARACTERS[k].mbti+' 캐릭터', gender: (i%2 ? 'M' : 'F')}));
   });
-  if(introRow.childNodes.length) wrap.appendChild(introRow);
+  if(introRow.childNodes.length){
+    wrap.appendChild(introRow);
+    wrap.appendChild(el('p',{class:'onboard-charnote'},['성격유형 16종 × 남·여, 오행 5종으로 내 캐릭터가 정해져요']));
+  }
   /* R30 — 앱을 처음 만나는 화면이다. 여기서는 용어를 한 개도 쓰지 않는다.
      ('만세력'·'사주팔자'는 내 사주 화면과 용어 사전에 그대로 있다 — 없앤 게 아니라 뒤로 미뤘다.)
      고지도 짧은 한 문장만 둔다. 아직 아무 계산도 보여주기 전이라 여기서 접이식까지 놓으면
