@@ -401,7 +401,9 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;}
    ★ 2026-08-25 대표님 지시 — 하트·체크 마크는 그대로 두고 '인연점' 글자만 명조로.
      굵기는 600이다. 우리가 담은 명조가 600 한 벌뿐이라 800을 달라고 하면 가짜 굵게가 된다.
      명조는 고딕보다 자간이 넓게 느껴져 -.03em은 과했다 — -.015em으로 푼다. */
-.brand-name{font-family:var(--serif);font-size:1.3rem;font-weight:600;letter-spacing:-.015em;color:var(--brand);}
+/* ★ 2026-09-01 리뉴얼 — 시안의 브랜드는 글자 사이를 벌려 '인 연 점'처럼 읽힌다(.1em).
+   오른쪽에 붙는 자간만큼 마지막 글자 뒤가 떠 보이므로 그만큼 당겨 준다. */
+.brand-name{font-family:var(--serif);font-size:1.24rem;font-weight:700;letter-spacing:.1em;margin-right:-.1em;color:var(--brand);}
 .profile-switch{display:flex;align-items:center;gap:8px;}
 .profile-switch select{
   background:var(--panel-2);border:1px solid var(--field-line);color:var(--ink);
@@ -1408,14 +1410,18 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
      홈에서 따로 계산하면 언젠가 '오늘의 운세' 화면의 숫자와 어긋난다. */
 .hd-date{font-family:var(--serif);font-size:.86rem;letter-spacing:.1em;color:var(--ink-faint);margin:0 0 14px;}
 .hd-top{display:flex;align-items:center;gap:14px;}
-.hd-figure{flex:none;}
+/* ★ 오행 배지를 캐릭터 오른쪽 아래에 겹쳐 얹는다(시안 규칙). */
+.hd-figure{flex:none;position:relative;}
+/* 배지는 캐릭터 밖으로 조금 나가 앉아야 '얹은 것'으로 읽힌다. 그림 안쪽에 걸치면
+   캐릭터가 들고 있는 물건처럼 보인다(실제로 그렇게 보였다). */
+.hd-elem-badge{position:absolute;right:-16px;bottom:-10px;display:block;line-height:0;}
 .hd-head{min-width:0;}
 .hd-who{font-size:.9rem;color:var(--ink-dim);margin:0 0 2px;}
 /* ★ 2026-08-24 리디자인 2단계 — 점수는 Mono로. 아래 다섯 칸 점수와 같은 서체로 묶어야
    "68점"과 "총운 70"이 같은 종류의 값으로 읽힌다.
    ★ 굵기 700 → 600. 명조는 600 한 벌만 담아서 700을 달라고 하면 가짜 굵게가 된다. */
 .hd-score{display:flex;align-items:baseline;gap:4px;}
-.hd-score b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:2.6rem;line-height:1;color:var(--gold);font-weight:500;letter-spacing:-.02em;}
+.hd-score b{font-family:var(--serif);font-variant-numeric:tabular-nums;font-size:2.9rem;line-height:.95;color:var(--gold);font-weight:700;letter-spacing:-.02em;}
 .hd-score span{font-family:var(--sans);font-size:1rem;color:var(--ink-dim);}
 .hd-word{font-size:1.02rem;font-weight:700;color:var(--ink);margin:6px 0 0;}
 /* ★ 2026-08-24 리디자인 2단계 (지시서 8-6) — 세로 구분선을 없앴다.
@@ -1458,6 +1464,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .hd-row .t{font-size:1.02rem;font-weight:700;color:var(--ink);}
 .hd-row .s{font-size:.86rem;color:var(--ink-faint);margin-top:3px;}
 .hd-row .price{font-size:1rem;font-weight:700;color:var(--gold);white-space:nowrap;font-variant-numeric:tabular-nums;}
+/* 시안의 목록 번호 — 명조 한자, 낙관색. 화살표보다 지면에 어울린다. */
+.hd-row .hd-no{font-family:var(--serif);font-size:1.05rem;color:var(--gold);flex:none;line-height:1;}
 .hd-row .price.open{color:var(--ok);font-size:.9rem;}
 
 /* ★ R91 (2026-08-19 대표님 지시) — 내 사주 ↔ 궁합 사이를 오가는 떠 있는 버튼.
@@ -15641,10 +15649,19 @@ function renderHomeDash(p){
   if(fortune && fortune.overall != null && fortune.scores){
     var tc = el('div',{class:'scroll-card stamp-in'});
     var top = el('div',{class:'hd-top'});
-    var ckey = charKeyForDayStem(saju);
-    if(ckey){
+    /* ★ 2026-09-01 리뉴얼 — 시안의 홈은 "성격유형 캐릭터 + 오른쪽 아래 오행 배지"다.
+       예전에는 오행 그림 하나만 세웠다. 둘 다 이미 계산해 두고 있던 값이라 새로 구하는 것은 없다.
+       성격유형을 아직 안 넣은 분은 예전처럼 오행 그림 하나만 세운다. */
+    var mkey = charKeyForMbti(p.mbti);
+    var ekey = charKeyForDayStem(saju);
+    if(mkey || ekey){
       var fig = el('div',{class:'hd-figure'});
-      fig.appendChild(buildCharSvg(ckey, 84, {label: ownerLabel(p.name)+' 타고난 기운 캐릭터'}));
+      fig.appendChild(buildCharSvg(mkey || ekey, 108, {label: ownerLabel(p.name)+' 캐릭터'}));
+      if(mkey && ekey){
+        var bdg = el('span',{class:'hd-elem-badge', 'aria-hidden':'true'});
+        bdg.appendChild(buildCharSvg(ekey, 44));
+        fig.appendChild(bdg);
+      }
       top.appendChild(fig);
     }
     var head = el('div',{class:'hd-head'});
@@ -15731,11 +15748,14 @@ function renderHomeDash(p){
   }
   /* ★ R92 (2026-08-19 대표님 지적) — 친구 사주를 봐주러 들어올 자리.
      궁합(둘을 맞대어 보는 것)과 다른 일이라 줄을 따로 둔다. */
+  /* ★ 2026-09-01 리뉴얼 — 시안은 줄 오른쪽에 한자 번호(一二三)를 둔다. 화살표를 대신한다.
+     낭독기에는 번호가 읽히지 않게 aria-hidden으로 감춘다 — 줄 전체가 이미 버튼이라
+     "무엇을 하는 줄인지"는 제목이 말한다. */
   view.appendChild(hdRow('다른 사람 사주 봐주기','친구 · 가족 것도 만들어서 볼 수 있어요',
-    el('span',{class:'price', 'aria-hidden':'true'},[dirIcon('right')]),
+    el('span',{class:'hd-no', 'aria-hidden':'true'},['一']),
     function(){ startSetupWizard(null); render(); }));
   view.appendChild(hdRow('궁합 보기','링크 하나로 가족 · 친구 · 연인과',
-    el('span',{class:'price', 'aria-hidden':'true'},[dirIcon('right')]),
+    el('span',{class:'hd-no', 'aria-hidden':'true'},['二']),
     function(){ setMode('compat'); ROUTE='compat'; render(); }));
 
   var opened = hasAccess(PRODUCTS.saju_full.id);
