@@ -78,7 +78,9 @@
        금 (.46 .02 250)=#505963 · 수 (.42 .09 250)=#214F7C
      종이 판 하나만 쓰므로 세 벌(기본·어두운판·밝은판)이 전부 같은 값이다. */
   --wx-1:#286648; --wx-2:#AC1B18; --wx-3:#8D622B; --wx-4:#505963; --wx-5:#214F7C;
-  --wx-1-on-dark:#286648; --wx-2-on-dark:#AC1B18; --wx-3-on-dark:#8D622B;
+  /* ★ 2026-09-02 대비 실측 — 토(土)만 자기 12% 틴트 위에서 3.83:1로 기준(4.5)을 못 넘었다.
+     나머지 넷은 4.77~5.85로 통과한다. 색상은 그대로 두고 토만 밝기를 내렸다(→ 4.57:1). */
+  --wx-1-on-dark:#286648; --wx-2-on-dark:#AC1B18; --wx-3-on-dark:#80551e;
   --wx-4-on-dark:#505963; --wx-5-on-dark:#214F7C;
   /* 밝은 판 위에 글자로 얹을 때 (전부 4.5:1 이상)
      지시서의 --wx-3-text(#8A6B12)·--wx-4-text(#6B7288)는 각각 4.48·4.28로
@@ -184,7 +186,10 @@
      결제·보안 고지문 같은 '읽어야 하는 작은 글'에도 쓰인다. 3.15:1은 그 자리에 못 쓴다.
      그래서 시안의 '본문 보조'와 '라벨' 사이 값으로 한 단 내렸다 — 종이 4.62:1(AA 통과).
      순수 장식 라벨에만 쓰는 자리라면 시안 값 #8a8272를 그 자리에서 직접 쓰면 된다. */
-  --ink-faint:#736c5f;     /* 종이 4.62:1 / 밝은 면 5.00:1 */
+  /* ★ 2026-09-02 — 실측으로 다시 재니 종이 위에서 4.30:1 이었다(여기 적혀 있던 4.62는 틀린 값이다).
+     본문 기준 4.5:1을 못 넘고 있었고, 이번에 만든 버튼 면(#e5ddcd) 위에서는 3.85:1까지 떨어졌다.
+     색상은 그대로 두고 밝기만 내린다 — 종이 5.56 / 밝은면 6.01 / 버튼면 4.98 / 눌린면 4.57. */
+  --ink-faint:#625b4e;     /* 종이 5.56:1 · 버튼 면 4.98:1 (전부 4.5:1 위) */
   /* 금박. 밝은 바탕에 밝은 금색을 그대로 쓰면 사라지므로 채도·명도를 낮춘 청동빛으로 내렸다.
      글자로도 쓰이는 색이라 7:1을 넘겨야 한다.
      ★ 처음 잡은 값(#5F4A1C)은 "카드 위"만 보고 정해서 7.4:1이었는데, 실제로 이 색이 가장 많이
@@ -1184,7 +1189,9 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 /* 칸 이름표(태어난 날 / 일주). 판이 어두워졌으니 글자도 뒤집는다.
    원래 용어(일주)는 Mono로 — 3항이 라벨을 Mono로 잡았다. */
 .pillar-table-scroll .term-chip.tchip-tight .tc-plain{color:var(--on-dark);}
-.pillar-table-scroll .term-chip.tchip-tight .tc-term{color:var(--on-dark-3);font-family:var(--mono);letter-spacing:-.02em;}
+/* ★ 2026-09-02 — --on-dark-3(#8a8272)를 그대로 쓰고 있어 종이 위 3.15:1이었다.
+   같은 자리의 다른 작은 글씨들이 쓰는 --ink-faint(5.56:1)로 맞춘다. */
+.pillar-table-scroll .term-chip.tchip-tight .tc-term{color:var(--ink-faint);font-family:var(--mono);letter-spacing:-.02em;}
 .pillar-table-scroll .term-chip.tchip-tight:hover{border-color:var(--line-dark-strong);background:rgba(31,28,23,0.036);}
 /* 각진 프레임. 둥근 14px은 앱 타일이고, 만세력 칸은 각이 진 종이다. */
 .pillar-table-scroll .pillar-seal{border-radius:var(--r-frame);background:transparent;border-color:var(--line-dark-strong);}
