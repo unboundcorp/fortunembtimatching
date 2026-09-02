@@ -1951,6 +1951,31 @@ body.has-fab main{padding-bottom:110px;}
 .gc-score b{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1.9rem;line-height:1;color:var(--gold);font-weight:500;letter-spacing:-.02em;}
 .gc-score span{font-family:var(--sans);font-size:.92rem;color:var(--ink-dim);}
 .gc-score em{font-style:normal;font-family:var(--sans);font-size:.8rem;color:var(--ink-faint);margin-left:4px;}
+/* =====================================================================
+   설명 접이식 (2026-09-03 대표님 지시)
+   ---------------------------------------------------------------------
+   "이런 모든 설명 다 축약하고 토글로 접어! 없애도 무방한 건 없애 —
+    어차피 다 밑에 가이드 링크에 있잖아?"
+
+   결과 화면마다 계산 방식·근거 설명이 문단째 펼쳐져 있었다(손님에게 보이는 것만 192군데).
+   읽으러 온 사람에게는 결과가 먼저 와야 한다. 근거는 궁금할 때 펴 보면 된다.
+
+   ★ 새 부품을 또 만들지 마라. 접이식이 이미 셋 있다 —
+       buildFoldPanel  : 전체폭 버튼. 표처럼 큰 것을 접을 때.
+       .note-fold      : 여기. 카드 안 짧은 설명용. 인라인 ▾ 하나.
+       .site-footer .biz-fold : 바닥글 사업자 정보 전용.
+     짧은 설명에 buildFoldPanel을 쓰면 버튼이 카드보다 커진다.
+===================================================================== */
+.note-fold{margin-top:12px;}
+.note-fold summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;min-height:40px;
+  font-size:.82rem;font-weight:600;color:var(--ink-faint);}
+.note-fold summary::-webkit-details-marker{display:none;}
+.note-fold summary::after{content:' ▾';margin-left:5px;font-size:1.3em;line-height:1;}
+.note-fold[open] summary::after{content:' ▴';}
+.note-fold summary:hover{color:var(--gold);}
+.note-fold p{margin:0 0 8px;font-size:.82rem;color:var(--ink-faint);line-height:1.75;}
+.note-fold p:last-child{margin-bottom:0;}
+
 .gc-why{margin-top:12px;border-top:1px solid var(--gold-line);padding-top:10px;}
 .gc-why summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;min-height:40px;
   font-size:.86rem;font-weight:600;color:var(--gold);}
@@ -11167,6 +11192,17 @@ function buildDaeunFlowSvg(str, curIdx, ageNow){
    (진태양시 표는 내 사주 화면과 값 편집 시트에 동시에 존재할 수 있다)에서
    id가 겹치면 aria-controls가 엉뚱한 패널을 가리키기 때문이다.
 ===================================================================== */
+/* 카드 안 짧은 설명을 접는다. label은 한 줄로 줄인 요약이고, 원문은 펼쳤을 때 나온다.
+   ★ <details>를 쓴다. 직접 만들면 낭독기·키보드 처리까지 다시 짜야 한다. */
+function buildNoteFold(label, lines){
+  var d = el('details',{class:'note-fold'});
+  d.appendChild(el('summary',{},[label]));
+  (Array.isArray(lines) ? lines : [lines]).forEach(function(t){
+    if(t) d.appendChild(el('p',{},[t]));
+  });
+  return d;
+}
+
 var FOLD_SEQ = 0;
 function buildFoldPanel(opts){
   var panelId = opts.id || ('fold'+(++FOLD_SEQ));
@@ -16243,12 +16279,13 @@ function renderHome(){
     /* ★ R85-b 총평은 위 히어로 바로 아래(왼쪽 선 블록)로 옮겼다 — 2026-09-02.
        점수 카드 맨 아래에 있어서 레이더를 지나야 겨우 만났다. */
 
-    /* 이 숫자가 어디서 왔는지 못 박는다. 이 앱의 다른 화면과 같은 규칙이다. */
-    scoreCard.appendChild(el('p',{class:'today-score-note'},[
+    /* ★ 2026-09-03 대표님 지시로 접었다. 두 문단이 오각형 그래프 바로 아래 펼쳐져 있었다.
+       ★ 둘째 문단("명리에 정해진 점수표가 있는 것이 아니라…")은 지우지 않는다.
+         우리가 매긴 점수가 전통 명리의 공식 점수가 아니라는 고지라,
+         "왜 점수가 다르냐"는 문의가 왔을 때 근거가 되는 문장이다. 접기만 한다. */
+    scoreCard.appendChild(buildNoteFold('이 점수는 어떻게 나왔나요?', [
       '다섯 항목을 합쳐서 낸 값이에요. 각 항목은 오늘 날짜와 타고난 사주를 맞대어 계산했어요 — '
-      + '항목 카드마다 무엇을 보고 매긴 점수인지 적어 두었어요.'
-    ]));
-    scoreCard.appendChild(el('p',{class:'today-score-note dim'},[
+      + '항목 카드마다 무엇을 보고 매긴 점수인지 적어 두었어요.',
       '점수 눈금은 이 앱이 정한 기준이에요. 명리에 정해진 점수표가 있는 것이 아니라, '
       + '오늘 기운과 타고난 사주가 어떻게 맞물리는지를 보기 쉽게 숫자로 바꾼 것이에요.'
     ]));
@@ -16444,7 +16481,11 @@ function renderSaju(){
 
   var sipCard=el('div',{class:'scroll-card'});
   sipCard.appendChild(cardHead('각 글자가 나에게 어떤 자리인가요'));
-  sipCard.appendChild(el('p',{class:'section-sub'},['태어난 날의 나를 기준으로, 나머지 글자가 나에게 어떤 역할인지 보여줘요. 칸을 눌러보면 사주 용어로는 무엇인지와 더 긴 설명이 떠요.']));
+  /* ★ 2026-09-03 — 앞 문장(무엇을 보여주는 표인지)은 접고, 뒤 문장(칸을 눌러보라)만 남긴다.
+     뒤 문장은 조작 안내라 접으면 눌러도 되는 자리인 줄 모른다. */
+  sipCard.appendChild(el('p',{class:'section-sub'},['칸을 눌러보면 사주 용어로는 무엇인지와 더 긴 설명이 떠요.']));
+  sipCard.appendChild(buildNoteFold('이 표는 무엇인가요?',
+    '태어난 날의 나를 기준으로, 나머지 글자가 나에게 어떤 역할인지 보여줘요.'));
   sipCard.appendChild(buildSipseongOverlay(saju));
   view.appendChild(sipCard);
 
@@ -16490,6 +16531,7 @@ function renderSaju(){
   dwCard.appendChild(el('p',{class:'section-sub', style:'margin-top:14px;'},[ dwUnlocked
     ? '구간을 탭하면 그 시기의 흐름·금전운·건강운을 자세히 볼 수 있어요.'
     : '구간마다의 두 글자와 나에게 어떤 자리인지, 기운 강도는 모두 볼 수 있어요. 구간을 눌렀을 때 나오는 자세한 풀이는 지금 지나는 구간을 열어두었어요.' ]));
+  /* 위 문장은 "어디까지 무료인가"를 말한다 — 결제 전에 반드시 보여야 하므로 접지 않는다. */
   var scroll=el('div',{class:'daewoon-scroll'});
   dw.list.forEach(function(item,i){
     var sipName = SajuEngine.sipseongOf(saju.day.stemIdx, SajuEngine.STEM_ELEM[item.ganji.stemIdx], SajuEngine.STEM_YY[item.ganji.stemIdx]);
@@ -16624,7 +16666,9 @@ function renderMonthlyFortune(){
 
   var monthCard=el('div',{class:'scroll-card'});
   monthCard.appendChild(cardHead('달마다의 흐름', ['월운','간지']));
-  monthCard.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['1월부터 12월까지 열두 달이 한 화면에 있어요. 달을 누르면 상세가 열려요.']));
+  /* ★ 2026-09-03 — 여기 있던 '1월부터 12월까지 열두 달이 한 화면에 있어요. 달을 누르면
+     상세가 열려요.'를 없앴다. 바로 위 안내가 이미 "한 달을 탭하면 … 볼 수 있어요"라고
+     같은 말을 하고 있었고, 열두 달이 화면에 깔려 있는 것은 보면 안다. */
   var nowYm = previewMonth;
   /* ★ R20 — 가로 스크롤(.daewoon-scroll)에서 12칸 격자로 바꿨다.
      대운은 사람마다 구간 수가 달라 가로 목록이 맞지만, 월별은 언제나 12개이고
@@ -16848,7 +16892,8 @@ function renderMbtiReport13(){
 
   view.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openShareModal('mbtiReport', p, null); }},['이 풀이 요약 카드로 저장하기']));
   view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
-  view.appendChild(el('p',{class:'disclaimer'},['성격유형은 사람을 가두는 틀이 아니라 자신을 이해하는 참고 자료예요. 여기 담긴 문구는 유형별 경향을 조합해 만든 콘텐츠라, 사람마다 실제 모습은 다를 수 있어요.']));
+  view.appendChild(buildNoteFold('이 글을 어떻게 봐야 하나요?',
+    '성격유형은 사람을 가두는 틀이 아니라 자신을 이해하는 참고 자료예요. 여기 담긴 문구는 유형별 경향을 조합해 만든 콘텐츠라, 사람마다 실제 모습은 다를 수 있어요.'));
   main.appendChild(autoTermify(view));
 }
 
@@ -16915,7 +16960,9 @@ function renderCharDex(){
   }
   var view=el('div',{class:'view'});
   view.appendChild(screenHead('캐릭터 도감', {seal:'像',
-    sub:'성격유형 16종은 남·여 두 컷씩, 오행은 5종이에요. 그림도 설명도 전부 무료로 열려 있어요. 하나를 누르면 크게 보면서 자세한 설명까지 읽을 수 있어요.'}));
+    /* ★ 2026-09-03 — 세 문장을 한 줄로. 종 수와 무료 여부는 화면을 보면 알고,
+       "눌러보라"만 남기면 할 일이 분명해진다. */
+    sub:'하나를 누르면 크게 보면서 자세한 설명까지 읽을 수 있어요.'}));
 
   if(myKeys.length){
     var mineCard=el('div',{class:'scroll-card'});
@@ -16938,17 +16985,21 @@ function renderCharDex(){
 
   var elemCard=el('div',{class:'scroll-card'});
   elemCard.appendChild(el('h3',{},['오행 5종']));
-  elemCard.appendChild(el('p',{class:'section-sub'},['목·화·토·금·수. 태어난 날의 글자(일간)가 어떤 기운(오행)인지에 따라 만나는 캐릭터예요.']));
+  elemCard.appendChild(buildNoteFold('이 다섯은 무엇인가요?',
+    '목·화·토·금·수. 태어난 날의 글자(일간)가 어떤 기운(오행)인지에 따라 만나는 캐릭터예요.'));
   elemCard.appendChild(buildCharDexGrid(['e0','e1','e2','e3','e4'], myKeys));
   view.appendChild(elemCard);
 
   var mbtiCard=el('div',{class:'scroll-card'});
   mbtiCard.appendChild(el('h3',{},['성격유형 16종']));
-  mbtiCard.appendChild(el('p',{class:'section-sub'},['16유형 각각의 캐릭터예요. 남·여 두 컷씩 있고, 옷차림과 손에 든 것이 유형마다 달라요.']));
+  mbtiCard.appendChild(buildNoteFold('이 열여섯은 무엇인가요?',
+    '16유형 각각의 캐릭터예요. 남·여 두 컷씩 있고, 옷차림과 손에 든 것이 유형마다 달라요.'));
   mbtiCard.appendChild(buildCharDexGrid(MBTI_TYPES.map(function(t){ return 'm'+t; }), myKeys));
   view.appendChild(mbtiCard);
 
-  view.appendChild(el('p',{class:'disclaimer'},['캐릭터는 오행의 성질과 성격유형의 경향을 그림으로 옮긴 것이에요. 사람을 한 가지 모습으로 규정하려는 것이 아니라, 자기 결을 편하게 부르기 위한 이름 정도로 봐주세요.']));
+  /* 사람을 규정하지 않는다는 고지다. 지우지 말고 접는다. */
+  view.appendChild(buildNoteFold('캐릭터를 어떻게 봐야 하나요?',
+    '캐릭터는 오행의 성질과 성격유형의 경향을 그림으로 옮긴 것이에요. 사람을 한 가지 모습으로 규정하려는 것이 아니라, 자기 결을 편하게 부르기 위한 이름 정도로 봐주세요.'));
   main.appendChild(autoTermify(view));
 }
 
