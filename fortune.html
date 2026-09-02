@@ -642,13 +642,14 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    줄마다 따로 정해 줄 필요가 없어 새로 만드는 화면에도 그대로 적용된다. */
 .settings-row{
   display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
-  padding:16px 18px;min-height:60px;background:var(--panel);border:1px solid var(--gold-line);
+  /* ★ 2026-09-02 대표님 지시 — 눌러서 넘어가는 줄은 테두리 대신 면으로 구분한다. */
+  padding:16px 18px;min-height:60px;background:var(--btn-soft);border:1px solid transparent;
   /* ★ 2026-08-26 대표님 지시 — 상자끼리 너무 붙어 보여서 12 → 16px. */
   border-radius:var(--r-lg);margin-bottom:16px;width:100%;text-align:left;
   box-shadow:var(--shadow-soft);
   transition:border-color .15s,background .15s,transform .15s;
 }
-.settings-row:hover,.settings-row:focus-visible{border-color:var(--gold);background:rgba(31,28,23,0.036);}
+.settings-row:hover,.settings-row:focus-visible{background:var(--btn-soft-hi);}
 .settings-row:active{transform:scale(.98);background:rgba(31,28,23,0.06);}
 /* ★ R33 — 값이 잘리던 원인은 여기였다. 라벨이 flex:none이라 절대 줄지 않아서
    라벨이 길면 값(남자 / 1996-01-01)이 밀려나 "남..." 처럼 잘렸다(대표님 제보).
@@ -761,10 +762,11 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .step-rail .sr-item.now{border-top-color:var(--ink);}
 .step-rail .sr-item.now .sr-num{color:var(--brand);}
 .step-rail .sr-item.now .sr-label{color:var(--ink);font-weight:600;}
-.seg-toggle{display:flex;border:1px solid var(--gold-line);background:var(--panel-3);border-radius:var(--r-frame);overflow:hidden;width:max-content;}
+/* ★ 2026-09-02 — 테두리를 걷고 면으로만 구분한다(앱 전체 규칙). 고른 칸만 먹으로 채운다. */
+.seg-toggle{display:flex;border:1px solid transparent;background:var(--btn-soft);border-radius:var(--r-frame);overflow:hidden;width:max-content;}
 .seg-toggle button{padding:12px 20px;min-height:44px;font-size:.85rem;color:var(--ink-dim);transition:background .15s,color .15s;}
 .seg-toggle button:active{opacity:.7;}
-.seg-toggle button+button{border-left:1px solid var(--gold-line);}
+.seg-toggle button+button{border-left:1px solid rgba(31,28,23,0.07);}
 .seg-toggle button[aria-pressed="true"]{background:var(--ink);color:var(--panel-2);font-weight:600;}
 /* ★ 2026-09-01 — 어떤 사이인가는 넷(친구·연인·직장 동료·가족)이라 한 줄에 안 들어간다.
    width:max-content로 두면 좁은 화면에서 그대로 잘려 나간다. 2×2로 놓고, 넓은 화면에서만 한 줄로. */
@@ -1529,15 +1531,16 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .hd-legend span{display:inline-flex;align-items:center;gap:5px;}
 .hd-legend i{width:9px;height:9px;border-radius:2px;display:inline-block;flex:none;}
 .hd-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;
-  background:var(--panel);border:1px solid var(--gold-line);border-radius:var(--r-lg);
+  background:var(--btn-soft);border:1px solid transparent;border-radius:var(--r-lg);
   padding:16px 18px;min-height:64px;margin-bottom:12px;
-  transition:border-color .15s,background .15s;}
-.hd-row:hover,.hd-row:focus-visible{border-color:var(--gold);background:var(--gold-soft);}
+  transition:background .15s;}
+.hd-row:hover,.hd-row:focus-visible{background:var(--btn-soft-hi);}
 .hd-row:active{background:rgba(31,28,23,0.06);}
 /* ★ 2026-08-28 — 세 줄 중 이 줄 하나만 무게를 올린다. 배경을 한 단 밝히고 테두리에 색을 준다.
    새 색을 만들지 않고 이미 있는 토큰(--panel-3 · --gold)만 쓴다. */
-.hd-row-accent{background:var(--panel-3);border-color:var(--gold);}
-.hd-row-accent:hover,.hd-row-accent:focus-visible{background:var(--gold-soft);}
+/* 셋 중 하나만 무게를 올린다 — 테두리를 그리지 않고 면을 한 단 더 눌러 앉힌다. */
+.hd-row-accent{background:var(--gold-soft);border-color:transparent;}
+.hd-row-accent:hover,.hd-row-accent:focus-visible{background:rgba(175,43,37,.13);}
 .hd-row .t{font-size:1.02rem;font-weight:700;color:var(--ink);}
 .hd-row .s{font-size:.86rem;color:var(--ink-faint);margin-top:3px;}
 .hd-row .price{font-size:1rem;font-weight:700;color:var(--gold);white-space:nowrap;font-variant-numeric:tabular-nums;}
@@ -1863,10 +1866,10 @@ body.has-fab main{padding-bottom:110px;}
 .gc-pair-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px dashed rgba(31,28,23,0.168);font-size:.82rem;}
 /* 그룹 멤버 고르기 칩 */
 .gc-members{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 2px;}
-.gc-member{min-height:var(--tap);padding:9px 14px;border-radius:var(--r-frame);border:1px solid var(--gold-line);background:var(--panel-3);
-  color:var(--ink-dim);font-size:.8rem;transition:background .15s,color .15s,border-color .15s;}
-.gc-member:hover{border-color:var(--gold);color:var(--ink);}
-.gc-member[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
+.gc-member{min-height:var(--tap);padding:9px 14px;border-radius:var(--r-frame);border:1px solid transparent;
+  background:var(--btn-soft);color:var(--ink-dim);font-size:.8rem;transition:background .15s,color .15s;}
+.gc-member:hover{background:var(--btn-soft-hi);color:var(--ink);}
+.gc-member[aria-pressed="true"]{background:var(--ink);border-color:transparent;color:var(--panel-2);font-weight:600;}
 /* 전체 순위 목록 */
 .gc-rank-row{display:flex;align-items:center;gap:10px;padding:10px 0;
   border-bottom:1px solid rgba(31,28,23,0.06);font-size:.82rem;}
@@ -2068,17 +2071,15 @@ body.has-fab main{padding-bottom:110px;}
    ★ 손가락으로 쓰는 기기에는 hover가 없다 — @media (hover:hover)로 감싸
      터치 기기에서 '눌렀는데 뜬 채로 남는' 상태가 생기지 않게 한다.
    ★ 움직임을 줄여 쓰는 분에게는 뜨는 효과를 빼고 테두리만 바꾼다. */
-.svc-card{position:relative;display:block;width:100%;text-align:left;background:var(--panel);
-  border:1px solid var(--gold-line);border-radius:var(--r-lg);padding:18px 44px 16px 18px;margin-bottom:14px;
-  box-shadow:var(--shadow-soft);cursor:pointer;
-  transition:border-color .18s ease, transform .18s ease, box-shadow .18s ease;}
+.svc-card{position:relative;display:block;width:100%;text-align:left;background:var(--btn-soft);
+  border:1px solid transparent;border-radius:var(--r-lg);padding:18px 44px 16px 18px;margin-bottom:14px;
+  box-shadow:none;cursor:pointer;
+  transition:background .18s ease, transform .18s ease;}
 @media (hover:hover){
-  .svc-card:hover{border-color:var(--gold);transform:translateY(-3px);
-    box-shadow:0 10px 24px rgba(221,138,120,.14);}
+  .svc-card:hover{background:var(--btn-soft-hi);transform:translateY(-2px);}
 }
-.svc-card:focus-visible{border-color:var(--gold);transform:translateY(-3px);
-  box-shadow:0 10px 24px rgba(221,138,120,.14);}
-.svc-card:active{transform:translateY(0);box-shadow:var(--shadow-soft);}
+.svc-card:focus-visible{background:var(--btn-soft-hi);transform:translateY(-2px);}
+.svc-card:active{transform:translateY(0);}
 /* ★ R90 — 첫 화면에서 만 14세 확인 전에는 카드가 잠긴다. 눌러도 안 되는 것을
    멀쩡해 보이게 두면 눌러보고 아무 일도 안 일어나서 고장으로 읽힌다. */
 .svc-card[disabled],.svc-card[aria-disabled="true"]{opacity:.55;box-shadow:none;}
