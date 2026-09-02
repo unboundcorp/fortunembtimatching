@@ -218,6 +218,10 @@
   --gold-soft:rgba(175,43,37,.08);     /* 낙관색을 아주 옅게 깐 면 */
   --gold-line:#d8d0c0;                 /* 괘선 — 시안의 '선 (기본)'. 그림자를 대신한다 */
   --line:#d8d0c0;                      /* ★ 2026-09-02 — 10군데에서 var(--line)을 쓰는데 정의가 없어 그 괘선들이 통째로 안 그려지고 있었다 */
+  /* 보조 버튼의 면 — 지면(#efe9dd)보다 한 단 눌러 앉힌 색. 테두리를 안 그리고 면으로만 구분한다.
+     (2026-09-02 대표님이 보여주신 토스 화면의 느낌: 선이 아니라 면으로 된 버튼) */
+  --btn-soft:#e5ddcd;
+  --btn-soft-hi:#ddd4c2;
   /* 입력칸 테두리만 따로 둔다. 장식 헤어라인(--gold-line)은 1.4:1이라 "이게 입력칸이구나"를
      알려주지 못한다. 폼 컨트롤 경계는 3:1이 필요하므로 웜그레이 실선으로 분리했다(3.46:1). */
   /* ★ 시안의 '선 (진함)' #c9c0ae는 종이 위 1.49:1이라 '여기가 입력칸이다'를 못 알린다.
@@ -584,8 +588,12 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .btn-primary:hover{background:var(--gold-fill-2);border-color:var(--gold-fill-2);}
 /* 보조 버튼은 테두리만으로는 컨트롤로 안 읽힌다(밝은 바탕에서 헤어라인이 1.4:1). 옅은 면을 깐다. */
 /* 아웃라인 버튼 — 옅은 면 대신 인주 선 1px. 두 종류(채움/아웃라인)로 끝낸다(지시서 5-3). */
-.btn-ghost{background:transparent;color:var(--gold);border-color:var(--gold);}
-.btn-ghost:hover{background:var(--gold-soft);}
+/* ★ 2026-09-02 대표님 지적 — 보조 버튼이 전부 붉은 테두리 + 붉은 글자였다.
+   같은 화면에 넷이 쌓이면 무엇이 중요한지가 안 읽히고, 시안의 "강조색은 낙관 하나"라는
+   규칙과도 어긋난다. 시안의 보조 버튼은 '옅은 회색 테두리 + 먹 글자'다.
+   낙관색은 채운 버튼(btn-primary)과 링크 한 곳에만 남긴다. */
+.btn-ghost{background:var(--btn-soft);color:var(--ink);border-color:transparent;}
+.btn-ghost:hover{background:var(--btn-soft-hi);border-color:transparent;}
 .btn-block{width:100%;}
 /* R22 — 작은 버튼도 44px 아래로 내려가지 않게 한다(모바일 20-30대 타겟). 글자 크기는 그대로. */
 .btn-sm{padding:11px 16px;font-size:.85rem;min-height:var(--tap);border-radius:var(--r-frame);}
@@ -1014,6 +1022,15 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 @keyframes knotDraw{to{stroke-dashoffset:0;}}
 
 .gauge-num{font-family:var(--sans);font-weight:700;letter-spacing:-.03em;font-size:2.6rem;color:var(--gold);text-align:center;}
+/* 시안의 점수 블록 — 위아래 괘선 사이에 큰 숫자 하나와 한 줄 평. */
+.compat-score-blk{margin:26px 0 0;padding:22px 0;text-align:center;
+  border-top:1px solid var(--gold-line);border-bottom:1px solid var(--gold-line);}
+.compat-score-blk .csb-num{display:flex;align-items:flex-end;justify-content:center;gap:9px;}
+.compat-score-blk .csb-num b{font-family:var(--serif);font-weight:700;font-size:2.7rem;line-height:.9;
+  color:var(--gold);font-variant-numeric:tabular-nums;}
+.compat-score-blk .csb-num span{padding-bottom:5px;font-size:.8rem;color:var(--ink-faint);}
+.compat-score-blk .csb-verdict{margin-top:13px;font-family:var(--serif);font-weight:700;
+  font-size:1.18rem;line-height:1.6;color:var(--ink);word-break:keep-all;}
 .gauge-label{text-align:center;color:var(--ink-dim);font-size:.85rem;margin-bottom:6px;}
 
 .disclaimer{font-size:.8rem;color:var(--ink-dim);text-align:center;margin-top:26px;line-height:1.8;border-top:1px dashed rgba(31,28,23,0.18);padding-top:16px;}
@@ -2146,6 +2163,17 @@ body.has-fab main{padding-bottom:110px;}
 .char-chip{width:40px;height:40px;border-radius:50%;background:var(--ink-700);border:1px solid var(--gold-line);padding:1px;color:var(--ink);}
 /* ★ 2026-09-01 리뉴얼 — 시안은 두 캐릭터를 등급 색 선으로 잇는다. 그 선이 '인연'의 표시다.
    줄이 접히면(좁은 화면) 선을 감춘다 — 위아래로 놓인 두 사람 사이에 가로선을 그으면 뜻이 어긋난다. */
+/* ★ 2026-09-02 리뉴얼 — 시안의 궁합은 두 사람을 **세로로** 세우고 선으로 잇는다.
+   선 가운데에 인연 등급을 각진 배지로 놓는다. 가로로 두면 선이 짧아 '이어져 있다'가 안 읽혔다.
+   좁은 화면에서도 세로라 접힐 일이 없다(예전에는 접히면 선을 숨겨야 했다). */
+.char-pair-v{display:flex;flex-direction:column;align-items:center;margin:6px 0 4px;}
+.char-pair-v .cpv-side{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;max-width:15em;}
+.char-pair-v .cpv-name{font-family:var(--sans);font-size:.94rem;font-weight:600;margin-top:5px;}
+.char-pair-v .cpv-sub{font-size:.76rem;color:var(--ink-dim);line-height:1.6;word-break:keep-all;}
+.char-pair-v .cpv-line{width:1px;height:34px;background:var(--tier,var(--ink));}
+.char-pair-v .cpv-badge{padding:7px 15px;background:var(--panel-2);
+  border:1px solid var(--tier,var(--ink));color:var(--tiertext,var(--ink));
+  font-family:var(--serif);font-weight:700;font-size:.94rem;}
 .char-pair{display:flex;justify-content:center;align-items:flex-start;gap:16px;flex-wrap:wrap;margin:4px 0 16px;}
 .char-pair.cp-linked{position:relative;gap:34px;}
 .char-pair.cp-linked::before{content:'';position:absolute;left:50%;top:52px;width:34px;height:var(--tierw,2px);
@@ -10381,20 +10409,26 @@ function buildCharHero(key, size, note){
 /* 궁합 화면에서 두 사람을 나란히 세운다. 각자 MBTI 캐릭터를 쓰고, 일간 오행은 아래 한 줄로만 적는다
    (오행 캐릭터까지 네 마리를 세우면 화면이 시끄러워지고 320px에서 무너진다). */
 function buildCompatCharPair(nameA, pA, pB, tier){
-  var wrap = el('div',{class:'char-pair'+(tier?' cp-linked':'')});
-  if(tier) wrap.setAttribute('style','--tier:'+gcTierColor(tier)+';--tierw:'+((GC_TIER_WIDTH[tier]||2)+'px')+';');
-  [[nameA||pA.name, pA],[pB.name, pB]].forEach(function(pair){
-    var who = pair[1];
+  var wrap = el('div',{class:'char-pair-v'});
+  if(tier) wrap.setAttribute('style','--tier:'+gcTierColor(tier)+';--tiertext:'+gcTierTextColor(tier)+';');
+  function side(name, who){
     var key = charKeyForMbti(who.mbti);
-    var side = el('div',{class:'cp-side'});
-    if(key) side.appendChild(buildCharSvg(key, 112, {label: pair[0]+'님의 '+who.mbti+' 캐릭터', gender: who.gender}));
-    side.appendChild(el('div',{class:'cp-name'},[pair[0]]));
+    var box = el('div',{class:'cpv-side'});
+    if(key) box.appendChild(buildCharSvg(key, 104, {label: name+'님의 '+who.mbti+' 캐릭터', gender: who.gender}));
+    box.appendChild(el('div',{class:'cpv-name'},[name]));
     var elemKey = charKeyForDayStem(who.saju);
-    /* R21 — 이 함수는 궁합 요약(무료 첫 화면)에서만 쓴다. '일간'은 사주를 모르면 읽히지 않는 말이라
-       뜻이 같은 일상어로 바꿨다. 가리키는 값(일간의 오행)은 그대로다. */
-    side.appendChild(el('div',{class:'cp-sub'},[ who.mbti + (elemKey ? ' · 타고난 기운 '+CHARACTERS[elemKey].name.split(' · ')[0] : '') ]));
-    wrap.appendChild(side);
-  });
+    /* R21 — 무료 첫 화면이다. '일간'은 사주를 모르면 안 읽히는 말이라 뜻이 같은 일상어로 쓴다.
+       가리키는 값(일간의 오행)은 그대로다. */
+    box.appendChild(el('div',{class:'cpv-sub'},[ who.mbti + (elemKey ? ' · 타고난 기운 '+CHARACTERS[elemKey].name.split(' · ')[0] : '') ]));
+    return box;
+  }
+  wrap.appendChild(side(nameA||pA.name, pA));
+  if(tier){
+    wrap.appendChild(el('div',{class:'cpv-line','aria-hidden':'true'}));
+    wrap.appendChild(el('div',{class:'cpv-badge'},[tierNameFix(tier)]));
+    wrap.appendChild(el('div',{class:'cpv-line','aria-hidden':'true'}));
+  }
+  wrap.appendChild(side(pB.name, pB));
   return wrap;
 }
 /* 공유 카드(Canvas)에도 같은 좌표로 그린다 — SVG를 이미지로 굽지 않는다.
@@ -17507,14 +17541,24 @@ function renderCompatStory(p, draft){
 function renderCompatSummary(p, draft){
   var box=el('div',{});
   var r=draft.result;
-  box.appendChild(screenHead(nameOr(p.name)+' × '+nameOr(r.pB.name,'상대')+' 궁합', {seal:'緣'}));
+  box.appendChild(screenHead(nameOr(p.name)+' × '+nameOr(r.pB.name,'상대')+' 궁합',
+    {right: r.res.relation ? (relationLabel(r.res.relation)+' 사이') : '緣'}));
 
-  /* ① 종합 점수 하나를 크게 */
-  box.appendChild(el('div',{class:'gauge-label'},['종합 궁합 점수']));
-  box.appendChild(el('div',{style:'display:flex;justify-content:center;'},[buildDonutGauge(r.res.combined, 152)]));
-  box.appendChild(el('div',{style:'text-align:center;'},[el('span',{class:'tier-label',
-    style:'--tier:'+gcTierTextColor(r.res.combinedTier)+';'},[r.res.combinedTier])]));
-  box.appendChild(el('p',{class:'cm-verdict-line'},[COMPAT_TIER_LINE[r.res.combinedTier] || '']));
+  /* ★ 2026-09-02 리뉴얼 — 시안 차례대로: 두 사람을 세로로 잇고, 그 아래 점수와 한 줄 평.
+     예전에는 도넛 게이지가 맨 위였고 캐릭터가 한참 아래에 있어서, 누구와 누구의
+     궁합인지보다 숫자가 먼저 눈에 들어왔다. */
+  box.appendChild(buildCompatCharPair(p.name, r.pA, r.pB, r.res.combinedTier));
+
+  var scoreBlk = el('div',{class:'compat-score-blk'});
+  var numRow = el('div',{class:'csb-num', role:'img',
+    'aria-label':'종합 궁합 점수 '+r.res.combined+'점 (100점 만점) · '+tierNameFix(r.res.combinedTier)});
+  numRow.appendChild(el('b',{'aria-hidden':'true'},[String(r.res.combined)]));
+  var unit = '점';
+  if(r.res.saju && r.res.saju.elemTerm && r.res.saju.elemTerm !== '정보 부족') unit += ' · '+r.res.saju.elemTerm;
+  numRow.appendChild(el('span',{'aria-hidden':'true'},[unit]));
+  scoreBlk.appendChild(numRow);
+  scoreBlk.appendChild(el('p',{class:'csb-verdict'},[COMPAT_TIER_LINE[r.res.combinedTier] || '']));
+  box.appendChild(scoreBlk);
   /* ★ 2026-08-31 — 어떤 사이로 봤는지, 그래서 무엇을 무겁게 봤는지 결과에도 적는다.
      고른 자리(입력 화면)에만 있고 결과에 없으면 "왜 이 점수지?"에 답을 못 한다.
      r.res.relation을 읽는다 — 기록에서 되살린 결과도 자기가 계산될 때 쓴 사이를 들고 있다. */
@@ -17547,8 +17591,7 @@ function renderCompatSummary(p, draft){
     ]));
   }
 
-  /* R19 — 두 사람의 캐릭터를 나란히. 그림과 이름뿐이라 궁합 상세(유료)와는 무관하다. */
-  box.appendChild(buildCompatCharPair(p.name, r.pA, r.pB, r.res.combinedTier));
+  /* ★ 2026-09-02 — 캐릭터 쌍은 화면 맨 위로 옮겼다(시안 차례). 여기서는 지운다. */
 
   /* R34 — 이 궁합의 주소. 저장해 두면 새로고침하거나 다른 기기에서도 다시 열 수 있다.
      방을 거쳐 온 결과일 때만 주소가 있다(직접 입력한 궁합은 서버에 없다). */
