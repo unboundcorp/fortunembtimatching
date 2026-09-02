@@ -1271,8 +1271,18 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    대표님이 "안 보인다"고 하신 것과 같은 함정). 불투명도 대신 점선 테두리로만 구분한다. */
 .toc-nav a.toc-locked{opacity:1;border-style:dashed;color:var(--ink-faint);}
 .toc-nav a.toc-locked:hover{opacity:1;color:var(--gold);border-color:var(--gold);}
-.report-section{scroll-margin-top:80px;margin-bottom:26px;}
-.report-section h3{display:flex;align-items:center;gap:11px;color:var(--gold);font-size:1.1rem;margin-bottom:12px;line-height:1.45;font-weight:600;}
+/* ★ 2026-09-02 리뉴얼 — 풀이 13장의 장 머리. 앱의 다른 화면과 같은 결로 맞춘다.
+   ① 옅은 원 안에 든 아이콘을 뺐다 — 열세 장에 열세 개가 줄줄이 붙으면 장식이 본문을 이긴다.
+   ② 대신 시안이 목록·단계에 쓰는 한자 번호(一二三…)를 낙관색으로 작게 둔다.
+   ③ 제목을 붉은색에서 먹으로 내렸다. 시안의 규칙은 "강조색은 낙관 하나뿐"이고,
+      한 화면에 붉은 제목이 열세 개면 그건 강조가 아니라 배경이 된다.
+   ④ 장과 장 사이를 괘선으로 끊는다 — 이 앱이 카드를 나누는 방식과 같다. */
+.report-section{scroll-margin-top:80px;margin-bottom:28px;padding-top:24px;border-top:1px solid var(--gold-line);}
+.report-section:first-of-type{border-top:0;padding-top:4px;}
+.report-section h3{display:flex;align-items:baseline;gap:10px;color:var(--ink);font-family:var(--serif);
+  font-size:1.24rem;margin-bottom:14px;line-height:1.45;font-weight:700;letter-spacing:-.01em;}
+.report-section h3 .sec-no{flex:none;font-family:var(--serif);font-size:.84rem;font-weight:700;
+  color:var(--gold);letter-spacing:.06em;}
 /* 제목 글자는 한 칸에 담아 그 안에서 흐르게 한다(위 h3-text 주석 참고).
    min-width:0 이 없으면 flex 칸은 글자 길이만큼 버텨서 긴 제목이 옆으로 삐져나간다. */
 .report-section h3 .h3-text{min-width:0;flex:1 1 auto;}
@@ -1808,7 +1818,7 @@ body.has-fab main{padding-bottom:110px;}
 /* R29 — 이름표 바탕. 어두울 때는 검정 86%였다. 밝은 화면에서 그대로 두면 선 위에
    검은 알약이 떠서 그림을 뚫는다. 종이색 92%로 바꾸고 글자는 등급색(전부 7:1 이상)을 쓴다. */
 .gc-tag{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;
-  font-size:var(--gc-tagfs,10px);line-height:1.25;padding:2px 7px;border-radius:3px;
+  font-size:var(--gc-tagfs,10px);line-height:1.25;padding:3px 8px;border-radius:999px;
   border:1px solid currentColor;background:rgba(252,250,246,.93);font-weight:600;}
 /* R22 — 노드 지름을 clamp(36..) → clamp(44..)로 올렸다. 320px 화면에서도 44px 터치 목표를 넘긴다.
    R28 — 인원이 20명을 넘으면 그림이 겹치지 않게 아바타 그림만 줄이고, 누르는 자리(min-width/height)는
@@ -9421,9 +9431,10 @@ function renderGatedSections(view, sections, product, opts){
     if(i >= freeCount) return;
     var sec=el('section',{class:'report-section', id:s.id});
     var h=el('h3',{});
-    /* R22 — 아이콘을 옅은 원 배경에 담는다(레퍼런스의 목록 아이콘 규칙).
-       svgIcon()은 이미 aria-hidden이라 낭독되는 글자는 늘지 않는다. */
-    h.appendChild(el('span',{class:'icon-dot','aria-hidden':'true'},[svgIcon(s.icon)]));
+    /* ★ 2026-09-02 — 옛 아이콘 동그라미 대신 한자 번호를 둔다(위 CSS 주석 참고).
+       aria-hidden이라 낭독되는 글자는 늘지 않는다. s.icon 값은 그대로 남아 있어
+       되돌리려면 여기 한 줄만 svgIcon(s.icon)으로 바꾸면 된다. */
+    h.appendChild(el('span',{class:'sec-no','aria-hidden':'true'},[hanjaNo(i+1)]));
     /* ★ 2026-08-29 (대표님 사진 제보) — 제목을 글자 그대로 넣으면 안 된다.
        h3는 아이콘을 세로 가운데 맞추려고 display:flex 다. 그런데 아래에서 autoTermify(sec)가
        제목 안의 용어(예: '일간')를 칩으로 바꾸면서 글자 한 덩이가 [글자][칩][글자] 셋으로 쪼개지고,
@@ -13495,6 +13506,16 @@ function screenHead(name, opts){
   if(opts.sub) wrap.appendChild(el('p',{class:'sh-sub'},[opts.sub]));
   return wrap;
 }
+/* 한자 숫자 — 시안이 목록·단계·장 번호에 쓰는 표기. 1~30까지면 충분하다(모임 최대 인원). */
+var HANJA_DIGIT = ['','一','二','三','四','五','六','七','八','九'];
+function hanjaNo(n){
+  n = Math.max(1, Math.floor(Number(n) || 1));
+  if(n < 10) return HANJA_DIGIT[n];
+  if(n === 10) return '十';
+  if(n < 20) return '十' + HANJA_DIGIT[n - 10];
+  if(n % 10 === 0) return HANJA_DIGIT[Math.floor(n/10)] + '十';
+  return HANJA_DIGIT[Math.floor(n/10)] + '十' + HANJA_DIGIT[n % 10];
+}
 function pageHead(eyebrow, title, sub, opts){
   opts = opts || {};
   var head = el('div',{class:'page-head'});
@@ -16502,13 +16523,13 @@ function renderMonthlyFortune(){
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='saju'; render(); }},[dirIcon('left'), '내 사주로 돌아가기']));
   /* 안내 문구는 실제 열려 있는 범위를 그대로 말한다. 잠긴 상태에서 "한 달을 탭하면 다섯 가지를
      볼 수 있어요"라고 적으면 그 문장이 곧바로 거짓이 된다. */
-  view.appendChild(pageHead('내 사주 · 올해 월별', ownerLabel(p.name)+' '+year+'년 월별 운세', ( unlocked
+  view.appendChild(screenHead(ownerLabel(p.name)+' '+year+'년 월별 운세', {seal:'月', sub: ( unlocked
     ? '한 달을 탭하면 총운·애정운·금전운·학업·직장운·건강운 다섯 가지를 자세히 볼 수 있어요.'
     : (previewMonth>0
         /* ★ R52 — '무료/유료'로 나눠 말하지 않는다(대표님 지시). 값은 버튼에 적혀 있어 다들 안다.
            여기서는 '무엇을 볼 수 있는지'만 말한다. */
         ? '달마다의 두 글자(간지)와 총운 별점은 모두 볼 수 있어요. 상세 다섯 가지(총운·애정운·금전운·학업·직장운·건강운)는 이번 '+previewMonth+'월을 열어두었어요.'
-        : '달마다의 두 글자(간지)와 총운 별점은 모두 볼 수 있어요.') ), {marginTop:'14px'}));
+        : '달마다의 두 글자(간지)와 총운 별점은 모두 볼 수 있어요.') )}));
 
   if(mf.daeunIntro){
     var introCard=el('div',{class:'scroll-card stamp-in'});
@@ -16539,7 +16560,10 @@ function renderMonthlyFortune(){
        안에 버튼을 또 넣을 수 없으므로, 글자가 무엇인지만 작게 적는다(뜻은 카드 제목 줄에서 볼 수 있다).
        ★ R24 — 순서를 뒤집었다. R23이 세운 규칙은 "일상어가 먼저, 용어(글자)는 그 다음"인데
          이 타일만 반대(기축 → 그 달의 두 글자)로 되어 있어 대운 타일과도 어긋나 있었다. */
-    box.appendChild(el('div',{class:'mc-term'},['그 달의 두 글자']));
+    /* ★ 2026-09-02 — '그 달의 두 글자'가 열두 칸에 열두 번 붙어 있었다.
+       칸 안에서 눈에 들어와야 할 것은 달 이름·간지·별점 셋인데, 같은 설명이 열두 번 반복되며
+       그 셋을 밀어냈다. 무엇인지는 카드 머리('달마다의 흐름 · 사주 용어로는 월운·간지')가
+       이미 말한다. 값은 하나도 안 바뀌었다. */
     box.appendChild(el('div',{class:'mc-gz'},[mo.ganji.text]));
     /* ★ 글자를 그대로 두면 낭독기가 "검은 별"이라고 읽는다. 보이는 모습은 그대로 두되
        낭독은 aria-label이 대신하게 한다(타일이 좁아 buildStars의 별 5개는 들어가지 않는다). */
