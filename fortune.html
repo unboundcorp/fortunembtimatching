@@ -86,9 +86,12 @@
   --wx-1-text:#286648; --wx-2-text:#AC1B18; --wx-3-text:#8D622B;
   --wx-4-text:#505963; --wx-5-text:#214F7C;
 
-  /* ── 모서리 ── ★ 시안: "모서리는 각(角)". 둥근 카드를 쓰지 않는다.
-     원형(999px)은 낙관 배지·아바타에만 남긴다(--r-pill). */
-  --r-frame:0px;
+  /* ── 모서리 ──
+     ★ 2026-09-02 대표님 지시 — "전부 둥글게". 시안은 각(角)이었지만, 대표님이 보여주신
+       화면(면으로 된 둥근 버튼)의 느낌으로 간다. 세 값만 고치면 화면 전체가 함께 넘어간다
+       — 모서리를 쓰는 자리가 63군데인데 전부 이 토큰을 지나가기 때문이다.
+       되돌리려면 이 세 줄만 0으로 되돌리면 된다. */
+  --r-frame:12px;
 
   /* ── 여백 (8pt) ── */
   --sp-1:8px; --sp-2:16px; --sp-3:24px; --sp-4:32px; --sp-6:48px; --sp-8:64px; --sp-12:96px;
@@ -250,8 +253,8 @@
   /* ★ 로고 글자가 끝이 둥근 서체다. 모서리를 더 둥글려 그 결을 화면 전체에 맞춘다. */
   /* ★ R90 — 시안(인연점 리디자인 문서)의 지면 규칙에 맞춘다: 카드 4px, 그림자 대신 괘선.
      둥근 모서리 24px는 앱 느낌이고, 만세력 지면은 각이 진 종이다. */
-  --r-lg:0px;    /* 카드 = --r-frame. 시안: 모서리는 각(角) */
-  --r-md:0px;    /* 타일·입력칸·작은 상자 */
+  --r-lg:16px;   /* 카드 */
+  --r-md:10px;   /* 타일·입력칸·작은 상자 */
   --r-pill:999px;
   /* ★ 2026-08-24 리디자인 1단계 — 제목 서체를 Noto Serif KR로 바꾼다(지시서 3항).
      기기에 있으면 그것을, 없으면 fonts/ 에 둔 우리 사본을 쓴다. 뒤의 명조 계열은
@@ -500,7 +503,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
      헤어라인을 --gold-line(1.4:1, 거의 안 보임)에서 --line-light로 올렸다.
      "그림자를 뺐으면 선은 실제로 보여야 한다" — 둘 다 흐리면 카드 경계가 사라진다. */
   border:1px solid var(--gold-line);
-  border-radius:var(--r-frame);
+  border-radius:var(--r-lg);
   padding:var(--pad-card);
   box-shadow:var(--shadow-soft);
   position:relative;
@@ -745,8 +748,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .hour-btn:hover{border-color:var(--gold);color:var(--ink);background:var(--gold-soft);}
 .hour-btn:active{transform:scale(.95);}
 .hour-btn[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
-.progress-track{height:2px;background:var(--track);border-radius:0;overflow:hidden;margin-bottom:20px;}
-.progress-fill{height:100%;border-radius:0;background:var(--ink);transition:width .3s ease;}
+.progress-track{height:2px;background:var(--track);border-radius:999px;overflow:hidden;margin-bottom:20px;}
+.progress-fill{height:100%;border-radius:999px;background:var(--ink);transition:width .3s ease;}
 /* 단계 표시 — 시안대로 칸마다 괘선을 긋고 지금 칸만 먹으로 진하게 한다.
    예전 알약 막대는 "몇 번째인지"만 알려줬고 "무엇을 넣는 단계인지"는 못 알려줬다. */
 .step-rail{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
@@ -984,7 +987,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .today-hero-sub{font-size:.9rem;line-height:1.8;color:var(--ink-dim);margin-top:12px;word-break:keep-all;}
 .today-hero-meta{font-size:.78rem;line-height:1.7;color:var(--ink-faint);margin-top:10px;word-break:keep-all;}
 /* 시안의 왼쪽 선 블록 — 상자를 하나 더 만들지 않고 글에 무게만 준다. */
-.note-block{background:var(--panel-2);border-left:2px solid var(--gold);padding:14px 16px;margin-top:16px;}
+.note-block{background:var(--panel-2);border-left:2px solid var(--gold);padding:14px 16px;margin-top:16px;
+  border-radius:0 var(--r-md) var(--r-md) 0;}
 .note-block.mute{border-left-color:var(--line-dark-strong);}
 .note-block .nb-head{font-family:var(--serif);font-weight:700;font-size:.94rem;margin-bottom:8px;}
 .note-block p{font-size:.9rem;line-height:1.8;color:var(--ink-dim);margin-bottom:9px;word-break:keep-all;}
@@ -1237,8 +1241,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    라벨에 한자를 병기한다(시안: 목(木)). */
 .elem-bar-row .lbl{width:56px;flex:none;font-family:var(--serif);font-size:.94rem;color:var(--ink);}
 .elem-bar-row .lbl small{font-family:var(--sans);font-size:.62em;opacity:.65;}
-.elem-bar-track{flex:1;height:6px;background:var(--track);border-radius:0;overflow:hidden;}
-.elem-bar-fill{height:100%;border-radius:0;transition:width .4s ease;min-width:2px;}
+.elem-bar-track{flex:1;height:6px;background:var(--track);border-radius:999px;overflow:hidden;}
+.elem-bar-fill{height:100%;border-radius:999px;transition:width .4s ease;min-width:2px;}
 .elem-bar-row .num{font-size:.74rem;color:var(--ink-faint);font-variant-numeric:tabular-nums;min-width:1.2em;text-align:right;}
 .elem-bar-row .num{width:20px;text-align:right;color:var(--ink-dim);flex:none;}
 
@@ -1725,7 +1729,7 @@ body.has-fab main{padding-bottom:110px;}
 @media (max-width:640px){.compat-summary-grid{grid-template-columns:1fr;}}
 /* ★ 2026-09-01 리뉴얼 — 시안의 등급 배지는 '밝은 종이면 + 1px 등급색 테두리 + 등급색 글자'다.
    알약(20px)이 아니라 각진 상자다. 색은 쓰는 자리에서 등급에 맞춰 넣는다(--tier). */
-.tier-label{display:inline-block;margin-top:4px;padding:6px 16px;border-radius:0;
+.tier-label{display:inline-block;margin-top:4px;padding:6px 16px;border-radius:var(--r-md);
   background:var(--ink-700);border:1px solid var(--tier,var(--gold));color:var(--tier,var(--gold));
   font-family:var(--sans);font-weight:700;font-size:.95rem;letter-spacing:-.01em;}
 
@@ -2171,7 +2175,7 @@ body.has-fab main{padding-bottom:110px;}
 .char-pair-v .cpv-name{font-family:var(--sans);font-size:.94rem;font-weight:600;margin-top:5px;}
 .char-pair-v .cpv-sub{font-size:.76rem;color:var(--ink-dim);line-height:1.6;word-break:keep-all;}
 .char-pair-v .cpv-line{width:1px;height:34px;background:var(--tier,var(--ink));}
-.char-pair-v .cpv-badge{padding:7px 15px;background:var(--panel-2);
+.char-pair-v .cpv-badge{padding:7px 15px;background:var(--panel-2);border-radius:var(--r-md);
   border:1px solid var(--tier,var(--ink));color:var(--tiertext,var(--ink));
   font-family:var(--serif);font-weight:700;font-size:.94rem;}
 .char-pair{display:flex;justify-content:center;align-items:flex-start;gap:16px;flex-wrap:wrap;margin:4px 0 16px;}
