@@ -1858,12 +1858,16 @@ body.has-fab main{padding-bottom:110px;}
 .gc-member:hover{border-color:var(--gold);color:var(--ink);}
 .gc-member[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);font-weight:600;}
 /* 전체 순위 목록 */
-.gc-rank-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(31,28,23,0.06);font-size:.85rem;}
+.gc-rank-row{display:flex;align-items:center;gap:10px;padding:10px 0;
+  border-bottom:1px solid rgba(31,28,23,0.06);font-size:.82rem;}
 .gc-rank-row:last-child{border-bottom:0;}
-.gc-rank-row .gr-no{color:var(--ink-faint);font-size:.74rem;flex:none;min-width:1.8em;padding-top:2px;}
-.gc-rank-row .gr-who{flex:1;min-width:0;word-break:keep-all;}
-.gc-rank-row .gr-val{flex:none;text-align:right;font-family:var(--sans);font-weight:700;letter-spacing:-.02em;}
-.gc-rank-row .gr-plain{display:block;font-size:.72rem;margin-top:2px;}
+.gc-rank-row .gr-rank{flex:none;width:1.6em;color:var(--ink-faint);font-size:.74rem;font-variant-numeric:tabular-nums;}
+.gc-rank-row .gr-no{flex:none;display:flex;align-items:center;width:18px;}
+.gc-rank-row .gr-seg{display:block;width:18px;border-radius:999px;}
+.gc-rank-row .gr-who{flex:none;width:7.6em;min-width:0;word-break:keep-all;color:var(--ink-dim);}
+.gc-rank-row .gr-tier{flex:1;min-width:0;font-family:var(--serif);font-weight:700;font-size:.86rem;word-break:keep-all;}
+.gc-rank-row .gr-val{flex:none;margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+@media (max-width:359px){.gc-rank-row .gr-who{width:6.4em;}}
 @media (max-width:480px){.gc-cards{grid-template-columns:1fr;}}
 
 /* R46 — 링크로 들어온 화면 맨 위의 로고. 움직임 없이도 처음부터 보인다. */
@@ -16668,8 +16672,8 @@ function renderReport13(){
   recordSajuReportHistory(p, report);
   var view=el('div',{class:'view'});
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='saju'; render(); }},[dirIcon('left'), '내 사주로 돌아가기']));
-  view.appendChild(pageHead('내 사주 · 사주 풀이', ownerLabel(p.name)+' 사주 풀이',
-    '13개 이야기로 이어지는 긴 풀이예요. 목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.', {marginTop:'14px'}));
+  view.appendChild(screenHead(ownerLabel(p.name)+' 사주 풀이', {right:'十三篇',
+    sub:'13개 이야기로 이어지는 긴 풀이예요. 목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.'}));
 
   var sajuHost = el('div',{});
   view.appendChild(sajuHost);
@@ -16704,8 +16708,8 @@ function renderMbtiReport13(){
   recordMbtiReportHistory(p, report);
   var view=el('div',{class:'view'});
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='report'; render(); }},[dirIcon('left'), '성향 리포트로 돌아가기']));
-  view.appendChild(pageHead('성격유형 리포트 · 성격유형 풀이', ownerLabel(p.name)+' 성격유형 풀이',
-    '13개 이야기로 이어지는 '+p.mbti+' 풀이예요. 목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.', {marginTop:'14px'}));
+  view.appendChild(screenHead(ownerLabel(p.name)+' 성격유형 풀이', {right:'十三篇',
+    sub:'13개 이야기로 이어지는 '+p.mbti+' 풀이예요. 목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.'}));
 
   /* R19 — 이 화면의 주인공 캐릭터. 그림과 한 줄은 무료이고, 아래 13섹션 본문의 잠금 규칙은 그대로다. */
   var mbtiRepCharKey = charKeyForMbti(p.mbti);
@@ -18549,13 +18553,16 @@ function buildGroupCompatGraph(members, pairs, onSelect){
         ['그림에 그린 선 '+job.hi.lines.length+'개']));
       var list = el('div',{});
       job.hi.lines.slice().sort(byScoreDesc).forEach(function(pr){
+        /* ★ 2026-09-02 리뉴얼 — 시안의 순위 줄: 왼쪽에 등급색 '선 조각'을 둔다.
+           위 관계도에서 두 사람을 잇는 선과 같은 색·같은 굵기라, 목록과 그림이 같은 말을 한다.
+           예전에는 동그란 점이었는데, 그림에는 점이 아니라 선이 그려져 있어 서로 안 이어졌다. */
         var row = el('div',{class:'gc-rank-row'});
-        row.appendChild(el('span',{class:'gr-no'},[el('span',{style:'display:inline-block;width:9px;height:9px;border-radius:50%;background:'+gcTierColor(pr.res.combinedTier)+';'})]));
-        row.appendChild(el('span',{class:'gr-who'},[pr.a.name+' × '+pr.b.name]));
-        row.appendChild(el('span',{class:'gr-val'},[
-          pr.res.combined+'점',
-          el('span',{class:'gr-plain', style:'color:'+gcTierTextColor(pr.res.combinedTier)+';'},[gcPlain(pr.res.combinedTier)])
-        ]));
+        row.appendChild(el('span',{class:'gr-no'},[el('span',{class:'gr-seg',
+          style:'background:'+gcTierColor(pr.res.combinedTier)+';height:'+((GC_TIER_WIDTH[pr.res.combinedTier]||2))+'px;'})]));
+        row.appendChild(el('span',{class:'gr-who'},[pr.a.name+' · '+pr.b.name]));
+        row.appendChild(el('span',{class:'gr-tier', style:'color:'+gcTierTextColor(pr.res.combinedTier)+';'},
+          [tierNameFix(pr.res.combinedTier)]));
+        row.appendChild(el('span',{class:'gr-val'},[String(pr.res.combined)]));
         list.appendChild(row);
       });
       drawnBox.appendChild(list);
@@ -18676,13 +18683,16 @@ function buildGroupRankPanel(pairs){
     });
     var show = Math.min(GC_RANK.shown, sorted.length);
     sorted.slice(0, show).forEach(function(pr, i){
+      /* ★ 2026-09-02 — 이 줄과 관계도 아래 순위 줄은 같은 클래스를 쓴다. 한쪽만 고치면
+         모양이 갈라진다(실제로 갈라져서 "84점강한 인연"으로 붙어 나왔다). 둘을 같이 고친다. */
       var row = el('div',{class:'gc-rank-row'});
-      row.appendChild(el('span',{class:'gr-no'},[(i+1)+'.']));
-      row.appendChild(el('span',{class:'gr-who'},[pr.a.name+' × '+pr.b.name]));
-      row.appendChild(el('span',{class:'gr-val'},[
-        pr.res.combined+'점',
-        el('span',{class:'gr-plain', style:'color:'+gcTierTextColor(pr.res.combinedTier)+';'},[gcPlain(pr.res.combinedTier)])
-      ]));
+      row.appendChild(el('span',{class:'gr-rank'},[String(i+1)]));
+      row.appendChild(el('span',{class:'gr-no'},[el('span',{class:'gr-seg',
+        style:'background:'+gcTierColor(pr.res.combinedTier)+';height:'+((GC_TIER_WIDTH[pr.res.combinedTier]||2))+'px;'})]));
+      row.appendChild(el('span',{class:'gr-who'},[pr.a.name+' · '+pr.b.name]));
+      row.appendChild(el('span',{class:'gr-tier', style:'color:'+gcTierTextColor(pr.res.combinedTier)+';'},
+        [gcPlain(pr.res.combinedTier)]));
+      row.appendChild(el('span',{class:'gr-val'},[String(pr.res.combined)]));
       listBox.appendChild(row);
     });
     if(show < sorted.length){
@@ -21186,8 +21196,8 @@ function confirmModal(msg, onYes, yesLabel){
 function renderSettings(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view'});
-  view.appendChild(pageHead('내 정보', '설정 · 프로필 관리',
-    '여러 프로필(예: 본인, 가족)을 등록하고 전환할 수 있어요. 각 프로필의 만세력 계산 결과는 프로필별로 저장돼요.'));
+  view.appendChild(screenHead('설정 · 프로필 관리', {seal:'設',
+    sub:'여러 프로필(예: 본인, 가족)을 등록하고 전환할 수 있어요. 각 프로필의 만세력 계산 결과는 프로필별로 저장돼요.'}));
 
   view.appendChild(buildPurchasePanel());
   /* 결제 연동 진단(서버 주소·엔드포인트 설정 여부·연동 규격)과 AI 해석 연결(해석 서버 주소·모델)은
@@ -21729,6 +21739,7 @@ var TAB_PARENT = {
    여기 남겨 두면 [더보기]에 불이 켜져서, 성격유형 탭을 눌렀는데 더보기가 켜지는 꼴이 된다
    (R102에서 사주 풀이가 똑같은 이유로 더보기에 불을 켜던 것을 고쳤다). */
 var MORE_ROUTES = { chars:1, history:1, settings:1, glossary:1 };
+var MORE_NO = ['一','二','三','四','五'];
 var MORE_MENU = [
   ['chars',    '캐릭터 도감',     '오행 다섯 · 성격유형 열여섯'],
   ['history',  '히스토리',        '지난 운세 · 궁합 기록'],
@@ -21736,7 +21747,7 @@ var MORE_MENU = [
 ];
 function openMoreSheet(){
   var box = el('div',{});
-  MORE_MENU.forEach(function(row){
+  MORE_MENU.forEach(function(row, i){
     var b = el('button',{class:'hd-row', type:'button', onclick:function(){
       closeModal(true);
       guardRouteChange(row[0], function(){ setRoute(row[0]); });
@@ -21745,7 +21756,9 @@ function openMoreSheet(){
     l.appendChild(el('div',{class:'t'},[row[1]]));
     l.appendChild(el('div',{class:'s'},[row[2]]));
     b.appendChild(l);
-    b.appendChild(el('span',{class:'price','aria-hidden':'true'},[dirIcon('right')]));
+    /* ★ 2026-09-02 리뉴얼 — 시안은 목록 줄 오른쪽에 한자 번호를 둔다(홈의 '다음 갈 곳'과 같은 규칙).
+       화살표를 셋 늘어놓으면 셋 다 같은 무게라 '몇 개가 있는지'가 안 읽힌다. */
+    b.appendChild(el('span',{class:'hd-no','aria-hidden':'true'},[MORE_NO[i] || '']));
     box.appendChild(b);
   });
   openModal('더보기', box, [{label:'닫기', cls:'btn-ghost', onclick:function(){ closeModal(true); }}]);
