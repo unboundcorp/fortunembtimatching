@@ -955,9 +955,14 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 /* ★ 2026-09-02 리뉴얼 — 오늘의 운세를 시안 구조로.
    시안은 "화면 이름 + 날짜 / 일진 동그라미 / 한 줄 제목 / 다섯 칸 점수 / 왼쪽 선 블록" 순이다.
    예전에는 제목·근거칩·일진카드·점수카드가 각각 다른 상자로 넷이 쌓여 있었다. */
-.today-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;}
-.today-head .th-name{font-family:var(--serif);font-weight:700;font-size:1.02rem;letter-spacing:.1em;}
-.today-head .th-date{font-size:.78rem;color:var(--ink-faint);letter-spacing:.02em;}
+.screen-head{margin-bottom:24px;}
+.screen-head .sh-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.screen-head .sh-name{font-family:var(--serif);font-weight:700;font-size:1.02rem;letter-spacing:.1em;}
+.screen-head .sh-right{font-size:.78rem;color:var(--ink-faint);letter-spacing:.02em;flex:none;}
+/* 낙관 도장 — 시안이 화면마다 오른쪽 위에 하나씩 찍는다(내 사주 命, 성격유형 性, 궁합 緣). */
+.screen-head .sh-seal{width:30px;height:30px;border-radius:999px;background:var(--brand);color:var(--void);
+  display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:.82rem;flex:none;}
+.screen-head .sh-sub{font-size:.82rem;color:var(--ink-faint);line-height:1.75;margin-top:10px;word-break:keep-all;}
 .today-hero{text-align:center;margin-bottom:4px;}
 .today-iljin{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
   width:88px;height:88px;border-radius:999px;border:1.5px solid var(--gold);color:var(--gold);
@@ -1211,9 +1216,13 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 /* 오행 도넛/막대 */
 .elem-bars{display:flex;flex-direction:column;gap:8px;margin:12px 0;}
 .elem-bar-row{display:flex;align-items:center;gap:10px;font-size:.8rem;}
-.elem-bar-row .lbl{width:28px;color:var(--ink-dim);flex:none;}
-.elem-bar-track{flex:1;height:10px;background:var(--track);border-radius:6px;overflow:hidden;}
-.elem-bar-fill{height:100%;border-radius:6px;transition:width .4s ease;}
+/* ★ 2026-09-02 리뉴얼 — 시안의 오행 줄. 굵은 알약 막대(10px, 둥근)를 얇고 각진 6px로.
+   라벨에 한자를 병기한다(시안: 목(木)). */
+.elem-bar-row .lbl{width:56px;flex:none;font-family:var(--serif);font-size:.94rem;color:var(--ink);}
+.elem-bar-row .lbl small{font-family:var(--sans);font-size:.62em;opacity:.65;}
+.elem-bar-track{flex:1;height:6px;background:var(--track);border-radius:0;overflow:hidden;}
+.elem-bar-fill{height:100%;border-radius:0;transition:width .4s ease;min-width:2px;}
+.elem-bar-row .num{font-size:.74rem;color:var(--ink-faint);font-variant-numeric:tabular-nums;min-width:1.2em;text-align:right;}
 .elem-bar-row .num{width:20px;text-align:right;color:var(--ink-dim);flex:none;}
 
 /* 목차 앵커 */
@@ -9876,6 +9885,8 @@ var ZODIAC_TRAIT = {
   개:'의리 있고 신뢰를 중시해요.', 돼지:'너그럽고 낙천적이에요.'
 };
 var ELEMENTS = ['목','화','토','금','수'];
+/* 시안은 오행을 늘 '목(木)'처럼 한글 앞·한자 괄호로 적는다. 계산에는 쓰지 않는다. */
+var ELEMENTS_H = ['木','火','土','金','水'];
 var ELEMENT_TRAIT = {
   목:'뻗어나가려는 성장의 기운 — 계획을 세우고 앞으로 나아가는 힘이 강해요.',
   화:'타오르는 정열의 기운 — 표현력이 풍부하고 주변을 밝히는 힘이 있어요.',
@@ -13429,6 +13440,19 @@ function basisChip(kinds){
   kinds.forEach(function(k){ row.appendChild(el('span',{class:'basis-v'},[k])); });
   return row;
 }
+/* 시안의 화면 머리 — 왼쪽에 화면 이름, 오른쪽에 낙관 도장(한자) 또는 짧은 글(날짜).
+   pageHead(작은 라벨 + 큰 제목 + 소제목)와 달리 한 줄이고, 화면 맨 위에만 쓴다. */
+function screenHead(name, opts){
+  opts = opts || {};
+  var wrap = el('div',{class:'screen-head'});
+  var row = el('div',{class:'sh-row'});
+  row.appendChild(el('div',{class:'sh-name'},[name]));
+  if(opts.seal) row.appendChild(el('div',{class:'sh-seal','aria-hidden':'true'},[opts.seal]));
+  else if(opts.right) row.appendChild(el('div',{class:'sh-right'},[opts.right]));
+  wrap.appendChild(row);
+  if(opts.sub) wrap.appendChild(el('p',{class:'sh-sub'},[opts.sub]));
+  return wrap;
+}
 function pageHead(eyebrow, title, sub, opts){
   opts = opts || {};
   var head = el('div',{class:'page-head'});
@@ -15262,7 +15286,7 @@ function buildElemBars(counts){
   var wrap=el('div',{class:'elem-bars'});
   ELEMENTS.forEach(function(name,i){
     var row=el('div',{class:'elem-bar-row'});
-    row.appendChild(el('span',{class:'lbl'},[name]));
+    row.appendChild(el('span',{class:'lbl'},[name, el('small',{},['('+ELEMENTS_H[i]+')'])]));
     var track=el('div',{class:'elem-bar-track'});
     track.appendChild(el('div',{class:'elem-bar-fill', style:'width:'+Math.round(counts[i]/total*100)+'%;background:'+ELEMENT_COLOR_ARR[i]+';'}));
     row.appendChild(track);
@@ -15992,10 +16016,7 @@ function renderHome(){
      둘 다 맞는 값이지만 앞의 것을 그냥 "○ 기운"이라고만 쓰면
      같은 화면에서 두 줄이 서로 다른 오행을 말하는 것처럼 읽힌다(실제로 그렇게 보였다).
      그래서 값은 그대로 두고 무엇을 센 값인지 문장에 밝힌다. */
-  var head = el('div',{class:'today-head'});
-  head.appendChild(el('div',{class:'th-name'},[ownerLabel(p.name)+' 오늘의 운세']));
-  head.appendChild(el('div',{class:'th-date'},[todayStr()]));
-  view.appendChild(head);
+  view.appendChild(screenHead(ownerLabel(p.name)+' 오늘의 운세', {right: todayStr()}));
 
   /* 시안의 히어로 — 일진 동그라미 · 한 줄 제목 · 설명 한 줄. */
   var hero = el('div',{class:'today-hero stamp-in'});
@@ -16158,8 +16179,8 @@ function renderReport(){
   var view=el('div',{class:'view'});
   /* ★ R49 — 실사용자 피드백: "눌러보니 ISTJ가 나오네, 이게 MBTI인가?"
      이름만 보고는 무엇을 보여주는 화면인지 알 수 없었다. 화면 이름과 근거를 함께 적는다. */
-  view.appendChild(pageHead('성격유형 리포트', '나의 성향 리포트', p.mbti+' · '+TYPE_TAGLINE[p.mbti]));
-  view.appendChild(basisChip(['성격유형']));
+  view.appendChild(screenHead(ownerLabel(p.name)+' 성향 리포트', {seal:'性',
+    sub: p.mbti+' · '+TYPE_TAGLINE[p.mbti]+' · 성격유형만 보고 쓴 화면이에요 — 사주는 쓰지 않아요'}));
 
   /* R19 — MBTI 캐릭터. 16종은 서로 다른 상징을 쓰고, 도감에서 한자리에 볼 수 있다. */
   var mbtiCharKey = charKeyForMbti(p.mbti);
@@ -16226,9 +16247,11 @@ function renderSaju(){
   if(!p){ main.appendChild(emptyState('프로필이 필요해요','내 사주를 보려면 프로필을 먼저 만들어주세요.', function(){ startSetupWizard(null); render(); })); return; }
   var saju = getSajuResult(p);
   var view=el('div',{class:'view'});
-  view.appendChild(pageHead('내 사주 · 만세력', ownerLabel(p.name)+' 사주팔자',
-    '양력 '+p.year+'-'+pad2(p.month)+'-'+pad2(p.day)+(p.birthTime?(' '+pad2(p.birthTime.hour)+':'+pad2(p.birthTime.minute)):' · 시간 모름')+' · '+(p.gender==='F'?'여자':'남자')));
-  view.appendChild(basisChip(['사주']));
+  view.appendChild(screenHead(ownerLabel(p.name)+' 사주팔자', {seal:'命',
+    sub: '양력 '+p.year+'-'+pad2(p.month)+'-'+pad2(p.day)
+       + (p.birthTime?(' '+pad2(p.birthTime.hour)+':'+pad2(p.birthTime.minute)):' · 시간 모름')
+       + ' · ' + (p.gender==='F'?'여자':'남자')
+       + ' · 사주(만세력)만 보고 계산한 화면이에요 — 성격유형은 쓰지 않아요'}));
 
   /* R19 — 일간(日干)의 오행 캐릭터. 그림과 한 줄은 무료다(깊은 해설은 아래 유료 리포트가 맡는다). */
   var dayCharKey = charKeyForDayStem(saju);
@@ -16741,8 +16764,8 @@ function renderCharDex(){
     var ek = charKeyForDayStem(saju); if(ek) myKeys.push(ek);
   }
   var view=el('div',{class:'view'});
-  view.appendChild(pageHead('모아보기', '캐릭터 도감',
-    '성격유형 16종은 남·여 두 컷씩, 오행은 5종이에요. 그림도 설명도 전부 무료로 열려 있어요. 하나를 누르면 크게 보면서 자세한 설명까지 읽을 수 있어요.'));
+  view.appendChild(screenHead('캐릭터 도감', {seal:'像',
+    sub:'성격유형 16종은 남·여 두 컷씩, 오행은 5종이에요. 그림도 설명도 전부 무료로 열려 있어요. 하나를 누르면 크게 보면서 자세한 설명까지 읽을 수 있어요.'}));
 
   if(myKeys.length){
     var mineCard=el('div',{class:'scroll-card'});
@@ -16975,12 +16998,12 @@ function renderCompat(){
     /* R32 — 초대 링크로 들어온 화면에서는 칸이 이미 채워져 있다. "입력하면"이라고 말하면
        무엇을 더 넣으라는 건지 알 수 없고, 채워진 값이 자기 정보라고 오해하게 된다.
        그래서 그 경우에는 누구 정보가 채워졌는지와 다음에 누를 것을 그대로 적는다. */
-    view.appendChild(pageHead(isGroupView ? '여러 사람' : '두 사람', '궁합 보기',
+    view.appendChild(screenHead('궁합 보기', {seal:'緣', sub:
       isGroupView
         ? ('모인 사람들이 서로 어떻게 맞는지 한 그림에 함께 봐요. 한 그룹에 최대 '+GC_MAX+'명까지 들어가요.')
         : ((COMPAT_DRAFT.fromInvite && COMPAT_DRAFT.name)
           ? (nameOr(COMPAT_DRAFT.name,'상대방')+'님이 보낸 정보는 링크에 담겨 와서 이미 채워져 있어요. 아래 [궁합 풀어보기]를 누르면 '+p.name+'님과의 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.')
-          : ('상대방의 정보를 입력하면 '+personLabel(p.name, '나')+' 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.'))));
+          : ('상대방의 정보를 입력하면 '+personLabel(p.name, '나')+' 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.'))}));
 
     if(!COMPAT_DRAFT.fromInvite){
       var vseg = el('div',{class:'seg-toggle', style:'margin-bottom:16px;', role:'group','aria-label':'몇 분의 궁합을 볼까요'});
@@ -17484,7 +17507,7 @@ function renderCompatStory(p, draft){
 function renderCompatSummary(p, draft){
   var box=el('div',{});
   var r=draft.result;
-  box.appendChild(pageHead('궁합 결과', nameOr(p.name)+' × '+nameOr(r.pB.name,'상대')+' 궁합'));
+  box.appendChild(screenHead(nameOr(p.name)+' × '+nameOr(r.pB.name,'상대')+' 궁합', {seal:'緣'}));
 
   /* ① 종합 점수 하나를 크게 */
   box.appendChild(el('div',{class:'gauge-label'},['종합 궁합 점수']));
@@ -20873,7 +20896,7 @@ function histTabSelect(key, moveFocus){
 function renderHistory(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view'});
-  view.appendChild(pageHead('내 기록', '히스토리 보관함'));
+  view.appendChild(screenHead('히스토리 보관함', {seal:'録'}));
   /* ★ role="tab"을 선언했으면 그 탭이 무엇을 여는지(aria-controls)와 열린 영역(role="tabpanel")이
      실제로 있어야 한다. 전에는 tablist/tab만 있고 패널도 aria-controls도 없어서,
      화면 낭독기에는 "탭"이라고 알려주면서 정작 무엇이 바뀌는지는 알려주지 못했다.
