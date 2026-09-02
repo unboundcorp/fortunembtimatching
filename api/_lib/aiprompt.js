@@ -334,23 +334,39 @@ export function parseSections(text, titles) {
      한 번에 쓰던 때와 같은 모양(## 제목 …)이라 저장·재열람 규칙이 그대로 성립한다.
      열쇠를 바꾸면 이미 사신 분들의 글이 통째로 사라진다 — 그건 하면 안 된다.
 ===================================================================== */
-export const CHUNK_TARGET = 3;   /* 몇 덩이로 나눌지. 늘리면 빨라지지만 중복 위험이 커진다 */
+/* ★ 2026-09-02 실측으로 배운 것 — 첫 덩이는 짧아야 한다.
+   미리보기에서 열세 장을 5/4/4로 나눠 재니 이랬다.
+     나누기 전 : 첫 글자 55.5초 · 다 오기까지 126.7초 · 5,327자
+     5/4/4     : 첫 글자 91.7초 · 다 오기까지 145.5초 · 7,432자
+   뒤 덩이는 이미 다 써진 채 기다리다 한꺼번에 쏟아졌다(첫 글자 뒤로 초당 138자 — 나누기 전은 42자).
+   동시에 쓰는 것 자체는 되고 있다. 걸림돌은 첫 덩이다 — 순서를 지켜야 하니
+   첫 덩이가 끝나기 전에는 화면에 한 글자도 못 띄운다.
+   그래서 첫 덩이는 짧게 떼고, 나머지를 고르게 나눈다. */
+export const LEAD_SIZE = 2;    /* 첫 덩이의 장 수. 화면에 글이 뜨기 시작하는 시점을 정한다 */
+export const CHUNK_MAX = 4;    /* 나머지 덩이 하나의 최대 장 수. 전체 시간은 제일 큰 덩이가 정한다 */
 
-/* 제목을 고르게 나눈다. 13장을 3덩이로 하면 5/4/4가 아니라 5/4/4처럼 한 장 차이까지만 벌어진다.
-   ★ 덩이 안의 순서와 덩이 사이의 순서는 원래 목차 순서 그대로다. 순서가 뒤집히면
-     읽는 사람이 목차를 눌러도 그 자리로 가지 못한다. */
-export function splitTitles(titles, target = CHUNK_TARGET) {
+/* ★ 덩이 안의 순서도, 덩이 사이의 순서도 원래 목차 순서 그대로다.
+     순서가 뒤집히면 읽는 사람이 목차를 눌러도 그 자리로 가지 못한다. */
+export function splitTitles(titles, lead = LEAD_SIZE, max = CHUNK_MAX) {
   const list = Array.isArray(titles) ? titles : [];
   const n = list.length;
   if (n === 0) return [];
-  const parts = Math.max(1, Math.min(target, n));
+
   const out = [];
-  let at = 0;
-  for (let i = 0; i < parts; i += 1) {
-    /* 남은 장을 남은 덩이 수로 나눠 올림한다 — 앞쪽이 한 장 더 갖고 뒤로 갈수록 고르게 준다. */
-    const size = Math.ceil((n - at) / (parts - i));
-    out.push({ from: at, titles: list.slice(at, at + size) });
-    at += size;
+  /* ① 첫 덩이 — 짧게. 여기가 끝나야 화면에 글이 뜨기 시작한다. */
+  let at = Math.max(1, Math.min(lead, n));
+  out.push({ from: 0, titles: list.slice(0, at) });
+
+  /* ② 나머지 — 한 덩이가 max를 넘지 않는 선에서 고르게.
+     전체 시간은 제일 큰 덩이가 정하므로, 크기가 들쭉날쭉하면 큰 놈 하나 때문에 다 기다린다. */
+  const rest = n - at;
+  if (rest > 0) {
+    const parts = Math.max(1, Math.ceil(rest / Math.max(1, max)));
+    for (let i = 0; i < parts; i += 1) {
+      const size = Math.ceil((n - at) / (parts - i));
+      out.push({ from: at, titles: list.slice(at, at + size) });
+      at += size;
+    }
   }
   return out;
 }
