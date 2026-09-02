@@ -6094,7 +6094,11 @@ function fillNamePlaceholder(text, name, forHtml){
   return replaceWithJosa(out, 'name', name, enc);
 }
 /* 유료 본문을 통짜로 받는 통로의 제한 시간. 흘려받기(240초)와 같은 눈금으로 둔다. */
-var PAID_BODY_TIMEOUT_MS = 240000;
+/* ★ 2026-09-02 — 240초에서 280초로. 실측으로 잰 값이 아슬아슬했다.
+   통짜 창구(/api/content)로 궁합 유료 10장을 만드는 데 204.6초가 걸렸다(라이브 실측).
+   240초까지 35초밖에 안 남는다. 글이 조금 길거나 서버가 느린 날이면 결제한 분이
+   돈만 내고 빈 화면을 본다. 서버 함수는 300초까지 버티므로(config.maxDuration) 여유가 있다. */
+var PAID_BODY_TIMEOUT_MS = 280000;
 async function fetchPaidSection(productId, payload, displayName){
   if(!serverContentMode()) return null;
   var data = await billingFetchJson(BILLING.contentEndpoint, {

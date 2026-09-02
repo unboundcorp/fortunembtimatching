@@ -22,12 +22,14 @@
 import { readBody, json } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
 import { productOf, aiQuotaOf } from './_lib/products.js';
-import { KNOWLEDGE, KNOWLEDGE_CHARS } from './_lib/knowledge.js';
+import { KNOWLEDGE_CHARS } from './_lib/knowledge.js';
 /* ★ 프롬프트·캐시 열쇠·권한은 api/content.js 와 함께 쓴다. 복사해 두면 언젠가 둘이 달라진다. */
-import {
-  MODEL, MAX_TOKENS, ANTHROPIC_URL, AI_PRODUCTS,
-  userPrompt, cacheKeyOf, hasAiAccess, systemFor,
-} from './_lib/aiprompt.js';
+/* ★ 2026-09-02 — 프롬프트를 짜고 Anthropic을 부르는 일은 전부 _lib/aigen.js 로 옮겼다.
+   여기서는 열쇠 계산·권한·저장만 한다. 그래서 MAX_TOKENS·ANTHROPIC_URL·systemFor·userPrompt를
+   더는 안 가져온다 — 안 쓰는 이름을 남겨 두면 "여기서도 부르는구나"로 읽힌다. */
+import { MODEL, AI_PRODUCTS, cacheKeyOf, hasAiAccess } from './_lib/aiprompt.js';
+/* ★ 2026-09-02 — 장을 몇 덩이로 나눠 동시에 쓰게 한다. 통짜 창구(api/content.js)와 같은 것을 쓴다. */
+import { generateChunked } from './_lib/aigen.js';
 import {
   paidOrdersOf, testAccessOf,
   getAiCache, putAiCache, aiUsedCount, aiAlreadyUsed, noteAiUse, sweepAiOld,
@@ -143,68 +145,38 @@ export default async function handler(req, res) {
     const stopBeat = () => { if (beat) clearInterval(beat); };
     res.on('close', stopBeat);
 
-    const upstream = await fetch(ANTHROPIC_URL, {
-      method: 'POST',
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        stream: true,
-        system: systemFor(KNOWLEDGE),
-        messages: [{ role: 'user', content: userPrompt(payload) }],
-      }),
-    });
-
-    if (!upstream.ok || !upstream.body) {
-      const detail = (await upstream.text().catch(() => '')).slice(0, 200);
-      /* ★ 응답 본문을 그대로 손님에게 보여주지 않는다. 열쇠나 내부 사정이 섞여 나갈 수 있다. */
-      console.error('anthropic 오류', upstream.status, detail);
+    /* ★ 2026-09-02 — 여기가 바뀐 자리다. 예전에는 열세 장을 한 번에 쓰게 하고
+       그 한 줄기를 그대로 흘려보냈다. 실측으로 첫 글자 55.5초 · 다 오기까지 126.7초였다.
+       이제 장을 몇 덩이로 나눠 동시에 맡기고, 화면에는 목차 순서대로 흘려보낸다.
+       나누고 합치는 규칙은 _lib/aigen.js 한 곳에 있다 — 통짜 창구와 같은 것을 쓴다. */
+    let full = '';
+    let stops = [];
+    let parts = 1;
+    try {
+      const out = await generateChunked({
+        key,
+        payload,
+        allTitles: Array.isArray(payload?.requested?.sectionTitles) ? payload.requested.sectionTitles : [],
+        onDelta: (piece) => { full += piece; send(res, { type: 'delta', text: piece }); },
+      });
+      /* ★ full은 흘려보낸 조각을 그대로 이어 붙인 것이라 out.full과 같아야 한다.
+         다르면 화면에 뜬 글과 캐시에 저장될 글이 갈린다는 뜻이다 — 그때는 저장하지 않는다. */
+      if (out.full !== full) {
+        console.error('흘려보낸 글과 합친 글이 다릅니다', full.length, '/', out.full.length);
+        stopBeat();
+        send(res, { type: 'error', reason: '해석을 만들다가 문제가 생겼어요.' });
+        return res.end();
+      }
+      stops = out.stops;
+      parts = out.parts;
+    } catch (e) {
+      console.error('해석 생성 실패', String((e && e.message) || e).slice(0, 200));
       stopBeat();
       send(res, { type: 'error', reason: '해석을 만들지 못했어요. 잠시 후 다시 시도해 주세요.' });
       return res.end();
     }
-
-    let full = '';
-    /* ★ 2026-08-25 — 왜 끝났는지를 붙잡아 둔다.
-       'max_tokens'면 분량 상한에 걸려 문장 한가운데서 잘렸다는 뜻이다.
-       예전에는 이 값을 아예 안 봐서, 잘린 글이 조용히 캐시에 들어갔다. */
-    let stopReason = null;
-    const reader = upstream.body.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      /* SSE는 빈 줄로 사건이 나뉜다. 마지막 조각은 아직 안 끝났을 수 있으니 남겨 둔다. */
-      const parts = buf.split('\n\n');
-      buf = parts.pop() || '';
-      for (const part of parts) {
-        for (const line of part.split('\n')) {
-          if (!line.startsWith('data:')) continue;
-          const raw = line.slice(5).trim();
-          if (!raw || raw === '[DONE]') continue;
-          let ev;
-          try { ev = JSON.parse(raw); } catch { continue; }
-          if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
-            full += ev.delta.text;
-            send(res, { type: 'delta', text: ev.delta.text });
-          } else if (ev.type === 'message_delta' && ev.delta?.stop_reason) {
-            stopReason = ev.delta.stop_reason;
-          } else if (ev.type === 'error') {
-            console.error('anthropic 스트림 오류', ev.error?.type);
-            stopBeat();
-            send(res, { type: 'error', reason: '해석을 만들다가 끊겼어요.' });
-            return res.end();
-          }
-        }
-      }
-    }
+    /* 덩이 중 하나라도 분량 상한에 걸렸으면 어딘가 잘렸다는 뜻이다. */
+    const stopReason = stops.includes('max_tokens') ? 'max_tokens' : (stops[stops.length - 1] || null);
 
     /* ★ 끝까지 못 받았으면 저장하지도, 횟수를 쓰지도 않는다.
        반쪽짜리 글을 캐시에 넣으면 그 사람은 영영 반쪽만 보게 된다.
@@ -229,7 +201,8 @@ export default async function handler(req, res) {
       return res.end();
     }
     if (wantTitles && gotHeadings < wantTitles) {
-      console.error('해석 섹션이 모자랍니다', gotHeadings, '/', wantTitles, 'stop_reason=', stopReason);
+      console.error('해석 섹션이 모자랍니다', gotHeadings, '/', wantTitles,
+                    'stop_reason=', stopReason, '· 덩이', parts, '개');
       send(res, { type: 'error', reason: '해석이 끝까지 만들어지지 않았어요. 다시 시도해 주세요.' });
       return res.end();
     }

@@ -22,11 +22,12 @@
 import { readBody, json, methodGuard } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
 import { productOf, aiQuotaOf } from './_lib/products.js';
-import { KNOWLEDGE } from './_lib/knowledge.js';
-import {
-  MODEL, MAX_TOKENS, ANTHROPIC_URL, AI_PRODUCTS,
-  userPrompt, cacheKeyOf, hasAiAccess, systemFor, parseSections,
-} from './_lib/aiprompt.js';
+/* ★ 2026-09-02 — 지식 문서는 _lib/aigen.js 가 시스템 프롬프트에 붙인다. 여기서는 안 쓴다. */
+/* ★ 2026-09-02 — 프롬프트를 짜고 Anthropic을 부르는 일은 _lib/aigen.js 로 옮겼다.
+   흘려받기 창구(api/interpret.js)와 **같은 것**을 쓴다. 복사해 두면 언젠가 둘이 달라지고,
+   그때는 같은 상품인데 창구에 따라 글이 다른 이유를 아무도 못 찾는다. */
+import { MODEL, AI_PRODUCTS, cacheKeyOf, hasAiAccess, parseSections } from './_lib/aiprompt.js';
+import { generateChunked } from './_lib/aigen.js';
 import {
   getAiCache, putAiCache, aiUsedCount, aiAlreadyUsed, noteAiUse, sweepAiOld,
 } from './_lib/store.js';
@@ -119,40 +120,28 @@ export default async function handler(req, res) {
       requested: { ...(payload.requested || {}), sectionTitles: paidTitles, sections: paidTitles.length },
     };
 
-    const upstream = await fetch(ANTHROPIC_URL, {
-      method: 'POST',
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        system: systemFor(KNOWLEDGE),
-        messages: [{ role: 'user', content: userPrompt(askPayload) }],
-      }),
-    });
-
-    if (!upstream.ok) {
-      const detail = (await upstream.text().catch(() => '')).slice(0, 200);
-      /* ★ 응답 본문을 손님에게 그대로 보여주지 않는다. 열쇠나 내부 사정이 섞여 나갈 수 있다. */
-      console.error('anthropic 오류', upstream.status, detail);
+    /* ★ 2026-09-02 — 여기가 바뀐 자리다. 예전에는 열 장을 한 번에 쓰게 했고,
+       라이브 실측으로 204.6초가 걸렸다. 브라우저는 이 창구를 280초에 끊으므로 여유가 얇았다.
+       이제 장을 몇 덩이로 나눠 동시에 맡긴다. 여기는 통짜로 주는 창구라 흘려보내지 않는다
+       (onDelta를 안 넘긴다) — 다 모아서 한 번에 돌려준다. */
+    let full = '';
+    let stops = [];
+    try {
+      const out = await generateChunked({ key, payload: askPayload, allTitles: paidTitles });
+      full = out.full;
+      stops = out.stops;
+    } catch (e) {
+      console.error('유료 본문 생성 실패', String((e && e.message) || e).slice(0, 200));
       return json(res, 502, { error: 'upstream', reason: '해석을 만들지 못했어요. 잠시 후 다시 시도해 주세요.' });
     }
-
-    const data = await upstream.json();
-    const full = (Array.isArray(data?.content) ? data.content : [])
-      .filter((b) => b && b.type === 'text')
-      .map((b) => b.text)
-      .join('');
+    const stopReason = stops.includes('max_tokens') ? 'max_tokens' : (stops[stops.length - 1] || null);
 
     const secs = toSections(full, paidTitles, from);
     /* ★ 반쪽짜리 글은 저장하지도, 횟수를 쓰지도 않는다.
        캐시에 넣으면 그 사람은 영영 반쪽만 보게 된다. */
     if (secs.length < paidTitles.length) {
       console.error('유료 본문이 모자랍니다', secs.length, '/', paidTitles.length,
-                    'stop_reason=', data?.stop_reason);
+                    'stop_reason=', stopReason);
       return json(res, 502, { error: 'incomplete', reason: '해석이 끝까지 만들어지지 않았어요. 다시 시도해 주세요.' });
     }
 

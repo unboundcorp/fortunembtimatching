@@ -319,3 +319,65 @@ export function parseSections(text, titles) {
   });
   return out;
 }
+
+/* =====================================================================
+   나눠서 동시에 쓰기 (2026-09-02 대표님 지시 — "빨리 땡길 수 있는 방법 없어?")
+   ---------------------------------------------------------------------
+   실측: 궁합 유료 10장을 한 번에 쓰게 하면 첫 글자가 55.5초, 다 오기까지 126.7초였다.
+   시간의 거의 전부가 글자를 뽑아내는 데 든다. 그래서 장을 몇 덩이로 나눠 동시에 쓰게 하면
+   전체 시간이 제일 오래 걸리는 덩이 하나로 줄어든다.
+
+   ★ 나누면 덩이끼리 서로가 쓴 글을 못 본다. 그대로 두면 같은 이야기를 두 번 한다.
+     그래서 덩이마다 전체 목차를 함께 주고 "네 몫만 써라, 남의 몫은 건드리지 마라"를 못 박는다.
+
+   ★ 캐시 열쇠는 건드리지 않는다. 열쇠는 payload에서만 뽑고, 합쳐 놓은 결과물은
+     한 번에 쓰던 때와 같은 모양(## 제목 …)이라 저장·재열람 규칙이 그대로 성립한다.
+     열쇠를 바꾸면 이미 사신 분들의 글이 통째로 사라진다 — 그건 하면 안 된다.
+===================================================================== */
+export const CHUNK_TARGET = 3;   /* 몇 덩이로 나눌지. 늘리면 빨라지지만 중복 위험이 커진다 */
+
+/* 제목을 고르게 나눈다. 13장을 3덩이로 하면 5/4/4가 아니라 5/4/4처럼 한 장 차이까지만 벌어진다.
+   ★ 덩이 안의 순서와 덩이 사이의 순서는 원래 목차 순서 그대로다. 순서가 뒤집히면
+     읽는 사람이 목차를 눌러도 그 자리로 가지 못한다. */
+export function splitTitles(titles, target = CHUNK_TARGET) {
+  const list = Array.isArray(titles) ? titles : [];
+  const n = list.length;
+  if (n === 0) return [];
+  const parts = Math.max(1, Math.min(target, n));
+  const out = [];
+  let at = 0;
+  for (let i = 0; i < parts; i += 1) {
+    /* 남은 장을 남은 덩이 수로 나눠 올림한다 — 앞쪽이 한 장 더 갖고 뒤로 갈수록 고르게 준다. */
+    const size = Math.ceil((n - at) / (parts - i));
+    out.push({ from: at, titles: list.slice(at, at + size) });
+    at += size;
+  }
+  return out;
+}
+
+/* 한 덩이만 쓰게 하는 요청서.
+   allTitles 는 이 풀이 전체의 목차다 — 이걸 안 주면 덩이마다 처음부터 다시 설명한다. */
+export function userPromptChunk(payload, allTitles, chunk) {
+  const all = Array.isArray(allTitles) ? allTitles : [];
+  const outline = all.map((t, i) => `${i + 1}. ${t}`).join('\n');
+  const from = chunk.from + 1;
+  const to = chunk.from + chunk.titles.length;
+  const mine = chunk.titles.map((t, i) => `${chunk.from + i + 1}. ${t}`).join('\n');
+  const range = from === to ? `${from}장` : `${from}~${to}장`;
+  return `아래는 앱이 계산해 둔 결과입니다. 이 값만 사용하세요.
+
+${JSON.stringify(payload, null, 2)}
+
+이 풀이는 모두 ${all.length}장이고, 전체 목차는 다음과 같습니다.
+
+${outline}
+
+이번에 쓰실 것은 그중 ${range}뿐입니다. 나머지 장은 다른 사람이 나눠 쓰고 있습니다.
+
+- 아래 제목만, 이 순서 그대로 써 주세요. 다른 장은 쓰지 마세요.
+- 다른 장이 맡은 이야기를 여기서 미리 하거나 요약하지 마세요. 그 장에서 다시 나옵니다.
+- 여는 인사나 전체 마무리는 쓰지 마세요. 이 글은 더 큰 풀이의 가운데 토막입니다.
+  (${to === all.length ? '다만 마지막 장이므로, 마무리는 그 장 안에서 자연스럽게 맺어 주세요.' : '마지막 장은 다른 사람이 씁니다.'})
+
+${mine}`;
+}
