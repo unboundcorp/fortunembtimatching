@@ -952,6 +952,30 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .today-summary p:not(.today-summary-head){font-size:.92rem;color:var(--ink);line-height:1.85;margin-bottom:11px;}
 .today-summary p:last-child{margin-bottom:0;}
 /* R85 — 오늘의 운세: 종합 점수 카드 */
+/* ★ 2026-09-02 리뉴얼 — 오늘의 운세를 시안 구조로.
+   시안은 "화면 이름 + 날짜 / 일진 동그라미 / 한 줄 제목 / 다섯 칸 점수 / 왼쪽 선 블록" 순이다.
+   예전에는 제목·근거칩·일진카드·점수카드가 각각 다른 상자로 넷이 쌓여 있었다. */
+.today-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;}
+.today-head .th-name{font-family:var(--serif);font-weight:700;font-size:1.02rem;letter-spacing:.1em;}
+.today-head .th-date{font-size:.78rem;color:var(--ink-faint);letter-spacing:.02em;}
+.today-hero{text-align:center;margin-bottom:4px;}
+.today-iljin{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  width:88px;height:88px;border-radius:999px;border:1.5px solid var(--gold);color:var(--gold);
+  font-family:var(--serif);font-size:1.5rem;line-height:1.15;}
+.today-iljin small{font-family:var(--sans);font-size:.66rem;opacity:.78;margin-top:3px;}
+.today-hero-title{font-family:var(--serif);font-weight:700;font-size:1.56rem;line-height:1.42;
+  margin-top:20px;word-break:keep-all;letter-spacing:-.01em;}
+.today-hero-score{margin-top:10px;font-family:var(--serif);line-height:1;}
+.today-hero-score b{font-size:1.86rem;font-weight:700;font-variant-numeric:tabular-nums;}
+.today-hero-score span{font-size:.9rem;color:var(--ink-dim);margin-left:3px;}
+.today-hero-sub{font-size:.9rem;line-height:1.8;color:var(--ink-dim);margin-top:12px;word-break:keep-all;}
+.today-hero-meta{font-size:.78rem;line-height:1.7;color:var(--ink-faint);margin-top:10px;word-break:keep-all;}
+/* 시안의 왼쪽 선 블록 — 상자를 하나 더 만들지 않고 글에 무게만 준다. */
+.note-block{background:var(--panel-2);border-left:2px solid var(--gold);padding:14px 16px;margin-top:16px;}
+.note-block.mute{border-left-color:var(--line-dark-strong);}
+.note-block .nb-head{font-family:var(--serif);font-weight:700;font-size:.94rem;margin-bottom:8px;}
+.note-block p{font-size:.9rem;line-height:1.8;color:var(--ink-dim);margin-bottom:9px;word-break:keep-all;}
+.note-block p:last-child{margin-bottom:0;}
 .today-gauge-row{display:flex;justify-content:center;margin:6px 0 2px;}
 .today-score-note{font-size:.78rem;color:var(--ink-dim);line-height:1.75;margin-top:14px;}
 .today-score-note.dim{color:var(--ink-faint);margin-top:8px;}
@@ -15968,34 +15992,82 @@ function renderHome(){
      둘 다 맞는 값이지만 앞의 것을 그냥 "○ 기운"이라고만 쓰면
      같은 화면에서 두 줄이 서로 다른 오행을 말하는 것처럼 읽힌다(실제로 그렇게 보였다).
      그래서 값은 그대로 두고 무엇을 센 값인지 문장에 밝힌다. */
-  view.appendChild(pageHead(todayStr(), ownerLabel(p.name)+' 오늘의 운세',
-    p.mbti+' ('+TYPE_TAGLINE[p.mbti]+') · 사주에서 '+p.element+' 기운이 가장 많아요'));
-  /* ★ R49 — 오늘의 운세는 그날의 간지(일진)와 내 사주를 맞대어 본다. MBTI는 쓰지 않는다.
-     쓰지 않는 것을 안 밝히면 "MBTI를 넣었는데 뭐가 달라졌는지 모르겠다"가 된다. */
-  view.appendChild(basisChip(['사주(오늘의 일진)']));
+  var head = el('div',{class:'today-head'});
+  head.appendChild(el('div',{class:'th-name'},[ownerLabel(p.name)+' 오늘의 운세']));
+  head.appendChild(el('div',{class:'th-date'},[todayStr()]));
+  view.appendChild(head);
+
+  /* 시안의 히어로 — 일진 동그라미 · 한 줄 제목 · 설명 한 줄. */
+  var hero = el('div',{class:'today-hero stamp-in'});
+  if(fortune.todayIljin){
+    hero.appendChild(el('div',{class:'today-iljin', role:'img',
+      'aria-label':'오늘의 일진 '+fortune.todayIljin.text+' '+fortune.todayIljin.textH},[
+      el('span',{'aria-hidden':'true'},[fortune.todayIljin.text]),
+      el('small',{'aria-hidden':'true'},['('+fortune.todayIljin.textH+')'])
+    ]));
+  }
+  if(fortune.overall != null){
+    hero.appendChild(el('h2',{class:'today-hero-title'},[todayOverallWord(fortune.overall)]));
+    hero.appendChild(el('p',{class:'today-hero-score', role:'img',
+      'aria-label':'오늘의 종합 점수 '+fortune.overall+'점 (100점 만점)'},[
+      el('b',{'aria-hidden':'true'},[String(fortune.overall)]), el('span',{'aria-hidden':'true'},['점'])
+    ]));
+  }
+  if(fortune.iljinComment) hero.appendChild(el('p',{class:'today-hero-sub'},[fortune.iljinComment]));
+  /* ★ 여기서 말하는 오행은 "사주 8자 중 가장 많은 오행"(p.element)이고, 캐릭터가 말하는 오행은
+     "일간(日干)의 오행"이라 서로 다른 값이다. 둘 다 맞지만 무엇을 센 값인지 안 밝히면
+     같은 화면에서 두 줄이 서로 다른 오행을 말하는 것처럼 읽힌다(실제로 그렇게 보였다).
+     ★ R49 — 오늘의 운세는 그날의 간지(일진)와 내 사주를 맞대어 본다. 성격유형은 쓰지 않는다.
+       쓰지 않는 것을 안 밝히면 "성격유형을 넣었는데 뭐가 달라졌는지 모르겠다"가 된다. */
+  hero.appendChild(el('p',{class:'today-hero-meta'},[
+    '사주에서 '+p.element+' 기운이 가장 많아요 · 오늘의 일진과 맞대어 본 결과예요 (성격유형은 쓰지 않아요)'
+  ]));
+  view.appendChild(hero);
+
+  /* 다섯 칸 점수 — 홈과 같은 띠를 쓴다. 두 화면이 다른 모양으로 같은 값을 보이지 않게. */
+  if(fortune.scores){
+    var strip = el('div',{class:'hd-strip'});
+    FORTUNE_CATS.forEach(function(cat){
+      var v = fortune.scores[cat.key];
+      var cell = el('div',{class:'hd-cell'});
+      cell.appendChild(el('span',{class:'k'},[HD_CAT_SHORT[cat.key] || cat.label]));
+      var cls = 'v' + (v == null ? '' : (v >= 70 ? ' hi' : (v < 45 ? ' lo' : '')));
+      cell.appendChild(el('span',{class:cls},[v == null ? '—' : String(v)]));
+      strip.appendChild(cell);
+    });
+    view.appendChild(strip);
+  }
+
+  /* 총평 — 시안의 왼쪽 선 블록으로 올린다. 예전에는 점수 카드 맨 아래에 묻혀 있었다. */
+  var topSum = (fortune.overall != null && fortune.scores) ? buildTodaySummary(fortune) : null;
+  if(topSum && topSum.length){
+    /* ★ 총평 첫 줄은 "오늘은 ○○한 하루예요. NN점."이다. 바로 위 히어로가 그 말과 그 점수를
+       이미 크게 적고 있어서, 그대로 두면 2cm 사이에 같은 문장을 두 번 읽게 된다.
+       히어로가 실제로 그 말을 적었을 때만 뺀다 — 문구가 바뀌면 저절로 다시 나온다. */
+    var lines = topSum.slice();
+    var word = todayOverallWord(fortune.overall);
+    if(lines.length > 1 && word && lines[0].indexOf(word) >= 0) lines = lines.slice(1);
+    var nb = el('div',{class:'note-block'});
+    nb.appendChild(el('div',{class:'nb-head'},['오늘의 총평']));
+    lines.forEach(function(line){ nb.appendChild(el('p',{},[line])); });
+    view.appendChild(nb);
+  }
 
   /* ★ 2026-08-31 대표님 지시 — 캐릭터 카드를 뺐다(R22로 넣었던 것).
      "금(金) · 서릿날 / 맺고 끊는 결이 있어요…"가 내 사주 화면에 똑같이 또 있어서,
      탭 두 개를 오가면 같은 소개를 두 번 읽게 됐다. 캐릭터는 내 사주와 캐릭터 도감에 남아 있다.
      ★ 되살릴 때는 buildCharHero(charKeyForDayStem(getSajuResult(p)), 112, …) 세 줄이면 된다. */
 
-  if(fortune.todayIljin){
-    /* R22 — 작은 분류(오늘의 일진) 위, 큰 제목(간지) 아래. 예전에는 제목이 '오늘의 일진'이고
-       정작 봐야 할 간지가 본문 <strong>에 묻혀 있었다. 글자를 옮겨 담기만 했고 내용은 그대로다. */
-    var iljinCard=el('div',{class:'scroll-card stamp-in'});
-    iljinCard.appendChild(el('p',{class:'card-eyebrow'},['오늘 하루의 기운 · 일진']));
-    iljinCard.appendChild(el('h3',{},[fortune.todayIljin.text+' ('+fortune.todayIljin.textH+')']));
-    iljinCard.appendChild(el('p',{},[fortune.iljinComment||'']));
-    view.appendChild(iljinCard);
-  }
+  /* ★ 2026-09-02 — 옛 '일진 카드'는 위 히어로가 대신한다(간지 동그라미 + 설명 한 줄).
+     같은 값을 두 번 보이지 않게 카드를 지웠다. 값과 문장은 그대로다. */
 
   /* ★ R85 (2026-08-18) — 오늘의 종합 점수 + 다섯 항목 레이더. (대표님 지시)
      점수가 없으면(사주를 못 구한 프로필) 이 카드를 아예 만들지 않는다.
      빈 그래프를 그려 놓고 0점처럼 보이게 두는 것이 가장 나쁘다. */
   if(fortune.overall != null && fortune.scores){
     var scoreCard = el('div',{class:'scroll-card stamp-in'});
+    /* ★ 2026-09-02 — 여기 있던 큰 제목(todayOverallWord)은 위 히어로로 올라갔다. */
     scoreCard.appendChild(el('p',{class:'card-eyebrow'},['오늘의 종합 점수']));
-    scoreCard.appendChild(el('h3',{},[todayOverallWord(fortune.overall)]));
 
     var gauge = el('div',{class:'today-gauge-row'});
     gauge.appendChild(buildDonutGauge(fortune.overall, 132, '100점 만점'));
@@ -16006,14 +16078,8 @@ function renderHome(){
     }), { size:300, unit:'', title:'오늘의 다섯 항목' });
     if(radar) scoreCard.appendChild(radar);
 
-    /* ★ R85-b — 총평. 계산 결과를 읽어 조립한 문단이라 사람마다·날마다 다르다. */
-    var sumLines = buildTodaySummary(fortune);
-    if(sumLines && sumLines.length){
-      var sumBox = el('div',{class:'today-summary'});
-      sumBox.appendChild(el('p',{class:'today-summary-head'},['오늘의 총평']));
-      sumLines.forEach(function(line){ sumBox.appendChild(el('p',{},[line])); });
-      scoreCard.appendChild(sumBox);
-    }
+    /* ★ R85-b 총평은 위 히어로 바로 아래(왼쪽 선 블록)로 옮겼다 — 2026-09-02.
+       점수 카드 맨 아래에 있어서 레이더를 지나야 겨우 만났다. */
 
     /* 이 숫자가 어디서 왔는지 못 박는다. 이 앱의 다른 화면과 같은 규칙이다. */
     scoreCard.appendChild(el('p',{class:'today-score-note'},[
