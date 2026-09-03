@@ -992,7 +992,22 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .today-iljin{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
   width:88px;height:88px;border-radius:999px;border:1.5px solid var(--gold);color:var(--gold);
   font-family:var(--serif);font-size:1.5rem;line-height:1.15;}
-.today-iljin small{font-family:var(--sans);font-size:.66rem;opacity:.78;margin-top:3px;}
+.today-iljin small{font-family:var(--sans);font-size:.66rem;opacity:.78;margin-top:3px;
+  border-bottom:1px dotted currentColor;padding-bottom:1px;}
+/* 동그라미는 이제 단추다 — 브라우저 기본 단추 모양을 지우고 누를 수 있다는 것만 남긴다. */
+button.today-iljin{background:none;padding:0;cursor:pointer;}
+button.today-iljin:hover small{border-bottom-style:solid;}
+button.today-iljin:active{opacity:.7;}
+/* 일진 설명 모달의 줄 — 앞 글자 / 뒤 글자 / 내 사주와 맞대어 본 것
+   ★ 좌우 두 칸으로 두지 않는다. 오른쪽 칸이 좁아 한 문장이 세 줄로 접히고 오른쪽 정렬까지
+     겹쳐 읽기가 나빴다(폭 390에서 실제로 그렇게 보였다). 이름을 위, 설명을 아래로 쌓는다. */
+.iljin-split{margin-top:16px;border-top:1px solid var(--line);}
+.iljin-row{padding:12px 0;border-bottom:1px solid var(--line);}
+.iljin-row b{display:block;font-family:var(--serif);font-weight:700;color:var(--gold);
+  font-size:.94rem;line-height:1.5;word-break:keep-all;}
+.iljin-row span{display:block;margin-top:5px;font-size:.9rem;line-height:1.75;
+  color:var(--ink-dim);word-break:keep-all;}
+.iljin-head{font-family:var(--serif);font-size:1.02rem;margin-top:22px;color:var(--gold);}
 .today-hero-title{font-family:var(--serif);font-weight:700;font-size:1.56rem;line-height:1.42;
   margin-top:20px;word-break:keep-all;letter-spacing:-.01em;}
 .today-hero-score{margin-top:10px;font-family:var(--serif);line-height:1;}
@@ -4027,6 +4042,138 @@ function openTermModal(key){
   openModal('쉬운 말로 · '+key, body, [
     /* 용어 사전은 화면 이동이라 읽던 모달로 돌아올 수 없다 — 스택을 비워 옛 모달이 되살아나지 않게 한다. */
     {label:'용어 사전 열기', cls:'btn-ghost', onclick:function(){ clearModalStack(); closeModal(true); openGlossary(key); }},
+    {label: over ? '읽던 화면으로 돌아가기' : '닫기', cls:'btn-ghost', onclick:closeModal}
+  ], {overlay:true});
+}
+
+/* =====================================================================
+   ★ 2026-09-03 (대표님 지시) — "경진이 무슨 뜻인지 알려줘야 될 거 같긴 하거든
+     한자어가 있다면 설명이 필요해서"
+   ---------------------------------------------------------------------
+   오늘 화면 동그라미에 '경진(庚辰)'만 떠 있고 뜻을 알 길이 없었다.
+
+   ★ 예순 가지를 손으로 적지 않는다. 앞 글자와 뒤 글자에서 그때그때 만든다.
+     하나씩 적어 두면 예순 줄 중 어딘가에 반드시 틀린 것이 섞이고,
+     그것은 아무도 안 본 날에만 틀린 채로 나간다.
+   ★ 재료는 이미 다 있다 — STEM_ELEM(앞 글자의 기운) · ZODIAC(뒤 글자의 띠).
+     여기에 숫자를 새로 적지 마라. 갈라지는 순간 화면과 계산이 어긋난다.
+   ★ 설명을 화면에 깔지 않고 눌러서 뜨게 한다. 2026-09-03 "설명 다 접어라" 지시와 같은 결이다.
+===================================================================== */
+/* 목·화·토·금·수를 일상어로. TERMS['오행'].long 과 같은 짝이다 — 한쪽만 고치지 마라. */
+var ELEM_PLAIN = ['나무','불','흙','쇠','물'];
+
+/* 열 개 윗글자와 열두 개 아랫글자가 "무슨 글자인지" 한마디로.
+   ★ 2026-09-03 대표님: "경은 무슨 경인데 오행중 금에 가깝고 진은 무슨 진인데 12띠 중 용에 가까워요"
+   ★ 순서와 뜻은 STEM_ELEM · BRANCH_ELEM 과 반드시 맞아야 한다.
+     갑을=목 병정=화 무기=토 경신=금 임계=수 / 자해=수 축진미술=토 인묘=목 사오=화 신유=금.
+     여기 비유를 고칠 때 그 표와 어긋나면, 같은 화면에서 "쇠"라고 해 놓고 "나무 기운"이라고 적게 된다.
+   ★ 널리 쓰이는 비유다. 이 앱이 계산해서 얻은 값이 아니므로 모달 아래에 그렇게 밝힌다. */
+var STEM_IMAGE = ['곧게 자라는 큰 나무','부드럽게 뻗는 풀과 덩굴','하늘에 뜬 해','어둠을 밝히는 등불',
+                  '넓고 단단한 흙, 큰 산','무르고 기름진 흙, 밭','아직 다듬지 않은 쇠','잘 다듬어진 쇠, 보석',
+                  '크게 흐르는 물, 바다','풀잎에 맺힌 이슬과 빗물'];
+var BRANCH_IMAGE = ['깊은 밤에 고인 물','꽁꽁 언 겨울 흙','움트기 시작한 이른 봄 나무','한창 자라는 봄풀',
+                    '물기를 머금은 봄 흙','피어오르는 초여름 불','한낮의 뜨거운 불','메마른 한여름 흙',
+                    '가을에 여문 쇠','잘 벼려진 쇠','거둬들인 뒤의 가을 흙','고요히 잠긴 겨울 물'];
+/* '쇠'예요 / '등불'이에요 — 받침을 보고 고른다.
+   ★ 새로 만들지 않고 앱이 이미 쓰는 josaOnlyText를 쓴다. 이것은 '경신(庚申)'처럼 괄호로
+     끝나는 말에서 괄호를 걷어내고 '신'으로 판정한다 — 직접 마지막 글자만 보면 ')'를 보고
+     틀린다. 실제로 그 함정에 걸릴 뻔했다. */
+function ieyo(word){ return josaOnlyText(word, '이에요', '예요'); }
+/* branchWord()는 '용(辰)'처럼 띠 이름으로 준다. 여기서는 글자 그대로가 필요하다. */
+function branchCharWord(idx){ return SajuEngine.BRANCHES[idx]+'('+SajuEngine.BRANCHES_H[idx]+')'; }
+
+/* =====================================================================
+   일진 설명 모달
+   ---------------------------------------------------------------------
+   ★ 2026-09-03 대표님이 직접 잡아 주신 순서다. 이 순서를 지켜라 —
+     ① 일진이 무엇인지 → ② 두 글자가 각각 무슨 글자인지 →
+     ③ 내 사주(일주)와 어떻게 맞고 안 맞는지 → ④ 그래서 오늘 점수가 이렇다
+     ②까지만 있으면 "그래서 나랑 무슨 상관인데?"가 남는다.
+
+   ★ 여기서 관계를 새로 계산하지 않는다. 오늘 점수를 매길 때 쓴 근거값(basis)을
+     그대로 읽어 문장으로만 푼다. 새로 계산하면 화면의 69점과 이 설명이 서로
+     다른 근거를 말하게 된다 — 그건 둘 다 못 믿게 만든다.
+   ★ basis 판 번호가 다르면(옛 기록) 아예 안 그린다. undefined를 화면에 내보내지 않는다.
+===================================================================== */
+function iljinRow(host, label, value){
+  var line = el('div',{class:'iljin-row'});
+  line.appendChild(el('b',{},[label]));
+  line.appendChild(el('span',{},[value]));
+  host.appendChild(line);
+}
+function openIljinModal(gz, profile, fortune){
+  if(!gz) return;
+  var over = !!$('#activeModal');
+  var body = el('div',{class:'sheet-body term-modal no-term'});
+  var iljinText = gz.text+'('+gz.textH+')';
+
+  /* ★ 2026-09-03 대표님 지시 — "중복 멘트들 다 한번만 써라".
+     여기 있던 '사주 용어로는 일진(日辰)' 줄을 지웠다. 바로 위 첫 줄이 이미
+     "그게 일진이에요"라고 말하고 있어서 같은 말을 두 번 하는 자리였다.
+     한자 日辰은 [용어 사전 열기]로 들어가면 그대로 있다 — 없앤 게 아니라 겹친 것만 걷어냈다.
+     ★ 예순 갑자 이야기도 여기로 올려 붙였다. 아래에 따로 두면 iljinText가 두 번 나온다. */
+  body.appendChild(el('p',{class:'tm-plain'},['하루하루에도 사주가 있어요 — 그게 일진이에요']));
+  body.appendChild(el('p',{class:'tm-long'},[
+    /* ★ 여기에 다시 '경진(庚辰)'을 쓰지 마라. 바로 위 제목이 이미 그 이름이다. */
+    '두 글자로 되어 있어요. 갑자 · 을축 · 병인 … 이렇게 예순 가지가 하루에 하나씩 차례로 돌고, '
+    + '예순 날이 지나면 다시 처음으로 돌아와요.'
+  ]));
+
+  /* ② 두 글자가 각각 무슨 글자인가 */
+  var tbl = el('div',{class:'iljin-split'});
+  var sElem = SajuEngine.STEM_ELEM[gz.stemIdx];
+  iljinRow(tbl, '앞 글자 ' + stemWord(gz.stemIdx),
+    STEM_IMAGE[gz.stemIdx] + ieyo(STEM_IMAGE[gz.stemIdx])
+    + '. 다섯 기운 중 ' + SajuEngine.ELEM_NAMES[sElem] + '(' + ELEM_PLAIN[sElem] + ')에 가까워요.');
+  iljinRow(tbl, '뒤 글자 ' + branchCharWord(gz.branchIdx),
+    BRANCH_IMAGE[gz.branchIdx] + ieyo(BRANCH_IMAGE[gz.branchIdx])
+    + '. 열두 띠로는 ' + ZODIAC[gz.branchIdx] + ieyo(ZODIAC[gz.branchIdx]) + '.');
+  body.appendChild(tbl);
+
+  /* ③④ 내 사주와 어떻게 맞물려 오늘 점수가 나왔나 */
+  var saju = null, ft = fortune || null;
+  try{ saju = profile ? getSajuResult(profile) : null; }catch(e){ saju = null; }
+  try{ if(!ft && profile) ft = getTodayFortune(profile); }catch(e){ ft = null; }
+  var b = (ft && ft.basis && ft.basis.v === TODAY_BASIS_VERSION) ? ft.basis : null;
+  if(saju && b){
+    /* '민지님' · '이분' 둘 다 받침으로 끝나므로 뒤 조사는 이/을/과로 고정해도 안전하다. */
+    var who = (profile && String(profile.name||'').trim())
+              ? String(profile.name).trim() + '님' : '이분';
+    var myGanji = SajuEngine.STEMS[saju.day.stemIdx] + SajuEngine.BRANCHES[saju.day.branchIdx]
+                + '(' + SajuEngine.STEMS_H[saju.day.stemIdx] + SajuEngine.BRANCHES_H[saju.day.branchIdx] + ')';
+    body.appendChild(el('h4',{class:'iljin-head'},[who + ' 사주와는 어떨까요']));
+    /* ★ 겹치는 말을 걷어냈다(2026-09-03). 소제목이 이미 '○○님 사주'라고 했으므로
+       본문에서 이름을 다시 부르지 않고, '맞대어 봤어요'도 바로 아래 표가 보여 주므로 뺐다. */
+    body.appendChild(el('p',{class:'tm-long'},[
+      '태어난 날의 두 글자는 ' + myGanji + ieyo(myGanji) + '. '
+      + '여덟 글자 가운데 이 둘이 ' + who + '을 가장 크게 나타내요.'
+    ]));
+    var t2 = el('div',{class:'iljin-split'});
+    /* 윗글자끼리 — 오늘 천간이 내 일간에게 무엇이 되는가(십성). basis.sipName 그대로. */
+    var sipT = TERMS[b.sipName];
+    iljinRow(t2, '윗글자끼리 · 오늘 ' + b.todayStemWord + ' × 태어난 날 ' + b.myStemWord,
+      (sipT ? sipT.short : b.sipName) + ' (' + b.sipName + ')');
+    /* 아랫글자끼리 — 오늘 지지와 내 일지의 관계. TODAY_LOVE_VERB를 그대로 쓴다. */
+    iljinRow(t2, '아랫글자끼리 · 오늘 ' + b.todayBranchWord + ' × 태어난 날 ' + b.dayBranchWord,
+      TODAY_LOVE_VERB[b.loveTier] || '특별히 엮이지 않아요');
+    /* 기운의 세기 — 십이운성. 이미 사람 말로 풀어 둔 함수가 있다. */
+    iljinRow(t2, '기운의 세기', todayStagePlain(b));
+    body.appendChild(t2);
+
+    if(ft && ft.overall != null){
+      var word = todayOverallWord(ft.overall);
+      body.appendChild(el('p',{class:'tm-long'},[
+        '합치면 오늘 종합 점수는 ' + ft.overall + '점, "' + word + '"' + ieyo(word) + '.'
+      ]));
+    }
+  }
+
+  body.appendChild(el('p',{class:'tm-note'},[
+    '두 글자를 무엇에 빗대는지는 널리 쓰이는 통설이에요. 맞대어 본 결과는 이 앱이 실제로 계산한 값이고요. '
+    + '명리학은 유파마다 해석이 갈려요 — 정해진 답이 아니라 참고로 봐주세요.'
+  ]));
+  openModal('쉬운 말로 · ' + iljinText, body, [
+    {label:'용어 사전 열기', cls:'btn-ghost', onclick:function(){ clearModalStack(); closeModal(true); openGlossary('일진'); }},
     {label: over ? '읽던 화면으로 돌아가기' : '닫기', cls:'btn-ghost', onclick:closeModal}
   ], {overlay:true});
 }
@@ -16060,10 +16207,19 @@ function renderHomeDash(p){
   /* ── 날짜 줄 : 2026 · 08 · 19 · 을축(乙丑) 날 ── */
   var d=new Date();
   var dateTxt = d.getFullYear()+' · '+pad2(d.getMonth()+1)+' · '+pad2(d.getDate());
+  var dateLine = el('p',{class:'hd-date'},[dateTxt]);
+  /* ★ 2026-09-03 — 홈에도 같은 이름이 떠 있다. 오늘 화면에서만 눌리면
+     "여기선 되고 저기선 안 되는" 화면이 된다. 통로는 openIljinModal 하나다. */
   if(fortune && fortune.todayIljin){
-    dateTxt += '  ·  '+fortune.todayIljin.text+'('+fortune.todayIljin.textH+') 날';
+    (function(gz){
+      dateLine.appendChild(document.createTextNode('  ·  '));
+      dateLine.appendChild(el('button',{type:'button', class:'term-lite',
+        'aria-label': gz.text+'('+gz.textH+') 날. 눌러서 뜻 보기',
+        onclick:function(){ openIljinModal(gz, p, fortune); }},[gz.text+'('+gz.textH+')']));
+      dateLine.appendChild(document.createTextNode(' 날'));
+    })(fortune.todayIljin);
   }
-  view.appendChild(el('p',{class:'hd-date'},[dateTxt]));
+  view.appendChild(dateLine);
 
   /* ── ① 오늘 카드 ── */
   if(fortune && fortune.overall != null && fortune.scores){
@@ -16331,11 +16487,16 @@ function renderHome(){
   /* 시안의 히어로 — 일진 동그라미 · 한 줄 제목 · 설명 한 줄. */
   var hero = el('div',{class:'today-hero stamp-in'});
   if(fortune.todayIljin){
-    hero.appendChild(el('div',{class:'today-iljin', role:'img',
-      'aria-label':'오늘의 일진 '+fortune.todayIljin.text+' '+fortune.todayIljin.textH},[
-      el('span',{'aria-hidden':'true'},[fortune.todayIljin.text]),
-      el('small',{'aria-hidden':'true'},['('+fortune.todayIljin.textH+')'])
-    ]));
+    /* ★ 2026-09-03 — 눌러서 뜻을 볼 수 있게 했다(대표님: "경진이 무슨 뜻인지 알려줘야 될 거 같다").
+       점선 밑줄은 이 앱에서 "누르면 뜻이 뜬다"는 표시다(.term-lite와 같은 신호). */
+    (function(gz){
+      hero.appendChild(el('button',{type:'button', class:'today-iljin',
+        'aria-label':'오늘의 일진 '+gz.text+' '+gz.textH+'. 눌러서 뜻 보기',
+        onclick:function(){ openIljinModal(gz, p, fortune); }},[
+        el('span',{'aria-hidden':'true'},[gz.text]),
+        el('small',{'aria-hidden':'true'},['('+gz.textH+')'])
+      ]));
+    })(fortune.todayIljin);
   }
   if(fortune.overall != null){
     hero.appendChild(el('h2',{class:'today-hero-title'},[todayOverallWord(fortune.overall)]));
