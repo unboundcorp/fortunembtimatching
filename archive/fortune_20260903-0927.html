@@ -17100,10 +17100,7 @@ function renderGlossary(){
   view.appendChild(listHost);
   repaint();
 
-  /* ★ 용어 사전은 "여기가 원본"인 화면이라 본문은 안 건드린다. 다만 이 한 문단은 뜻풀이가 아니라
-     읽는 법에 대한 고지라 접는다 — 마지막 남은 .disclaimer 였다. */
-  view.appendChild(buildNoteFold('이 뜻풀이를 어떻게 봐야 하나요?',
-    '사주 용어의 뜻은 유파에 따라 달리 읽히기도 해요. 여기 적은 것은 널리 쓰이는 통설을 쉬운 말로 옮긴 것이라, 정해진 답이 아니라 읽기를 돕는 참고로 봐주세요.'));
+  view.appendChild(el('p',{class:'disclaimer'},['사주 용어의 뜻은 유파에 따라 달리 읽히기도 해요. 여기 적은 것은 널리 쓰이는 통설을 쉬운 말로 옮긴 것이라, 정해진 답이 아니라 읽기를 돕는 참고로 봐주세요.']));
   main.appendChild(view);
 
   /* 용어 설명 모달에서 "전체 보기"로 넘어왔으면 그 항목으로 데려간다. */
