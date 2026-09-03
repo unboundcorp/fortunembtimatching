@@ -11,6 +11,7 @@
 ===================================================================== */
 import crypto from 'node:crypto';
 import { testAccessOf, paidOrdersOf } from './store.js';
+import { splitProductId } from './products.js';
 import { buildEntitlements } from './entitlements.js';
 
 export const MODEL = 'claude-sonnet-5';
@@ -23,8 +24,16 @@ export const MODEL = 'claude-sonnet-5';
 export const MAX_TOKENS = 20000;
 export const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
-/* AI가 쓸 수 있는 상품만. 없는 상품 이름을 보내 요금을 쓰게 만들 수 없다. */
+/* AI가 쓸 수 있는 상품만. 없는 상품 이름을 보내 요금을 쓰게 만들 수 없다.
+   ★ 열쇠는 연도가 붙지 않은 이름이다. 'saju_full:2027' 같은 것은 aiKindOf()가 갈라서 본다. */
 export const AI_PRODUCTS = { saju_full: 'saju', mbti_full: 'mbti', compat_full: 'compat' };
+
+/* 'saju_full:2027' 처럼 연도가 붙어 와도 무슨 갈래인지 알아낸다.
+   ★ AI_PRODUCTS[productId] 로 바로 찾으면 연도가 붙은 순간 undefined가 되어
+     "요청 내용이 올바르지 않아요"로 막힌다. 두 창구가 이 함수 하나를 쓴다. */
+export function aiKindOf(productId) {
+  return AI_PRODUCTS[splitProductId(productId).base] || null;
+}
 
 /* ★ 프롬프트를 고치면 이 숫자를 올린다.
    캐시 열쇠는 payload에서만 뽑기 때문에, 시스템 프롬프트만 바꾸면 열쇠가 그대로다.
