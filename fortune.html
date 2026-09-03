@@ -6156,28 +6156,94 @@ function pickJosa(nameStr, josa){
   if(pair[0] === '으로') return (jong === 0 || jong === 8) ? '로' : '으로';
   return jong ? pair[0] : pair[1];
 }
-/* {{a}} 같은 자리 하나를 이름으로 바꾸면서, 바로 뒤에 붙은 조사도 함께 고른다. */
-function replaceWithJosa(text, key, value, enc){
-  var re = new RegExp('\\{\\{\\s*' + key + '\\s*\\}\\}(?:(' + JOSA_TAIL_ALT + ')|(' + JOSA_CASE_ALT + ')' + JOSA_EDGE + ')?', 'g');
+/* =====================================================================
+   ★ 2026-09-03 — 사주·성격유형은 이름 뒤에 '님'을 앱이 붙인다
+   ---------------------------------------------------------------------
+   실제로 만든 성격유형 풀이에서 이름 부르는 자리 18곳 중 3곳이 '님'을 잃어버렸다.
+   9·10·11장이었는데, 이 셋은 나눠 쓰기(2/3/3/3/2)의 넷째 덩이와 정확히 겹친다.
+   덩이는 서로 무엇을 썼는지 못 보기 때문에 한 덩이가 통째로 다른 호칭을 골랐다.
+   AI에게 "님을 붙여라"라고 시키는 방법은 지킬 때도 있고 안 지킬 때도 있어서,
+   덩이를 나눠 쓰는 한 언제든 다시 갈라진다. 그래서 앱이 붙인다 —
+   AI가 '님'을 썼든 안 썼든 화면에는 항상 같은 호칭이 나간다.
+   ★ 덤으로 이미 만들어 둔 글도 같이 고쳐진다(캐시 열쇠를 안 건드리므로 비용 0원).
+
+   ★ 궁합은 뺐다. 궁합의 무료 3장은 이름을 맨몸으로 쓴다("가영 × 민수 — 71점").
+     한쪽만 '님'을 붙이면 같은 화면 안에서 호칭이 갈린다.
+     buildCompatReport13 과 이 함수는 한 쌍이다 — 한쪽을 고치면 다른 쪽도 고쳐라.
+
+   ★ 조사는 반드시 '님'까지 붙인 뒤의 글자로 고른다. '민지'로 고르면 "민지님는"이 된다.
+===================================================================== */
+function honorificName(v){
+  var s = String(v == null ? '' : v).trim();
+  /* 닉네임이 비면 '이분'. buildReport13 · buildMbtiReport16 이 쓰는 말과 같게 맞춘다. */
+  return s ? s + '님' : '이분';
+}
+/* {{a}} 같은 자리 하나를 이름으로 바꾸면서, 바로 뒤에 붙은 조사도 함께 고른다.
+   honor 가 참이면 '님'을 앱이 붙이고, AI가 이미 써 둔 '님'은 먹어 치운다(겹치지 않게). */
+function replaceWithJosa(text, key, value, enc, honor){
+  var re = new RegExp('\\{\\{\\s*' + key + '\\s*\\}\\}' + (honor ? '(?:\\s*님)?' : '')
+    + '(?:(' + JOSA_TAIL_ALT + ')|(' + JOSA_CASE_ALT + ')' + JOSA_EDGE + ')?', 'g');
   return text.replace(re, function(_m, tail, cas){
     var josa = tail || cas;
-    return enc(value) + (josa ? pickJosa(value, josa) : '');
+    var shown = honor ? honorificName(value) : value;
+    return enc(shown) + (josa ? pickJosa(shown, josa) : '');
   });
+}
+/* =====================================================================
+   ★ 2026-09-03 — AI가 쓴 글의 마지막 손질 (한자 · 관찰된 오타)
+   ---------------------------------------------------------------------
+   서버에 쌓인 풀이 스무 편(약 11만 자)을 전부 훑어서 나온 실측 결과다.
+
+   ① 한자 — 스무 편 중 다섯 편에 아홉 자가 섞여 있었다.
+      庚 / 庚申 / 丙 / 丙丁 / 子酉土
+      ★ 아홉 자가 **모두** "경(庚)" "자(子)와 유(酉)" 처럼 한글 뒤 괄호 안이었다.
+        맨몸으로 나온 한자는 한 자도 없었다. 그래서 괄호째 지우면 문장이 그대로 산다.
+          "가리키는 기운은 경(庚)이에요" → "가리키는 기운은 경이에요"
+      ★ 괄호 안에 한글이 섞여 있으면(예: "(庚, 쇠의 기운)") 건드리지 않는다.
+        설명이 들어 있다는 뜻이라 지우면 뜻이 사라진다.
+      ★ 맨몸 한자는 일부러 안 지운다. 지우면 문장에 구멍이 나서 더 나쁘다.
+        지금은 0건이지만 생기면 이 주석을 보고 그때 다시 판단하라.
+      프롬프트(v12)에 '본문 한자 금지'가 이미 적혀 있는데도 새어 나온다.
+      AI에게 시키는 것만으로는 안 막히므로 화면에서 한 번 더 거른다.
+
+   ② 오타 — 스무 편 중 한 편에서 셋. 그 한 편은 장을 크게(4장씩) 묶어 쓰던 판이다.
+      한 번쯔음 / 선뜩 / 부딕히지  → 쯤 / 선뜻 / 부딪히
+      ★ 실제로 본 것만 적는다. 있을 법한 오타를 상상해서 늘리지 마라 —
+        멀쩡한 말을 잘못 고치는 쪽이 오타보다 나쁘다.
+
+   ★ 캐시 열쇠를 안 건드리므로 이미 만들어 둔 글도 같이 고쳐지고, 다시 만드는 돈도 안 든다.
+     같은 이유로 서버가 아니라 여기(화면)에 둔다.
+===================================================================== */
+var AI_TYPOS = [
+  [/쯔음/g, '쯤'],
+  [/선뜩/g, '선뜻'],
+  [/부딕히/g, '부딪히']
+];
+/* 한글 읽기 뒤에 괄호로 붙은 한자만 지운다. 괄호 안이 전부 한자일 때만. */
+var AI_HANJA_PAREN = /\s*[(（]\s*[\u4e00-\u9fff]+(?:\s*[·,]\s*[\u4e00-\u9fff]+)*\s*[)\uff09]/g;
+function tidyAiText(text){
+  var out = String(text == null ? '' : text).replace(AI_HANJA_PAREN, '');
+  for(var i=0;i<AI_TYPOS.length;i++) out = out.replace(AI_TYPOS[i][0], AI_TYPOS[i][1]);
+  return out;
 }
 /* 서버 본문 안의 {{name}} 자리를 화면에 그릴 때 이 브라우저에서 채운다.
    이름을 서버로 보내지 않고도 "민지는 …" 같은 문장을 쓸 수 있게 하는 장치다. */
 function fillNamePlaceholder(text, name, forHtml){
+  /* ★ 손질과 이름 채우기는 한 통로다. 여기 말고 다른 데서 서버 글을 만지지 마라 —
+     통로가 둘이 되는 순간 한쪽만 고쳐진 글이 생긴다(오늘까지 그런 사고가 여러 번 있었다). */
+  text = tidyAiText(text);
   /* ★ R98 — 궁합은 사람이 둘이라 {{name}} 하나로는 모자란다. name 자리에
      {a:'…', b:'…'} 객체가 오면 {{a}} {{b}} 도 함께 채운다(사주·성격유형은 예전 그대로). */
   var out = String(text == null ? '' : text);
   function enc(v){ return forHtml ? escapeHtml(v || '') : String(v || ''); }
   if(name && typeof name === 'object'){
-    out = replaceWithJosa(out, 'a', name.a, enc);
-    out = replaceWithJosa(out, 'b', name.b, enc);
-    out = replaceWithJosa(out, 'name', (name.name != null ? name.name : name.a), enc);
+    /* 궁합은 '님'을 안 붙인다 — 무료 3장이 맨몸 이름을 쓰기 때문이다(위 주석). */
+    out = replaceWithJosa(out, 'a', name.a, enc, false);
+    out = replaceWithJosa(out, 'b', name.b, enc, false);
+    out = replaceWithJosa(out, 'name', (name.name != null ? name.name : name.a), enc, false);
     return out;
   }
-  return replaceWithJosa(out, 'name', name, enc);
+  return replaceWithJosa(out, 'name', name, enc, true);
 }
 /* 유료 본문을 통짜로 받는 통로의 제한 시간. 흘려받기(240초)와 같은 눈금으로 둔다. */
 /* ★ 2026-09-02 — 240초에서 280초로. 실측으로 잰 값이 아슬아슬했다.
