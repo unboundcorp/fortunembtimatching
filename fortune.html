@@ -1432,7 +1432,9 @@ button.today-iljin:active{opacity:.7;}
 /* 결제 화면 */
 .pay-product{text-align:center;padding:6px 0 14px;border-bottom:1px solid rgba(31,28,23,0.144);margin-bottom:14px;}
 .pay-name{font-size:1.05rem;font-weight:600;color:var(--ink);}
-.pay-price{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;color:var(--gold);margin:6px 0;}
+.pay-price{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;color:var(--gold);margin:6px 0 2px;}
+/* 값 아래 작은 줄 — 기간·결제 방식. 값과 한 줄에 붙이면 큰 글씨가 두 줄로 접힌다. */
+.pay-price-sub{font-size:.86rem;color:var(--ink-dim);margin:0 0 6px;}
 .pay-desc{font-size:.85rem;color:var(--ink-dim);line-height:1.6;}
 /* ★ R84 — "결제하면 무엇이 열리는가"를 따로 떼어 맨 앞에 둔다 (테스터 지적, 2026-08-14:
    "결제 후 뭘 볼 수 있는지가 잘 안 읽혀서 어려워요").
@@ -1448,6 +1450,9 @@ button.today-iljin:active{opacity:.7;}
 .pay-opens li:first-child{margin-top:0;}
 .pay-opens li::before{content:'';position:absolute;left:2px;top:.72em;width:5px;height:5px;
   border-radius:50%;background:var(--gold);}
+.pay-quota-line{font-size:.84rem;line-height:1.7;color:var(--ink-dim);margin:10px 0 18px;word-break:keep-all;}
+/* 편수 줄에 붙는 부연 — 무엇에 쓰는 편수인지. 한 칸 띄워 아랫줄로 내린다. */
+.pay-quota-hint{display:block;margin-top:6px;color:var(--ink-faint);}
 .pay-cond-h{font-size:.8rem;font-weight:600;color:var(--ink-faint);margin:0 0 6px;}
 .pay-benefits{list-style:none;padding:0;margin:0 0 14px;}
 .pay-benefits li{position:relative;padding-left:20px;font-size:.87rem;color:var(--ink-dim);line-height:2;}
@@ -5230,6 +5235,24 @@ function bootCommerceModules(){
    데모 모드에서는 카드번호 같은 실제 결제정보를 입력받지 않는다 —
    받는 시늉만 하는 가짜 결제창은 그 자체로 위험하기 때문이다.
 ===================================================================== */
+/* =====================================================================
+   ★ 2026-09-04 — 이용권 기간을 화면에 손으로 적지 않는다
+   ---------------------------------------------------------------------
+   기간을 7일에서 1년으로 바꾸면서, 화면 여섯 군데에 "7일"이 손으로 적혀 있는 것을
+   발견했다(결제창 · 업셀 문구 셋 · 자주 묻는 질문 둘). 기간만 바꾸면 그 여섯 군데가
+   전부 거짓말이 된다. 그래서 숫자 하나(days)에서 말을 만들어 쓴다.
+   ★ 새로 "7일"이나 "1년"을 손으로 적지 마라. passPeriodText()를 불러 써라.
+===================================================================== */
+var PASS_DAYS = 365;
+function periodText(days){
+  var d = Number(days) || 0;
+  if(d % 365 === 0) return (d / 365) + '년';
+  if(d % 30 === 0)  return (d / 30) + '개월';
+  if(d % 7 === 0 && d >= 14) return (d / 7) + '주';
+  return d + '일';
+}
+function passPeriodText(){ return periodText(PRODUCTS.premium_pass.days); }
+
 var PRODUCTS = {
   /* ★ R13 — 커버 범위가 넓어졌다. 사주 풀이 13섹션에 더해 "올해 월별 운세 상세"와
      "대운 구간별 상세"까지 이 상품 하나로 열린다. 상품을 새로 만들지 않은 이유는,
@@ -5248,9 +5271,13 @@ var PRODUCTS = {
                   opens:['사주 풀이 13개 섹션 — 성격·재물·직업·관계·건강',
                          '고르신 해의 1월부터 12월까지 달마다의 흐름',
                          '10년 단위 흐름(대운)을 구간마다 풀어 쓴 글',
-                         '해마다 흐름이 달라서 연도마다 따로 결제예요 — 산 해는 몇 년이 지나도 그대로 열려요'] },
+                         '해마다 흐름이 달라서 연도마다 따로 결제예요'] },
   mbti_full:    { id:'mbti_full',    name:'성격유형 풀이 전체 해석', price:1900, kind:'once',
                   desc:'13개 섹션 전체 — 강점·그림자·관계 패턴·성장 방향까지',
+                  /* ★ 2026-09-04 — "한 번만 보시면 돼요" 같은 재구매 암시 문장을 넣었다가
+                     대표님 지시로 다시 뺐다("암시 문장은 빼자, 너무 상업적으로").
+                     여기에 재구매·갱신을 부추기거나 암시하는 줄을 새로 넣지 마라.
+                     이 목록은 '결제하면 무엇이 열리는가'만 적는 자리다. */
                   opens:['성격유형 풀이 13개 섹션',
                          '강점과 그림자, 관계에서 반복되는 패턴',
                          '앞으로 어느 쪽으로 크면 좋을지'] },
@@ -5264,10 +5291,21 @@ var PRODUCTS = {
                          '연애·우정·함께 있을 때·갈등 네 상황별 성격유형 궁합 해석',
                          '사주로 본 나의 연애 성향',
                          '그림 — 기운 견주기 · 성격유형 사분면 · 인연 매듭 · 글자 연결선'] },
-  premium_pass: { id:'premium_pass', name:'전체 이용권 7일', price:4900, kind:'pass', days:7,
-                  desc:'위 모든 상세 해석을 7일간',
+  /* ★ 2026-09-04 대표님 결정 — 7일 → 1년, 만드는 편수 10 → 1.
+     대표님이 "사주·궁합·성격유형 한번에 4,900원 패키지"를 붙이자고 하셨는데
+     이 상품이 이미 그것이었다. 새 상품을 만들지 않고 기간과 편수만 바꿨다.
+     ★ 경쟁 서비스(ieum.one · doryeong.app)를 실제로 열어 보니 둘 다 기간 제한이 없다.
+       우리만 7일이라고 써 붙이고 있었다.
+     ★ 문구를 바로잡았다. 예전에는 "7일 동안 몇 번이든 다시 열어볼 수 있어요"라고 적혀 있어
+       기간이 끝나면 못 보는 것처럼 읽혔다. 실제로는 만든 글은 영구다(R76).
+       비싼 상품이 더 불리해 보이게 적혀 있던 셈이다 — 대표님도 그렇게 읽으셨다.
+     ★ 서버(api/_lib/products.js)의 같은 줄과 한 쌍이다. 한쪽만 고치지 마라. */
+  premium_pass: { id:'premium_pass', name:'전체 이용권', price:4900, kind:'pass', days:PASS_DAYS,
+                  desc:'사주 · 성격유형 · 궁합 세 가지를 한 번에',
+                  /* ★ '만든 글은 계속 보인다'는 말은 여기 두지 않는다.
+                     결제창 아래 편수 줄이 이미 그 말을 한다 — 한 창에서 두 번 하지 않는다. */
                   opens:['사주 풀이 · 성격유형 풀이 · 궁합 상세 전부',
-                         '7일 동안 몇 번이든 다시 열어볼 수 있어요'] }
+                         '고르신 해가 끝날 때까지 언제든 만드시면 돼요'] }
 };
 
 /* =====================================================================
@@ -5282,12 +5320,20 @@ var PRODUCTS = {
    ★ 실제 판정은 서버(api/_lib/products.js의 AI_QUOTA)가 한다. 여기 값은 화면에 적기 위한 것이고,
      두 곳이 어긋나면 화면이 거짓말을 하게 되므로 반드시 같이 고쳐야 한다.
 ===================================================================== */
-var AI_QUOTA = { once:1, pass:10 };
+/* ★ 2026-09-04 — pass 10 → 2. 기간이 1년으로 늘었기 때문이다. 기간과 편수는 한 쌍이다.
+   2편인 이유: 1편이면 내 것 하나로 끝이라 남의 사주를 봐드릴 수가 없다(대표님 결정).
+   10편을 그대로 두면 세 상품 합쳐 30편(약 4,800원)이고, 만든 횟수는 해마다 0으로 돌아가므로
+   최대 9,600원이 나간다. 4,900원 받고 그만큼 쓰면 팔수록 손해다. */
+var AI_QUOTA = { once:1, pass:2 };
+/* ★ 2026-09-04 — 이용권도 편수가 1이 되면서 '1회까지'가 어색해졌다.
+   숫자에서 말을 만들되, 1이면 '한 편'으로 읽히게 쓴다. 숫자를 다시 바꿔도 따라온다.
+   ★ 이용권은 상품마다 각각 센다(서버 interpret.js의 aiUsedCount는 상품별이다).
+     그래서 '상품마다'를 붙인다 — 안 붙이면 셋을 합쳐 한 편으로 오해한다. */
 function aiQuotaText(product){
   if(!product) return '';
-  return (product.kind === 'pass')
-    ? ('새 해석 '+AI_QUOTA.pass+'회까지')
-    : ('새 해석 '+AI_QUOTA.once+'회');
+  var n = (product.kind === 'pass') ? AI_QUOTA.pass : AI_QUOTA.once;
+  if(product.kind === 'pass') return '상품마다 새 해석 ' + n + '편';
+  return '새 해석 ' + n + '편';
 }
 
 /* 무료로 보여줄 섹션 수. 이 값이 "맛보기"의 크기다.
@@ -5358,7 +5404,12 @@ var PAY_IS_TEST = false;
      1월 1일이 되면 그때까지 산 모든 분의 글이 안 열렸다. 연도를 손님이 고르는 값으로
      끌어올리면 산 연도의 글은 몇 년이 지나도 그대로 열린다.
 ===================================================================== */
-var YEARLY_PRODUCTS = { saju_full: true };
+/* ★ 2026-09-04 — 이용권도 연도 상품이다(대표님 지시: "1월 5월 언제 결제 하든지 올해 안에").
+   'premium_pass:2026' 을 사면 2026년 12월 31일(한국 시각)까지다. 산 날로부터 365일이 아니다.
+   ★ 궁합·성격유형은 여전히 연도를 안 붙인다. 해가 바뀌어도 같은 이야기라,
+     연도를 붙이면 내용이 똑같은 글을 해마다 다시 사게 하는 셈이 된다.
+   ★ 서버 api/_lib/products.js 의 YEARLY 와 한 쌍이다. 한쪽만 고치지 마라. */
+var YEARLY_PRODUCTS = { saju_full: true, premium_pass: true };
 var PRODUCT_YEAR_MIN = 1900, PRODUCT_YEAR_MAX = 2100;
 
 function splitProductId(id){
@@ -5387,6 +5438,11 @@ function productDef(id){
 /* 지금 보고 있는 연도. 사주 풀이·월별 운세가 이 값을 쓴다. */
 var VIEW_YEAR = (new Date()).getFullYear();
 function sajuProductId(){ return productIdFor('saju_full', VIEW_YEAR); }
+/* 이용권도 연도 상품이다. 결제·권한·화면이 모두 이 값을 쓴다.
+   ★ 결제창을 열 때 PRODUCTS.premium_pass 를 그대로 넘기면 연도 없는 이름이 나간다 —
+     그러면 서버가 '연도 없는 옛 상품'으로 받아 산 날로부터 365일로 계산한다. 반드시 이 함수를 써라. */
+function passProductId(){ return productIdFor('premium_pass', VIEW_YEAR); }
+function passProduct(){ return productDef(passProductId()) || PRODUCTS.premium_pass; }
 
 function normalizeEntitlements(raw){
   var out = defaultEntitlements();
@@ -6154,7 +6210,16 @@ function passActive(){ return realPassActive() || adminPassActive(); }
    ★ adminGranted()는 서버 권위 모드에서 항상 false다(관리자가 서버 판정을 이길 수 없다). */
 function hasAccess(productId){
   if(adminGranted(productId)) return true;
-  if(passActive()) return true;
+  /* ★ 2026-09-04 — 연도 이용권은 '그 해 것'만 연다. 12월에 2026년 이용권을 산 분이
+     2027년 사주까지 받아 가면 "연도마다 따로 결제"가 무너진다.
+     연도가 없는 쪽(옛 이용권 · 궁합 · 성격유형)은 예전처럼 막지 않는다.
+     ★ 서버 api/_lib/entitlements.js 의 hasAccess와 한 쌍이다. 한쪽만 고치지 마라. */
+  if(passActive()){
+    var pid = (entitlements().pass && entitlements().pass.productId) || null;
+    var py = pid ? splitProductId(pid).year : null;
+    var wy = splitProductId(productId).year;
+    if(adminPassActive() || py === null || wy === null || py === wy) return true;
+  }
   return !!entitlements().items[productId];
 }
 
@@ -6605,7 +6670,7 @@ function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles){
   var btn = el('button',{class:'btn btn-primary', onclick:function(){ openPaywall(product); }},
     [product.name+' 열기 · '+formatWon(product.price)]);
   cta.appendChild(btn);
-  cta.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ openPaywall(PRODUCTS.premium_pass); }},
+  cta.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ openPaywall(passProduct()); }},
     ['전체 이용권 '+formatWon(PRODUCTS.premium_pass.price)+'으로 한 번에 열기']));
   var gap = singleProductsTotal() - PRODUCTS.premium_pass.price;
   if(gap > 0){
@@ -6638,7 +6703,24 @@ function openPaywall(product){
 
   var head = el('div',{class:'pay-product'});
   head.appendChild(el('div',{class:'pay-name'},[product.name]));
-  head.appendChild(el('div',{class:'pay-price'},[formatWon(product.price)+(product.kind==='pass'?' / '+product.days+'일':' · 1회 결제')]));
+  /* ★ 2026-09-04 — '4,900원 / 365일'로 나오고 있었다. 사람은 365일을 1년으로 읽는다.
+     기간을 말로 바꾸는 곳은 periodText() 하나다 — 여기서 다시 계산하지 마라. */
+  /* ★ 2026-09-04 — 이용권은 연도 상품이라 '365일'도 '1년'도 아니다. 끝나는 날을 그대로 적는다.
+     "언제까지 쓰나"는 결제 전에 가장 궁금한 것이고, 안 적으면 나중에 문의가 된다.
+     ★ 값과 기간을 한 줄에 붙였더니 큰 글씨가 두 줄로 접혀 "31일까지"만 아랫줄에 떨어졌다
+       (폭 390에서 실제로 그렇게 보였다). 값은 크게 한 줄, 기간은 작게 아랫줄로 나눈다.
+     ★ 연도를 여기 다시 쓰지 마라. 바로 위 상품 이름이 이미 '전체 이용권 · 2026년'이다
+       (대표님 지시: "2026년도 한번만 쓰면 되잖아"). */
+  head.appendChild(el('div',{class:'pay-price'},[formatWon(product.price)]));
+  var priceTail;
+  if(product.kind === 'pass'){
+    priceTail = (typeof product.year === 'number')
+      ? '12월 31일까지'
+      : (periodText(product.days) + ' 동안');
+  } else {
+    priceTail = '1회 결제';
+  }
+  head.appendChild(el('div',{class:'pay-price-sub'},[priceTail]));
   head.appendChild(el('div',{class:'pay-desc'},[product.desc]));
   body.appendChild(head);
 
@@ -6671,19 +6753,52 @@ function openPaywall(product){
                 '이 브라우저에만 저장 — 저장소를 지우거나 기기를 바꾸면 사라집니다',
                 '무료 구간은 결제 없이 계속 이용 가능'];
   } else {
+    /* ★ 2026-09-04 — "로그인 없이 쿠키로 식별"이라고 적혀 있었다. **사실과 다르다.**
+       지금은 결제 전에 카카오 로그인이 반드시 필요하다(서버 /api/checkout 이 login_required 로 막는다).
+       같은 창 아래쪽에 "결제 전에 카카오 로그인이 필요해요" 상자가 따로 있어서,
+       한 창 안에서 두 문장이 정면으로 어긋나고 있었다.
+       ★ 줄도 짧게 줄였다. 이 창은 폭 390에서 1,444px이라 아래쪽이 단추에 가려 잘린 것처럼 보였다
+         (대표님 지적). 결제·법적 고지는 접지 않는 자리라, 접는 대신 문장을 줄인다. */
     benefits = [openLine,
-                '같은 브라우저에서 계속 열람 (로그인 없이 쿠키로 식별)'];
+                '카카오 계정에 남아 다른 기기에서도 열람'];
     /* 복원 약속은 restoreAvailability()가 실제로 가능하다고 할 때만 한다.
        영수증 검증 주소가 없는 상태(partial)에서도 이 줄을 그대로 띄우면,
        같은 세션의 설정 화면이 "구매 내역 복원 · 지금은 불가"라고 말하는 것과 정면으로 어긋난다. */
     benefits.push(restoreAvailability().ok
-      ? '브라우저 데이터를 지우거나 기기를 바꾸면 영수증 번호로 복원 (설정 화면 이용권 항목의 "구매 내역 복원")'
+      ? '영수증 번호로도 되찾기 (설정 → 이용권)'
       : '지금은 구매 복원을 쓸 수 없습니다 — ' + restoreAvailability().reason);
-    benefits.push('무료 구간은 결제 없이 계속 이용 가능');
+    benefits.push('무료 구간은 결제 없이 그대로');
   }
   /* ★ R84 — 이 목록은 "무엇을 받는지"가 아니라 "어떻게 보관·열람되는지"다.
      제목을 붙여 위의 [결제하면 이게 열려요]와 역할을 갈라 놓는다. 예전에는 둘이 붙어 있어
      한 덩어리로 읽혔고, 그래서 받는 것이 어디에도 안 적힌 것처럼 보였다. */
+  /* ★ 2026-09-04 — 만들 수 있는 편수를 결제 '전'에 알린다.
+     aiQuotaText()는 예전부터 있었는데 **아무 데서도 부르지 않고 있었다.**
+     서버는 횟수를 막으면서 화면은 그 말을 한 적이 없었던 셈이다 —
+     미리 알리지 않은 제한은 "왜 안 되냐"는 문의가 되고, 분쟁거리가 된다
+     (products.js의 AI_QUOTA 주석이 처음부터 그렇게 적어 두고 있었다).
+     ★ 다시 보는 것은 횟수를 안 쓴다. 그 말을 같이 적어야 "몇 번밖에 못 보나"로 안 읽힌다. */
+  var quotaLine = aiQuotaText(product);
+  if(quotaLine){
+    /* ★ 2026-09-04 — 대표님이 처음 주신 문장은 "한 번 만든 글은 올해 동안 다시 볼 수 있어요"였다.
+       그 뒤에 '가) 만든 글은 해가 바뀌어도 계속 보인다'로 정하셔서 이 줄을 거기 맞췄다.
+       바로 위 줄("기간이 끝난 뒤에도 계속 보실 수 있어요")과 같은 말을 해야 한다 —
+       한 창 안에서 두 줄이 다른 말을 하면 둘 다 못 믿게 된다. */
+    var q = el('p',{class:'pay-quota-line'},[
+      quotaLine + '까지 만드실 수 있어요. 한 번 만든 글은 해가 바뀌어도 계속 보실 수 있어요.'
+    ]);
+    /* ★ 2026-09-04 대표님 지시 — "2편"만 적으면 그게 무슨 소용인지 모른다.
+       두 편 이상 만들 수 있을 때만, 그걸 어디에 쓰는지와 어떻게 하는지를 함께 적는다.
+       (한 편짜리 단품에 "다른 분도 봐드리세요"라고 적으면 못 하는 것을 권하는 말이 된다.)
+       ★ '＋ 다른 사람 추가'는 머리말 프로필 고르개의 마지막 항목이다(renderChrome).
+         그 이름을 바꾸면 이 문장도 함께 고쳐라 — 없는 단추를 가리키게 된다. */
+    if(AI_QUOTA.pass > 1 && product.kind === 'pass'){
+      q.appendChild(el('span',{class:'pay-quota-hint'},[
+        '다른 분 사주를 봐드리고 싶으면 화면 맨 위 이름 고르개에서 [＋ 다른 사람 추가]를 눌러 프로필을 만드시면 돼요. 궁합은 프로필 없이 링크만 보내셔도 돼요.'
+      ]));
+    }
+    body.appendChild(q);
+  }
   body.appendChild(el('p',{class:'pay-cond-h'},['열람·보관 조건']));
   var list = el('ul',{class:'pay-benefits'});
   benefits.forEach(function(t){ list.appendChild(el('li',{},[t])); });
@@ -6706,18 +6821,18 @@ function openPaywall(product){
     if(passPrice < product.price){
       upsellText = '전체 이용권이면 '+formatWon(passPrice)+'으로 더 싸게, 모든 상세 해석이 열려요.';
     } else if(passPrice === product.price){
-      upsellText = '같은 '+formatWon(passPrice)+'으로 전체 이용권을 사면 이것 말고 나머지 상세 해석도 7일간 다 열려요.';
+      upsellText = '같은 '+formatWon(passPrice)+'으로 전체 이용권을 사면 이것 말고 나머지 상세 해석도 '+passPeriodText()+' 다 열려요.';
     } else if(passPrice < singlesTotal){
       /* '원'은 받침이 있으므로 조사는 '로'가 아니라 '으로'다. */
-      upsellText = '상세 해석을 하나씩 다 사면 '+formatWon(singlesTotal)+'인데, 전체 이용권은 '+formatWon(passPrice)+'으로 7일간 다 열려요.';
+      upsellText = '상세 해석을 하나씩 다 사면 '+formatWon(singlesTotal)+'인데, 전체 이용권은 '+formatWon(passPrice)+'으로 세 가지가 다 열려요.';
     } else {
-      upsellText = '전체 이용권('+formatWon(passPrice)+')이면 모든 상세 해석이 7일간 열려요.';
+      upsellText = '전체 이용권('+formatWon(passPrice)+')이면 모든 상세 해석이 열려요.';
     }
     var upsell = el('div',{class:'pay-upsell'});
     upsell.appendChild(el('span',{},[upsellText]));
     upsell.appendChild(el('button',{class:'btn btn-ghost btn-sm', /* ★ R59 이후로는 closeModal()을 먼저 부르면 안 된다 — 방문 기록을 되돌리는 일이
          한 박자 뒤에 도착해 방금 연 창을 닫는다. openModal이 알아서 자리를 비운다. */
-      onclick:function(){ openPaywall(PRODUCTS.premium_pass); }},['이용권 보기']));
+      onclick:function(){ openPaywall(passProduct()); }},['이용권 보기']));
     body.appendChild(upsell);
   }
 
@@ -6808,7 +6923,10 @@ function openPaywall(product){
   }
   actions.push({ label:'닫기', onclick:function(){ closeModal(); } });
 
-  openModal(product.kind==='pass' ? '전체 이용권' : '더 자세히 보기', body, actions);
+  /* ★ 2026-09-04 — 창 제목이 '전체 이용권'인데 바로 아래 상품 이름도 '전체 이용권 · 2026년'이라
+     같은 말이 두 번 나왔다. 제목은 무엇을 하는 창인지만 말하게 둔다
+     (대표님 지시: "중복 멘트들 다 한번만 써라"). */
+  openModal(product.kind==='pass' ? '한 번에 열기' : '더 자세히 보기', body, actions);
 }
 
 /* 결제를 열 수 없는 이유를 조합별로 정확히 적는다.
@@ -6927,7 +7045,7 @@ function buildPurchasePanel(){
   if(!passActive()){
     /* ★ 2026-08-26 — 아래쪽 여백이 없어 바로 다음 상자(카카오 로그인)에 딱 붙어 있었다. */
     card.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin:12px 0 16px;',
-      onclick:function(){ openPaywall(PRODUCTS.premium_pass); }},['전체 이용권 보기 · '+formatWon(PRODUCTS.premium_pass.price)]));
+      onclick:function(){ openPaywall(passProduct()); }},['전체 이용권 보기 · '+formatWon(PRODUCTS.premium_pass.price)]));
   }
 
   /* ★ 구매 복원 진입점.
@@ -7701,11 +7819,11 @@ function renderFaq(){
       ]],
       ['결제와 환불', [
         ['결제는 어떻게 하나요?',
-         '유료 해석의 [더보기] 버튼을 누르면 결제 화면이 열려요. 무엇이 열리는지와 금액을 먼저 보여드리고, 확인하신 뒤에 결제로 넘어가요. 건별 결제와 7일 전체 이용권 중에 고르실 수 있어요. 결제 전에 카카오 로그인이 한 번 필요한데, 결제하신 것을 다른 기기에서도 보실 수 있게 하려는 거예요. 무료로 보시는 부분은 로그인 없이 그대로 이용하실 수 있어요.'],
+         '유료 해석의 [더보기] 버튼을 누르면 결제 화면이 열려요. 무엇이 열리는지와 금액을 먼저 보여드리고, 확인하신 뒤에 결제로 넘어가요. 건별 결제와 전체 이용권 중에 고르실 수 있어요. 결제 전에 카카오 로그인이 한 번 필요한데, 결제하신 것을 다른 기기에서도 보실 수 있게 하려는 거예요. 무료로 보시는 부분은 로그인 없이 그대로 이용하실 수 있어요.'],
         ['결제했는데 결과가 안 보여요 (화면을 닫았어요)',
          '다시 결제하지 마세요. 결제하실 때 쓰신 카카오로 로그인하시면 그대로 열려요. 화면 아래 [문의하기] → [결제했는데 결과가 안 보여요]로 들어가시면 지금 결제·이용권 상태를 그 자리에서 보여드려요. 결제하시면 영수증 번호를 알려드리는데, 그 화면이나 설정 화면의 [구매 내역 복원]에 번호를 넣으시면 이용권이 되살아나요. 브라우저 데이터를 지웠거나 기기를 바꾸셨을 때도 같은 방법으로 되찾을 수 있으니, 영수증 번호는 따로 저장해 두시는 편이 좋아요.'],
         ['유료 콘텐츠는 얼마나 볼 수 있나요?',
-         '건별로 결제하신 해석은 계속 보실 수 있어요. 결제하실 때 쓰신 카카오로 로그인하시면 어느 기기에서나 열려요. 전체 이용권은 결제일로부터 7일 동안 모든 상세 해석이 열려요.'],
+         '한 번 만드신 해석은 계속 보실 수 있어요 — 건별로 사셨든 이용권으로 만드셨든 같아요. 결제하실 때 쓰신 카카오로 로그인하시면 어느 기기에서나 열려요. 전체 이용권은 결제일로부터 '+passPeriodText()+' 동안 세 가지를 다 만드실 수 있고, 그 기간이 끝나도 만들어 두신 글은 그대로 열려요.'],
         ['해석을 몇 번이나 만들 수 있나요?',
          '상세 해석 중 일부는 사주 계산 결과를 AI가 읽고 새로 써 드리는 글이에요. 새로 만드는 횟수는 건별 결제는 '+AI_QUOTA.once+'회, 전체 이용권은 기간 중 '+AI_QUOTA.pass+'회까지예요. 한 번 만든 해석을 다시 보는 것은 횟수에 들어가지 않고 얼마든지 보실 수 있어요. 만들다 실패한 것도 세지 않아요.'],
         ['같은 사주인데 다시 보면 내용이 달라지나요?',

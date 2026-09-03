@@ -139,6 +139,9 @@ export async function recentOrdersOf(sessionId, limit = 10) {
    ★ 이 재연결이 없으면 verified만 true로 돌려줘도 곧이어 나가는 권한 조회가 여전히 빈 값이라,
      "확인은 됐는데 안 열림"이라는 최악의 상태가 남는다. */
 export async function rebindOrder(orderId, sessionId) {
+  /* ★ 옮기기 전에 이 주문이 원래 어느 세션에 붙어 있었는지 알아 둔다.
+     옮기고 나면 알 수 없게 되고, '만든 기록'을 어디서 가져와야 할지 모르게 된다. */
+  const before = await getOrder(orderId);
   const rows = await rest(
     `orders?order_id=eq.${encodeURIComponent(orderId)}&status=eq.paid`,
     {
@@ -147,6 +150,17 @@ export async function rebindOrder(orderId, sessionId) {
       body: JSON.stringify({ session_id: sessionId }),
     }
   );
+  /* ★ 2026-09-04 — 이 영수증의 상품으로 만든 기록도 함께 옮긴다.
+     안 옮기면 ㉠ 이용권으로 만든 글이 잠기고 ㉡ 만든 횟수가 0으로 돌아간다
+     (moveAiUsageToSession 주석 참고). 실패해도 복원 자체는 되게 둔다 —
+     되찾는 길이 막히는 것이 더 나쁘다. */
+  if (before && before.session_id && before.session_id !== sessionId) {
+    try {
+      await moveAiUsageToSession(before.session_id, sessionId, before.product_id);
+    } catch (e) {
+      console.warn('만든 기록 옮기기 실패', (e && e.message) || e);
+    }
+  }
   return rows && rows[0] ? rows[0] : null;
 }
 
@@ -531,5 +545,78 @@ export async function moveOrdersToSession(fromSessionId, toSessionId) {
       body: JSON.stringify({ session_id: toSessionId }),
     }
   );
+  /* ★ 2026-09-04 — 결제 기록만 옮기고 '만든 기록'을 두고 가던 것을 고쳤다.
+     자세한 이유는 아래 moveAiUsageToSession 주석에 있다. */
+  await moveAiUsageToSession(fromSessionId, toSessionId, null);
   return rows ? rows.length : 0;
+}
+
+/* =====================================================================
+   '만든 기록'도 함께 옮긴다 (2026-09-04)
+   ---------------------------------------------------------------------
+   기기를 바꾸거나 영수증으로 되찾을 때, 예전에는 orders 표만 옮기고
+   ai_usage 표는 옛 세션에 두고 갔다. 그래서 두 가지가 한꺼번에 망가졌다.
+
+   ① 산 글을 못 보게 된다 —
+      이용권으로 만든 글은 기간이 끝나면 '만든 적 있다'는 기록만이 유일한 열쇠다
+      (api/entitlements.js의 R76). 그게 안 따라오니, 이용권이 끝난 뒤 폰을 바꾸면
+      돈 내고 만든 글이 통째로 잠긴다. 단품으로 산 분은 주문 자체가 권한이라 무사했고,
+      **이용권으로 산 분만 정확히 이 구멍에 빠졌다.**
+
+   ② 만들 수 있는 횟수가 0으로 돌아간다 — 이쪽이 더 크다.
+      브라우저 기록을 지우고 다시 로그인하면 결제는 따라오는데 쓴 횟수는 안 따라온다.
+      한 번 결제로 몇 번이든 새로 만들 수 있고, 반복하면 제한이 없다.
+      AI 한 편이 실제로 약 160원이므로 **팔수록 손해가 나는 구멍**이다.
+      지금은 테스트 결제뿐이라 피해가 없지만, live 키를 넣는 순간 열린다.
+
+   ★ ai_usage 에는 (session_id, cache_key) 유일 index 가 걸려 있다. 옮기려는 열쇠를
+     받는 쪽이 이미 갖고 있으면 PATCH 가 통째로 실패한다. 그래서 겹치는 것은 빼고 옮긴다.
+     겹치는 줄은 옛 세션에 그냥 둔다 — 받는 쪽에 이미 같은 값이 있으므로 잃는 것이 없다.
+   ★ productId 를 주면 그 상품으로 만든 것만 옮긴다(영수증 한 장 복원). null 이면 전부.
+===================================================================== */
+export async function moveAiUsageToSession(fromSessionId, toSessionId, productId) {
+  if (!fromSessionId || !toSessionId || fromSessionId === toSessionId) return 0;
+
+  const fromRows = await rest(
+    `ai_usage?session_id=eq.${encodeURIComponent(fromSessionId)}&select=cache_key`
+  );
+  /* 열쇠는 base64url 뿐이다. 그 밖의 글자가 섞인 것은 조회 주소를 깨뜨릴 수 있으니 버린다. */
+  let keys = (fromRows || [])
+    .map((r) => (r && r.cache_key ? String(r.cache_key) : ''))
+    .filter((k) => /^[A-Za-z0-9_-]+$/.test(k));
+  if (!keys.length) return 0;
+
+  /* 영수증 한 장을 되찾는 경우 — 그 상품으로 만든 것만 골라 옮긴다. */
+  if (productId) {
+    const mine = await rest(
+      `ai_cache?product_id=eq.${encodeURIComponent(productId)}` +
+        `&cache_key=in.(${keys.slice(0, 200).join(',')})&select=cache_key`
+    );
+    if (!Array.isArray(mine)) return 0;   /* 못 물어봤으면 아무것도 옮기지 않는다 */
+    const ok = new Set(mine.map((r) => r.cache_key));
+    keys = keys.filter((k) => ok.has(k));
+    if (!keys.length) return 0;
+  }
+
+  /* 받는 쪽이 이미 가진 열쇠는 뺀다. 안 그러면 유일 index 에 걸려 통째로 실패한다. */
+  const already = await rest(
+    `ai_usage?session_id=eq.${encodeURIComponent(toSessionId)}` +
+      `&cache_key=in.(${keys.slice(0, 200).join(',')})&select=cache_key`
+  );
+  if (Array.isArray(already) && already.length) {
+    const have = new Set(already.map((r) => r.cache_key));
+    keys = keys.filter((k) => !have.has(k));
+  }
+  if (!keys.length) return 0;
+
+  const moved = await rest(
+    `ai_usage?session_id=eq.${encodeURIComponent(fromSessionId)}` +
+      `&cache_key=in.(${keys.slice(0, 200).join(',')})`,
+    {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ session_id: toSessionId }),
+    }
+  );
+  return Array.isArray(moved) ? moved.length : 0;
 }
