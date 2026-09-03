@@ -26,7 +26,7 @@ import { productOf, aiQuotaOf } from './_lib/products.js';
 /* ★ 2026-09-02 — 프롬프트를 짜고 Anthropic을 부르는 일은 _lib/aigen.js 로 옮겼다.
    흘려받기 창구(api/interpret.js)와 **같은 것**을 쓴다. 복사해 두면 언젠가 둘이 달라지고,
    그때는 같은 상품인데 창구에 따라 글이 다른 이유를 아무도 못 찾는다. */
-import { MODEL, AI_PRODUCTS, cacheKeyOf, hasAiAccess, parseSections } from './_lib/aiprompt.js';
+import { MODEL, aiKindOf, cacheKeyOf, hasAiAccess, parseSections } from './_lib/aiprompt.js';
 import { generateChunked } from './_lib/aigen.js';
 import {
   getAiCache, putAiCache, aiUsedCount, aiAlreadyUsed, noteAiUse, sweepAiOld,
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
   const body = readBody(req);
   const productId = String(body.productId || '');
   const payload = body.payload;
-  if (!AI_PRODUCTS[productId] || !payload || typeof payload !== 'object') {
+  if (!aiKindOf(productId) || !payload || typeof payload !== 'object') {
     return json(res, 400, { error: 'bad_request', reason: '요청 내용이 올바르지 않아요.' });
   }
   const product = productOf(productId);

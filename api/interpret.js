@@ -27,7 +27,7 @@ import { KNOWLEDGE_CHARS } from './_lib/knowledge.js';
 /* ★ 2026-09-02 — 프롬프트를 짜고 Anthropic을 부르는 일은 전부 _lib/aigen.js 로 옮겼다.
    여기서는 열쇠 계산·권한·저장만 한다. 그래서 MAX_TOKENS·ANTHROPIC_URL·systemFor·userPrompt를
    더는 안 가져온다 — 안 쓰는 이름을 남겨 두면 "여기서도 부르는구나"로 읽힌다. */
-import { MODEL, AI_PRODUCTS, cacheKeyOf, hasAiAccess } from './_lib/aiprompt.js';
+import { MODEL, aiKindOf, cacheKeyOf, hasAiAccess } from './_lib/aiprompt.js';
 /* ★ 2026-09-02 — 장을 몇 덩이로 나눠 동시에 쓰게 한다. 통짜 창구(api/content.js)와 같은 것을 쓴다. */
 import { generateChunked } from './_lib/aigen.js';
 import {
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
   const body = readBody(req);
   const productId = String(body.productId || '');
   const payload = body.payload;
-  const kind = AI_PRODUCTS[productId];
+  const kind = aiKindOf(productId);
   if (!kind || !payload || typeof payload !== 'object') {
     return json(res, 400, { error: 'bad_request', reason: '요청 내용이 올바르지 않아요.' });
   }
