@@ -5924,6 +5924,11 @@ function snapshotCompatState(){
     /* 그룹에서 고른 사이도 함께 담는다. 안 담으면 연인 모임으로 보다가 결제하고 돌아왔을 때
        친구 비중으로 되돌아가, 낸 돈과 다른 점수를 보게 된다. */
     gcRelation: (typeof GC_RELATION !== 'undefined') ? GC_RELATION : null,
+    /* ★ 2026-09-05 — '골랐는가'도 함께 담는다. GC_RELATION은 아무도 안 골라도
+       기본값('friend')이 들어 있어서, 이 값만 담아 되돌리면 **고른 적 없는 사람에게
+       친구가 골라진 채로** 돌아온다. 한 번 고르면 못 바꾸는 화면이라(2026-09-03 지시)
+       그대로 친구 비중으로 점수가 나가고 AI 풀이도 친구로 나간다. */
+    gcRelationSet: (typeof GC_RELATION_SET !== 'undefined') ? !!GC_RELATION_SET : false,
     compatView: (typeof COMPAT_VIEW !== 'undefined') ? COMPAT_VIEW : null
   };
 }
@@ -5933,7 +5938,10 @@ function restoreCompatState(saved){
   if(saved.compatDraft){ COMPAT_DRAFT = saved.compatDraft; }
   if(typeof saved.compatSub !== 'undefined' && saved.compatSub !== null){ COMPAT_SUB = saved.compatSub; }
   if(saved.roomId){ CURRENT_ROOM_ID = saved.roomId; }
-  if(saved.gcRelation && relationOf(saved.gcRelation).key === saved.gcRelation){
+  /* 옛 쪽지(gcRelationSet 칸이 없던 판)는 예전처럼 '골랐다'로 본다 — 결제하러 간 사이에
+     배포가 나갔을 수 있고, 그때는 진짜로 고른 값을 잃는 쪽이 더 나쁘다. */
+  var savedRelSet = (typeof saved.gcRelationSet === 'boolean') ? saved.gcRelationSet : true;
+  if(savedRelSet && saved.gcRelation && relationOf(saved.gcRelation).key === saved.gcRelation){
     GC_RELATION = saved.gcRelation; GC_RELATION_SET = true;
     GC_PAIRS_CACHE = {key:null, pairs:null, ms:0, computed:0};
   }
@@ -17721,9 +17729,9 @@ function renderCompat(){
       view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;',
         disabled: GC_RELATION_SET ? null : 'disabled',
         onclick:function(){ if(!GC_RELATION_SET) return; openInviteLinkModal(p, GC_RELATION); }},
-        [svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '상대방에게 궁합 링크 보내기']));
+        [svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('상대방에게 궁합 링크 보내기','받은 분이 자기 정보를 넣어요')]));
       view.appendChild(el('p',{class:'biz-hint'},
-        ['같은 링크 하나로 여러 분을 부를 수 있어요. 받은 분이 자기 정보를 넣으면 바로 그룹에 들어와요.']));
+        ['같은 링크 하나로 여러 분을 부를 수 있어요. 넣은 분부터 차례로 그룹에 들어와요.']));
     } else {
       var recent = buildRecentRoomsCard();
       if(recent) view.appendChild(recent);
