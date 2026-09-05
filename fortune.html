@@ -2295,6 +2295,29 @@ body.has-fab main{padding-bottom:110px;}
 .hist-item .hi-main{display:flex;align-items:center;gap:11px;text-align:left;background:none;flex:1;min-width:0;min-height:44px;}
 .hist-item .hi-text{min-width:0;}
 @media (max-width:360px){.char-dex-grid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr));}}
+/* ★ 2026-09-05 대표님 지시 — 오행 다섯은 네모 칸이 아니라 동그라미로 늘어놓는다.
+   ("오행 5가지 저렇게 다섯개 박스로 말고 동그라미 모양으로 해서 표현 해라")
+   ★ 성격유형 16종은 네모 칸 그대로다 — 한 칸에 남·여 두 컷이 들어가서 동그라미에 안 담긴다.
+   ★ 폭에 상관없이 늘 다섯 칸이다(오행은 다섯 개로 고정). 그래서 반응형 규칙이 필요 없고,
+     PC 블록(min-width:601px)에도 따로 적을 것이 없다. */
+.elem-dex{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px;}
+.elem-dex-item{display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:none;border:0;padding:2px 0 4px;min-height:var(--tap);}
+.elem-dex-item .ed-ring{display:flex;align-items:center;justify-content:center;
+  width:100%;aspect-ratio:1;border-radius:50%;background:var(--panel-3);
+  border:1px solid var(--gold-line);overflow:hidden;
+  transition:border-color .15s,background .15s,transform .15s;}
+.elem-dex-item .ed-ring img{width:80%;height:80%;}
+.elem-dex-item:hover .ed-ring{border-color:var(--gold);background:var(--gold-soft);}
+.elem-dex-item:active .ed-ring{transform:scale(.95);}
+.elem-dex-item .ed-name{font-size:.74rem;font-weight:600;line-height:1.3;white-space:nowrap;}
+/* 내 것은 테두리와 글자색으로 알린다. 색만으로 알리지 않도록 아래 점을 하나 더 찍는다. */
+.elem-dex-item.mine .ed-ring{border-color:var(--gold);border-width:2px;background:var(--gold-soft);}
+.elem-dex-item.mine .ed-name{color:var(--gold);}
+.elem-dex-item .ed-mine{width:5px;height:5px;border-radius:50%;background:var(--gold);}
+/* 320px에서는 동그라미가 42px로 내려가 누르는 최소 크기(44)에 못 미친다. 간격을 줄여 채운다.
+   ★ 이 규칙은 420 아래에서만 걸리면 되므로 PC 블록(min-width:601px)에 옮겨 적을 것이 없다. */
+@media (max-width:360px){ .elem-dex{gap:5px;} .elem-dex-item .ed-name{font-size:.7rem;} }
 
 /* ===================== R23: 사주 용어를 쉬운 말로 =====================
    규칙 세 가지만 지킨다.
@@ -17407,6 +17430,26 @@ function openCharDetail(key){
   ]));
   openModal(spec.name, autoTermify(body), [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
 }
+/* 오행 다섯 — 동그라미 한 줄. 성격유형은 아래 buildCharDexGrid(네모 칸)를 쓴다. */
+function buildElemDexRow(keys, myKeys){
+  var row = el('div',{class:'elem-dex'});
+  keys.forEach(function(key){
+    var spec = CHARACTERS[key];
+    if(!spec) return;
+    var mine = myKeys.indexOf(key) >= 0;
+    var name = spec.name.split(' \u00b7 ')[0];
+    var cell = el('button',{type:'button', class:'elem-dex-item'+(mine?' mine':''),
+      'aria-label': name + ' 캐릭터' + (mine ? ' · 내 캐릭터' : ''),
+      onclick:function(){ openCharDetail(key); }});
+    var ring = el('span',{class:'ed-ring'});
+    ring.appendChild(buildCharSvg(key, 56));
+    cell.appendChild(ring);
+    cell.appendChild(el('span',{class:'ed-name'},[name]));
+    if(mine) cell.appendChild(el('span',{class:'ed-mine','aria-hidden':'true'}));
+    row.appendChild(cell);
+  });
+  return row;
+}
 function buildCharDexGrid(keys, myKeys){
   var grid = el('div',{class:'char-dex-grid'});
   keys.forEach(function(key){
@@ -17469,7 +17512,7 @@ function renderCharDex(){
   elemCard.appendChild(el('h3',{},['오행 5종']));
   elemCard.appendChild(buildNoteFold('이 다섯은 무엇인가요?',
     '목·화·토·금·수. 태어난 날의 글자(일간)가 어떤 기운(오행)인지에 따라 만나는 캐릭터예요.'));
-  elemCard.appendChild(buildCharDexGrid(['e0','e1','e2','e3','e4'], myKeys));
+  elemCard.appendChild(buildElemDexRow(['e0','e1','e2','e3','e4'], myKeys));
   view.appendChild(elemCard);
 
   var mbtiCard=el('div',{class:'scroll-card'});
