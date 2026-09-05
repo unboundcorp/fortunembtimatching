@@ -10927,15 +10927,15 @@ function charImage(key, onReady, gender){
   return im;
 }
 /* 목록·행에 붙이는 작은 칩. 인장 테·무늬·주변 장식을 빼고 실루엣만 남겨 34px에서도 읽힌다. */
-function buildCharChip(key, size, label){
-  return buildCharSvg(key, size||34, {mini:true, cls:'char-chip', label:label});
+function buildCharChip(key, size, label, gender){
+  return buildCharSvg(key, size||34, {mini:true, cls:'char-chip', label:label, gender:gender});
 }
 /* 결과 화면 상단에 세우는 큰 그림 + 한 줄 설명(무료 공개분). 깊은 해설은 기존 유료 리포트 안에 그대로 둔다. */
-function buildCharHero(key, size, note){
+function buildCharHero(key, size, note, gender){
   var spec = CHARACTERS[key];
   if(!spec) return null;
   var box = el('div',{class:'scroll-card char-hero stamp-in'});
-  box.appendChild(buildCharSvg(key, size||118));
+  box.appendChild(buildCharSvg(key, size||118, {gender:gender}));
   var t = el('div',{class:'ch-text'});
   t.appendChild(el('div',{class:'ch-name'},[spec.name]));
   t.appendChild(el('p',{class:'ch-line'},[spec.line]));
@@ -16405,7 +16405,7 @@ function renderHomeDash(p){
     var ekey = charKeyForDayStem(saju);
     if(mkey || ekey){
       var fig = el('div',{class:'hd-figure'});
-      fig.appendChild(buildCharSvg(mkey || ekey, 120, {label: ownerLabel(p.name)+' 캐릭터'}));
+      fig.appendChild(buildCharSvg(mkey || ekey, 120, {label: ownerLabel(p.name)+' 캐릭터', gender:p.gender}));
       if(mkey && ekey){
         var bdg = el('span',{class:'hd-elem-badge', 'aria-hidden':'true'});
         bdg.appendChild(buildCharSvg(ekey, 42));
@@ -16835,7 +16835,7 @@ function renderReport(){
 
   /* R19 — MBTI 캐릭터. 16종은 서로 다른 상징을 쓰고, 도감에서 한자리에 볼 수 있다. */
   var mbtiCharKey = charKeyForMbti(p.mbti);
-  if(mbtiCharKey){ view.appendChild(buildCharHero(mbtiCharKey, 118, '전체는 캐릭터 도감에서 볼 수 있어요.')); }
+  if(mbtiCharKey){ view.appendChild(buildCharHero(mbtiCharKey, 118, '전체는 캐릭터 도감에서 볼 수 있어요.', p.gender)); }
 
   var indCard=el('div',{class:'scroll-card'});
   indCard.appendChild(el('h3',{},['성격유형 4지표 해설']));
@@ -17393,7 +17393,7 @@ function renderMbtiReport13(){
 
   /* R19 — 이 화면의 주인공 캐릭터. 그림과 한 줄은 무료이고, 아래 13섹션 본문의 잠금 규칙은 그대로다. */
   var mbtiRepCharKey = charKeyForMbti(p.mbti);
-  if(mbtiRepCharKey){ view.appendChild(buildCharHero(mbtiRepCharKey, 118, null)); }
+  if(mbtiRepCharKey){ view.appendChild(buildCharHero(mbtiRepCharKey, 118, null, p && p.gender)); }
 
   var mbtiHost = el('div',{});
   view.appendChild(mbtiHost);
@@ -18140,7 +18140,7 @@ function submitCompat(opts){
   /* ★ 관계도 함께 담는다. 안 담으면 기록에서 다시 열 때 친구 비중으로 계산돼
      "볼 때마다 점수가 다르다"가 된다. */
   var histEntry = {id:uid(), date:todayStr(), profileId:p.id, relation:COMPAT_DRAFT.relation,
-    partnerName:pB.name, partnerMbti:pB.mbti, score:res.combined, tier:res.combinedTier,
+    partnerName:pB.name, partnerMbti:pB.mbti, partnerGender:pB.gender, score:res.combined, tier:res.combinedTier,
     inputs:{
       a: compatPersonInput(pA, {y:p.year, m:p.month, d:p.day,
             hour: p.birthTime?p.birthTime.hour:null, minute: p.birthTime?(p.birthTime.minute||0):0,
@@ -18997,7 +18997,12 @@ function zodiacOfProfile(p){
    두 경로가 같은 모양을 내놓아야 그림·순위·카드가 출처를 몰라도 되게 만든다. */
 function gcMemberFromProfile(p){
   var person = toCompatPerson(p);
-  return {id:p.id, name:p.name || '이름 없음', mbti:person.mbti, elementIdx:person.elementIdx, person:person};
+  /* ★ 2026-09-05 대표님 지적 — "내가 고른 성별로 다 통일되면 안 되고 각자 프로필 성별로".
+     여기에 gender를 안 담아서 그림표(gc-node)가 m.gender로 undefined를 받았고,
+     charImgId가 '보고 있는 사람의 성별'로 채워 **모든 사람이 보는 사람과 같은 성별**로 나왔다.
+     한 폰에서는 다 여자, 다른 폰에서는 다 남자로 보인 이유가 이것이다. */
+  return {id:p.id, name:p.name || '이름 없음', mbti:person.mbti, elementIdx:person.elementIdx,
+          gender:p.gender, person:person};
 }
 function gcMemberFromMeetRow(row, i){
   var saju = null;
@@ -19009,7 +19014,7 @@ function gcMemberFromMeetRow(row, i){
   var z = calcZodiac(row.y);
   var person = {mbti:row.m, elementIdx:ei, zodiacIdx:z.idx, name:row.n, element:ELEMENTS[ei],
                 zodiac:z.name, saju:saju, gender:row.g};
-  return {id:'k'+i, name:row.n, mbti:row.m, elementIdx:ei, person:person};
+  return {id:'k'+i, name:row.n, mbti:row.m, elementIdx:ei, gender:row.g, person:person};
 }
 
 /* ---------------------------------------------------------------------
@@ -21806,7 +21811,7 @@ function renderHistory(){
         /* R19 — 상대방 MBTI 캐릭터 칩. 목록에서 누가 누구인지 그림으로 먼저 잡힌다. */
         var left=el('button',{class:'hi-main', onclick:function(){ openCompatDetailModal(c); }});
         var cChipKey = charKeyForMbti(c.partnerMbti);
-        if(cChipKey) left.appendChild(buildCharChip(cChipKey, 34, c.partnerMbti+' 캐릭터'));
+        if(cChipKey) left.appendChild(buildCharChip(cChipKey, 34, c.partnerMbti+' 캐릭터', c.partnerGender));
         var cTxt=el('div',{class:'hi-text'});
         cTxt.appendChild(el('div',{},[c.partnerName+' ('+c.partnerMbti+')']));
         cTxt.appendChild(el('div',{class:'meta'},[c.date+' · '+c.score+'점 · '+tierNameFix(c.tier)]));
@@ -21868,7 +21873,7 @@ function renderHistory(){
         /* R19 — 기록에 남은 그때의 MBTI 칩(지금 프로필이 아니라 기록된 유형을 따른다). */
         var left=el('button',{class:'hi-main', onclick:function(){ openMbtiReportDetailModal(m); }});
         var mChipKey = charKeyForMbti(m.mbti);
-        if(mChipKey) left.appendChild(buildCharChip(mChipKey, 34, m.mbti+' 캐릭터'));
+        if(mChipKey) left.appendChild(buildCharChip(mChipKey, 34, m.mbti+' 캐릭터', p && p.gender));
         var mTxt=el('div',{class:'hi-text'});
         mTxt.appendChild(el('div',{},[m.date+' · '+m.mbti]));
         mTxt.appendChild(el('div',{class:'meta'},[m.summary]));
@@ -21999,10 +22004,10 @@ function renderSettings(){
     var valueFull = p.mbti+' · '+(p.gender==='F'?'여자':'남자')+' · '+p.year+'-'+pad2(p.month)+'-'+pad2(p.day)+(p.birthTime?(' '+pad2(p.birthTime.hour)+':'+pad2(p.birthTime.minute)):' · 시간 모름');
     /* R19 — 프로필 행에 작은 캐릭터 칩. 목록에서는 실루엣만 보이면 되므로 mini 버전을 쓴다. */
     var rowChipKey = charKeyForMbti(p.mbti);
-    var rowChip = rowChipKey ? buildCharChip(rowChipKey, 34, p.mbti+' 캐릭터') : null;
+    var rowChip = rowChipKey ? buildCharChip(rowChipKey, 34, p.mbti+' 캐릭터', p.gender) : null;
     view.appendChild(settingsRow(label, valueText, function(){
       var body=el('div',{class:'sheet-body'});
-      if(rowChipKey){ body.appendChild(el('div',{style:'display:flex;justify-content:center;margin-bottom:4px;'},[buildCharSvg(rowChipKey, 96)])); }
+      if(rowChipKey){ body.appendChild(el('div',{style:'display:flex;justify-content:center;margin-bottom:4px;'},[buildCharSvg(rowChipKey, 96, {gender:p.gender})])); }
       body.appendChild(el('p',{class:'section-sub'},[valueFull]));
       body.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:6px;', onclick:function(){
         closeModal(); STATE.activeId=p.id; saveState(); render();
