@@ -896,7 +896,13 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
    (자리를 화면 가운데에서 시작했으니 오른쪽 끝까지가 전부다). transform으로 되밀어
    보기에는 가운데였지만, 글자는 절반 폭 안에서 접히고 있었다. 폭을 글자 길이로 잡고
    화면 폭에서만 제한한다. */
-#toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom, 0px));width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;transform:translateX(-50%) translateY(20px);background:#1f1c17;border:1px solid rgba(31,28,23,0.168);color:var(--ink);padding:11px 20px;border-radius:30px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:80;box-shadow:var(--shadow-sm);}
+/* ★ 2026-09-05 대표님 제보 — "복사 눌렀는데 검은색으로만 뜬다".
+   글자색이 var(--ink)(#1f1c17)인데 배경도 #1f1c17이었다. **대비 1.00:1 — 글자가 아예 안 보였다.**
+   밝은 판으로 뒤집을 때(2026-08-24) 배경은 어두운 채로 두고 글자만 --ink를 따라간 것이다.
+   이 알약은 유일하게 '어두운 면 위의 글자'라 --ink를 쓰면 안 된다. 종이 밝은 면(--panel-2)을 쓴다.
+   ★ 이 앱의 모든 알림(복사했어요·저장했어요·이용권을 복원했어요…)이 전부 안 보이고 있었다.
+   ★ CSS 규칙 전체의 배경·글자색 대비를 기계로 재서 찾았다. 3:1 미만은 이것 하나뿐이었다. */
+#toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom, 0px));width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;text-align:center;transform:translateX(-50%) translateY(20px);background:#1f1c17;border:1px solid rgba(246,242,233,0.20);color:var(--panel-2);padding:11px 20px;border-radius:30px;font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:80;box-shadow:var(--shadow-sm);}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* 레이더차트 */
