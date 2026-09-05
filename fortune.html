@@ -20716,7 +20716,10 @@ function buildSavedGroupsCard(){
   card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 열 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관돼요.']));
   list.forEach(function(g){
     card.appendChild(settingsRow(
-      (g.name || '이름 없는 그룹') + (g.n ? ' · ' + g.n + '명' : ''),
+      /* ★ 2026-09-05 대표님 지적 — 위 카드는 "아직 아무도 열지 않았어요"라는데
+         이 줄은 "· 1명"이라 서로 어긋나 보였다. 1명은 만든 사람 자신이다.
+         숫자 대신 그 뜻을 적는다(watchLineText가 n>1을 '들어왔다'로 보는 것과 같은 기준). */
+      (g.name || '이름 없는 그룹') + (g.n > 1 ? ' · ' + g.n + '명' : ' · 아직 나 혼자'),
       '열기', function(){ openSavedGroup(g.id); }));
   });
   /* ★ R60 — 눌러만 보고 안 보낸 링크가 쌓였을 때 한 번에 치운다.
