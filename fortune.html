@@ -2187,12 +2187,6 @@ body.has-fab main{padding-bottom:110px;}
   margin:6px 0 14px;word-break:keep-all;}
 .cross-sell .btn{display:flex;align-items:center;justify-content:center;gap:4px;}
 
-/* R49 — '무엇으로 봤나요' 한 줄 */
-.basis-chip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-4px 0 14px;}
-.basis-chip .basis-k{font-size:.72rem;color:var(--ink-faint);}
-.basis-chip .basis-v{font-size:.72rem;font-weight:700;color:var(--gold);
-  background:var(--gold-soft);border-radius:3px;padding:3px 9px;}
-
 /* 봉투 애니메이션 */
 .envelope-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding:30px 20px;text-align:center;}
 .envelope{width:180px;height:120px;position:relative;}
@@ -13974,22 +13968,9 @@ function statMini(k,v){ return el('div',{class:'stat-mini'},[el('div',{class:'k'
    eyebrow는 그래서 장식이 아니라 빵부스러기다 — 제목·본문·순서는 하나도 바꾸지 않는다.
    sub에는 문자열이나 노드를 넘길 수 있고, 넘기지 않으면 만들지 않는다.
 ===================================================================== */
-/* =====================================================================
-   R49 — 이 화면이 '무엇으로 본 결과인지' 한 줄 (실사용자 피드백)
-   ---------------------------------------------------------------------
-   "그냥 사주만 넣었을 때랑 MBTI까지 넣었을 때 뭐가 달라진 건지 모르겠다.
-    이렇게 섞인 계산 기준도 사용자는 알 수 없다"는 피드백을 받았다.
-
-   실제로 화면마다 쓰는 재료가 다르다 — 오늘의 운세와 내 사주는 사주만,
-   MBTI 리포트는 MBTI만, 궁합은 둘을 섞는다. 그런데 화면에는 그 말이 없었다.
-   재료를 못 밝히면 "그냥 일반 운세 같다"는 인상이 남는다.
-===================================================================== */
-function basisChip(kinds){
-  var row = el('div',{class:'basis-chip'});
-  row.appendChild(el('span',{class:'basis-k'},['무엇으로 봤나요']));
-  kinds.forEach(function(k){ row.appendChild(el('span',{class:'basis-v'},[k])); });
-  return row;
-}
+/* R49의 '무엇으로 봤나요 · 사주 · 성격유형' 한 줄은 2026-09-05 대표님 지시로 지웠습니다
+   ("이거 필요없어 지워"). 궁합 화면 맨 위 한 곳에만 있던 것이라 함수·CSS까지 함께 걷어냈습니다.
+   되살리려면 git 기록에서 basisChip을 찾으십시오. */
 /* 시안의 화면 머리 — 왼쪽에 화면 이름, 오른쪽에 낙관 도장(한자) 또는 짧은 글(날짜).
    pageHead(작은 라벨 + 큰 제목 + 소제목)와 달리 한 줄이고, 화면 맨 위에만 쓴다. */
 function screenHead(name, opts){
@@ -17691,7 +17672,6 @@ function renderCompat(){
     if(COMPAT_DRAFT.fromInvite) COMPAT_VIEW = 'pair';
     var isGroupView = (COMPAT_VIEW === 'group');
 
-    view.appendChild(basisChip(['사주','성격유형']));
     /* R32 — 초대 링크로 들어온 화면에서는 칸이 이미 채워져 있다. "입력하면"이라고 말하면
        무엇을 더 넣으라는 건지 알 수 없고, 채워진 값이 자기 정보라고 오해하게 된다.
        그래서 그 경우에는 누구 정보가 채워졌는지와 다음에 누를 것을 그대로 적는다. */
@@ -17741,7 +17721,7 @@ function renderCompat(){
       view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;',
         disabled: GC_RELATION_SET ? null : 'disabled',
         onclick:function(){ if(!GC_RELATION_SET) return; openInviteLinkModal(p, GC_RELATION); }},
-        [svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '링크를 보내 모으기']));
+        [svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), '상대방에게 궁합 링크 보내기']));
       view.appendChild(el('p',{class:'biz-hint'},
         ['같은 링크 하나로 여러 분을 부를 수 있어요. 받은 분이 자기 정보를 넣으면 바로 그룹에 들어와요.']));
     } else {
@@ -17754,7 +17734,7 @@ function renderCompat(){
          시트를 열어야만 보이던 탓에 무엇을 고를 수 있는지가 화면에 없었다.
          ★ 다만 처음에는 아무것도 눌린 상태로 두지 않는다. 기본값(친구)을 눌러 놓으면
            연인으로 보내려던 분이 그대로 링크를 만들어 버린다 — 링크는 보내고 나면
-           못 고친다. 고르기 전에는 아래 [상대방이 직접 입력하기]가 막힌다. */
+           못 고친다. 고르기 전에는 아래 [상대방에게 궁합 링크 보내기]가 막힌다. */
       view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['어떤 사이인가요']));
       var pseg = el('div',{id:'pairRelSeg', class:'seg-toggle seg-rel', style:'margin-bottom:6px;', role:'group','aria-label':'어떤 사이인가요'});
       COMPAT_RELATIONS.forEach(function(r){
@@ -17787,7 +17767,7 @@ function renderCompat(){
           return;
         }
         openInviteLinkModal(p, COMPAT_DRAFT.relation);
-      }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('상대방이 직접 입력하기','링크를 보내면 그분이 넣어요')]));
+      }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('상대방에게 궁합 링크 보내기','받은 분이 자기 정보를 넣어요')]));
       /* ★ R56 — 아래 입력 칸에 이름을 붙인다(대표님 지시). 위 버튼(상대가 넣기)과
          아래 칸(내가 넣기)이 같은 일을 다른 방법으로 하는 것인데, 아래에는 이름이 없어
          둘의 관계가 안 보였다. */
@@ -17819,7 +17799,7 @@ function renderCompatForm(){
        기본값(친구)을 미리 적어 두면 연인으로 보려던 사람이 그냥 지나치고,
        그러면 본인이 고르지 않은 비중으로 점수가 나온다. */
   /* ★ 2026-08-31 대표님 지시 — 이 줄은 여기(직접 입력 칸)가 아니라 화면 위,
-     [상대방이 직접 입력하기] 버튼보다 앞에 있다(renderCompat 참고).
+     [상대방에게 궁합 링크 보내기] 버튼보다 앞에 있다(renderCompat 참고).
      여기 있으면 링크로 보내는 길을 고른 사람은 관계를 정할 기회가 없다. */
 
   /* row 1: 상대방 닉네임 */
@@ -22077,7 +22057,7 @@ var COPY_UNWRAP_SEL = '.term-lite, .term-chip';
    늘어서서 무슨 표였는지 알 수가 없다(실측). 이런 칸은 한 줄로 눌러 준다. */
 var COPY_INLINE_SEL = [
   '.pillar-col', '.elem-bar-row', '.stat-cell', '.cm-head', '.cm-foot',
-  '.why-row', '.ts-row', '.biz-row', '.basis-chip', '.grid3 > *', '.mini-stat',
+  '.why-row', '.ts-row', '.biz-row', '.grid3 > *', '.mini-stat',
   '.month-cell', '.daewoon-item', '.gc-rank-row', '.cm-mix-cell'
 ].join(',');
 
