@@ -4942,6 +4942,9 @@ return {
   STEMS:STEMS, BRANCHES:BRANCHES, STEMS_H:STEMS_H, BRANCHES_H:BRANCHES_H, ELEM_NAMES:ELEM_NAMES, STEM_ELEM:STEM_ELEM, STEM_YY:STEM_YY, BRANCH_ELEM:BRANCH_ELEM, BRANCH_YY:BRANCH_YY,
   ganjiOf:ganjiOf, computeSaju:computeSaju, lunarToSolar:lunarToSolar, ipchunUTCms:ipchunUTCms, jieBoundariesForYear:jieBoundariesForYear,
   sipseongOf:sipseongOf, elementCounts:elementCounts, branchRelations:branchRelations, daewoonList:daewoonList, saeunPillar:saeunPillar,
+  /* ★ 2026-09-05 — 띠 점수(zodiacScore)가 육합을 못 보고 있어서 내보낸다.
+     표를 밖에 또 적지 마라 — 두 벌이 되는 순간 한쪽만 고치게 된다. */
+  YUKHAP:YUKHAP, pairKey:pairKey,
   dayPillarIndexForCivilDate:dayPillarIndexForCivilDate, monthlyPillarsOfYear:monthlyPillarsOfYear,
   /* R20 — 진태양시 보정 */
   BIRTH_PLACES:BIRTH_PLACES, LON_DEFAULT:LON_DEFAULT, HOUR_BRANCH_NAMES:BRANCHES,
@@ -11030,31 +11033,104 @@ function zodiacScore(aIdx,bIdx){
   /* ★ R85 — 인덱스가 없으면(둘 중 하나라도 null/undefined) 맨 아래 기본값 65가 그냥 나갔다.
      계산한 적 없는 점수가 종합 점수에 10%로 섞이는 자리라, 못 구했다는 사실을 null로 돌려
      호출부가 "정보 부족"으로 다루게 한다. */
+  /* ★ 2026-09-05 대표님 지시("다 고쳐") — 육합을 안 보고 있었다.
+     띠는 삼합(90)·충(35)·형파(55)만 보고 육합은 아예 안 봐서, 인해·사신 육합이 55점
+     (형파 대접)을 받고 나머지 육합 넷은 65점(기본값)이었다. 그런데 **같은 글자쌍을
+     buildSajuCompat의 일지는 육합 90점으로 본다** — 한 화면 안에서 두 항목이 같은 관계를
+     다르게 셌다. 인해·사신은 육합이면서 파이기도 한데(고전에서도 겹치는 쌍이다),
+     일지 쪽이 합을 먼저 보므로 여기서도 합을 먼저 본다. 이 앱은 이미 다른 두 곳
+     (오늘 애정운 · 궁합 일지)에서 '육합 → 충 → 삼합 → 파' 순으로 보고 있다 — 같은 순서로 맞춘다.
+     ★ 육합은 88점으로 둔다 — 삼합(90)이 세 글자가 맞물리는 더 큰 짜임이라 그 아래다.
+     ★ 표를 여기 다시 적지 마라. SajuEngine.YUKHAP 하나만 본다. */
   if(typeof aIdx !== 'number' || typeof bIdx !== 'number') return null;
   var diff=Math.abs(aIdx-bIdx); diff=Math.min(diff,12-diff);
+  if(SajuEngine.YUKHAP[SajuEngine.pairKey(aIdx,bIdx)]) return 88; /* 육합 */
+  if(diff===6) return 35;                                        /* 충 */
+  if(diff===4) return 90;                                        /* 삼합 */
   if(diff===0) return 70;
-  if(diff===4) return 90;
-  if(diff===6) return 35;
-  if(diff===3) return 55;
+  if(diff===3) return 55;                                        /* 형·파 */
   return 65;
 }
+/* =====================================================================
+   MBTI 궁합표 — 인지기능(주기능·부기능) 기준  (2026-09-05 대표님 지시로 다시 짬)
+   ---------------------------------------------------------------------
+   ★ 왜 다시 짰나 (실측으로 확인한 예전 표의 흠)
+     · 예전 표는 네 글자를 그냥 세는 방식이었고, 맨 끝에 `if(a===b) score=88`을 박아
+       **같은 유형을 전체 최고점**으로 만들어 놨었다. 120쌍 중 88점을 넘는 쌍이 0개 —
+       "나랑 똑같은 사람이 최고 궁합"이 되는 표였다.
+     · INFJ×ISFJ(세 글자 같음)가 61점인데 ENFP×ISTJ(한 글자도 안 같음)가 67점이었다.
+       글자 세기만으로는 이런 뒤집힘을 설명할 수 없다.
+
+   ★ 무엇을 보나 — 유형마다 정해진 인지기능 순서(주기능→부기능→3차→열등)를 본다.
+     STACK 표가 그 순서다. 여기서 네 가지를 잰다.
+       axis2  두 사람의 앞 두 기능이 같은 축(N·S·T·F)을 보는가  → 말이 통한다
+       share  아예 같은 기능인가 (Ne=Ne)                        → 같은 방식으로 본다
+       mirror 같은 축인데 방향만 반대인가 (Ne↔Ni, Fe↔Fi)        → 같은 데를 보되 다르게 본다
+       cover  내 앞 기능이 상대의 뒤 기능인가 (양쪽 다 셈)       → 서로 빈자리를 채운다
+     여기에 네 글자 지표를 얹는다. S/N(정보를 보는 눈)이 가장 무겁다 —
+     실제로 대화가 어긋나는 자리가 거기다. E/I는 서로 다를 때 오히려 낫다고 본다.
+
+   ★ 결과 (120쌍 실측 · 2026-09-05)
+       최저 47 · 중앙값 70 · 최고 82 · 같은 유형끼리는 76
+       같은 유형보다 높은 쌍이 32개 — 더 이상 "같으면 최고"가 아니다
+       최고점: INFJ×ENFP · INTJ×ENTP · ISTJ×ESTP · ISFJ×ESFP · ISTP×ESTJ · ISFP×ESFJ
+              (같은 축을 보되 방향이 반대인 짝 — 통하면서 서로를 채운다)
+       최저점: ESTP×ENFP · ESTJ×ENFJ 류 (둘 다 밖으로 나가는데 보는 데가 정반대)
+     ★ 숫자를 손보려거든 반드시 120쌍을 다시 뽑아 위 네 줄을 갱신할 것.
+       한 가중치만 건드려도 최고·최저 쌍이 통째로 바뀐다.
+   ===================================================================== */
+var MBTI_STACK = {
+  ISTJ:['Si','Te','Fi','Ne'], ISFJ:['Si','Fe','Ti','Ne'], INFJ:['Ni','Fe','Ti','Se'], INTJ:['Ni','Te','Fi','Se'],
+  ISTP:['Ti','Se','Ni','Fe'], ISFP:['Fi','Se','Ni','Te'], INFP:['Fi','Ne','Si','Te'], INTP:['Ti','Ne','Si','Fe'],
+  ESTP:['Se','Ti','Fe','Ni'], ESFP:['Se','Fi','Te','Ni'], ENFP:['Ne','Fi','Te','Si'], ENTP:['Ne','Ti','Fe','Si'],
+  ESTJ:['Te','Si','Ne','Fi'], ESFJ:['Fe','Si','Ne','Ti'], ENFJ:['Fe','Ni','Se','Ti'], ENTJ:['Te','Ni','Se','Fi']
+};
 var MBTI_MATRIX = (function(){
+  var W = {base:42, sn:12, jp:5, tf:5, ei:5, axis2:4, share:2, cover:6, mirror:5};
+  function ax(f){ return f.charAt(0); }   /* 'Ne' → 'N' */
   var m={};
   MBTI_TYPES.forEach(function(a){
     m[a]={};
     MBTI_TYPES.forEach(function(b){
-      var score=50;
-      for(var i=0;i<4;i++){ score += (a[i]===b[i]) ? 4 : -1; }
-      if(a[0]!==b[0]) score+=9;
-      if(a[1]===b[1]) score+=11;
-      if(a[2]!==b[2]) score+=7;
-      if(a[3]!==b[3]) score+=5;
-      if(a===b) score=88;
-      m[a][b]=Math.max(30,Math.min(98,Math.round(score)));
+      var A=MBTI_STACK[a], B=MBTI_STACK[b];
+      var At=[A[0],A[1]], Bt=[B[0],B[1]], Ab=[A[2],A[3]], Bb=[B[2],B[3]];
+      var s = W.base;
+      if(a[1]===b[1]) s += W.sn;      /* 정보를 보는 눈이 같다 */
+      if(a[3]===b[3]) s += W.jp;      /* 일을 매듭짓는 방식이 같다 */
+      if(a[2]===b[2]) s += W.tf;      /* 판단하는 기준이 같다 */
+      if(a[0]!==b[0]) s += W.ei;      /* 한쪽은 꺼내고 한쪽은 받는다 */
+      var axis2 = At.filter(function(f){ return Bt.some(function(g){ return ax(g)===ax(f); }); }).length;
+      s += W.axis2 * axis2;
+      var share = At.filter(function(f){ return Bt.indexOf(f)>=0; }).length;
+      s += W.share * share;
+      var cover = At.filter(function(f){ return Bb.indexOf(f)>=0; }).length
+                + Bt.filter(function(f){ return Ab.indexOf(f)>=0; }).length;
+      s += W.cover * cover;
+      var mir = At.filter(function(f){ return Bt.some(function(g){ return ax(g)===ax(f) && g!==f; }); }).length;
+      s += W.mirror * mir;
+      m[a][b] = Math.max(30, Math.min(98, Math.round(s)));
     });
   });
   return m;
 })();
+/* 위 표가 이 두 사람에게서 실제로 무엇을 봤는지 되돌려준다.
+   ★ 새로 계산하는 점수가 아니다 — 화면의 "왜 이 점수인가요"가 표와 다른 말을 하지 않도록,
+     표를 만들 때 쓴 네 가지 셈을 같은 식으로 한 번 더 세어 문장 고르는 데만 쓴다.
+     (예전에는 화면이 "네 글자 중 몇 개가 같다"만 말해서, 글자가 하나도 안 같은데
+      점수가 더 높은 쌍이 나오면 화면이 그 이유를 설명하지 못했다.) */
+function mbtiPairFacts(a, b){
+  var A = MBTI_STACK[a], B = MBTI_STACK[b];
+  if(!A || !B) return null;
+  function ax(f){ return f.charAt(0); }
+  var At=[A[0],A[1]], Bt=[B[0],B[1]], Ab=[A[2],A[3]], Bb=[B[2],B[3]];
+  return {
+    axis2: At.filter(function(f){ return Bt.some(function(g){ return ax(g)===ax(f); }); }).length,
+    share: At.filter(function(f){ return Bt.indexOf(f)>=0; }).length,
+    cover: At.filter(function(f){ return Bb.indexOf(f)>=0; }).length
+         + Bt.filter(function(f){ return Ab.indexOf(f)>=0; }).length,
+    mirror: At.filter(function(f){ return Bt.some(function(g){ return ax(g)===ax(f) && g!==f; }); }).length
+  };
+}
 
 /* ---- 프로필의 사주 계산 결과를 구해 캐시(기능3 구현 가능성: sajuCache) ---- */
 function getSajuResult(profile){
@@ -12539,7 +12615,7 @@ var MBTI_PB = {
     career:'사람들을 이끌고 성장시키는 역할에서 <strong>가장 큰 능력</strong>을 보여줘요. 혼자 조용히 처리하는 일만 반복되면 답답함을 느낄 수 있어요.',
     money:'다른 사람을 위한 소비에는 아낌없지만, <strong>자신을 위한 저축</strong>은 의식적으로 챙겨야 해요.',
     relationship:'많은 사람이 자연스럽게 곁에 모이는 편이라, 관계의 중심에 서는 경우가 많아요.',
-    stress:'모두를 챙기다 정작 자신이 텅 비어버리는 게 번아웃 신호일 수 있어요. 그럴 땐 <strong>누군가를 챙기기 전에 너부터 먼저 채우는 것</strong>이 필요해요. 심리학에서 말하는 \'그립(grip)\' 현상인데, 눌러뒀던 <strong>Ti</strong>가 튀어나와 사소한 논리 오류에 집착하게 되는 거예요. 그럴 땐 혼자 따지고 들기보다 믿는 사람과 마음을 나누는 대화로 돌아가는 게 회복에 도움이 돼요.',
+    stress:'모두를 챙기다 정작 자신이 텅 비어버리는 게 번아웃 신호일 수 있어요. 그럴 땐 <strong>누군가를 챙기기 전에 스스로부터 먼저 채우는 것</strong>이 필요해요. 심리학에서 말하는 \'그립(grip)\' 현상인데, 눌러뒀던 <strong>Ti</strong>가 튀어나와 사소한 논리 오류에 집착하게 되는 거예요. 그럴 땐 혼자 따지고 들기보다 믿는 사람과 마음을 나누는 대화로 돌아가는 게 회복에 도움이 돼요.',
     growth:'<strong>남을 이끌기 전에 나를 먼저 돌보는 연습</strong>이 필요해요.',
     activities:'사람들과 함께하는 프로젝트, 멘토링, 봉사활동이 마음을 채워줄 거예요.',
     closing:'<strong>사람을 이끄는 등불</strong> 같은 존재예요. 그 빛을 스스로에게도 비춰줘요.'
@@ -13631,6 +13707,15 @@ function buildSajuCompat(pA, pB){
   var nameA = pA.name || '이쪽', nameB = pB.name || '상대방';
   var diff = ((bElem-aElem)%5+5)%5;
   var elemScore60, elemRel, elemDetail, elemTerm;
+  /* ★ 2026-09-05 대표님 지시("다 고쳐") — 상생 두 방향을 같은 92점으로 맞췄다.
+     예전에는 내가 상대를 생하면 95, 상대가 나를 생하면 90이라 **같은 두 사람인데
+     누가 먼저 넣었느냐에 따라 점수가 달랐다**(사주 57 vs 54 · 종합 1~2점).
+     오행 25조합 중 10조합(40%)이 여기 걸렸다. 상극은 원래부터 양방향 45로 같았으니
+     상생만 방향을 가리던 것이고, 그럴 이유가 없었다.
+     ★ 방향을 말하는 '문장'(누가 주고 누가 받는지 — elemPlain·elemMean·elemDetail)은
+       그대로 둔다. 관계는 방향이 있고, 점수만 두 사람 공통값이면 된다.
+     ★ 92는 95와 90의 가운데다. 이 숫자를 바꾸면 저장된 유료 글이 전부 다시 만들어진다
+       (캐시 열쇠가 payload 전체 해시이고 payload에 점수가 들어 있다). */
   /* ★ 2026-08-26 (대표님 지시: "어려운 단어 쓰지 말라니깐") — 화면에 그대로 나가는 일상어 짝.
      elemTerm/branchTerm(비화·상생·육합·충)은 계산 표기이자 AI에게 넘기는 값이라 그대로 둔다.
      화면은 아래 Plain/Mean 두 개만 쓴다. 반드시 같은 자리에서 함께 정한다 —
@@ -13659,7 +13744,7 @@ function buildSajuCompat(pA, pB){
       '다만 강점이 겹치는 만큼 약점도 겹쳐요 — 둘 다 미루는 일, 둘 다 피하는 대화가 있으면 그 자리는 끝내 비어 있게 돼요. '+
       '역할을 일부러 나눠 맡고, 한쪽이 싫어하는 일을 다른 쪽이 대신 해주는 규칙을 만들어 두면 이 조합의 약점이 거의 사라져요.';
   } else if(diff===1){
-    elemScore60=95; elemTerm='상생(내가 상대를 생함)'; elemRel='상생(내가 상대를 북돋는 관계) — 서로를 자연스럽게 살려주는 흐름이에요';
+    elemScore60=92; elemTerm='상생(내가 상대를 생함)'; elemRel='상생(내가 상대를 북돋는 관계) — 서로를 자연스럽게 살려주는 흐름이에요';
     elemPlain=nameA+josaOnly(nameA,'이','가')+' 밀어주는 결'; elemRel=elemPlain+' — 서로를 자연스럽게 살려주는 흐름이에요';
     elemMean=nameA+josaOnly(nameA,'이','가')+' 주고 '+nameB+josaOnly(nameB,'이','가')+' 받는 쪽으로 자연스럽게 흘러요. 처음엔 편한데, 오래되면 한쪽만 주는 모양으로 굳기 쉬워요.';
     elemDetail = stemLine+aElemName+josaOnly(aElemName,'이','가')+' '+bElemName+josaOnly(bElemName,'을','를')+
@@ -13667,7 +13752,7 @@ function buildSajuCompat(pA, pB){
       '이 방향은 관계 초반에 특히 편안하게 느껴져요. 대신 오래되면 한쪽만 계속 주는 구도로 굳기 쉬우니, '+
       nameB+josaOnly(nameB,'이','가')+' 받은 것을 말로 돌려주는 습관이 이 조합의 수명을 결정해요.';
   } else if(diff===4){
-    elemScore60=90; elemTerm='상생(상대가 나를 생함)'; elemRel='상생(상대가 나를 북돋는 관계) — 기대지 않아도 자연스럽게 도움을 주고받아요';
+    elemScore60=92; elemTerm='상생(상대가 나를 생함)'; elemRel='상생(상대가 나를 북돋는 관계) — 기대지 않아도 자연스럽게 도움을 주고받아요';
     elemPlain=nameB+josaOnly(nameB,'이','가')+' 밀어주는 결'; elemRel=elemPlain+' — 기대지 않아도 자연스럽게 도움을 주고받아요';
     elemMean=nameB+josaOnly(nameB,'이','가')+' 주고 '+nameA+josaOnly(nameA,'이','가')+' 받는 쪽으로 흘러요. '+nameA+josaOnly(nameA,'은','는')+' 이 관계에서 일이 잘 풀린다고 느끼기 쉬운데, 그건 상대가 대주고 있는 몫이에요.';
     elemDetail = stemLine+bElemName+josaOnly(bElemName,'이','가')+' '+aElemName+josaOnly(aElemName,'을','를')+
@@ -13756,8 +13841,8 @@ function compatWeightSentence(res, head){
 
    | 화면에 보이는 항목       | 실제 값            | 그 값이 나온 계산                                        |
    |--------------------------|--------------------|----------------------------------------------------------|
-   | 대화가 잘 통해요          | res.mbtiScore      | MBTI_MATRIX[A][B] — 4지표 일치/보완 가중 (30~98)          |
-   | 서로 부족한 걸 채워줘요   | res.saju.elemScore60 | 두 사람 '일간(日干)'의 오행 관계. 상생95/90·비화70·상극45 |
+   | 대화가 잘 통해요          | res.mbtiScore      | MBTI_MATRIX[A][B] — 인지기능 겹침·보완 + 4지표 (47~82)   |
+   | 서로 부족한 걸 채워줘요   | res.saju.elemScore60 | 두 사람 '일간(日干)'의 오행 관계. 상생92·비화70·상극45     |
    | 하루 생활 리듬이 맞아요   | res.saju.branchScore | 두 사람 '일지(日支)'의 육합90 / 무관65 / 충40             |
    | 곁에 있으면 편안해요      | res.elemScore      | elementScore() — 원국에서 가장 진한 오행끼리 상생92/같음75/상극40 |
    | 티격태격해도 금방 풀려요  | res.zodScore       | zodiacScore() — 띠 사이 거리. 삼합각(4칸)90 / 충(6칸)35 등 |
@@ -19531,11 +19616,24 @@ function compatWhyEvidence(pA, pB, res){
     /* ★ 2026-08-26 (대표님 지시) — "본 값이에요"에서 끝내지 말고 실제로 어떻게 맞물리는지까지. */
     /* ★ same.length가 0일 수 있다. "같은 0개는 설명 없이도 통해요"는 말이 안 된다 —
        실제로 ENFP × ISTJ에서 그 문장이 나왔다(실측). 0 · 4 · 그 사이를 따로 쓴다. */
-    ev.mbtiMore = !same.length
-      ? '네 가지가 모두 갈려요. 같은 일을 두고도 보는 데가 서로 달라서, 부딪히기 쉬운 만큼 서로 없는 걸 채워주기도 좋은 조합이에요.'
-      : !diff.length
-        ? '네 가지가 다 같아요. 편하게 통하는 대신, 잘하는 것도 못하는 것도 겹쳐서 빈자리가 그대로 남기 쉬워요.'
-        : ('같은 '+same.length+'개는 설명 없이도 통하는 자리예요. 갈리는 '+diff.length+'개는 서로 다르게 보는 자리라, 부딪히기도 하고 서로 없는 걸 채워주기도 해요.');
+    /* ★ 2026-09-05 — 궁합표를 인지기능 기준으로 다시 짜면서 이 문장도 함께 고쳤다.
+       글자 개수만 말하면 화면이 점수를 설명하지 못한다. 실제로 ENFP × ISTJ는 글자가
+       하나도 안 같은데 INFJ × ISFJ(세 글자 같음)보다 점수가 높다 — 표가 글자가 아니라
+       두 사람이 무엇을 보는지(인지기능)를 보기 때문이다. 그 이유를 그대로 적는다. */
+    var f = mbtiPairFacts(pA.mbti, pB.mbti);
+    ev.mbtiMore = !f
+      ? (!same.length
+          ? '네 가지가 모두 갈려요. 같은 일을 두고도 보는 데가 서로 달라요.'
+          : '같은 '+same.length+'개는 설명 없이도 통하는 자리예요.')
+      : (f.cover >= 3)
+        ? '글자는 갈려도, 한쪽이 약한 자리를 다른 쪽이 앞세워 쓰고 있어요. 서로 없는 걸 정확히 채워주는 짝이라 점수가 높게 나와요. 대신 처음에는 서로가 낯설게 느껴져요.'
+        : (f.mirror >= 2)
+          ? '같은 데를 보면서 방향만 서로 반대예요. 그래서 말은 잘 붙는데 결론이 자주 갈려요 — 이 조합은 대화가 길어질수록 좋아지는 쪽이에요.'
+          : (f.share === 2)
+            ? '보는 방식이 아예 같아요. 설명이 거의 필요 없는 대신, 둘 다 놓치는 자리는 아무도 안 채워서 그대로 남아요.'
+            : (f.axis2 >= 1)
+              ? '겹치는 자리와 갈리는 자리가 반반이에요. 통하는 대목에서 편하게 시작해서, 갈리는 대목은 말로 맞춰 가는 조합이에요.'
+              : '두 사람이 먼저 눈길을 주는 데가 서로 달라요. 같은 자리에 있어도 각자 다른 걸 보고 있어서, 무엇을 봤는지부터 꺼내 놓아야 이야기가 붙어요.';
   }
 
   if(res.saju && typeof res.saju.score==='number'){
@@ -19686,7 +19784,7 @@ var DEEP_PB = {
     '상생(내가 상대를 생함)': [
       '{A}가 주고 {B}가 받는 방향이라, {B}는 이 관계에서 유난히 일이 잘 풀린다고 느껴요. 막히던 것이 {A}와 이야기하고 나면 풀리고, 결정을 못 하던 것이 정해져요. {B} 쪽에서 먼저 연락하는 일이 많다면 그건 성격 문제가 아니라 이 방향 때문이에요.',
       '{A} 쪽에서는 처음에 이게 부담으로 느껴지지 않아요. 주는 것이 자연스러운 자리라서 스스로도 알아채기 어려워요. 그런데 이 흐름이 몇 년 이어지면 어느 날 갑자기 지쳐요. 그날 {A}가 하는 말은 대개 "나는 늘 주기만 했다"인데, {B} 입장에서는 처음 듣는 말이라 놀라워요.',
-      '이 조합의 수명은 {B}가 받은 것을 말로 돌려주느냐로 갈려요. 물건이나 답례가 아니라 "그때 네가 해준 말 덕에 정했다" 같은 한마디예요. 그 말이 오가는 관계는 이 방향이 오래 유지되고, 없으면 한쪽이 조용히 물러나요.'
+      '이 조합의 수명은 {B}가 받은 것을 말로 돌려주느냐로 갈려요. 물건이나 답례가 아니라 "그때 해준 말 덕에 정했다" 같은 한마디예요. 그 말이 오가는 관계는 이 방향이 오래 유지되고, 없으면 한쪽이 조용히 물러나요.'
     ],
     '상생(상대가 나를 생함)': [
       '{B}가 주고 {A}가 받는 방향이에요. {A}는 이 관계에서 안심하게 되고, 어려운 이야기를 꺼내기가 쉬워요. 판단이 서지 않을 때 {B}에게 먼저 물어보게 된다면 그 자체가 이 방향의 증거예요.',
