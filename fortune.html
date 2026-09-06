@@ -12429,14 +12429,13 @@ var MBTI_SUFFIX = {
     '이 성향은 고쳐야 할 문제가 아니라, 살면서 계속 다듬어가는 고유한 색깔이라는 것만 기억해줘요.'
   ]
 };
-/* v4-B 신규: 16유형 인지기능 스택(주기능-부기능-3차기능-열등기능) — 공개된 고정 이론표를 코드에 내장.
-   새 계산 로직 없음, 순수 룩업. MBTI_PB의 문구뱅크 "내용"을 쓸 때 이 표의 함수명을 그대로 인용한다. */
-var MBTI_COGFUNC = {
-  ISTJ:['Si','Te','Fi','Ne'], ISFJ:['Si','Fe','Ti','Ne'], INFJ:['Ni','Fe','Ti','Se'], INTJ:['Ni','Te','Fi','Se'],
-  ISTP:['Ti','Se','Ni','Fe'], ISFP:['Fi','Se','Ni','Te'], INFP:['Fi','Ne','Si','Te'], INTP:['Ti','Ne','Si','Fe'],
-  ESTP:['Se','Ti','Fe','Ni'], ESFP:['Se','Fi','Te','Ni'], ENFP:['Ne','Fi','Te','Si'], ENTP:['Ne','Ti','Fe','Si'],
-  ESTJ:['Te','Si','Ne','Fi'], ESFJ:['Fe','Si','Ne','Ti'], ENFJ:['Fe','Ni','Se','Ti'], ENTJ:['Te','Ni','Se','Fi']
-};
+/* v4-B 신규: 16유형 인지기능 스택(주기능-부기능-3차기능-열등기능) — 공개된 고정 이론표.
+   새 계산 로직 없음, 순수 룩업. MBTI_PB의 문구뱅크 "내용"을 쓸 때 이 표의 함수명을 그대로 인용한다.
+   ★ 2026-09-06 — 표를 여기서 지우고 MBTI_STACK 하나만 남겼다. 궁합표(MBTI_MATRIX)를 인지기능
+     기준으로 다시 짜면서 위쪽에 똑같은 표를 한 벌 더 만들어 놨었다. **글자 하나가 다르면
+     성격유형 풀이와 궁합 점수가 서로 다른 이론을 말하게 된다.** 이름은 그대로 두어
+     부르는 쪽(buildMbtiReport16)은 한 줄도 안 바뀐다. */
+var MBTI_COGFUNC = MBTI_STACK;
 var MBTI_FUNC_NAME = { Se:'외향 감각', Si:'내향 감각', Ne:'외향 직관', Ni:'내향 직관', Te:'외향 사고', Ti:'내향 사고', Fe:'외향 감정', Fi:'내향 감정' };
 /* 16유형별 문구뱅크(1차 키) — 섹션 3~10,12,13에서 사용. 각 유형마다 서로 다른 문장. */
 var MBTI_PB = {
