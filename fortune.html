@@ -18458,7 +18458,10 @@ function renderCompatSummary(p, draft){
   moreCard.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:10px;', onclick:function(){
     var me = activeProfile();
     if(!me){ showToast('내 프로필이 필요해요.'); return; }
-    openInviteLinkModal(me);
+    /* ★ 2026-09-07 — 사이를 안 넘기고 있었다. 이 화면은 이미 사이를 알고 있는데(r.res.relation)
+       안 넘기면 여기서 만들어진 모임만 **사이가 빈 채로** 저장된다
+       (대표님 지적: "아직 안 고른 모임 - 2명 - 이거 뒤에는 왜 관계가 없어?"). */
+    openInviteLinkModal(me, r.res && r.res.relation);
   }},['초대 링크 보내기']));
   box.appendChild(moreCard);
 
@@ -20889,7 +20892,10 @@ function buildSavedGroupsCard(){
          안 보이면 열어 보기 전에는 이 모임을 무엇으로 보기로 했는지 알 수 없다.
          아직 안 고른 모임은 아무것도 안 붙인다 — '친구'라고 적으면 고른 적 없는 값을 적는 것이 된다. */
       (g.name || '이름 없는 그룹') + (g.n > 1 ? ' · ' + g.n + '명' : ' · 아직 나 혼자')
-        + (groupRelation(g.id) ? ' · ' + relationLabel(groupRelation(g.id)) : ''),
+        /* ★ 오늘 이전에 저장된 모임에는 사이가 안 적혀 있다. 빈칸으로 두면
+           "왜 얘만 관계가 없지?"가 된다(대표님 지적). 없다는 사실을 적는다 —
+           '친구'라고 적으면 고른 적 없는 값을 적는 것이라 그건 안 한다. 열면 고르게 된다. */
+        + ' · ' + (groupRelation(g.id) ? relationLabel(groupRelation(g.id)) : '사이 미정'),
       '열기', function(){ openSavedGroup(g.id); }));
   });
   /* ★ R60 — 눌러만 보고 안 보낸 링크가 쌓였을 때 한 번에 치운다.
@@ -21116,7 +21122,16 @@ function renderGroupCompat(){
        ★ 바꾸기는 이 모임에만 걸린다 — noteGroupRelation이 이 그룹에만 적는다. */
     relRowG.appendChild(el('button',{class:'compat-rel-change', type:'button',
       onclick:function(){
-        confirmModal('사이를 바꾸면 점수를 다시 계산해요. 이미 받아 두신 풀이는 예전 사이로 쓰인 글이라 새 점수와 어긋날 수 있어요. 바꿀까요?',
+        /* ★ 2026-09-07 대표님 질문("바꾸기를 하면 우리 비용이 나가냐?")으로 다시 본 자리.
+           우리 비용은 횟수 상한이 막는다(서버 AI_QUOTA — 건별 1회·이용권 2회, 상품별로 셈).
+           문제는 손님 쪽이다: **이미 횟수를 다 쓰신 분이 사이를 바꾸면 새 사이의 풀이가 안 열린다.**
+           캐시 열쇠에 사이가 들어 있어 새 사이는 캐시에 없고, 새로 만들려면 횟수가 필요하기 때문이다.
+           처음 문구("새 점수와 어긋날 수 있어요")는 이 사실을 안 말하고 있었다 — 안 밝히면
+           돈을 내고도 못 여는 상태에 스스로 들어가게 된다. 되돌리는 길까지 함께 적는다. */
+        confirmModal('사이를 바꾸면 점수를 다시 계산하고, 유료 풀이도 새로 만들어야 해요. '
+          + '새로 만드는 횟수는 건별 결제 ' + AI_QUOTA.once + '회 · 전체 이용권 ' + AI_QUOTA.pass + '회라, '
+          + '이미 다 쓰셨으면 새 사이의 풀이는 열리지 않아요. '
+          + '원래 사이로 되돌리시면 먼저 만든 풀이는 그대로 다시 보실 수 있어요. 바꿀까요?',
           function(){ GC_RELATION_SET=false; GC_SEL=null;
             GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); window.scrollTo(0,0); },
           '바꾸기');
@@ -21649,7 +21664,9 @@ function openInviteLinkModal(profile, relationKey){
     return groupFetch({action:'create', name:autoName, members: gcMeetRow(profile)})
       .then(function(d){
         if(!d || !d.groupId) throw new Error('groupId 없음');
-        rememberGroup(d.groupId, autoName, d.ownerToken, 1, GC_RELATION_SET ? GC_RELATION : null);
+        /* 링크에 실어 보내는 사이가 곧 이 모임의 사이다. relForLink를 먼저 본다 —
+           둘이서 화면에서 만들 때는 GC_RELATION이 아직 안 정해져 있다. */
+        rememberGroup(d.groupId, autoName, d.ownerToken, 1, relForLink || (GC_RELATION_SET ? GC_RELATION : null));
         STATE.pendingInviteGroup = d.groupId; saveState();
         GROUP_VIEW = {id:d.groupId, name:autoName};
         /* ★ 뒤 화면을 먼저 다시 그린다. 그래야 창을 닫았을 때 '기다리는 중' 카드가
