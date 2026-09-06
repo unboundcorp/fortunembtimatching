@@ -11,7 +11,7 @@
 ===================================================================== */
 import crypto from 'node:crypto';
 import { testAccessOf, paidOrdersOf } from './store.js';
-import { splitProductId } from './products.js';
+import { splitProductId, aiQuotaOf } from './products.js';
 import { buildEntitlements } from './entitlements.js';
 
 export const MODEL = 'claude-sonnet-5';
@@ -281,16 +281,35 @@ export function cacheKeyOf(productId, payload) {
     .slice(0, 43);
 }
 
-/* 결제했거나 테스트 허가를 받았는가.
-   ★ 이용권으로 열렸는지(viaPass)를 함께 돌려준다 — 횟수 상한이 다르기 때문이다. */
+/* 결제했거나 테스트 허가를 받았는가. 그리고 **몇 편까지 만들 수 있는가**.
+   ★ 이용권으로 열렸는지(viaPass)를 함께 돌려준다 — 기본 편수가 다르기 때문이다.
+   ★ 2026-09-07 대표님 지시("1쌍에 990원이고 2쌍은 990원*2 이런식으로 추가 과금해야지")
+     ---------------------------------------------------------------------
+     예전에는 편수가 고정 상수였다(aiQuotaOf(kind)). **결제를 몇 번 했는지를 아예 안 봤다.**
+     그래서 같은 상품을 두 번 사도 만들 수 있는 편수가 그대로였다 — 돈을 더 내도 아무 일이
+     안 일어나는 상태였다. 이제 규칙은 하나다:
+
+         만들 수 있는 편수 = (이용권이 살아 있으면 기본 편수) + (그 상품을 산 횟수)
+
+     · 궁합 990원을 한 번 사면 1쌍, 두 번 사면 2쌍이 된다. 새 상품을 만들 필요가 없다.
+     · 이용권만 있으면 상품마다 기본 편수(2편)다. 거기에 추가로 사면 그만큼 늘어난다.
+     · '다시 보기'는 여전히 횟수를 안 쓴다(aiAlreadyUsed가 먼저 걸러 준다).
+     ★ 편수를 세는 곳이 여기 하나다. content.js·interpret.js 두 창구가 이 값을 그대로 쓴다 —
+       두 곳에서 각자 계산하던 것을 여기로 모았다. 따로 계산하게 되돌리지 마라.
+     ★ 연도가 붙는 상품은 productId가 'saju_full:2026'처럼 통째로 들어온다.
+       주문에도 그 값이 그대로 저장되므로 연도별로 따로 세어진다. */
 export async function hasAiAccess(sessionId, productId) {
   const test = await testAccessOf(sessionId);
-  if (test) return { ok: true, viaPass: true, test: true };
+  if (test) return { ok: true, viaPass: true, test: true, quota: aiQuotaOf('pass') };
 
   const orders = await paidOrdersOf(sessionId);
   const ent = buildEntitlements(orders);
-  if (ent.pass && ent.pass.expiresAt > Date.now()) return { ok: true, viaPass: true };
-  if (ent.items[productId]) return { ok: true, viaPass: false };
+  const bought = orders.filter((o) => o && o.product_id === productId).length;
+  const passOn = !!(ent.pass && ent.pass.expiresAt > Date.now());
+  const quota = (passOn ? aiQuotaOf('pass') : 0) + bought;
+
+  if (passOn) return { ok: true, viaPass: true, quota };
+  if (ent.items[productId]) return { ok: true, viaPass: false, quota };
 
   return { ok: false, reason: '이 해석은 결제하신 뒤에 보실 수 있어요.' };
 }

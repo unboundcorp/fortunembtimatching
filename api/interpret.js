@@ -21,7 +21,7 @@
 ===================================================================== */
 import { readBody, json } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { productOf, aiQuotaOf } from './_lib/products.js';
+import { productOf } from './_lib/products.js';
 import { KNOWLEDGE_CHARS } from './_lib/knowledge.js';
 /* ★ 프롬프트·캐시 열쇠·권한은 api/content.js 와 함께 쓴다. 복사해 두면 언젠가 둘이 달라진다. */
 /* ★ 2026-09-02 — 프롬프트를 짜고 Anthropic을 부르는 일은 전부 _lib/aigen.js 로 옮겼다.
@@ -120,7 +120,9 @@ export default async function handler(req, res) {
     if (!already) {
       /* ★ 2026-08-27 — 상품별로 센다. 안 그러면 두 개째 산 손님이 곧바로 막힌다(store.js 주석 참고). */
       const used = await aiUsedCount(sessionId, productId);
-      const quota = allowed.viaPass ? aiQuotaOf('pass') : aiQuotaOf(product.kind);
+      /* ★ 2026-09-07 — 편수는 hasAiAccess가 센다(산 횟수 + 이용권 기본 편수).
+         여기서 다시 계산하지 마라 — 두 창구가 서로 다른 값을 쓰게 된다. */
+      const quota = allowed.quota;
       if (used >= quota) {
         return json(res, 429, {
           error: 'quota_exceeded',
