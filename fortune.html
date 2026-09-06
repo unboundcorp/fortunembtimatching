@@ -17885,8 +17885,7 @@ function renderCompat(){
         [GC_RELATION_SET ? relationNote(GC_RELATION)
                          : '먼저 어떤 사이인지 골라주세요. 고르신 사이에 맞춰 풀이를 써드려요. 링크에도 함께 담겨 가요.']));
 
-      var savedG = buildSavedGroupsCard();
-      if(savedG) view.appendChild(savedG);
+      var savedG = buildSavedGroupsCard();   /* 아래 링크 버튼 뒤에 붙인다 — 2026-09-07 대표님 지시 */
       /* ★ 2026-09-01 대표님 지시(2번안) — 궁합은 링크로만 모은다.
          [저장된 프로필로 모으기]를 뺐다. 저장된 프로필 자체는 그대로 두고
          (다른 사람 사주 봐주기 · 프로필 전환에서 계속 쓴다) 궁합에서만 안 쓴다.
@@ -17901,6 +17900,10 @@ function renderCompat(){
         [svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('상대방에게 궁합 링크 보내기','받은 분이 자기 정보를 넣어요')]));
       view.appendChild(el('p',{class:'biz-hint'},
         ['같은 링크 하나로 여러 분을 부를 수 있어요. 넣은 분부터 차례로 그룹에 들어와요.']));
+      /* ★ 2026-09-07 대표님 지시 — "저장한 그룹이랑 링크 보내는 버튼이랑 순서 바꿔".
+         새 모임을 만드는 것이 이 화면에 처음 온 분의 볼일이고, 저장한 그룹은 다시 오신 분의 볼일이다.
+         카드가 길어서(그룹 목록 + 정리 버튼) 그것부터 나오면 링크 버튼이 화면 밖으로 밀렸다. */
+      if(savedG) view.appendChild(savedG);
     } else {
       var recent = buildRecentRoomsCard();
       if(recent) view.appendChild(recent);
@@ -20335,22 +20338,43 @@ function groupFetch(payload){
 
 /* 이 기기가 기억하는 저장된 그룹 목록 — 주소와 이름뿐이다. */
 function savedGroups(){ return Array.isArray(STATE.savedGroups) ? STATE.savedGroups : []; }
-function rememberGroup(id, name, token, count){
+/* ★ 2026-09-07 대표님 지시 — "그룹별로 관계가 다를 텐데 저장한 그룹 안에서 바꿀 수 있게 해야지".
+   관계(GC_RELATION)가 앱 전체에 하나뿐이라, 어느 그룹을 열든 마지막에 고른 값이 따라다녔다.
+   그룹마다 rel을 적어 두고, 열 때 그 값으로 되돌린다.
+   ★ rel을 안 주고 부르는 자리가 여럿이다(이름 바꾸기·인원 갱신 등). 그때 지우면 안 된다 —
+     prev.rel을 이어받는다. token·n이 이미 같은 방식이다. */
+function rememberGroup(id, name, token, count, rel){
   var prev = savedGroups().filter(function(x){ return x && x.id === id; })[0];
   var list = savedGroups().filter(function(x){ return x && x.id !== id; });
+  var keepRel = (rel && relationOf(rel).key === rel) ? rel : ((prev && prev.rel) || null);
   /* ★ R39 — 소유자 토큰을 함께 기억한다. 이 기기에서는 PIN 없이 그룹을 고치고 지울 수 있다.
      토큰은 이 기기 밖으로 나가지 않는다(링크에도, 화면에도 넣지 않는다).
      ★ R68 — 인원 수도 함께 기억한다. 목록에서 열어보기 전에는 몇 명이 들어왔는지
        알 수 없었다(대표님 지적). 서버에 다시 묻지 않고 보여주려면 여기 적어 두어야 한다. */
   list.unshift({id:id, name:(name||'').slice(0,40), at:Date.now(),
                 token: token || (prev && prev.token) || null,
-                n: (typeof count === 'number') ? count : (prev && prev.n) || null});
+                n: (typeof count === 'number') ? count : (prev && prev.n) || null,
+                rel: keepRel});
   STATE.savedGroups = list.slice(0, 20);
   saveState();
 }
 function groupToken(id){
   var g = savedGroups().filter(function(x){ return x && x.id === id; })[0];
   return g && g.token ? g.token : null;
+}
+/* 그 그룹에서 무엇으로 보기로 했는가. 아직 안 골랐으면 null이다. */
+function groupRelation(id){
+  var g = savedGroups().filter(function(x){ return x && x.id === id; })[0];
+  return (g && g.rel && relationOf(g.rel).key === g.rel) ? g.rel : null;
+}
+/* 지금 보고 있는 그룹에 사이를 적어 둔다. 그룹 화면이 아니면 아무것도 안 한다
+   (링크로 바로 들어와 아직 저장 안 된 모임이 있다 — 그때는 적을 곳이 없다). */
+function noteGroupRelation(rel){
+  var gid = (typeof GROUP_VIEW !== 'undefined' && GROUP_VIEW) ? GROUP_VIEW.id : null;
+  if(!gid || !rel) return;
+  if(!savedGroups().some(function(x){ return x && x.id === gid; })) return;
+  var g = savedGroups().filter(function(x){ return x && x.id === gid; })[0];
+  rememberGroup(gid, g.name, null, g.n, rel);
 }
 function forgetGroup(id){
   STATE.savedGroups = savedGroups().filter(function(x){ return x && x.id !== id; });
@@ -20445,7 +20469,7 @@ function openGroupSaveModal(){
       groupFetch({action:'create', name:name, pin:pin, members:members})
         .then(function(d){
           if(!d || !d.groupId) throw new Error('저장에 실패했어요.');
-          rememberGroup(d.groupId, name);
+          rememberGroup(d.groupId, name, null, null, GC_RELATION_SET ? GC_RELATION : null);
           /* ★ 저장했으면 이 화면은 이제 "저장된 그룹"이다. 이걸 안 세우면 모달을 닫아도
              여전히 [이름 붙여 저장하기]만 보이고, 주소·관리·접수 카드가 나오지 않는다.
              (실측으로 잡았다 — 저장은 됐는데 접수 주소가 어디에도 없었다.) */
@@ -20494,9 +20518,19 @@ function openSavedGroup(id){
     PENDING_MEET = rows.map(function(r){ return inviteRowToObj(r); }).filter(inviteObjValid);
     if(!PENDING_MEET.length) throw new Error('명단을 읽지 못했어요.');
     GROUP_VIEW = {id:id, name:d.name};
-    rememberGroup(id, d.name, null, PENDING_MEET.length);
+    /* ★ rememberGroup보다 먼저 읽는다. 뒤에서 읽어도 값은 같지만(rel은 이어받는다),
+       "이 그룹에 적혀 있던 값"을 쓴다는 것을 읽는 순서로도 분명히 해 둔다. */
+    var savedRel = groupRelation(id);
+    rememberGroup(id, d.name, null, PENDING_MEET.length, savedRel);
     clearPendingInviteIfJoined(id, PENDING_MEET.length);
     GC_SOURCE='link'; GC_SEL=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0};
+    /* ★ 2026-09-07 대표님 지시 — 그룹마다 사이가 다르다.
+       예전에는 여기서 GC_RELATION을 손대지 않아, **직전에 본 그룹의 사이가 그대로 따라왔다**
+       (대표님 제보: "저장한 그룹 들어가면 그게 다시 계속 바뀌더라").
+       적어 둔 값이 있으면 그것으로, 없으면 '아직 안 고름'으로 되돌린다 —
+       고른 적 없는 모임에 기본값(친구) 점수를 소리 없이 띄우지 않는다. */
+    if(savedRel){ GC_RELATION = savedRel; GC_RELATION_SET = true; }
+    else { GC_RELATION = COMPAT_RELATION_DEFAULT; GC_RELATION_SET = false; }
     ROUTE='groupCompat'; render(); window.scrollTo(0,0);
   }).catch(function(err){
     var st = err && err.status;
@@ -20829,7 +20863,7 @@ function tickInviteWatch(byHand){
       var changed = (n !== INVITE_WATCH.n);
       INVITE_WATCH.n = n;
       INVITE_WATCH.name = (d && d.name) || w.name;
-      rememberGroup(w.id, INVITE_WATCH.name, null, n);
+      rememberGroup(w.id, INVITE_WATCH.name, null, n, GC_RELATION_SET ? GC_RELATION : null);
       /* ★ 인원이 바뀐 때만 화면을 다시 그린다. 그래야 아래 '저장한 그룹' 목록의
          인원 수도 같이 맞는다. 안 바뀌었으면 글자만 갈아 끼워, 보고 있는 화면을 흔들지 않는다. */
       if(changed && ROUTE === 'compat'){ render(); }
@@ -20851,7 +20885,11 @@ function buildSavedGroupsCard(){
       /* ★ 2026-09-05 대표님 지적 — 위 카드는 "아직 아무도 열지 않았어요"라는데
          이 줄은 "· 1명"이라 서로 어긋나 보였다. 1명은 만든 사람 자신이다.
          숫자 대신 그 뜻을 적는다(watchLineText가 n>1을 '들어왔다'로 보는 것과 같은 기준). */
-      (g.name || '이름 없는 그룹') + (g.n > 1 ? ' · ' + g.n + '명' : ' · 아직 나 혼자'),
+      /* ★ 2026-09-07 — 사이가 모임마다 다르므로 목록에서 바로 보인다.
+         안 보이면 열어 보기 전에는 이 모임을 무엇으로 보기로 했는지 알 수 없다.
+         아직 안 고른 모임은 아무것도 안 붙인다 — '친구'라고 적으면 고른 적 없는 값을 적는 것이 된다. */
+      (g.name || '이름 없는 그룹') + (g.n > 1 ? ' · ' + g.n + '명' : ' · 아직 나 혼자')
+        + (groupRelation(g.id) ? ' · ' + relationLabel(groupRelation(g.id)) : ''),
       '열기', function(){ openSavedGroup(g.id); }));
   });
   /* ★ R60 — 눌러만 보고 안 보낸 링크가 쌓였을 때 한 번에 치운다.
@@ -20989,7 +21027,13 @@ function renderGroupCompat(){
      어느 경우든 궁합 보기로 돌아간다. */
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
     if(fromLink){ GC_SEL=null; PENDING_MEET=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; }
-    GROUP_VIEW=null; ROUTE='compat'; render(); window.scrollTo(0,0);
+    /* ★ 2026-09-07 — 모임에서 나올 때 사이도 함께 내려놓는다.
+       안 내려놓으면 방금 본 모임(예: 연인)의 값이 궁합 첫 화면에 눌린 채로 남아,
+       **새 링크를 만드는 분이 고르지 않은 사이로 링크를 보내게 된다.**
+       사이는 이제 모임마다 따로다(groupRelation) — 첫 화면의 것은 '다음에 만들 모임'의 값이다. */
+    GROUP_VIEW=null; GC_RELATION=COMPAT_RELATION_DEFAULT; GC_RELATION_SET=false;
+    GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0};
+    ROUTE='compat'; render(); window.scrollTo(0,0);
   }},[dirIcon('left'), '궁합 보기로 돌아가기']));
   view.appendChild(pageHead('궁합 보기 · 그룹',
     (GROUP_VIEW && GROUP_VIEW.name) ? GROUP_VIEW.name : (fromLink ? '받은 그룹 궁합' : '모두의 궁합 보기'),
@@ -21052,10 +21096,11 @@ function renderGroupCompat(){
     COMPAT_RELATIONS.forEach(function(r){
       relSeg.appendChild(el('button',{type:'button','aria-pressed':'false',
         onclick:function(){ GC_RELATION=r.key; GC_RELATION_SET=true; GC_SEL=null;
+          noteGroupRelation(r.key);
           GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); }},[r.label]));
     });
     view.appendChild(relSeg);
-    view.appendChild(el('p',{class:'biz-hint'},['먼저 어떤 사이인지 골라주세요. 한 번 고르시면 이 모임에서는 바꾸지 않아요.']));
+    view.appendChild(el('p',{class:'biz-hint'},['먼저 어떤 사이인지 골라주세요. 고르신 사이는 이 모임에만 적용돼요.']));
     /* ★ 고르기 전에는 점수를 내놓지 않는다. 내놓으면 아무것도 안 눌린 화면에
        기본값(친구)으로 계산된 숫자가 떠 있게 되고, 사이를 고르는 순간 그 숫자가
        소리 없이 갈린다 — 무엇을 보고 있었는지 알 수 없게 되는 자리다. */
@@ -21064,6 +21109,18 @@ function renderGroupCompat(){
   } else {
     var relRowG = el('div',{class:'compat-rel-row'});
     relRowG.appendChild(el('span',{class:'compat-rel-chip'},[relationLabel(GC_RELATION)+' 사이로 봤어요']));
+    /* ★ 2026-09-07 대표님 지시 — "저장한 그룹 안에 들어가서 바꿀 수 있게 해야지".
+       2026-09-02에 "한번 골랐으면 바꾸게 하면 안 돼"라고 하셔서 뺐던 자리인데, 이번에 되살린다.
+       그때 뺀 이유(점수만 갈아치워지고 이미 받아 둔 풀이는 옛 사이 기준으로 남는다)는
+       그대로 유효하므로, **막는 대신 한 번 확인**을 받는다. 모르고 바꾸는 사고만 막으면 된다.
+       ★ 바꾸기는 이 모임에만 걸린다 — noteGroupRelation이 이 그룹에만 적는다. */
+    relRowG.appendChild(el('button',{class:'compat-rel-change', type:'button',
+      onclick:function(){
+        confirmModal('사이를 바꾸면 점수를 다시 계산해요. 이미 받아 두신 풀이는 예전 사이로 쓰인 글이라 새 점수와 어긋날 수 있어요. 바꿀까요?',
+          function(){ GC_RELATION_SET=false; GC_SEL=null;
+            GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); window.scrollTo(0,0); },
+          '바꾸기');
+      }},['바꾸기']));
     view.appendChild(relRowG);
     view.appendChild(el('p',{class:'biz-hint', style:'text-align:center;'},[relationNote(GC_RELATION)]));
   }
@@ -21592,7 +21649,7 @@ function openInviteLinkModal(profile, relationKey){
     return groupFetch({action:'create', name:autoName, members: gcMeetRow(profile)})
       .then(function(d){
         if(!d || !d.groupId) throw new Error('groupId 없음');
-        rememberGroup(d.groupId, autoName, d.ownerToken, 1);
+        rememberGroup(d.groupId, autoName, d.ownerToken, 1, GC_RELATION_SET ? GC_RELATION : null);
         STATE.pendingInviteGroup = d.groupId; saveState();
         GROUP_VIEW = {id:d.groupId, name:autoName};
         /* ★ 뒤 화면을 먼저 다시 그린다. 그래야 창을 닫았을 때 '기다리는 중' 카드가
@@ -21611,7 +21668,7 @@ function openInviteLinkModal(profile, relationKey){
       var n = String((d && d.members) || '').split(';').filter(Boolean).length;
       if(!d || n !== 1) throw new Error('다시 만들어야 함');
       GROUP_VIEW = {id:pending, name:(d.name || autoName)};
-      rememberGroup(pending, GROUP_VIEW.name, null, n);
+      rememberGroup(pending, GROUP_VIEW.name, null, n, GC_RELATION_SET ? GC_RELATION : null);
       if(ROUTE==='compat') render();
       showInviteModal(profile, groupJoinLink(pending, relForLink), true, d.ttlDays, relForLink);
     })
