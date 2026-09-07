@@ -14479,6 +14479,7 @@ var POPPING = false;         /* 뒤로가기로 되돌아가는 중 — 이때�
 var MODAL_BACK_PENDING = false;
 
 var LAST_ROUTE = null;
+var LAST_VIEW_KEY = null;   /* 한 화면 안에서 갈아 끼우는 '쪽'까지 담은 열쇠 — render() 참고 */
 /* ★ 화면 전환은 setRoute() 말고도 코드 곳곳에서 ROUTE='...'; render(); 로 일어난다.
    setRoute 한 군데만 잡으면 절반은 놓친다. 그래서 실제로 그려지는 자리에서 잡는다. */
 function pushRouteHistory(route){
@@ -18677,6 +18678,7 @@ function renderCompatForm(){
               if(qi<MBTI_TEST_Q.length-1) d.testQIdx++;
               else { d.mbti=computeMbtiFromAnswers(d.testAnswers); d.testMode=false; }
               redraw();
+              scrollModalTopNow();
             }},[t]));
           });
           body.appendChild(qcard);
@@ -23820,6 +23822,14 @@ function renderShareCard(canvas, kind, profile, data){
    ★ 뒤로가기로 돌아올 때(POPPING)는 올리지 않는다. 보던 자리로 돌아가는 게 뒤로가기다.
    ★ 두 번 올린다. render()가 아래에서 화면을 다시 그리고, 그리는 도중 탭 버튼이
      자기를 보이게 하려고 페이지를 끌어당길 수 있어서 한 번으로는 도로 내려간다. */
+/* 창(모달) 안에서도 '다음 쪽'이 있다 — 궁합 상대방 간단 테스트가 질문을 하나씩 갈아 끼운다.
+   창은 화면과 따로 스크롤하므로 window.scrollTo로는 안 올라간다. */
+function scrollModalTopNow(){
+  try{
+    var box = document.querySelector('.modal-box');
+    if(box) box.scrollTop = 0;
+  }catch(e){}
+}
 function scrollToTopNow(){
   try{
     window.scrollTo(0, 0);
@@ -23947,13 +23957,36 @@ function syncModeFab(){
   host.classList.add('has-fab');
 }
 
+/* ★ 2026-09-07 (대표님 지시: "마법사 스크롤도 모든 페이지에서 클릭 후 다음 페이지로
+   넘어갈 때는 최상단으로 가야 한다")
+   ROUTE만 보면 **한 화면 안에서 갈아 끼우는 '다음 쪽'을 통째로 놓칩니다.**
+   마법사 단계 · 간단 테스트 질문 · 궁합 상세 · 기록 탭 · 모임 명단이 전부 ROUTE가 안 바뀝니다.
+   그래서 아래로 내려간 자리 그대로 다음 쪽이 그려져 위가 잘린 것처럼 보였습니다.
+   쪽을 가리는 값들을 한 줄로 묶어, 그 줄이 바뀌면 올립니다.
+   ★ 자리마다 window.scrollTo(0,0)를 손으로 적던 방식으로 되돌리지 마세요 —
+     스무 곳 넘게 적혀 있었는데도 마법사와 테스트 질문은 빠져 있었습니다.
+   ★ 새 하위 화면을 만들면 그 값을 여기에 한 조각 더하십시오.
+   ★ 연도 고르기(VIEW_YEAR)는 일부러 넣지 않습니다 — 같은 쪽에서 값만 바꾸는 자리입니다. */
+function viewKeyNow(){
+  var parts = [ROUTE];
+  if(SETUP) parts.push('설정' + SETUP.step + (SETUP.testMode ? ('문' + SETUP.testQIdx) : ''));
+  parts.push(COMPAT_VIEW || '');
+  parts.push(COMPAT_SUB || '');
+  parts.push(HIST_TAB || '');
+  parts.push(GC_SOURCE || '');
+  parts.push(PAIR_DEEP ? ('쌍' + PAIR_DEEP.ai + '-' + PAIR_DEEP.bi) : '');
+  parts.push(GROUP_VIEW ? ('모임' + (GROUP_VIEW.id || '')) : '');
+  return parts.join('|');
+}
 function render(){
   CARD_TERM_HINT_DONE = false;   /* 새 화면을 그리므로 용어 안내를 다시 한 번 붙일 수 있게 한다 */
   /* R59 — 화면이 바뀌었으면 방문 기록에 한 칸 얹는다(뒤로가기용). */
-  var routeChanged = (ROUTE !== LAST_ROUTE);
   pushRouteHistory(ROUTE);
   LAST_ROUTE = ROUTE;
-  if(routeChanged && !POPPING) scrollToTopNow();
+  var viewKey = viewKeyNow();
+  var viewChanged = (viewKey !== LAST_VIEW_KEY);
+  LAST_VIEW_KEY = viewKey;
+  if(viewChanged && !POPPING) scrollToTopNow();
   /* R25 — 그리기 전에 대표 오행 사본을 계산 결과에 맞춘다(위 syncAllProfileElements 주석 참고). */
   syncAllProfileElements();
   updateHeader();
