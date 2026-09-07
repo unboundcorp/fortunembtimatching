@@ -5,7 +5,7 @@
    왜 만들었나 (2026-08-13):
      하루에 사고를 네 번 냈다. 넷 다 "코드는 맞아 보이는데 실제로는 안 도는" 것이었다.
 
-       · 카카오를 붙이면서 함수 정의를 통째로 빠뜨림 → 앱을 켤 때마다 오류,
+       · 카카오를 붙이면서 함수 정의를 통째로 빠뜨림 → 서비스를 켤 때마다 오류,
          하필 같은 함수 안에 있던 이용권 조회가 통째로 안 돌았다.
          결제해도 유료 해석이 안 열리는 상태로 20분 배포돼 있었다.
        · 뒤로가기를 붙이면서 프로필 수정·삭제가 눌러도 반응이 없게 됐다.
@@ -129,12 +129,12 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
 
   console.log('검사 대상: ' + APP + '\n');
 
-  /* ── 1. 앱이 뜨는가 · 켤 때 오류가 나는가 ────────────────────────── */
-  console.log('[1] 앱 부팅');
+  /* ── 1. 서비스가 뜨는가 · 켤 때 오류가 나는가 ────────────────────────── */
+  console.log('[1] 서비스 부팅');
   let res;
   try { res = await page.goto(APP, { waitUntil: 'load', timeout: 45000 }); }
-  catch (e) { note(false, '앱 열기', String(e.message).slice(0, 90)); }
-  note(!!res && res.status() === 200, '앱이 열린다', res ? 'HTTP ' + res.status() : '응답 없음');
+  catch (e) { note(false, '서비스 열기', String(e.message).slice(0, 90)); }
+  note(!!res && res.status() === 200, '서비스가 열린다', res ? 'HTTP ' + res.status() : '응답 없음');
   await page.evaluate((k, v) => localStorage.setItem(k, JSON.stringify(v)), KEY, STATE);
   errs = [];
   await page.goto(APP, { waitUntil: 'load' });
@@ -142,7 +142,7 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
   note(errs.length === 0, '켤 때 오류 0건', errs[0] || '');
 
   /* ── 1.5 문법 ──────────────────────────────────────────────────────
-     ★ R96 — 화면을 열어 보기 전에 문법부터 본다. 괄호 하나가 빠지면 앱이 통째로 안 뜨는데,
+     ★ R96 — 화면을 열어 보기 전에 문법부터 본다. 괄호 하나가 빠지면 서비스가 통째로 안 뜨는데,
        그때 [2]는 "여덟 화면 전부 실패"라고만 말해 준다 — 어디가 잘못됐는지는 안 알려준다.
        여기서 잡으면 파일 몇 줄인지까지 나온다(실제로 그렇게 한 번 잡았다). */
   console.log('\n[1.5] 문법');
@@ -151,9 +151,9 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
     const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
     const big = blocks.sort((x, y) => y.length - x.length)[0] || '';
     new (require('vm').Script)(big, { filename: 'fortune.html <script>' });
-    note(true, '앱 스크립트 문법', big.length.toLocaleString() + '자');
+    note(true, '서비스 스크립트 문법', big.length.toLocaleString() + '자');
   } catch (e) {
-    note(false, '앱 스크립트 문법', String(e.message).slice(0, 160));
+    note(false, '서비스 스크립트 문법', String(e.message).slice(0, 160));
   }
 
   /* ── 2. 탭마다 화면이 그려지는가 ─────────────────────────────────── */

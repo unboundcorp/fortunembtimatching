@@ -13,7 +13,7 @@
   (function(){
     var LIVE = 'https://inyeonjeom.kr/';
     var here = location.hostname;
-    /* Vercel(또는 정식 도메인)에서 열렸다면 같은 곳의 앱으로, 그 밖(GitHub Pages 등)이면 정식 주소로 */
+    /* Vercel(또는 정식 도메인)에서 열렸다면 같은 곳의 서비스로, 그 밖(GitHub Pages 등)이면 정식 주소로 */
     var onLive = here.indexOf('vercel.app') >= 0 || here.indexOf('inyeonjeom.kr') >= 0;
     var to = onLive ? ('fortune.html' + location.search + location.hash)
                     : (LIVE + location.search + location.hash);
