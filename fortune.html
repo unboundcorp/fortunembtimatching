@@ -22091,8 +22091,15 @@ function openInviteLinkModal(profile, relationKey){
   var autoName = (profile.name ? profile.name + '님의 궁합' : '내 궁합');
   var pending = STATE.pendingInviteGroup;
 
+  /* ★ 2026-09-07 (대표님 지시: "궁합링크 만들기 딜레이 최대한 없으면 좋을 것 같고")
+     예전에는 방을 만들고 나서야 창이 떴다. 방 만들기는 서버 왕복이라 0.5~1.5초가 걸리고
+     (실측: /api/group 왕복 0.50 · 0.51 · 0.92초), 그동안 화면에는 토스트 한 줄뿐이라
+     "눌렀는데 아무 일도 안 난다"로 보였다. 이제 창을 먼저 띄우고 링크만 나중에 채운다.
+     ★ 링크가 도착하면 applyInviteLink()가 채우고 자동으로 복사까지 한다. */
+  armGestureCopy();                                   /* 누른 이 순간에 복사를 걸어 둔다 */
+  showInviteModal(profile, null, true, 0, relForLink);
+
   function makeNew(){
-    showToast('궁합 링크를 만드는 중이에요…');
     return groupFetch({action:'create', name:autoName, members: gcMeetRow(profile)})
       .then(function(d){
         if(!d || !d.groupId) throw new Error('groupId 없음');
@@ -22105,11 +22112,16 @@ function openInviteLinkModal(profile, relationKey){
            이미 거기 있다. 안 그리면 손님이 탭을 한 번 눌러야 나타난다(실측으로 잡음).
            창은 #modalRoot에 따로 떠 있어서 여기서 다시 그려도 닫히지 않는다. */
         if(ROUTE==='compat') render();
-        showInviteModal(profile, groupJoinLink(d.groupId, relForLink), true, d.ttlDays, relForLink);
+        applyInviteLink(groupJoinLink(d.groupId, relForLink));
       });
   }
 
-  if(!pending){ makeNew().catch(function(){ showInviteModal(profile, fallback, false, 0, relForLink); }); return; }
+  function useFallback(){
+    showInviteModal(profile, fallback, false, 0, relForLink);
+    applyInviteLink(fallback);   /* 걸어 둔 복사에 링크를 넘기고, 안 되면 한 번 더 시도한다 */
+  }
+
+  if(!pending){ makeNew().catch(useFallback); return; }
 
   /* 만들어 둔 링크가 아직 비어 있으면(나 혼자면) 그것을 그대로 쓴다. */
   groupFetch({action:'get', groupId:pending})
@@ -22119,15 +22131,85 @@ function openInviteLinkModal(profile, relationKey){
       GROUP_VIEW = {id:pending, name:(d.name || autoName)};
       rememberGroup(pending, GROUP_VIEW.name, null, n, GC_RELATION_SET ? GC_RELATION : null);
       if(ROUTE==='compat') render();
-      showInviteModal(profile, groupJoinLink(pending, relForLink), true, d.ttlDays, relForLink);
+      applyInviteLink(groupJoinLink(pending, relForLink));
     })
     .catch(function(){
       STATE.pendingInviteGroup = null; saveState();
-      makeNew().catch(function(){ showInviteModal(profile, fallback, false, 0, relForLink); });
+      makeNew().catch(useFallback);
     });
+}
+/* 지금 창에 떠 있는 링크. 링크가 서버에서 뒤늦게 도착하므로, 창을 그릴 때의 값을
+   그대로 가둬 두면(클로저) 나중에 채운 링크가 [공유하기]·[복사]에 안 잡힌다. */
+var INVITE_LINK_CUR = { link:null, deliver:null, copied:false };
+/* 조용한 자동 복사 — 실패해도 손님을 놀래지 않는다.
+   ★ 브라우저는 '사람이 누른 직후'에만 복사를 허락한다. 링크는 서버에서 받아 온 뒤라
+     그 순간이 이미 지나 있다. 그래서 두 갈래로 건다.
+       ① 누르는 그 자리에서 '내용이 나중에 오는 복사'를 걸어 둔다 (armGestureCopy).
+          사파리가 이 경우를 위해 지원하는 방식이다 — ClipboardItem에 Blob 대신 Promise를 넣는다.
+       ② 링크가 도착한 뒤에 한 번 더 시도한다 (tryCopyQuiet). 크롬·안드로이드는 이쪽이 먹는다.
+     둘 다 실패해도 [복사] 단추가 그대로 있으므로 손님은 막히지 않는다.
+     실패 알림은 띄우지 않는다 — 안 해도 되는 일이 실패했다고 알리면 고장으로 보인다. */
+function tryCopyQuiet(text){
+  function viaExec(){
+    try{
+      var ta=document.createElement('textarea');
+      ta.value=text; ta.readOnly=true;   /* iOS에서 키보드가 올라오지 않게 */
+      ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      var ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      return !!ok;
+    }catch(e){ return false; }
+  }
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(text)
+        .then(function(){ return true; }, function(){ return viaExec(); });
+    }
+  }catch(e){}
+  return Promise.resolve(viaExec());
+}
+/* 누르는 그 순간에 걸어 두는 복사. 링크는 applyInviteLink()가 넣어 준다. */
+function armGestureCopy(){
+  INVITE_LINK_CUR.deliver = null;
+  INVITE_LINK_CUR.copied = false;
+  try{
+    if(!(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write)) return;
+    var later = new Promise(function(res){ INVITE_LINK_CUR.deliver = res; })
+      .then(function(t){ return new Blob([t], {type:'text/plain'}); });
+    navigator.clipboard.write([new ClipboardItem({'text/plain': later})])
+      .then(function(){ INVITE_LINK_CUR.copied = true; markInviteCopied(); }, function(){});
+  }catch(e){ INVITE_LINK_CUR.deliver = null; }
+}
+function markInviteCopied(){
+  var note = $('#inviteCopyNote');
+  if(note) note.style.display = '';
+}
+/* 서버에서 링크가 도착했다. 창이 아직 열려 있으면 채우고 복사한다.
+   ★ 창이 닫혀 있어도 조용히 지나간다 — 방은 이미 만들어졌고 STATE.pendingInviteGroup에
+     적혀 있어서, 다시 누르면 그 방을 그대로 쓴다. */
+function applyInviteLink(link){
+  INVITE_LINK_CUR.link = link;
+  if(INVITE_LINK_CUR.deliver){
+    try{ INVITE_LINK_CUR.deliver(link); }catch(e){}
+    INVITE_LINK_CUR.deliver = null;
+  }
+  var inp = $('#inviteLinkInput');
+  if(!inp) return;
+  inp.disabled = false; inp.removeAttribute('placeholder'); inp.value = link;
+  var btn = $('#inviteCopyBtn'); if(btn) btn.disabled = false;
+  /* ①이 먼저 끝날 틈을 준 뒤 ②를 시도한다. 둘 다 성공해도 클립보드에는 같은 글이 들어간다. */
+  setTimeout(function(){
+    if(INVITE_LINK_CUR.copied) return;
+    tryCopyQuiet(link).then(function(ok){
+      if(!ok) return;
+      INVITE_LINK_CUR.copied = true; markInviteCopied();
+    });
+  }, 250);
 }
 function showInviteModal(profile, link, live, ttlHours, relationKey){
   hideToast();   /* ★ R93 — 링크가 나왔으니 '만드는 중' 안내를 여기서 걷는다 */
+  INVITE_LINK_CUR.link = link || null;
   var body=el('div',{});
   /* ★ 이 안내는 갈래(live/fallback) 밖에 둔다. 안쪽에 두면 한쪽에만 붙어,
      같은 링크인데 어떤 때는 무슨 사이인지 안 적히는 일이 생긴다(실측으로 잡음). */
@@ -22140,11 +22222,21 @@ function showInviteModal(profile, link, live, ttlHours, relationKey){
   /* ★ R95 — 이 창에서 할 일은 하나다: 링크를 보내는 것. 그래서 링크를 맨 위에 둔다.
      설명은 두 줄로 줄이고, 고지는 지우지 않고 접는다(지우면 고지가 아니게 된다). */
   function linkRow(){
+    var wrap = el('div',{});
     var row = el('div',{class:'invite-link-row'});
-    row.appendChild(el('input',{type:'text', value:link, readOnly:'readonly', id:'inviteLinkInput',
-      'aria-label':'궁합 초대 링크', onclick:function(e){ e.target.select(); }}));
-    row.appendChild(el('button',{type:'button', onclick:function(){ copyText(link); }},['복사']));
-    return row;
+    var inp = el('input',{type:'text', value:(link||''), readOnly:'readonly', id:'inviteLinkInput',
+      'aria-label':'궁합 초대 링크', onclick:function(e){ e.target.select(); }});
+    if(!link){ inp.placeholder = '링크를 만드는 중이에요…'; inp.disabled = true; }
+    row.appendChild(inp);
+    var cbtn = el('button',{type:'button', id:'inviteCopyBtn',
+      onclick:function(){ if(INVITE_LINK_CUR.link) copyText(INVITE_LINK_CUR.link); }},['복사']);
+    if(!link) cbtn.disabled = true;
+    row.appendChild(cbtn);
+    wrap.appendChild(row);
+    /* 자동 복사가 실제로 됐을 때만 보인다. 안 됐는데 됐다고 적으면 그게 더 나쁘다. */
+    wrap.appendChild(el('p',{class:'biz-hint', id:'inviteCopyNote', style:'margin-top:6px;display:none;'},
+      ['링크를 복사해 뒀어요. 그대로 붙여넣기 하시면 돼요.']));
+    return wrap;
   }
   /* ★ 이 문장은 실제 동작과 정확히 같아야 한다. 방이 만들어졌을 때와 아닐 때가 다르다. */
   if(live){
@@ -22197,10 +22289,11 @@ function showInviteModal(profile, link, live, ttlHours, relationKey){
          이 파일의 다른 공유 네 곳은 이미 url만 넘기고 있었고, 여기만 달랐다.
          받는 사람은 링크를 열면 "○○ 그룹에 참여할까요?"를 보게 되므로
          문구를 빼도 무슨 링크인지 모를 일은 없다. */
+      if(!INVITE_LINK_CUR.link){ showToast('링크를 만드는 중이에요. 잠시만 기다려주세요.'); return; }
       if(navigator.share){
-        navigator.share({title:COMPANY.serviceName+' 궁합 초대', url:link}).catch(function(){});
+        navigator.share({title:COMPANY.serviceName+' 궁합 초대', url:INVITE_LINK_CUR.link}).catch(function(){});
       } else {
-        copyText(link);
+        copyText(INVITE_LINK_CUR.link);
       }
     }}
   ]);
