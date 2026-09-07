@@ -11002,8 +11002,14 @@ function buildCompatCharPair(nameA, pA, pB, tier){
     box.appendChild(el('div',{class:'cpv-name'},[name]));
     var elemKey = charKeyForDayStem(who.saju);
     /* R21 — 무료 첫 화면이다. '일간'은 사주를 모르면 안 읽히는 말이라 뜻이 같은 일상어로 쓴다.
-       가리키는 값(일간의 오행)은 그대로다. */
-    box.appendChild(el('div',{class:'cpv-sub'},[ who.mbti + (elemKey ? ' · 타고난 기운 '+CHARACTERS[elemKey].name.split(' · ')[0] : '') ]));
+       가리키는 값(일간의 오행)은 그대로다.
+       ★ 2026-09-07 대표님 지시 — '타고난 기운'에서 '태어난 날의 기운'으로 바꿨다.
+         한 화면에 '타고난 기운 목(木)'(여기 · 일간 하나)과 '타고난 다섯 기운(오행)'
+         (점수 항목 · 여덟 글자 중 가장 진한 오행)이 같이 떠서, 같은 이름의 값이 서로
+         다르게 보였다("목이라며 왜 수야?"). 계산은 둘 다 맞고 원래 다른 값이다.
+       ★ 여기만 고쳤다. '타고난 기운으로 본 궁합'·'타고난 기운으로 더 보기'는 **사주 전체**를
+         가리키는 말이라 그대로 두고, 결제창의 '이게 열려요' 목록도 안 건드렸다(고지 자리다). */
+    box.appendChild(el('div',{class:'cpv-sub'},[ who.mbti + (elemKey ? ' · 태어난 날의 기운 '+CHARACTERS[elemKey].name.split(' · ')[0] : '') ]));
     return box;
   }
   wrap.appendChild(side(nameA||pA.name, pA));
