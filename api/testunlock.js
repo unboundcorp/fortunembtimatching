@@ -53,6 +53,9 @@ export default async function handler(req, res) {
   }
 
   const expected = process.env.TEST_UNLOCK_CODE;
+  /* ★ 2026-09-08 — 운영자 코드를 따로 둔다. 테스트 코드와 **다른 값**이어야 한다.
+     안 넣어 두면 예전과 똑같이 돈다(테스터 허가 하나뿐). */
+  const expectedAdmin = process.env.ADMIN_UNLOCK_CODE;
 
   /* ★ 세션 발급이 실패하면(SESSION_SECRET 없음) 그 자리에서 멈춘다.
      감싸지 않으면 그대로 튀어나가 Vercel의 "A server error has occurred"가 뜬다.
@@ -66,7 +69,8 @@ export default async function handler(req, res) {
   }
 
   /* 켜지 않은 기능이라는 사실은 숨기지 않는다. 다만 '무엇이' 열쇠인지는 알리지 않는다. */
-  if (!expected || expected.length < 8) {
+  const adminOn = !!(expectedAdmin && expectedAdmin.length >= 8);
+  if ((!expected || expected.length < 8) && !adminOn) {
     return json(res, 404, { ok: false, reason: '지금은 사용할 수 없어요.' });
   }
 
@@ -76,7 +80,10 @@ export default async function handler(req, res) {
   if (body.action === 'status') {
     try {
       const cur = await testAccessOf(sessionId);
-      return json(res, 200, { ok: !!cur, until: cur ? cur.expires_at : null });
+      return json(res, 200, {
+        ok: !!cur, until: cur ? cur.expires_at : null,
+        role: cur ? (cur.role || 'tester') : null,
+      });
     } catch (err) {
       return storeFail(res, err);
     }
@@ -94,13 +101,29 @@ export default async function handler(req, res) {
     }
     await noteUnlockTry(sessionId, ipKey);
 
-    if (!sameSecret(code, expected)) {
-      /* 맞는지 틀리는지 외에 아무것도 알려주지 않는다. */
+    /* ★ 2026-09-08 대표님 지시 — 테스터 입구와 운영자 입구를 아예 가른다.
+       want:'admin' 으로 들어오면 **운영자 코드만** 받는다. 테스트 코드로는 관리자 페이지가
+       열리지 않는다. 반대로 그냥 들어오면 테스터 코드만 본다.
+       ★ 두 코드가 같은 값이면 운영자 입구에서만 운영자가 된다 — 테스터 입구로는 tester 다. */
+    const wantAdmin = String(body.want || '') === 'admin';
+    let role = null;
+    if (wantAdmin) {
+      if (adminOn && sameSecret(code, expectedAdmin)) role = 'admin';
+      /* ★ 되돌림: 운영자 코드를 아직 안 넣었으면 테스트 코드로 운영자를 준다.
+         안 그러면 이 코드가 올라가는 순간 대표님이 관리자 페이지에서 잠긴다.
+         ADMIN_UNLOCK_CODE 를 넣는 순간 이 되돌림은 꺼진다. */
+      else if (!adminOn && expected && expected.length >= 8 && sameSecret(code, expected)) role = 'admin';
+    } else {
+      if (expected && expected.length >= 8 && sameSecret(code, expected)) role = 'tester';
+    }
+
+    if (!role) {
+      /* 맞는지 틀리는지 외에 아무것도 알려주지 않는다. 어느 쪽 코드인지도 알리지 않는다. */
       return json(res, 403, { ok: false, reason: '코드가 맞지 않아요.' });
     }
 
-    const until = await grantTestAccess(sessionId, GRANT_HOURS);
-    return json(res, 200, { ok: true, until });
+    const until = await grantTestAccess(sessionId, GRANT_HOURS, role);
+    return json(res, 200, { ok: true, until, role });
   } catch (err) {
     return storeFail(res, err);
   }

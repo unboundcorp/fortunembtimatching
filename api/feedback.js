@@ -31,7 +31,7 @@
    ────────────────────────────────────────────────────────────────────── */
 import { readBody, json, methodGuard } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { testAccessOf, kakaoLinkOfSession } from './_lib/store.js';
+import { testAccessOf, adminAccessOf, kakaoLinkOfSession } from './_lib/store.js';
 import { COMPANY } from './_lib/company.js';
 
 /* 글자수 상한. 넉넉하되 무한은 아니다 — 저장소를 지키는 선이다. */
@@ -306,7 +306,8 @@ export default async function handler(req, res) {
      허가가 없으면 '없는 주소'처럼 404로 답한다 — 이런 창구가 있다는 사실도 알리지 않는다. */
   if (action === 'list') {
     try {
-      const grant = await testAccessOf(sessionId);
+      /* ★ 2026-09-08 — 테스터가 아니라 **운영자**만. 손님 문의에는 연락처가 들어 있다. */
+      const grant = await adminAccessOf(sessionId);
       if (!grant) return json(res, 404, { error: 'not_found', reason: '없는 주소예요.' });
       const rows = await rest('feedback?select=*&order=created_at.desc&limit=100');
       return json(res, 200, { items: rows || [] });
@@ -330,7 +331,7 @@ export default async function handler(req, res) {
   ===================================================================== */
   if (action === 'reply') {
     try {
-      const grant = await testAccessOf(sessionId);
+      const grant = await adminAccessOf(sessionId);
       if (!grant) return json(res, 404, { error: 'not_found', reason: '없는 주소예요.' });
       return saveAnswer(res, body);
     } catch (err) {

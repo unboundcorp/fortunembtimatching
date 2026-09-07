@@ -5988,7 +5988,12 @@ async function fetchEntitlements(){
     try{ ENT_RECENT = (data && Array.isArray(data.recent)) ? data.recent : []; }catch(e){ ENT_RECENT = []; }
     /* ★ 운영자인가. 화면에 [문의 관리] 입구를 만들지 말지에만 쓴다 —
        실제 관문은 서버이고, 목록·저장 창구가 저마다 다시 확인한다. */
-    try{ IS_ADMIN_SESSION = !!(data && data.testAccess); }catch(e){}
+    /* ★ 2026-09-08 — testAccess(테스터)와 adminAccess(운영자)를 갈랐다.
+       테스터 허가는 유료 화면을 열어 보라고 주는 것이고, 손님 문의·매출을 볼 권한이 아니다.
+       ★ 옛 서버(adminAccess 를 안 내려주는 배포본)와 섞여도 안 깨지게 testAccess 로 물러선다. */
+    try{
+      IS_ADMIN_SESSION = !!(data && (typeof data.adminAccess === 'boolean' ? data.adminAccess : data.testAccess));
+    }catch(e){}
     ENT.error = null;
   }catch(err){
     /* 서버가 답하지 않으면 잠근다. 열어주는 쪽으로 실패하지 않는다. */
@@ -8934,21 +8939,52 @@ function saveCsReply(row, reply, status){
       render();
     });
 }
+/* =====================================================================
+   관리자 페이지 머리줄 (2026-09-08 대표님 지시)
+   ---------------------------------------------------------------------
+   > "unlock 링크는 테스트페이지잖아 어드민페이지에 구현해야지"
+   > "아니 관리자 페이지 예전에 만들었잖아"
+   운영 현황판이 곧 관리자 페이지다. 문의 관리를 따로 떠 있게 두지 않고 **같은 페이지의
+   두 갈래**로 묶는다. 손님 설정 화면에 걸려 있던 관리자 줄 두 개는 뺐다 —
+   손님이 쓰는 화면에 운영자 입구가 섞여 있을 이유가 없다.
+   ★ 들어가는 길은 주소 뒤 `#admin` 하나다.
+===================================================================== */
+function buildAdminNav(cur){
+  var wrap = el('div',{class:'seg-toggle', style:'margin-bottom:16px;'});
+  [['stats','현황'], ['csAdmin','문의']].forEach(function(pair){
+    wrap.appendChild(el('button',{type:'button', 'aria-pressed': cur===pair[0] ? 'true':'false',
+      onclick:(function(r){ return function(){
+        if(ROUTE === r) return;
+        ROUTE = r;
+        if(r === 'stats') loadStats();
+        render();
+      }; })(pair[0])},[pair[1]]));
+  });
+  return wrap;
+}
+/* 운영자가 아닐 때 두 화면이 함께 쓰는 안내. 무엇을 하면 되는지까지 적는다 —
+   "볼 수 없어요"만 적으면 대표님도 들어갈 길을 못 찾는다. */
+function buildAdminLocked(){
+  var view = el('div',{class:'view'});
+  view.appendChild(pageHead('관리자', '운영자 전용'));
+  view.appendChild(el('div',{class:'scroll-card'},[
+    el('p',{class:'biz-hint'},['이 화면은 운영자만 볼 수 있어요.']),
+    el('p',{class:'biz-hint', style:'margin-top:8px;'},['운영자 코드를 넣으시면 열려요.'])
+  ]));
+  view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:14px;', onclick:function(){
+    openAdminUnlockModal();
+  }},['운영자 코드 넣기']));
+  view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:function(){
+    ROUTE='home'; render();
+  }},['홈으로']));
+  return view;
+}
 function renderCsAdmin(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view'});
-  view.appendChild(pageHead('문의 관리', '운영자 전용 — 접수된 문의에 답을 답니다'));
-
-  if(!IS_ADMIN_SESSION){
-    view.appendChild(el('div',{class:'scroll-card'},[
-      el('p',{class:'biz-hint'},['이 화면은 운영자만 볼 수 있어요.'])
-    ]));
-    view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:14px;', onclick:function(){
-      ROUTE='home'; render(); window.scrollTo(0,0);
-    }},['홈으로']));
-    main.appendChild(view);
-    return;
-  }
+  if(!IS_ADMIN_SESSION){ main.appendChild(buildAdminLocked()); return; }
+  view.appendChild(pageHead('관리자', '문의 관리 — 접수된 문의에 답을 답니다'));
+  view.appendChild(buildAdminNav('csAdmin'));
 
   if(CS_ADMIN.state === 'idle') loadCsAdmin(false);
 
@@ -8969,7 +9005,10 @@ function renderCsAdmin(){
   } else if(CS_ADMIN.state === 'error'){
     var ec = el('div',{class:'scroll-card'});
     ec.appendChild(el('p',{class:'fb-msg err'},[CS_ADMIN.err]));
-    ec.appendChild(el('p',{class:'biz-hint'},['테스트 허가가 풀렸을 수 있어요. 주소 끝에 #unlock 을 붙여 코드를 다시 넣어보세요.']));
+    ec.appendChild(el('p',{class:'biz-hint'},['운영자 허가가 풀렸을 수 있어요. 아래 단추로 코드를 다시 넣어보세요.']));
+    ec.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:10px;', onclick:function(){
+      openAdminUnlockModal();
+    }},['운영자 코드 넣기']));
     ec.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:10px;', onclick:function(){
       loadCsAdmin(true); render();
     }},['다시 불러오기']));
@@ -9037,11 +9076,8 @@ function renderCsAdmin(){
   }
 
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:12px;', onclick:function(){
-    ROUTE='stats'; loadStats(); render(); window.scrollTo(0,0);
-  }},['운영 현황판 보기']));
-  view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:function(){
-    ROUTE='settings'; render(); window.scrollTo(0,0);
-  }},[dirIcon('left'), '설정으로']));
+    ROUTE='home'; render();
+  }},[dirIcon('left'), '서비스로 돌아가기']));
   main.appendChild(view);
 }
 
@@ -9210,16 +9246,14 @@ function buildPaymentStatusPanel(){
   /* ★ 2026-08-22 — 문의 관리. 테스트 허가를 받은 세션에서만 이 줄이 생긴다.
      ADMIN_KEY(파일 안의 열쇠)와는 다른 관문이다 — 이쪽은 서버가 판단하므로
      배포본에서도 대표님이 #unlock 으로 허가를 받으시면 열린다. */
+  /* ★ 2026-09-08 대표님 지시 — 관리자 줄 두 개를 여기서 뺐다.
+     손님이 쓰는 설정 화면에 운영자 입구가 섞여 있을 이유가 없다.
+     이제 관리자 페이지는 **주소 뒤 `#admin`** 하나로 들어간다(현황 · 문의 두 갈래).
+     ★ 다시 여기에 줄을 놓지 마세요 — 입구를 두 곳에 두면 한쪽만 고치게 됩니다. */
   if(IS_ADMIN_SESSION){
-    /* ★ 2026-08-24 — 운영 현황판은 만들어 두고 입구가 없었다. 주소 뒤에 #stats 를 붙여야만
-       열렸고, 그걸 아는 사람은 나뿐이었다. 그래서 대표님은 주문이 세 건 쌓인 것도 모르셨다.
-       기능을 만들어 놓고 닿는 길을 안 만들면 없는 것과 같다. */
-    card.appendChild(settingsRow('운영 현황판 (운영자)', '열기', function(){
-      ROUTE='stats'; loadStats(); render(); window.scrollTo(0,0);
-    }));
-    card.appendChild(settingsRow('문의 관리 (운영자)', '열기', function(){
-      ROUTE='csAdmin'; render(); window.scrollTo(0,0);
-    }));
+    card.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
+      '운영자로 들어와 계세요. 관리자 페이지는 주소 끝에 #admin 을 붙이시면 열려요.'
+    ]));
   }
 
   /* 관리자 모드일 때만 나타나는 진입점. ADMIN_KEY가 null이면 이 줄은 만들어지지 않는다. */
@@ -16809,9 +16843,11 @@ function relationBadges(rel){
 var STATS_DATA = null, STATS_ERR = null, STATS_RANGE = 'd7';
 function renderStats(){
   var main=$('#main'); main.innerHTML='';
+  if(!IS_ADMIN_SESSION){ main.appendChild(buildAdminLocked()); return; }
   var view=el('div',{class:'view'});
-  view.appendChild(pageHead('운영 현황판', '서비스가 어떻게 쓰이고 있나요',
+  view.appendChild(pageHead('관리자', '현황 — 서비스가 어떻게 쓰이고 있나요',
     '대표님만 보시는 화면이에요. 새로 모으는 정보는 없고, 이미 쌓인 기록을 세어 보여드려요.'));
+  view.appendChild(buildAdminNav('stats'));
 
   if(STATS_ERR){
     view.appendChild(el('p',{class:'section-sub', style:'color:var(--red-hi);'},[STATS_ERR]));
@@ -24354,11 +24390,70 @@ if(MEET_HASH_PRESENT){
      주소가 비밀인 게 아니라, 코드가 비밀이다.
    ★ 환경변수를 안 넣으면 서버가 404로 답하고 아무 일도 일어나지 않는다.
 ===================================================================== */
+/* =====================================================================
+   운영자 코드 창 (2026-09-08 대표님 지시 "unlock에 문의관리는 지워라")
+   ---------------------------------------------------------------------
+   테스터 입구(#unlock)와 운영자 입구를 아예 갈랐다.
+   · #unlock  → 테스트 코드만. 유료 화면을 열어 볼 뿐, 관리자 페이지는 안 열린다
+   · #admin   → 이 창. **운영자 코드만.** 테스트 코드로는 안 열린다(서버가 가른다)
+   ★ 서버에 `want:'admin'` 을 함께 보낸다. 그 표시가 없으면 서버는 테스터 코드만 본다.
+===================================================================== */
+function openAdminUnlockModal(){
+  var body = el('div',{class:'sheet-body'});
+  body.appendChild(el('p',{class:'biz-hint'},[
+    '운영자 코드를 넣으시면 관리자 페이지가 열려요. 손님 문의와 운영 현황을 보는 화면이에요.'
+  ]));
+  var input = el('input',{class:'biz-input', type:'password', style:'margin-top:12px;',
+    placeholder:'운영자 코드', 'aria-label':'운영자 코드', autocomplete:'off', spellcheck:'false'});
+  body.appendChild(input);
+  var status = el('p',{class:'biz-hint', role:'status','aria-live':'polite',
+    style:'margin-top:10px;min-height:1.2em;'});
+  body.appendChild(status);
+
+  var run = el('button',{class:'btn btn-primary btn-block', style:'margin-top:12px;'},['들어가기']);
+  run.addEventListener('click', function(){
+    var code = (input.value||'').trim();
+    if(!code){ status.textContent = '코드를 입력해 주세요.'; input.focus(); return; }
+    run.disabled = true; status.style.color=''; status.textContent = '확인하는 중이에요…';
+    fetch('/api/testunlock', {method:'POST', headers:{'Content-Type':'application/json'},
+      credentials:'include', body: JSON.stringify({code:code, want:'admin'})})
+      .then(function(r){ return r.json().catch(function(){ return null; })
+        .then(function(d){ return {ok:r.ok, d:d}; }); })
+      .then(function(r){
+        run.disabled = false;
+        if(r.ok && r.d && r.d.ok){
+          closeModal();
+          showToast('운영자로 들어왔어요. 일주일 동안 유지돼요.');
+          /* ★ 운영자인지는 /api/entitlements 가 알려준다. 다시 받아오지 않으면 방금 받은
+             허가가 화면에 안 잡혀서 관리자 페이지가 잠긴 채로 남는다(새로고침해야 열렸다). */
+          fetchEntitlements().then(function(){
+            if(IS_ADMIN_SESSION){ ROUTE='stats'; loadStats(); }
+            render();
+          }, function(){ render(); });
+        } else {
+          status.style.color = 'var(--red-hi)';
+          status.textContent = (r.d && r.d.reason) || '지금은 들어갈 수 없어요.';
+        }
+      })
+      .catch(function(){
+        run.disabled = false;
+        status.style.color = 'var(--red-hi)';
+        status.textContent = '연결하지 못했어요.';
+      });
+  });
+  body.appendChild(run);
+  input.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') run.click(); });
+  openModal('운영자 확인', body, [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
+  setTimeout(function(){ try{ input.focus(); }catch(e){} }, 60);
+}
 function openTestUnlockModal(){
   var body = el('div',{class:'sheet-body'});
   body.appendChild(el('p',{class:'biz-hint'},[
-    '운영자 확인용이에요. 결제 없이 유료 해석을 열어 확인하실 수 있어요.'
+    '확인용이에요. 결제 없이 유료 해석을 열어 보실 수 있어요.'
   ]));
+  /* ★ 2026-09-08 대표님 지시 "unlock에 문의관리는 지워라" —
+     이 창은 **테스트 코드 전용**이다. 여기로는 관리자 페이지가 열리지 않는다.
+     관리자는 #admin 의 [운영자 코드 넣기](openAdminUnlockModal)로만 들어간다. */
   var input = el('input',{class:'biz-input', type:'password', style:'margin-top:12px;',
     placeholder:'테스트 코드', 'aria-label':'테스트 코드', autocomplete:'off', spellcheck:'false'});
   body.appendChild(input);
@@ -24382,7 +24477,7 @@ function openTestUnlockModal(){
           grantAllForTest();
           closeModal();
           showToast('유료 기능을 열었어요. 일주일 동안 유지돼요.');
-          render();
+          fetchEntitlements().then(function(){ render(); }, function(){ render(); });
         } else {
           status.style.color = 'var(--red-hi)';
           status.textContent = (r.d && r.d.reason) || '열지 못했어요.';
@@ -24417,14 +24512,17 @@ function grantAllForTest(){
 window.addEventListener('hashchange', function(){
   var h = String(location.hash || '').replace(/^#/, '');
   if(h === 'unlock'){ openTestUnlockModal(); return; }
-  if(h === 'stats'){ ROUTE='stats'; loadStats(); return; }
+  /* ★ 2026-09-08 대표님 지시 "#admin #stats 똑같은거지? 어드민만 남겨라"
+     주소는 #admin 하나다. #stats 는 없앴다 — 같은 곳으로 가는 문이 둘이면
+     하나만 고치게 되고, 어느 쪽이 진짜인지도 흐려진다. */
+  if(h === 'admin'){ ROUTE='stats'; loadStats(); return; }
   if(/^(gj|g|r|meet|invite|i1)=/.test(h)){ location.reload(); }
 });
 /* 처음 열 때 #unlock 이 붙어 있으면 — hashchange는 '바뀔 때'만 오므로 여기서도 본다. */
 if(String(location.hash||'').replace(/^#/,'') === 'unlock'){
   setTimeout(function(){ openTestUnlockModal(); }, 0);
 }
-if(String(location.hash||'').replace(/^#/,'') === 'stats'){
+if(String(location.hash||'').replace(/^#/,'') === 'admin'){
   setTimeout(function(){ ROUTE='stats'; loadStats(); }, 0);
 }
 

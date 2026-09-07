@@ -16,7 +16,7 @@
 ===================================================================== */
 import { readBody, json } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { testAccessOf } from './_lib/store.js';
+import { adminAccessOf } from './_lib/store.js';
 import { productOf, aiQuotaOf } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 
@@ -71,7 +71,8 @@ export default async function handler(req, res) {
 
   try {
     /* 허가 없이는 아무것도 알려주지 않는다. '없는 화면'처럼 보이게 404로 답한다. */
-    const grant = await testAccessOf(sessionId);
+    /* ★ 2026-09-08 — 매출·주문은 운영자만. 테스터에게 줄 것이 아니다. */
+    const grant = await adminAccessOf(sessionId);
     if (!grant) return json(res, 404, { error: 'not_found', reason: '없는 주소예요.' });
 
     const body = readBody(req);

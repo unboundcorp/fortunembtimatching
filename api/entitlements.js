@@ -10,7 +10,7 @@
 ===================================================================== */
 import { json, methodGuard } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { paidOrdersOf, recentOrdersOf, testAccessOf, aiUsedProductIds } from './_lib/store.js';
+import { paidOrdersOf, recentOrdersOf, testAccessOf, adminAccessOf, aiUsedProductIds } from './_lib/store.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import { productOf } from './_lib/products.js';
 import { isTossTestKey } from './_lib/company.js';
@@ -104,6 +104,9 @@ export default async function handler(req, res) {
        ★ 화면에 입구가 생겨도 소용없게 되어 있다: 문의 목록·답변 저장 창구가 저마다
          testAccessOf()를 다시 확인하고, 허가가 없으면 404로 답한다. */
     ent.testAccess = !!test;
+    /* ★ 2026-09-08 — 운영자인지는 따로 알려준다. 화면은 이 값으로만 관리자 입구를 만든다.
+       (testAccess 는 '유료를 테스트로 열어 둔 상태'라는 뜻으로만 남는다.) */
+    try{ ent.adminAccess = !!(await adminAccessOf(sessionId)); }catch(e){ ent.adminAccess = false; }
 
     /* =====================================================================
        ★ 2026-08-22 — 고객지원의 "결제했는데 결과가 안 보여요" 화면에서 쓴다.

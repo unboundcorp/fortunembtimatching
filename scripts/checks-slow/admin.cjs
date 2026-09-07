@@ -1,0 +1,122 @@
+#!/usr/bin/env node
+/* =====================================================================
+   관리자 페이지 검사 — 운영자만 열리는가
+   ---------------------------------------------------------------------
+   왜 만들었나 (2026-09-08 대표님 지시: "unlock 링크는 테스트페이지잖아 어드민페이지에
+   구현해야지"):
+     `test_grants` 하나가 두 가지를 겸하고 있었다 — ① 유료를 테스트로 열어 주는 허가와
+     ② 손님 문의를 읽고 매출을 보는 권한. 그래서 **테스트 코드만 알면 누구나 손님
+     연락처와 주문 내역을 볼 수 있었다.** 테스터와 운영자를 갈랐고, 이 검사가 그 벽을 지킨다.
+
+   ★ 여기서 제일 중요한 줄은 "테스터에게는 **안** 열린다"입니다. 열리는 것만 확인하고
+     안 열리는 것을 확인 안 하면, 벽이 사라져도 검사는 계속 통과합니다.
+
+   쓰는 법: node scripts/admin.cjs [주소]
+===================================================================== */
+const L = require('../_lib.cjs');
+const BASE = (process.argv[2] || 'http://127.0.0.1:8899').replace(/\/+$/, '');
+const APP = BASE + '/fortune.html';
+
+const CASES = [
+  {name:'운영자',                    ent:{adminAccess:true,  testAccess:true },  open:true },
+  {name:'테스터(운영자 아님)',       ent:{adminAccess:false, testAccess:true },  open:false},
+  {name:'아무 허가 없는 손님',       ent:{adminAccess:false, testAccess:false},  open:false},
+  /* 옛 서버는 adminAccess 를 안 내려준다. 그때는 예전처럼 테스터도 열린다 —
+     안 그러면 이 코드가 올라간 순간 대표님이 관리자 화면에서 잠긴다. */
+  {name:'옛 서버(adminAccess 없음)', ent:{testAccess:true},                       open:true },
+];
+
+const STATS = (function(){
+  const o = {rooms:{}, groups:{}, orders:{}, ai:{}};
+  ['d1','d7','d30'].forEach(function(k){
+    o.rooms[k]={made:0,joined:0}; o.groups[k]={made:0,opened:0};
+    o.orders[k]={paid:0,amount:0,ready:0}; o.ai[k]={made:0,cached:0};
+  });
+  return o;
+})();
+
+(async () => {
+  const R = L.reporter('관리자 페이지');
+  const exe = L.chromePath(), pp = L.puppeteer();
+  if(!exe || !pp){ console.error('크롬 또는 puppeteer-core 를 못 찾았습니다.'); process.exit(2); }
+  const browser = await pp.launch({executablePath:exe, headless:'new', args:['--no-sandbox']});
+
+  for(const c of CASES){
+    R.head('[' + c.name + ']');
+    const page = await L.openPage(browser, {width:390, height:1200});
+    const ent = Object.assign({items:{}, pass:null, purchases:[]}, c.ent);
+    await page.setRequestInterception(true);
+    page.on('request', function(r){
+      const u = r.url();
+      const j = function(o){ return {status:200, contentType:'application/json', body:JSON.stringify(o)}; };
+      if(u.indexOf('/api/entitlements') >= 0) return r.respond(j(ent));
+      if(u.indexOf('/api/stats') >= 0) return r.respond(j(STATS));
+      if(u.indexOf('/api/feedback') >= 0) return r.respond(j({items:[]}));
+      if(u.indexOf('/api/') >= 0) return r.respond(j({}));
+      r.continue();
+    });
+
+    await page.goto(APP + '#admin', {waitUntil:'load'});
+    await L.wait(3000);
+    const o = await page.evaluate(() => {
+      const t = ((document.querySelector('#main')||{}).innerText) || '';
+      return {
+        segs: [...document.querySelectorAll('#main .seg-toggle button')].map(function(x){ return x.textContent.trim(); }),
+        locked: t.indexOf('운영자만 볼 수 있어요') >= 0,
+        head: t.split('\n').filter(Boolean).slice(0,2).join(' | ').slice(0,50),
+      };
+    });
+
+    if(c.open){
+      R.note(!o.locked, '#admin 이 열린다', o.head);
+      R.note(o.segs.indexOf('현황') >= 0 && o.segs.indexOf('문의') >= 0,
+             '현황·문의 두 갈래가 있다', JSON.stringify(o.segs));
+      await page.evaluate(() => {
+        const b = [...document.querySelectorAll('#main .seg-toggle button')]
+          .find(function(x){ return x.textContent.trim() === '문의'; });
+        if(b) b.click();
+      });
+      await L.wait(1500);
+      const t2 = await page.evaluate(() => ((document.querySelector('#main')||{}).innerText||'').slice(0,150));
+      R.note(/문의 관리|접수된 문의가 없어요|운영자 화면/.test(t2), '[문의] 갈래로 넘어간다',
+             t2.replace(/\n+/g,' | ').slice(0,50));
+    } else {
+      /* ★ 이 줄이 이 검사의 핵심이다 */
+      R.note(o.locked, '#admin 이 **잠겨 있다**', o.head);
+      R.note(o.segs.length === 0, '관리자 갈래가 안 보인다', JSON.stringify(o.segs));
+
+      /* 잠긴 화면의 [운영자 코드 넣기]가 **운영자 전용 창**을 열고,
+         서버에 want:'admin' 을 보내는지. 이 표시가 빠지면 테스트 코드로도 열린다. */
+      if(c.name === '아무 허가 없는 손님'){
+        await L.clickText(page, /운영자 코드 넣기/);
+        await L.wait(900);
+        const m = await page.evaluate(() => {
+          const box = document.querySelector('.modal-box');
+          return box ? {title:(box.innerText||'').split('\n')[0],
+                        ph:(box.querySelector('input')||{}).placeholder} : null;
+        });
+        R.note(!!m && m.ph === '운영자 코드', '[운영자 코드 넣기]가 운영자 전용 창을 연다',
+               m ? (m.title + ' · ' + m.ph) : '창이 안 뜸');
+      }
+    }
+
+    /* 손님 설정 화면에 관리자 줄이 남아 있으면 안 된다 */
+    await page.goto(APP, {waitUntil:'load'}); await L.wait(2200);
+    await L.clickText(page, /^더보기/); await L.wait(700);
+    await page.evaluate(() => {
+      const r = [...document.querySelectorAll('#activeModal .hd-row')]
+        .find(function(x){ return x.textContent.indexOf('설정') >= 0; });
+      if(r) r.click();
+    });
+    await L.wait(2000);
+    const leftover = await page.evaluate(() => [...document.querySelectorAll('#main *')]
+      .filter(function(x){ return x.children.length === 0 &&
+        /운영 현황판 \(운영자\)|문의 관리 \(운영자\)/.test(x.textContent||''); }).length);
+    R.note(leftover === 0, '손님 설정 화면에 관리자 입구가 없다', leftover + '개');
+    R.note(page.__errs.length === 0, 'JS 오류 0건', page.__errs[0] || '');
+    await page.close();
+  }
+
+  await browser.close();
+  R.done();
+})().catch((e) => { console.error('검사 자체가 터졌습니다:', e && e.message); process.exit(2); });

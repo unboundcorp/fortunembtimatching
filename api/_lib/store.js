@@ -354,12 +354,16 @@ export async function aiAlreadyUsed(sessionId, cacheKey) {
    ★ 열쇠는 코드에 넣지 않는다. Vercel 환경변수(TEST_UNLOCK_CODE)에만 두고 서버가 대조한다.
      예전에 fortune-test.html에 관리자 키를 박아 공개 저장소에 올린 사고가 있었다.
      그때 그 주소를 아는 사람은 누구나 유료 기능을 전부 열 수 있었다. 같은 실수를 반복하지 않는다. */
-export async function grantTestAccess(sessionId, hours) {
+export async function grantTestAccess(sessionId, hours, role) {
   const expires = new Date(Date.now() + hours * 3600 * 1000).toISOString();
   await rest('test_grants?on_conflict=session_id', {
     method: 'POST',
     headers: { Prefer: 'return=minimal,resolution=merge-duplicates' },
-    body: JSON.stringify({ session_id: sessionId, expires_at: expires }),
+    body: JSON.stringify({
+      session_id: sessionId,
+      expires_at: expires,
+      role: role === 'admin' ? 'admin' : 'tester',
+    }),
   });
   return expires;
 }
@@ -370,6 +374,28 @@ export async function testAccessOf(sessionId) {
   if (!row) return null;
   if (new Date(row.expires_at).getTime() <= Date.now()) return null;
   return row;
+}
+
+/* =====================================================================
+   운영자인가 (2026-09-08 대표님 지시: "unlock 링크는 테스트페이지잖아 어드민페이지에 구현해야지")
+   ---------------------------------------------------------------------
+   ★ 왜 갈랐나: test_grants 하나가 두 가지를 겸하고 있었다 —
+     ① 유료 화면을 테스트로 열어 주는 허가
+     ② 손님 문의를 읽고 매출을 보는 운영자 권한
+     그래서 **테스트 코드만 아는 사람이 손님 연락처와 주문 내역을 전부 볼 수 있었다.**
+     테스터에게 줄 권한이 아니다.
+
+   ★ 안전장치: ADMIN_UNLOCK_CODE 를 아직 안 넣었으면 예전처럼 테스터 허가도 운영자로 본다.
+     안 그러면 이 코드가 올라가는 순간 대표님이 관리자 화면에서 잠긴다.
+     환경변수를 넣는 순간 분리가 켜진다. **넣고 나면 이 되돌림은 꺼진다.**
+===================================================================== */
+export async function adminAccessOf(sessionId) {
+  const row = await testAccessOf(sessionId);
+  if (!row) return null;
+  if (row.role === 'admin') return row;
+  const adminCode = process.env.ADMIN_UNLOCK_CODE;
+  if (!adminCode || adminCode.length < 8) return row;   /* 아직 안 나눈 상태 — 예전대로 */
+  return null;
 }
 
 /* 코드 맞히기를 막는다. 코드가 짧아도 무한정 찍어보지는 못하게 한다.
