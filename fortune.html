@@ -6195,7 +6195,10 @@ function offerAccountLoginIfStranded(kret){
   if(saved.retried){ try{ sessionStorage.removeItem(KAKAO_BACK_KEY); }catch(e){} return; }
   try{ sessionStorage.removeItem(KAKAO_BACK_KEY); }catch(e){}
 
-  var pid = (saved.product && PRODUCTS[saved.product]) ? saved.product : null;
+  /* ★ 2026-09-07 — PRODUCTS[...]로 보면 안 된다. 사주 풀이는 'saju_full:2026'처럼
+     연도가 붙어 저장되므로 상품표에서 그 이름을 못 찾는다(연도 상품은 2026-09-03에 생겼다).
+     productDef()가 연도를 갈라서 봐 준다. */
+  var pid = (saved.product && productDef(saved.product)) ? saved.product : null;
   var body = el('div',{class:'sheet-body'});
   body.appendChild(el('p',{},['로그인이 끝까지 되지 않았어요.']));
   body.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},[
@@ -6338,16 +6341,22 @@ function restoreAfterKakao(){
     restoreCompatState(saved.compat);   /* ★ render() 앞이어야 한다 — 채운 뒤에 그려야 그 화면이 나온다 */
     render();
     /* 결제하려다 로그인하러 갔던 경우 — 아직 안 열렸으면 결제창을 다시 띄운다. */
-    if(saved.product && PRODUCTS[saved.product]){
+    /* ★ 2026-09-07 (대표님 제보: "결제버튼 누르고 카카오 로그인 했는데 다시 이 화면이 뜬다")
+       여기가 PRODUCTS[saved.product] 였다. 사주 풀이는 'saju_full:2026'으로 저장되는데
+       상품표의 열쇠는 'saju_full'이라 **항상 못 찾았고, 결제창이 다시 안 떴다.**
+       연도 상품(2026-09-03)을 만들 때 이 자리를 같이 안 고친 것이다.
+       productDef()는 연도를 갈라서 보고, 이름도 '· 2026년'까지 붙여 돌려준다. */
+    var backProd = saved.product ? productDef(saved.product) : null;
+    if(backProd){
       if(!hasAccess(saved.product)){
-        openPaywall(PRODUCTS[saved.product]);
+        openPaywall(backProd);
       }else{
         /* ★ 2026-08-29 (대표님 제보: "다시 카드 결제 하러 가니깐 이미 열려있대")
            로그인해 보니 예전에 산 것이 딸려온 경우다. 동작은 맞지만,
            결제하려고 로그인한 사람에게 아무 설명 없이 "열려 있어요"만 보이면
            돈을 두 번 낸 건지 뭔지 알 수가 없다. 왜 열려 있는지 말해 준다.
            ★ 결제창을 다시 띄우지는 않는다 — 이미 가진 것을 또 팔면 안 된다. */
-        showToast('로그인하니 전에 결제하신 ' + PRODUCTS[saved.product].name + '이(가) 확인됐어요. 다시 결제하지 않으셔도 돼요.');
+        showToast('로그인하니 전에 결제하신 ' + backProd.name + '이(가) 확인됐어요. 다시 결제하지 않으셔도 돼요.');
       }
     }
   }catch(e){ console.warn('카카오 복귀 자리 되돌리기 실패', e); }
@@ -7794,7 +7803,7 @@ function openTermsModal(){
     '다만 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조 제2항에 따라, 유료 콘텐츠를 열람한 경우 그 콘텐츠에 한하여 청약철회가 제한됩니다. "열람"이란 결제로 열린 유료 콘텐츠의 내용을 처음으로 표시한 시점을 말합니다.',
     '결제 오류·중복 결제·콘텐츠 미제공 등 회사의 귀책사유가 있는 경우에는 열람 여부와 관계없이 전액 환불합니다.',
     '기간제 이용권을 이용하던 중 청약철회하는 경우, 이미 이용한 기간에 해당하는 금액과 이미 열람한 콘텐츠의 대금을 공제한 나머지를 환불합니다.',
-    '환불 요청은 ' + companyValue(COMPANY.supportEmail) + ' 로 영수증 번호와 함께 보내주시면 됩니다. 회사는 요청일부터 3영업일 이내에 처리하고 결과를 알려드리며, 환불은 결제하신 수단으로 합니다.'
+    '환불 요청은 서비스 내 [문의하기] → [환불 신청]에서 접수하시거나, ' + companyValue(COMPANY.supportEmail) + ' 로 영수증 번호와 함께 보내주셔도 됩니다. 어느 쪽으로 하셔도 같이 처리되며, 서비스 내에서 접수하신 경우 처리 상태와 답변을 [내 문의 내역]에서 확인하실 수 있습니다. 회사는 요청일부터 3영업일 이내에 처리하고 결과를 알려드리며, 환불은 결제하신 수단으로 합니다.'
   ]);
 
   h('제9조 (금지 행위)');
@@ -8596,11 +8605,15 @@ function supportEntSummary(){
   var open = [];
   var passOn = !!(e.pass && e.pass.expiresAt > Date.now());
   if(passOn){
-    var pname = (PRODUCTS[e.pass.productId] && PRODUCTS[e.pass.productId].name) || '전체 이용권';
+    /* ★ 연도가 붙은 이름('premium_pass:2026')도 찾아야 한다 — 안 그러면 산 분 화면에
+       '전체 이용권'이라고만 떠서 어느 해 것인지 알 수 없다. */
+    var pname = (productDef(e.pass.productId) && productDef(e.pass.productId).name) || '전체 이용권';
     open.push(pname + ' — ' + new Date(e.pass.expiresAt).toLocaleString('ko-KR') + '까지');
   }
   Object.keys(e.items || {}).forEach(function(k){
-    if(PRODUCTS[k]) open.push(PRODUCTS[k].name);
+    /* ★ PRODUCTS[k]로 보면 'saju_full:2026'이 통째로 빠져, 산 것이 목록에 안 뜬다. */
+    var pd = productDef(k);
+    if(pd) open.push(pd.name);
   });
   return { open:open, passOn:passOn, purchases:(e.purchases || []) };
 }
@@ -8616,7 +8629,7 @@ function supportOrdersCard(title, note){
   }
   rows.forEach(function(o){
     var st = ORDER_STATUS[o.status] || [o.status || '알 수 없음', 'warn'];
-    var pname = (PRODUCTS[o.productId] && PRODUCTS[o.productId].name) || o.productId || '상품';
+    var pname = (productDef(o.productId) && productDef(o.productId).name) || o.productId || '상품';
     var when = o.paidAt || o.at;
     card.appendChild(el('div',{class:'sup-ord'},[
       el('span',{class:'sup-chip '+(st[1]==='ok'?'answered':(st[1]==='bad'?'received':'working'))},[st[0]]),
@@ -13758,7 +13771,14 @@ function buildMonthlyFortune(profile, year, isOpen){
 var COMPAT_RELATIONS = [
   { key:'friend',   label:'친구',      w:{mbti:0.4, saju:0.4, elem:0.1, zod:0.1},
     note:'함께 있을 때 편한 자리와 서운함이 쌓이는 지점을 짚어드려요.' },
-  { key:'lover',    label:'연인',      w:{mbti:0.3, saju:0.5, elem:0.1, zod:0.1},
+  /* ★ 2026-09-07 대표님 지시 — "연인사이로 보는 궁합링크가 어떻게 여럿이서 보냐?
+       연인은 여럿이서 기능에서 빼야지"
+     연인은 두 사람 사이를 가리키는 말이라 모임(3명 이상)에 붙을 자리가 없다.
+     그런데 초대 링크가 만드는 것은 '모임'이라, 연인으로 만든 링크에도
+     "두 명이든 30명이든 이 링크 하나면 돼요"가 붙어 나갔다(대표님 화면 제보).
+     pairOnly가 붙은 사이는 **모임 쪽 고르기 줄에 내놓지 않는다**(groupRelations). */
+  { key:'lover',    label:'연인',      pairOnly:true,
+    w:{mbti:0.3, saju:0.5, elem:0.1, zod:0.1},
     note:'끌리는 지점과 다투는 결, 함께 지낼 때의 리듬을 짚어드려요.' },
   { key:'coworker', label:'직장 동료', w:{mbti:0.5, saju:0.3, elem:0.1, zod:0.1},
     note:'일하는 방식과 역할 나누기, 결정에서 갈리는 지점을 짚어드려요.' },
@@ -13769,6 +13789,10 @@ var COMPAT_RELATIONS = [
     note:'한집에서 부대낄 때의 결과 서로에게 기대게 되는 자리를 짚어드려요.' }
 ];
 var COMPAT_RELATION_DEFAULT = 'friend';
+/* 모임(여럿이서)에서 고를 수 있는 사이. 둘이서 화면은 COMPAT_RELATIONS를 그대로 쓴다.
+   ★ 목록을 손으로 다시 적지 마라 — 사이를 늘리면 여기가 저절로 따라와야 한다. */
+function groupRelations(){ return COMPAT_RELATIONS.filter(function(r){ return !r.pairOnly; }); }
+function isPairOnlyRelation(k){ var r = relationOf(k); return !!(r && r.pairOnly); }
 /* 궁합 첫 화면에서 무엇을 보고 있는지. 'pair' = 둘이서 · 'group' = 여럿이서.
    저장하지 않는다 — 서비스를 다시 열면 둘이서로 시작한다. */
 var COMPAT_VIEW = 'pair';
@@ -18484,7 +18508,7 @@ function renderCompat(){
          둘이서 화면과 같은 순서다 — 사이를 먼저 정하고, 그다음 어떻게 모을지 고른다. */
       view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['이 모임은 어떤 사이인가요']));
       var gseg = el('div',{class:'seg-toggle seg-rel', style:'margin-bottom:6px;', role:'group','aria-label':'이 모임은 어떤 사이인가요'});
-      COMPAT_RELATIONS.forEach(function(r){
+      groupRelations().forEach(function(r){
         gseg.appendChild(el('button',{type:'button','aria-pressed':(GC_RELATION_SET && GC_RELATION===r.key)?'true':'false',
           onclick:function(){ if(GC_RELATION_SET && GC_RELATION===r.key) return;
             GC_RELATION=r.key; GC_RELATION_SET=true;
@@ -21170,7 +21194,13 @@ function openSavedGroup(id){
        (대표님 제보: "저장한 그룹 들어가면 그게 다시 계속 바뀌더라").
        적어 둔 값이 있으면 그것으로, 없으면 '아직 안 고름'으로 되돌린다 —
        고른 적 없는 모임에 기본값(친구) 점수를 소리 없이 띄우지 않는다. */
-    if(savedRel){ GC_RELATION = savedRel; GC_RELATION_SET = true; }
+    /* ★ 2026-09-07 — 연인은 두 사람 사이라 3명 이상 모임에는 붙을 자리가 없다.
+       1:1 화면에서 연인으로 만든 링크가 모임이 되고, 거기에 셋째가 들어오면
+       '연인 3명'이라는 말이 안 되는 상태가 된다. 그때는 다시 고르게 한다.
+       두 분뿐이면 연인 그대로 둔다 — 그건 원래 맞는 값이다. */
+    if(savedRel && isPairOnlyRelation(savedRel) && PENDING_MEET.length > 2){
+      GC_RELATION = COMPAT_RELATION_DEFAULT; GC_RELATION_SET = false;
+    } else if(savedRel){ GC_RELATION = savedRel; GC_RELATION_SET = true; }
     else { GC_RELATION = COMPAT_RELATION_DEFAULT; GC_RELATION_SET = false; }
     ROUTE='groupCompat'; render(); window.scrollTo(0,0);
   }).catch(function(err){
@@ -21818,7 +21848,7 @@ function renderGroupCompat(){
   if(!GC_RELATION_SET){
     view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['이 모임은 어떤 사이인가요']));
     var relSeg = el('div',{class:'seg-toggle seg-rel', role:'group','aria-label':'이 모임은 어떤 사이인가요'});
-    COMPAT_RELATIONS.forEach(function(r){
+    groupRelations().forEach(function(r){
       relSeg.appendChild(el('button',{type:'button','aria-pressed':'false',
         onclick:function(){ GC_RELATION=r.key; GC_RELATION_SET=true; GC_SEL=null;
           noteGroupRelation(r.key);
@@ -22553,7 +22583,11 @@ function showInviteModal(profile, link, live, ttlHours, relationKey){
   if(live){
     body.appendChild(linkRow());
     (function(){ var r=relLine(); if(r) body.appendChild(r); })();
-    body.appendChild(el('p',{},['받은 분이 정보를 넣는 순간 '+profile.name+'님 화면에도 함께 나타나요. 두 명이든 '+GC_MAX+'명이든 이 링크 하나면 돼요.']));
+    /* ★ 2026-09-07 대표님 지적 — 연인으로 만든 링크에까지 "두 명이든 30명이든"이 붙어 나갔다.
+       연인은 두 사람 사이라 그 문장이 말이 안 된다. 사이에 따라 갈라 적는다. */
+    body.appendChild(el('p',{},[ isPairOnlyRelation(relationKey)
+      ? ('받은 분이 정보를 넣는 순간 '+profile.name+'님 화면에도 함께 나타나요. 이 링크는 두 분이 보는 궁합이에요.')
+      : ('받은 분이 정보를 넣는 순간 '+profile.name+'님 화면에도 함께 나타나요. 두 명이든 '+GC_MAX+'명이든 이 링크 하나면 돼요.') ]));
     /* ★ R65 — 대표님이 주신 문장으로. 항목을 하나하나 나열하니 아무도 안 읽었다.
        읽히지 않는 고지는 고지가 아니다. 자세한 항목은 개인정보처리방침에 그대로 있다.
        ★ R95 — 지우지 않고 접었다. 누르면 그 자리에서 그대로 펴진다. */
@@ -24241,10 +24275,13 @@ if(PENDING_MEET && STATE.profiles.length>0){
     try{
       var q = new URLSearchParams(location.search);
       var prod = q.get('product');
-      if(prod && PAID_PRODUCT_ROUTE[prod]){
-        return { route: PAID_PRODUCT_ROUTE[prod],
-                 mode: (prod === 'compat_full') ? 'compat'
-                     : (prod === 'mbti_full') ? null : 'self' };
+      /* ★ 2026-09-07 — 주소의 product 도 'saju_full:2026'처럼 연도가 붙어 온다.
+         그대로 찾으면 못 찾아서 결제하고 돌아온 사람이 홈에서 시작한다. 밑동으로 찾는다. */
+      var pbase = prod ? splitProductId(prod).base : null;
+      if(pbase && PAID_PRODUCT_ROUTE[pbase]){
+        return { route: PAID_PRODUCT_ROUTE[pbase],
+                 mode: (pbase === 'compat_full') ? 'compat'
+                     : (pbase === 'mbti_full') ? null : 'self' };
       }
       if(q.get('kakao') === 'ok'){
         var raw = sessionStorage.getItem(KAKAO_BACK_KEY);
@@ -24318,11 +24355,13 @@ scheduleCharWarm();
     var opened = false;
 
     if(product){
-      var toRoute = PAID_PRODUCT_ROUTE[product];
+      /* ★ 2026-09-07 — 연도가 붙은 상품('saju_full:2026')은 밑동으로 찾아야 한다. */
+      var pbase2 = splitProductId(product).base;
+      var toRoute = PAID_PRODUCT_ROUTE[pbase2];
       if(toRoute && hasAccess(product) && activeProfile()){
         ROUTE = toRoute;
-        if(product === 'compat_full'){ setMode('compat'); }
-        else if(product !== 'mbti_full'){ setMode('self'); }
+        if(pbase2 === 'compat_full'){ setMode('compat'); }
+        else if(pbase2 !== 'mbti_full'){ setMode('self'); }
         /* ★ 탭만 맞추면 탭 안 첫 화면이 나온다. 보던 자리까지 되돌린 뒤에 그린다. */
         restorePayPosition(product);
         render();
