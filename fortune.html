@@ -6598,7 +6598,9 @@ function passRemainingDays(){
 function grantProductLocally(productId, receipt){
   if(serverAuthoritative()){ console.warn('서버 모드에서는 클라이언트가 권한을 부여하지 않아요.'); return; }
   var e = localTrialEntitlements();
-  var prod = PRODUCTS[productId];
+  /* ★ PRODUCTS[id]로 보면 'saju_full:2026'이 undefined라 **조용히 아무것도 안 한다**
+     (체험 모드에서 결제했는데 아무 일도 안 일어난다). productDef()는 연도를 갈라서 본다. */
+  var prod = productDef(productId);
   if(!prod) return;
   if(prod.kind === 'pass'){
     var base = (e.pass && e.pass.expiresAt > Date.now()) ? e.pass.expiresAt : Date.now();
@@ -7392,9 +7394,17 @@ function buildPurchasePanel(){
   }
 
   var adminOpened = adminPassActive();
+  /* ★ 연도 상품은 e.items 에 'saju_full:2026' 으로 들어온다. 기본 이름으로만 보면
+     **산 것이 '구매함'으로 안 보이고 값이 그대로 적힌다** — 산 분이 안 산 것처럼 보인다.
+     (2026-09-08 새 검사기가 잡았다. 9월 7일에 여덟 곳을 고쳤는데 이 자리가 남아 있었다.) */
+  function ownedAnyYear(base){
+    if(e.items[base]) return true;
+    for(var k in e.items){ if(splitProductId(k).base === base) return true; }
+    return false;
+  }
   ['saju_full','mbti_full','compat_full'].forEach(function(id){
     var prod = PRODUCTS[id];
-    var owned = !!e.items[id];
+    var owned = ownedAnyYear(id);
     var byAdmin = !owned && !realPassActive() && adminGranted(id);
     if(byAdmin) adminOpened = true;
     var label = owned ? '구매함'
@@ -24683,6 +24693,34 @@ scheduleCharWarm();
       showPayFail();
     });
 })();
+
+/* ★ 2026-09-07 (대표님 지시 "다 잡히는 방법이 없어?" → 검사기를 제대로 만들기로 함)
+   검사기용 통로. 화면 코드는 전부 이 IIFE 안에 있어서 밖에서는 함수 하나 못 부른다.
+   그래서 검사기가 계산을 확인하려면 매번 파일에서 코드를 오려 붙여야 했고, 오려 붙이는
+   자리가 조금만 바뀌어도 검사가 통째로 못 돌았다.
+   ★ **평소에는 안 열립니다.** 브라우저가 문서를 읽기 전에 window.__INYEON_TEST__ 를
+     true 로 심어 둔 경우에만 열립니다(puppeteer의 evaluateOnNewDocument). 손님 브라우저에는
+     그런 것이 없으므로 늘 undefined 입니다.
+   ★ 여기 내놓는 것은 **읽기용**입니다. 권한·결제 판정은 전부 서버가 하므로
+     이걸로 유료를 열 수는 없습니다(원래도 개발자도구로 다 보이는 값들입니다).
+   ★ 새 계산을 만들면 여기 한 줄 늘리십시오 — 그래야 검사기가 그것도 잴 수 있습니다. */
+try{
+  if(window.__INYEON_TEST__ === true){
+    window.__INYEON_TEST__ = {
+      SajuEngine: SajuEngine,
+      MBTI_MATRIX: MBTI_MATRIX, MBTI_STACK: MBTI_STACK,
+      COMPAT_RELATIONS: COMPAT_RELATIONS, COMPAT_TIER_LINE: COMPAT_TIER_LINE,
+      COMPAT_NICK: COMPAT_NICK, PERSON_NICK: PERSON_NICK,
+      PRODUCTS: PRODUCTS, YEARLY_PRODUCTS: YEARLY_PRODUCTS, AI_QUOTA: AI_QUOTA,
+      buildSajuCompat: buildSajuCompat, zodiacScore: zodiacScore, elementScore: elementScore,
+      compatSameness: compatSameness, compatNickname: compatNickname,
+      compatTierLine: compatTierLine, personNickname: personNickname,
+      computeCompat: computeCompat,
+      productDef: productDef, splitProductId: splitProductId, productIdFor: productIdFor,
+      getSajuResult: getSajuResult, charKeyForMbti: charKeyForMbti, charImgId: charImgId
+    };
+  }
+}catch(e){}
 
 })();
 </script>

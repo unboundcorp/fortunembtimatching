@@ -31,7 +31,14 @@
 const path = require('path');
 const os = require('os');
 
-const BASE = process.argv[2] || 'https://fortunembtimatching.vercel.app';
+const ARGS = process.argv.slice(2).filter((x) => x.indexOf('--') !== 0);
+const FLAGS = process.argv.slice(2).filter((x) => x.indexOf('--') === 0);
+/* ★ 2026-09-08 — 검사를 나눠 돌릴 수 있게 했다. 고친 파일은 정적 서버로 띄워 보는데
+   그 서버에는 /api 가 없어서(501) 서버 함수 검사가 늘 실패한다. 그래서
+   화면 검사는 로컬(--skip-api), 서버 함수 검사는 배포본(--only-api)으로 나눈다. */
+const SKIP_API = FLAGS.indexOf('--skip-api') >= 0;
+const ONLY_API = FLAGS.indexOf('--only-api') >= 0;
+const BASE = ARGS[0] || 'https://fortunembtimatching.vercel.app';
 const APP = BASE.replace(/\/+$/, '') + '/fortune.html';
 const KEY = 'inyeonjeom.v2';
 
@@ -127,8 +134,9 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
     errs.push('console: ' + t.slice(0, 120));
   });
 
-  console.log('검사 대상: ' + APP + '\n');
+  console.log('검사 대상: ' + APP + (SKIP_API ? '  (서버 함수는 건너뜀)' : ONLY_API ? '  (서버 함수만)' : '') + '\n');
 
+  if(!ONLY_API){
   /* ── 1. 서비스가 뜨는가 · 켤 때 오류가 나는가 ────────────────────────── */
   console.log('[1] 서비스 부팅');
   let res;
@@ -191,7 +199,13 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
       errs[0] ? errs[0] : (drew ? txt.length + '자' : '화면이 안 그려짐 (' + txt.length + '자)'));
   }
 
+  }  /* !ONLY_API */
+
   /* ── 3. 서버 함수가 살아 있는가 ──────────────────────────────────── */
+  if(!SKIP_API){
+  /* ★ 서버 함수만 볼 때도 문서를 한 번은 열어야 한다. 안 열면 about:blank 라
+     같은 출처로 fetch 를 못 해서 전부 -1 로 나온다(실제로 그렇게 나왔다). */
+  if(ONLY_API){ try{ await page.goto(APP, {waitUntil:'load', timeout:45000}); }catch(e){} await w(400); }
   console.log('\n[3] 서버 함수');
   for (const [p, body, okCodes] of APIS) {
     let st = 0;
@@ -206,6 +220,8 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
     } catch (e) { st = -1; }
     note(okCodes.indexOf(st) >= 0, p, 'HTTP ' + st + ' (기대 ' + okCodes.join('/') + ')');
   }
+
+  }  /* !SKIP_API */
 
   await browser.close();
 
