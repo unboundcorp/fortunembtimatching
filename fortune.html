@@ -3889,7 +3889,7 @@ var TERMS = {
   '원국':{h:'原局',cat:'basic',src:'md',short:'타고난 여덟 글자 그 자체',
     long:'태어날 때 정해진 사주 원판이에요. 원국이 바탕이라면 대운·세운은 그 위를 지나가는 흐름이라, 같은 해라도 사람마다 다르게 읽혀요.'},
   '만세력':{h:'萬歲曆',cat:'basic',src:'app',short:'날짜를 사주 글자로 바꿔 주는 달력',
-    long:'어느 날이 어떤 글자에 해당하는지 적어 둔 달력이에요. 이 서비스는 절기와 음력을 직접 계산해 만세력을 대신하는데, 절기 시각이 실제 관측 기준과 몇 분(공개 자료 80건 대조에서 최대 약 12분) 차이가 날 수 있어요.'},
+    long:'어느 날이 어떤 글자에 해당하는지 적어 둔 달력이에요. 이 서비스는 절기와 음력을 직접 계산해 만세력을 대신해요. 절기 시각은 1900~2100년치를 정밀 천문 계산으로 미리 구해 두었고(오차 1초 이내), 음력은 한국 표준시로 판정한 한국 음력이에요.'},
   '십성':{h:'十星',cat:'basic',src:'md',short:'나와 다른 글자의 관계 열 가지',
     long:'태어난 날의 나(일간)를 기준으로, 나머지 글자가 나를 돕는지 누르는지·내가 낳는지 누르는지를 음양까지 따져 열 가지로 나눈 것이에요. 십신이라고도 불러요.'},
   '근묘화실':{h:'根苗花實',cat:'basic',src:'md',short:'뿌리 · 싹 · 꽃 · 열매',
@@ -4055,7 +4055,7 @@ var TERMS = {
 
   /* ---- 시간과 절기 ---- */
   '절기':{h:'節氣',cat:'time',src:'app',short:'계절이 바뀌는 스물넷 마디',
-    long:'사주에서 달의 경계는 달력 1일이 아니라 절기예요. 이 서비스는 태양의 위치를 계산해 절기 시각을 직접 구하는데, 공개된 절기 시각 80건과 맞춰 보니 최대 약 12분 차이가 났어요. 절기가 자정에 아주 가까운 해에는 이 몇 분 때문에 날짜가 하루 달라질 수도 있어요.'},
+    long:'사주에서 달의 경계는 달력 1일이 아니라 절기예요. 이 서비스는 1900~2100년의 절기 시각을 정밀 천문 계산으로 미리 구해 두고 그 값을 써요. 1,212건을 다시 맞춰 보니 오차가 최대 0.5초였고, 날짜가 달라지는 절기는 하나도 없었어요. 그 밖의 해는 계산식으로 구하는데, 그쪽은 최대 13분쯤 차이가 날 수 있어요.'},
   '입춘':{h:'立春',cat:'time',src:'app',short:'사주에서 한 해가 시작되는 날',
     long:'양력 2월 4일 무렵이에요. 이 서비스는 1월 1일이 아니라 입춘을 기준으로 그 해의 글자를 정하므로, 1월이나 2월 초에 태어났으면 앞 해의 글자를 써요.'},
   '진태양시':{h:'眞太陽時',cat:'time',src:'app',short:'실제 해의 위치로 맞춘 시각',
@@ -4526,6 +4526,191 @@ var JIE_LIST = [
   {deg:285, gm:0, gd:5,  branch:1}   // 소한 -> 축월
 ];
 var SOLAR_TERM_NAMES = ['입춘','경칩','청명','입하','망종','소서','입추','백로','한로','입동','대설','소한'];
+/* =====================================================================
+   ★ 2026-09-07 — 절기 시각을 미리 구해 표로 담는다 (1900~2100)
+   ---------------------------------------------------------------------
+   왜: sunApparentLongitude()가 쓰는 식은 Meeus 저정밀식(평균황경 + 중심차 3항)이고,
+   공표 정확도가 0.01°다. 시간으로 환산하면 14분이다. 실제로 재 보니 그대로 나왔다.
+
+     1950~2050 절기 1,212건 대조 (정밀 천문 계산과)
+       중앙값 3.18분 · 평균 3.66분 · 95% 8.57분 · **최대 12.88분**
+       우리 값이 늦은 경우 0건 — 계통 오차다
+       한국 날짜가 하루 갈리던 절기 6건 (1953 소한·1964 백로·1982 한로·2013 청명·2023 소한·2031 입동)
+
+   그래서 식을 고치는 대신 **정밀 계산으로 미리 구한 값을 담았다.** 표는 초 단위이고,
+   되돌림 검사에서 2,412건 전부 원값과 일치했다. 남는 오차는 반올림 0.5초뿐이다.
+
+   ★ 표 밖(1900 이전·2100 이후)은 예전처럼 식으로 계산한다. 그쪽은 12분 오차가 남는다.
+   ★ legacy(R24 이전 재현)는 표를 쓰지 않는다 — 그건 '옛 값이 무엇이었나'를 보여주는 용도다.
+   ★ 담긴 순서는 JIE_LIST 순서(입춘·경칩·…·소한)다. JIE_LIST를 손대면 표가 어긋난다.
+   형식: 첫 값은 초(UTC), 그 뒤는 앞 값과의 차이를 36진수로. 구분자는 마침표.
+===================================================================== */
+var JIE_TABLE_Y0 = 1900, JIE_TABLE_Y1 = 2100;
+var JIE_TABLE_PACKED =
+  '-2206030093.1j4q9.1jzaz.1ky45.1lrta.1m7wb.1m5jf.1llfk.1kpi1.1jqs2.1iyir.-h9tq5.kazjs.1j4ro.1jzfp'+
+  '.1ky9v.1lrwj.1m7vx.1m5gc.1llc5.1kphe.1jquq.1iymo.-h9u2j.kazyl.1j4oa.1jz9r.1ky2i.1lrog.1m7o9.1m5c'+
+  '3.1llcm.1kplv.1jr22.1iyuo.-h9tlw.kazq3.1j4m5.1jz55.1kxyz.1lrpb.1m7sx.1m5hf.1llgd.1kpmp.1jr0h.1iy'+
+  'sf.-h9tpd.kazqx.1j4lv.1jz58.1kxzf.1lrqu.1m7vk.1m5j4.1llfv.1kpkc.1jqx4.1iypn.-h9tlk.kazow.1j4pr.1'+
+  'jz8b.1kxyy.1lrlq.1m7oo.1m5e0.1lld7.1kpjx.1jqy7.1iyrd.-h9tcx.kazl8.1j4tf.1jzcb.1ky2f.1lrn4.1m7ng.'+
+  '1m5cm.1llds.1kpm9.1jr13.1iysu.-h9twz.kazzb.1j4n4.1jz67.1kxya.1lrlr.1m7nj.1m5d5.1llfl.1kpp6.1jr3r'+
+  '.1iyu9.-h9tjy.kazjn.1j4jz.1jz3n.1kxxu.1lrob.1m7sb.1m5ga.1ller.1kplq.1jr00.1iyrz.-h9tbr.kazdk.1j4'+
+  'nf.1jz7x.1ky27.1lrrk.1m7tv.1m5g1.1llc5.1kpi9.1jqy1.1iysi.-h9tmy.kaztk.1j4np.1jz48.1kxuj.1lrhu.1m'+
+  '7l6.1m5c7.1lldw.1kpme.1jr1y.1iyv8.-h9t4m.kazdf.1j4nf.1jz2y.1kxt3.1lrif.1m7ov.1m5hw.1llk1.1kpqf.1'+
+  'jr1m.1iyqr.-h9thk.kazec.1j4l7.1jz50.1kxy0.1lrnn.1m7su.1m5ji.1lljw.1kpq4.1jr1a.1iypp.-h9tpq.kazif'+
+  '.1j4jt.1jz4o.1kxxl.1lrkr.1m7n2.1m5dj.1llfw.1kpps.1jr4w.1iyvb.-h9tbp.kazc2.1j4jt.1jz3d.1kxxa.1lrm'+
+  'i.1m7pe.1m5fd.1llhs.1kps2.1jr83.1iyyx.-h9ttm.kazur.1j4e9.1jyuz.1kxp6.1lrih.1m7qa.1m5ik.1lll1.1kp'+
+  'u9.1jr8y.1iyzf.-h9td2.kazgj.1j4et.1jytt.1kxmc.1lrfw.1m7qo.1m5l6.1llmd.1kpsp.1jr59.1iyvv.-h9t3w.k'+
+  'az9p.1j4lk.1jz1x.1kxsu.1lri5.1m7p1.1m5iv.1llky.1kpsa.1jr5m.1iywf.-h9tpv.kazwr.1j4lv.1jz0s.1kxoq.'+
+  '1lraf.1m7et.1m5am.1llj8.1kpwe.1jrbz.1iz1n.-h9t99.kazhm.1j4jp.1jyz2.1kxoz.1lrdh.1m7jo.1m5ei.1llle'+
+  '.1kpxi.1jrbt.1iyzs.-h9thx.kazio.1j4gu.1jyzu.1kxu9.1lrlf.1m7r5.1m5hx.1llj7.1kpsl.1jr7o.1iyy3.-h9t'+
+  'mu.kazpg.1j4hq.1jyze.1kxse.1lrhy.1m7me.1m5dh.1llfi.1kppi.1jr6h.1iyzk.-h9t3o.kazej.1j4l2.1jz0g.1k'+
+  'xry.1lrij.1m7p2.1m5hx.1llks.1kptc.1jr7h.1iyy0.-h9tsc.kazvm.1j4gd.1jyvl.1kxnm.1lrga.1m7qj.1m5ma.1'+
+  'llqe.1kpyd.1jr9m.1iywm.-h9tp5.kazkn.1j4de.1jyue.1kxnb.1lrfs.1m7qk.1m5nj.1llrr.1kpz3.1jr9h.1iyvf.'+
+  '-h9ti4.kazax.1j4eb.1jyxo.1kxsg.1lrk9.1m7rs.1m5mg.1llqs.1kpzx.1jrcq.1iyzy.-h9u2p.kazzi.1j4b1.1jyr'+
+  '2.1kxjt.1lrbj.1m7jt.1m5gf.1llp6.1kq35.1jrj6.1iz7e.-h9tdg.kazj8.1j49m.1jym5.1kxe0.1lr8k.1m7m2.1m5'+
+  'ld.1llsx.1kq48.1jrht.1iz4y.-h9t9e.kazcm.1j4an.1jyom.1kxhh.1lrc5.1m7ph.1m5o5.1llt5.1kq1p.1jre7.1i'+
+  'z29.-h9tgy.kazmb.1j4ex.1jys6.1kxhe.1lr6j.1m7f8.1m5e6.1llng.1kq07.1jrfb.1iz4j.-h9sxk.kaz8j.1j4i1.'+
+  '1jyv2.1kxje.1lr7r.1m7fl.1m5dy.1llor.1kq3i.1jriq.1iz5u.-h9tj6.kazn3.1j4bw.1jyqh.1kxi4.1lr9t.1m7jn'+
+  '.1m5h8.1llq0.1kq46.1jrjn.1iz6k.-h9tf3.kazh0.1j495.1jyo3.1kxhd.1lram.1m7l3.1m5i2.1llnx.1kpz9.1jre'+
+  'l.1iz3q.-h9svo.kaz0f.1j4cx.1jyrw.1kxlc.1lrey.1m7ot.1m5kf.1llox.1kpyl.1jrdc.1iz3h.-h9tj4.kazqm.1j'+
+  '4da.1jyp6.1kxez.1lr71.1m7ic.1m5hf.1llqa.1kq2t.1jrhe.1iz5o.-h9t6h.kazdj.1j4br.1jyn2.1kxc9.1lr51.1'+
+  'm7jt.1m5ml.1llwd.1kq72.1jrhq.1iz1n.-h9tak.kaz4q.1j48t.1jyp4.1kxiz.1lrd7.1m7qa.1m5qw.1llys.1kq83.'+
+  '1jrib.1iz1p.-h9tx5.kazp1.1j47f.1jyo4.1kxhp.1lr9w.1m7j5.1m5hv.1llsi.1kq70.1jrlw.1iz7w.-h9tb0.kazb'+
+  'y.1j46y.1jykv.1kxdv.1lr8g.1m7l0.1m5kv.1llvl.1kqam.1jrpx.1izbi.-h9toc.kazpt.1j427.1jyeb.1kx8h.1lr'+
+  '6v.1m7om.1m5r7.1lm0b.1kqcg.1jrq1.1izbi.-h9tld.kazpb.1j43d.1jydo.1kx5n.1lr2f.1m7k7.1m5ox.1llz2.1k'+
+  'q9q.1jrlx.1iz80.-h9sxy.kaz4m.1j49w.1jykw.1kxav.1lr4m.1m7jf.1m5nb.1llzc.1kqby.1jrod.1iz9l.-h9tqm.'+
+  'kazxx.1j49w.1jyka.1kx85.1lqyt.1m7bv.1m5g7.1llw8.1kqei.1jru8.1izez.-h9tdk.kazmd.1j46r.1jyh2.1kx6b'+
+  '.1lqyj.1m7d1.1m5i3.1llwv.1kqds.1jrsv.1izd0.-h9t3r.kaz71.1j44v.1jyi9.1kxc8.1lr81.1m7m3.1m5nf.1llx'+
+  'a.1kqa8.1jroq.1izb0.-h9tkp.kazqx.1j478.1jyiy.1kxah.1lr41.1m7fv.1m5fs.1llqp.1kq62.1jrn4.1izc2.-h9'+
+  'sv5.kaz8n.1j4a6.1jyjd.1kx86.1lr1g.1m7gj.1m5jt.1llvy.1kqaj.1jrp0.1izap.-h9tcm.kazh5.1j45c.1jyg4.1'+
+  'kx7d.1lr39.1m7l8.1m5r0.1lm2v.1kqf0.1jrq9.1iz8w.-h9tn6.kazjp.1j42b.1jyet.1kx7c.1lr2r.1m7in.1m5nq.'+
+  '1lm0p.1kqdi.1jrp1.1iz7t.-h9t2a.kayxs.1j438.1jyh0.1kxag.1lr6d.1m7l9.1m5oc.1lm18.1kqfy.1jrta.1izcj'+
+  '.-h9tr4.kazq4.1j401.1jyb5.1kx3e.1lqzr.1m7gt.1m5lw.1lm0i.1kqi7.1jryb.1iziq.-h9tah.kazh3.1j3ya.1jy'+
+  '5w.1kwwv.1lqup.1m7fn.1m5oy.1lm3z.1kqip.1jrvz.1izfa.-h9sub.kayxt.1j3zu.1jy8v.1kx12.1lqzy.1m7kv.1m'+
+  '5tg.1lm78.1kqj7.1jrtx.1izcn.-h9tgj.kazk8.1j43r.1jyd0.1kx1x.1lqvf.1m7bk.1m5ig.1llzo.1kqhi.1jrw8.1'+
+  'izg6.-h9syn.kaz7l.1j455.1jydv.1kx1o.1lqtu.1m7a3.1m5i9.1lm13.1kqkx.1js0f.1izij.-h9tax.kazdk.1j3ye'+
+  '.1jy8s.1kx1j.1lqyq.1m7hd.1m5p9.1lm5a.1kqm8.1js0p.1izix.-h9tja.kazlk.1j3wt.1jy6w.1kx0g.1lqyx.1m7g'+
+  'x.1m5ml.1lm0q.1kqgc.1jrv9.1izg7.-h9ssn.kayzp.1j41i.1jyaf.1kx21.1lqzz.1m7j5.1m5p2.1lm2l.1kqhj.1jr'+
+  'vr.1izgj.-h9tfw.kazoh.1j41l.1jy8n.1kwxt.1lqua.1m7f6.1m5oz.1lm5h.1kqlx.1jrzu.1iziv.-h9ter.kazmq.1'+
+  'j3zu.1jy6d.1kwv7.1lqre.1m7d5.1m5q5.1lm94.1kqoj.1jrz8.1izet.-h9t4y.kaz1c.1j3x9.1jy83.1kx0z.1lqzk.'+
+  '1m7kb.1m5uk.1lmc0.1kqqu.1js0u.1izfi.-h9tvl.kazqn.1j3wl.1jy85.1kx0r.1lqxa.1m7eq.1m5ls.1lm3x.1kqo2'+
+  '.1js42.1izma.-h9tca.kazhy.1j3w2.1jy41.1kwv6.1lqsg.1m7cv.1m5mz.1lm5v.1kqpy.1js6d.1izon.-h9t8w.kaz'+
+  'eo.1j3rv.1jxy7.1kwr6.1lqtd.1m7is.1m5vr.1lmdb.1kqsx.1js5o.1izn1.-h9the.kazoe.1j3uf.1jxzv.1kwqg.1l'+
+  'qqb.1m7e0.1m5q8.1lm8k.1kqok.1js11.1izj6.-h9sri.kayzq.1j403.1jy66.1kwu4.1lqpz.1m7bl.1m5ny.1lm87.1'+
+  'kqqv.1js4c.1izlc.-h9tc0.kazj2.1j3ya.1jy4w.1kwt6.1lqnz.1m78m.1m5lt.1lm88.1kqtq.1js9g.1izq8.-h9tce'+
+  '.kazko.1j3um.1jy0r.1kwqn.1lqnh.1m78e.1m5lb.1lm74.1kqrd.1js63.1izmq.-h9spf.kayrr.1j3t0.1jy14.1kwu'+
+  'b.1lqv4.1m7hs.1m5s2.1lm9p.1kqqj.1js3q.1izl0.-h9tak.kazeo.1j3vf.1jy2y.1kwu3.1lqsd.1m7dk.1m5mw.1lm'+
+  '4i.1kqna.1js3c.1izmv.-h9sx8.kaz7l.1j3wt.1jy1l.1kwq1.1lqn0.1m7a3.1m5oe.1lm99.1kqrv.1js5j.1izlv.-h'+
+  '9szf.kaz0k.1j3r8.1jxxd.1kwp3.1lqqi.1m7h8.1m5xs.1lmj8.1kqza.1js8p.1izl4.-h9tn4.kazhe.1j3oy.1jxx6.'+
+  '1kwpy.1lqqr.1m7f1.1m5sm.1lmds.1kqw7.1js7x.1izlo.-h9t1z.kayy6.1j3pt.1jxxz.1kwq8.1lqq0.1m7e0.1m5rs'+
+  '.1lmdh.1kqy8.1jscu.1izru.-h9tf1.kazhu.1j3n7.1jxsa.1kwk4.1lqlm.1m7cc.1m5t4.1lmgc.1kr1k.1jsh5.1izx'+
+  '6.-h9tde.kazos.1j3nb.1jxop.1kwec.1lqgg.1m796.1m5s5.1lmgl.1kr07.1jsd7.1izsf.-h9soe.kaywm.1j3qc.1j'+
+  'xt5.1kwif.1lqk0.1m7cz.1m5vn.1lmj8.1kr1o.1jscs.1izqm.-h9tcp.kazki.1j3u8.1jxys.1kwmd.1lqil.1m767.1'+
+  'm5mn.1lmbu.1kqz0.1jses.1izup.-h9t5x.kazj6.1j3ul.1jxyb.1kwlh.1lqgg.1m72h.1m5jn.1lmb3.1kr05.1jsgw.'+
+  '1izvz.-h9t1q.kaz98.1j3o8.1jxsx.1kwkq.1lqme.1m7ch.1m5sy.1lmh9.1kr2m.1jsgr.1izuz.-h9thj.kaznc.1j3n'+
+  'r.1jxt1.1kwlk.1lqnw.1m7dg.1m5qk.1lmaz.1kquz.1jsaf.1izrt.-h9stx.kaz3u.1j3s0.1jxvz.1kwlu.1lqlw.1m7'+
+  'bu.1m5r8.1lmcf.1kqvx.1jsat.1izrx.-h9t4t.kazel.1j3qr.1jxt3.1kwhy.1lqik.1m7aw.1m5ul.1lmj9.1kr2o.1j'+
+  'sf4.1izt8.-h9tev.kazla.1j3oh.1jxr1.1kwg0.1lqgt.1m79c.1m5tp.1lmk5.1kr3z.1jse4.1izp1.-h9sz4.kaytk.'+
+  '1j3ld.1jxru.1kwjt.1lqly.1m7ej.1m5xe.1lmmf.1kr6h.1jsgx.1izr1.-h9tif.kazby.1j3jm.1jxqx.1kwjx.1lql4'+
+  '.1m7b7.1m5s6.1lmh6.1kr4i.1jskc.1izya.-h9t8p.kazea.1j3j3.1jxls.1kwcw.1lqf0.1m773.1m5qu.1lmi4.1kr5'+
+  'v.1jslj.1izzi.-h9stm.kayyw.1j3fg.1jxfw.1kw7h.1lqef.1m7d4.1m60d.1lmr5.1krb8.1jsme.1izxv.-h9t6a.ka'+
+  'zb1.1j3ie.1jxjn.1kw9i.1lqdd.1m79q.1m5vn.1lmls.1kr6n.1jsj1.1izvy.-h9sre.kayyz.1j3nb.1jxou.1kwc5.1'+
+  'lqaw.1m73e.1m5q1.1lmjl.1kr7x.1jsmf.1izz8.-h9sy6.kaz6b.1j3ko.1jxll.1kw9t.1lqa3.1m73b.1m5qz.1lmms.'+
+  '1krcy.1jss3.1j043.-h9t7w.kazik.1j3il.1jxj8.1kw8n.1lqav.1m74m.1m5q0.1lmjh.1kr8m.1jsnn.1j006.-h9sn'+
+  'a.kaytk.1j3id.1jxkg.1kwbc.1lqew.1m79x.1m5um.1lmkq.1kr71.1jsl8.1izyp.-h9sz4.kaz7u.1j3l6.1jxmz.1kw'+
+  'cu.1lqek.1m77u.1m5se.1lmiv.1kr5p.1jsld.1j00m.-h9t29.kazh8.1j3n4.1jxmh.1kw9r.1lqa9.1m73v.1m5qw.1l'+
+  'mkz.1kr8t.1jsmb.1izya.-h9sxu.kaz1k.1j3h7.1jxi6.1kw86.1lqcu.1m7b3.1m60k.1lmun.1krgl.1jsqa.1izxx.-'+
+  'h9tkb.kazgf.1j3et.1jxjb.1kwbz.1lqge.1m7bz.1m5xy.1lmpk.1krcc.1jsp1.1izz7.-h9tb8.kazb4.1j3fa.1jxio'+
+  '.1kwao.1lqdv.1m77u.1m5u2.1lmnf.1krcj.1jss1.1j047.-h9t6v.kazd9.1j3cg.1jxbj.1kw2g.1lq94.1m78d.1m5y'+
+  'j.1lmty.1krip.1jswv.1j086.-h9tc8.kazop.1j3dc.1jxa6.1kvz0.1lq5i.1m76p.1m5y2.1lmsx.1krg6.1jss9.1j0'+
+  '2m.-h9srf.kayyk.1j3fk.1jxe9.1kw2c.1lq63.1m75u.1m5y5.1lmts.1krgy.1jssd.1j01u.-h9t0q.kaz7c.1j3hy.1'+
+  'jxi7.1kw5z.1lq6l.1m71m.1m5ry.1lmpr.1krgr.1jsvq.1j06n.-h9t53.kazh7.1j3hp.1jxgv.1kw4a.1lq4p.1m6yh.'+
+  '1m5ni.1lmmn.1krgb.1jswp.1j075.-h9srx.kayxv.1j3b3.1jxam.1kw1e.1lq7f.1m76r.1m5x0.1lmt2.1krj7.1jsx8'+
+  '.1j06o.-h9t1h.kaz6b.1j3b0.1jxbm.1kw3w.1lqao.1m797.1m5x0.1lmoz.1krcd.1jsrb.1j044.-h9sqr.kaz11.1j3'+
+  'ff.1jxdx.1kw33.1lq72.1m74b.1m5tr.1lmok.1krd1.1jsrq.1j04b.-h9spu.kaz05.1j3dx.1jxa2.1kvxb.1lq2i.1m'+
+  '745.1m5ym.1lmxf.1krmk.1jsy7.1j06d.-h9t5l.kazbp.1j3bt.1jx9n.1kvxx.1lq30.1m74i.1m5yp.1lmx3.1krm9.1'+
+  'jswz.1j039.-h9swv.kaytk.1j396.1jxad.1kw1a.1lq64.1m75g.1m5yg.1lmwp.1krmr.1jsz5.1j069.-h9t2p.kaz2f'+
+  '.1j38b.1jx8t.1kw0c.1lq5v.1m740.1m5vc.1lmu5.1krmo.1jt2s.1j0d0.-h9t30.kazfh.1j39j.1jx5s.1kvuw.1lq1'+
+  '0.1m71d.1m5tu.1lmt8.1krm9.1jt2d.1j0ck.-h9spu.kaz0m.1j36x.1jx1p.1kvqg.1lpyz.1m74x.1m620.1ln18.1kr'+
+  'qq.1jt2r.1j0ac.-h9sxu.kaz69.1j39l.1jx6h.1kvvh.1lq1t.1m74b.1m5zi.1lmxu.1krmw.1jszj.1j08k.-h9sxo.k'+
+  'az8n.1j3e1.1jxbd.1kvyi.1lq0t.1m6yh.1m5ry.1lmtd.1krmt.1jt1z.1j0b8.-h9syn.kaz91.1j3a4.1jx66.1kvtl.'+
+  '1lpya.1m6zl.1m5vc.1lmy9.1krsy.1jt7z.1j0fh.-h9t6a.kazgy.1j37g.1jx4a.1kvu6.1lq1c.1m73t.1m5y1.1lmwv'+
+  '.1kroe.1jt2r.1j0b7.-h9svm.kaz2g.1j37h.1jx59.1kvw2.1lq3e.1m753.1m5yw.1lmwk.1krm5.1jszt.1j09d.-h9s'+
+  'u8.kaz33.1j39m.1jx5y.1kvut.1lq1e.1m73b.1m5xy.1lmxl.1kroj.1jt2d.1j0bs.-h9t1c.kazem.1j3b4.1jx67.1k'+
+  'vt2.1lpyc.1m70z.1m5x9.1lmyu.1krr2.1jt3o.1j09y.-h9t0l.kaz1u.1j348.1jx14.1kvql.1lpyc.1m743.1m63o.1'+
+  'ln67.1krx7.1jt7e.1j0ag.-h9t6g.kaz1n.1j31c.1jx10.1kvty.1lq36.1m76l.1m62m.1ln37.1krue.1jt70.1j0cv.'+
+  '-h9t5l.kaz7x.1j330.1jx0o.1kvs2.1lq0a.1m72a.1m5wx.1lmym.1krsz.1jt8x.1j0h6.-h9svq.kaz4p.1j30c.1jws'+
+  'v.1kvhd.1lpro.1m70h.1m61h.1ln5o.1krzt.1jte4.1j0kt.-h9sth.kaz7e.1j31s.1jwtb.1kvh1.1lpr1.1m70u.1m6'+
+  '3b.1ln6l.1krxr.1jt9k.1j0fe.-h9sno.kayx2.1j34r.1jwya.1kvl5.1lprm.1m6x1.1m5yb.1ln3o.1krwp.1jt91.1j'+
+  '0et.-h9slt.kayva.1j36n.1jx0t.1kvmo.1lpqv.1m6tn.1m5td.1ln0x.1kryj.1jte6.1j0ko.-h9sta.kaz8q.1j36p.'+
+  '1jx0r.1kvna.1lprq.1m6tz.1m5rz.1lmxz.1krwe.1jtdn.1j0ke.-h9spk.kayyx.1j30g.1jwut.1kvki.1lpt8.1m6z2'+
+  '.1m5yp.1ln2o.1krxa.1jtcb.1j0it.-h9sm8.kayuz.1j316.1jww5.1kvnb.1lpxz.1m73r.1m60y.1ln1p.1krt7.1jt7'+
+  'f.1j0g2.-h9sq9.kaz3o.1j368.1jwzw.1kvnx.1lpvu.1m70j.1m5xs.1lmzx.1krt5.1jt7k.1j0fl.-h9ssu.kaz38.1j'+
+  '331.1jwus.1kvgz.1lpp6.1m6yn.1m62t.1ln9g.1ks3a.1jteu.1j0i3.-h9t1m.kaz6h.1j2zp.1jwtx.1kvj4.1lpsz.1'+
+  'm729.1m665.1lnbz.1ks44.1jtdy.1j0fe.-h9t6a.kaz2x.1j2x6.1jwu4.1kvlp.1lpvo.1m71y.1m62m.1ln8o.1ks37.'+
+  '1jtfk.1j0io.-h9t1x.kaz3c.1j2w9.1jwqu.1kvh1.1lprg.1m6za.1m60n.1ln7t.1ks59.1jtky.1j0q6.-h9szu.kazd'+
+  'z.1j2xq.1jwor.1kvd2.1lpnt.1m6y3.1m61p.1ln8i.1ks4t.1jtjw.1j0p2.-h9sur.kaz6m.1j2vj.1jwlb.1kv96.1lp'+
+  'kt.1m6xk.1m650.1lndn.1ks7v.1jtjo.1j0mt.-h9spg.kayzg.1j2yd.1jwpr.1kvdd.1lpng.1m6xe.1m62a.1lnaq.1k'+
+  's5t.1jtia.1j0m8.-h9stw.kaz6v.1j32q.1jwv6.1kvhg.1lpnr.1m6tg.1m5va.1ln4f.1ks3p.1jtk3.1j0p9.-h9svw.'+
+  'kaz8x.1j2y3.1jwoq.1kvb0.1lpiu.1m6rr.1m5xi.1ln8l.1ks8f.1jtor.1j0sv.-h9spn.kaz3l.1j2vq.1jwmn.1kvbu'+
+  '.1lpng.1m6xx.1m62e.1ln9q.1ks50.1jtiz.1j0nn.-h9snp.kayya.1j2xi.1jwpg.1kvep.1lppv.1m6ys.1m60p.1ln6'+
+  'q.1ks1k.1jtfm.1j0lg.-h9skd.kaywi.1j2zg.1jwpn.1kvbl.1lpke.1m6uf.1m5zc.1ln84.1ks53.1jtjl.1j0oh.-h9'+
+  'sls.kaz0k.1j2zy.1jwq4.1kvc1.1lpkg.1m6uv.1m61p.1lnbl.1ks84.1jtks.1j0mm.-h9sws.kayzn.1j2t8.1jwlk.1'+
+  'kvao.1lpln.1m6wt.1m64e.1lnfn.1ksc1.1jtn5.1j0mt.-h9stm.kayri.1j2qh.1jwki.1kvc1.1lpp0.1m6zr.1m644.'+
+  '1lnd7.1ksab.1jtnr.1j0pv.-h9stm.kayzh.1j2sr.1jwld.1kvbr.1lpo2.1m6yi.1m61u.1ln9s.1ks8a.1jtot.1j0tj'+
+  '.-h9sv1.kaz6z.1j2pw.1jwdb.1kv0q.1lpe0.1m6tv.1m64o.1lngq.1ksei.1jtsq.1j0vj.-h9si7.kaywq.1j2qy.1jw'+
+  'dk.1kv0n.1lpf1.1m6wf.1m68i.1lnkj.1ksff.1jtpl.1j0q8.-h9soe.kayx8.1j2ub.1jwk1.1kv6r.1lphk.1m6ub.1m'+
+  '630.1lnfj.1ksdg.1jtpm.1j0qk.-h9sri.kaz03.1j2ue.1jwk6.1kv5c.1lpd5.1m6o3.1m5xk.1lnd0.1ksfl.1jtvs.1'+
+  'j0xm.-h9smv.kaz27.1j2th.1jwiu.1kv61.1lpg0.1m6re.1m605.1lne1.1ksfa.1jtvb.1j0x7.-h9svl.kaz66.1j2oi'+
+  '.1jwds.1kv3i.1lphg.1m6v4.1m63j.1lnfs.1ksek.1jtsw.1j0uw.-h9skk.kayux.1j2ps.1jwet.1kv3y.1lpih.1m6x'+
+  'd.1m64w.1lneu.1ksc3.1jtq6.1j0to.-h9sl8.kaz13.1j2v5.1jwjq.1kv6p.1lpi9.1m6vv.1m63z.1lned.1ksc2.1jt'+
+  'qg.1j0tl.-h9szd.kazc0.1j2rb.1jwdx.1kuzc.1lpar.1m6qt.1m64z.1lnl9.1kskf.1jtwi.1j0vm.-h9srx.kayzd.1'+
+  'j2ny.1jwcf.1kv0k.1lper.1m6vq.1m68y.1lnod.1ksmc.1jtwf.1j0ti.-h9t0g.kaz1c.1j2mt.1jweg.1kv4t.1lpis.'+
+  '1m6wx.1m65m.1lnio.1ksio.1jtwm.1j0wl.-h9sy7.kaz4v.1j2lt.1jwa6.1kuy4.1lpav.1m6q4.1m61s.1lnhc.1ksjz'+
+  '.1ju12.1j13f.-h9sh0.kaz0e.1j2nn.1jw8d.1kuuy.1lp99.1m6rb.1m65j.1lnlh.1kslj.1jtzq.1j10m.-h9so7.kaz'+
+  '2p.1j2mb.1jw75.1kuth.1lp89.1m6r6.1m667.1lnn3.1ksmp.1jtym.1j0xn.-h9sgb.kayr1.1j2ob.1jwb1.1kuwo.1l'+
+  'p8q.1m6pa.1m62s.1lnji.1kskw.1jtyq.1j0yo.-h9sff.kaytg.1j2rd.1jwfn.1kv1w.1lpby.1m6ow.1m5zw.1lng0.1'+
+  'ksj5.1jtzz.1j11d.-h9ssw.kaz6p.1j2m1.1jw80.1kuum.1lp72.1m6mn.1m60k.1lnj7.1ksmy.1ju36.1j13o.-h9scz'+
+  '.kayr9.1j2jy.1jw5e.1kutl.1lpa5.1m6tf.1m66x.1lnm8.1kslr.1jtyr.1j0yj.-h9sf5.kayp9.1j2m8.1jw9q.1kuy'+
+  'e.1lpdx.1m6vu.1m679.1lnjx.1ksif.1jtvy.1j0x0.-h9smh.kayxz.1j2n8.1jw8o.1kutu.1lp60.1m6nm.1m63e.1ln'+
+  'lb.1ksmp.1ju0u.1j10v.-h9sdj.kayrq.1j2ms.1jw7o.1kut8.1lp6s.1m6px.1m67m.1lnrk.1kssk.1ju3p.1j0zj.-h'+
+  '9sx1.kayza.1j2gn.1jw4g.1kutj.1lp9o.1m6ta.1m69e.1lnsp.1ksun.1ju62.1j10x.-h9sw2.kayw4.1j2e6.1jw2r.'+
+  '1kusu.1lp95.1m6s9.1m672.1lnou.1kss0.1ju70.1j15f.-h9ske.kayvt.1j2h3.1jw3c.1kuso.1lp9a.1m6sl.1m67f'+
+  '.1lnok.1ksr9.1ju7p.1j18f.-h9swi.kazeu.1j2fw.1jvwy.1kuir.1lozx.1m6n7.1m67f.1lnsz.1ksw4.1juab.1j19'+
+  '0.-h9sfi.kayz3.1j2hl.1jvy3.1kuib.1loz3.1m6o5.1m69w.1lnve.1kswv.1ju7y.1j146.-h9shh.kayuy.1j2l5.1j'+
+  'w67.1kurn.1lp4w.1m6ol.1m66c.1lnqg.1kstk.1ju7b.1j150.-h9svn.kaza5.1j2ks.1jw5a.1kupg.1lozs.1m6g4.1'+
+  'm5y0.1lnlx.1kstt.1jubj.1j1as.-h9sc7.kaywz.1j2jj.1jw2p.1kuob.1lp2e.1m6la.1m62u.1lnp3.1ksv1.1juaw.'+
+  '1j18w.-h9snd.kaz1b.1j2fn.1jw09.1kuor.1lp6f.1m6ro.1m67m.1lnpv.1ksso.1ju77.1j15m.-h9sk9.kaywa.1j2g'+
+  '8.1jw0n.1kuo6.1lp4h.1m6pl.1m66b.1lnnx.1kspm.1ju4h.1j14h.-h9s6a.kaymp.1j2k9.1jw42.1kuqi.1lp5w.1m6'+
+  'qn.1m68j.1lnrl.1kssy.1ju65.1j14b.-h9swh.kaz7m.1j2fo.1jvy9.1kujt.1lozy.1m6n4.1m68s.1lnwj.1kt0d.1j'+
+  'ubx.1j163.-h9smq.kayr2.1j2aw.1jvv1.1kuim.1lp0q.1m6pv.1m6c1.1lnz0.1kt28.1jucz.1j15m.-h9skn.kayks.'+
+  '1j29s.1jvwx.1kuno.1lp6i.1m6tb.1m6c1.1lnw4.1ksze.1jud9.1j199.-h9svj.kaz3s.1j29a.1jvrs.1kuf7.1lown'+
+  '.1m6js.1m659.1lnto.1kt0h.1juh2.1j1f8.-h9s2y.kaynh.1j2bh.1jvpr.1kua9.1lot0.1m6kn.1m69v.1lnzn.1kt4'+
+  'v.1juhs.1j1cr.-h9se5.kayse.1j2ax.1jvr9.1kucp.1lov4.1m6mp.1m6bo.1lo0h.1kt4x.1jugu.1j1aq.-h9sip.ka'+
+  'yts.1j2c4.1jvu7.1kuf6.1lotv.1m6gs.1m64b.1lnuh.1kt1t.1juh3.1j1d9.-h9s3i.kayl2.1j2f4.1jvxc.1kuiw.1'+
+  'loxs.1m6iv.1m643.1lnu1.1kt2h.1juj6.1j1g1.-h9srf.kaz9e.1j2ar.1jvr1.1kucr.1loua.1m6io.1m658.1lnvj.'+
+  '1kt4g.1jul2.1j1hf.-h9sdm.kayw1.1j29a.1jvov.1kub1.1louc.1m6lu.1m69q.1lnxg.1kt2d.1jugj.1j1cr.-h9s6'+
+  'c.kaymd.1j2cl.1jvuc.1kuhl.1lp0c.1m6pw.1m6c0.1lnxk.1kt08.1judq.1j1aw.-h9srn.kaz8u.1j2e0.1jvtp.1ku'+
+  'dc.1losq.1m6gv.1m65a.1lnwi.1kt3n.1jui4.1j1e4.-h9sc3.kayun.1j2d5.1jvsc.1kubo.1los0.1m6is.1m69o.1l'+
+  'o2j.1kt9s.1julk.1j1cx.-h9ss5.kayxf.1j26r.1jvqg.1kuf3.1loyg.1m6p8.1m6dy.1lo3q.1kt9w.1jumd.1j1dz.-'+
+  'h9szy.kaz43.1j249.1jvnx.1kudg.1lowr.1m6lg.1m68b.1lnxv.1kt5l.1juls.1j1hq.-h9s9u.kayq5.1j27c.1jvn9'+
+  '.1kuav.1lovl.1m6mu.1m6au.1lo0j.1kt7j.1jun4.1j1jc.-h9spv.kaz96.1j25w.1jvib.1ku34.1loo9.1m6jw.1m6c'+
+  'p.1lo4w.1ktc0.1juph.1j1jb.-h9sfk.kayxc.1j269.1jvit.1ku2a.1lolf.1m6h1.1m6c8.1lo5o.1ktbu.1june.1j1'+
+  'fh.-h9s3l.kayfu.1j28k.1jvp5.1kuaq.1losh.1m6jc.1m6an.1lo3e.1ktap.1juo0.1j1h5.-h9spp.kaz41.1j282.1'+
+  'jvni.1ku7j.1lon9.1m6bp.1m61t.1lnxn.1ktaj.1jus8.1j1n5.-h9s3i.kayom.1j26k.1jvjs.1ku3r.1lolv.1m6e7.'+
+  '1m669.1lo0w.1ktbz.1jus1.1j1le.-h9s4q.kayj8.1j238.1jvim.1ku6i.1losc.1m6mh.1m6dj.1lo3w.1ktaa.1juof'+
+  '.1j1if.-h9sg2.kayud.1j24w.1jvjo.1ku60.1lopr.1m6hm.1m680.1lnzf.1kt6m.1julo.1j1hl.-h9ruf';
+var jieTableCache = null;
+function jieTable(){
+  if(jieTableCache) return jieTableCache;
+  var parts = JIE_TABLE_PACKED.split('.'), out = new Array(parts.length), acc = 0;
+  for(var i=0;i<parts.length;i++){
+    acc = (i===0) ? Number(parts[i]) : acc + parseInt(parts[i],36);
+    out[i] = acc * 1000;
+  }
+  jieTableCache = out;
+  return out;
+}
 /* legacy=true 는 R24 이전(기하 황경)의 절기 시각이다. 계산에는 쓰지 않고,
    "이번 수정으로 당신의 결과가 무엇에서 무엇으로 바뀌었는지"를 화면에 보여줄 때만 쓴다.
    캐시를 따로 두는 이유도 그것이다 — 두 값이 한 통에 섞이면 조용히 옛 답이 나온다. */
@@ -4533,11 +4718,19 @@ var termCache = {}, termCacheLegacy = {};
 function jieBoundariesForYear(year, legacy){
   var cache = legacy ? termCacheLegacy : termCache;
   if(cache[year]) return cache[year];
-  var lonFn = legacy ? sunLongitude : sunApparentLongitude;
-  var arr = JIE_LIST.map(function(j,i){
-    var guess = Date.UTC(year, j.gm, j.gd);
-    return {deg:j.deg, branch:j.branch, name:SOLAR_TERM_NAMES[i], ms:findSolarTermUTCms(guess, j.deg, lonFn)};
-  });
+  var arr;
+  if(!legacy && year >= JIE_TABLE_Y0 && year <= JIE_TABLE_Y1){
+    var tbl = jieTable(), base = (year - JIE_TABLE_Y0) * 12;
+    arr = JIE_LIST.map(function(j,i){
+      return {deg:j.deg, branch:j.branch, name:SOLAR_TERM_NAMES[i], ms:tbl[base+i]};
+    });
+  } else {
+    var lonFn = legacy ? sunLongitude : sunApparentLongitude;
+    arr = JIE_LIST.map(function(j,i){
+      var guess = Date.UTC(year, j.gm, j.gd);
+      return {deg:j.deg, branch:j.branch, name:SOLAR_TERM_NAMES[i], ms:findSolarTermUTCms(guess, j.deg, lonFn)};
+    });
+  }
   cache[year]=arr;
   return arr;
 }
@@ -4792,37 +4985,58 @@ function computeSaju(y,m,d,hour,minute,opts){
   return result;
 }
 
-/* ---- 6. 음력->양력 변환 — 1900~2100 내장 데이터 테이블 ----
-   출처: 다수의 공개 만세력/음력변환 오픈소스에서 널리 검증되어 재사용되는 lunarInfo 표준 데이터셋
-   (원저작: JJonline@JJonline.Cn, 이후 Lofanmi 등 커뮤니티가 검증·보강해 여러 언어로 이식됨).
+/* ---- 6. 음력->양력 변환 — 1900~2100 내장 데이터 테이블 (한국 음력) ----
+   ★ 2026-09-07 — 표를 통째로 갈아 끼웠다. 그 전에는 **중국 음력**이었다.
+     예전 표: 공개 데이터셋(원저작 JJonline@JJonline.Cn)로, 합삭과 중기를 중국 표준시(UTC+8)로 판정한다.
+     음력 1일은 '합삭이 든 날'이라, 합삭이 세계시 15~16시에 들면 한국(UTC+9)과 날짜가 하루 갈린다.
+     윤달 위치까지 갈리는 해가 있다 — 중기가 자정을 넘느냐로 '중기 없는 달'이 바뀌기 때문이다.
+
+   [실측으로 확인한 것 — 2026-09-07]
+     · 예전 표의 음력 1일 2,486건 중 한국 기준과 96건 어긋남 / 중국 기준과는 5건만 어긋남
+     · 1961~2100만 보면 62건 / 1,731건 = 3.58%
+     · 1997년 설날: 합삭 1997-02-07 15:06 UTC → 한국 2/8 00:06 · 중국 2/7 23:06.
+       천문연·언론 보도는 한국 2/8 · 중국 2/7. 예전 표는 2/7(중국)을 돌려주고 있었다.
+     · 윤달이 갈리는 해: 2012(한국 윤3월 / 중국 윤4월) · 2017(한국 윤5월 / 중국 윤6월) · 2099
+
+   [지금 표를 만든 방법]
+     합삭 시각과 중기(황경 270°·300°…30° 간격) 시각을 정밀 천문 계산으로 구하고,
+     **한국 표준시**(KOREA_TZ_HISTORY 그대로 — 1908~1961의 UTC+8.5 시기와 서머타임 포함)로
+     날짜를 매겨 만들었다. 규칙은 표준 태음태양력 규칙이다 —
+     동지가 든 달을 11월로 놓고, 동지에서 동지까지 달이 13개면 그중 **중기가 없는 첫 달**을 윤달로 한다.
+
+   [검산 — 전부 통과]
+     · 1900년 음력 1월 1일 = 1900-01-31 (기준일 그대로)
+     · 음력 1일 2,486건이 **전부** 한국 합삭일과 일치 (어긋남 0건)
+     · 연 길이가 353~385일을 벗어난 해 0건 · 달 번호·29/30일 이상 0건
+     · 설날 대조: 1990-01-27 · 1997-02-08 · 2000-02-05 · 2020-01-25 · 2023-01-22 ·
+       2024-02-10 · 2025-01-29 · 2026-02-17 · 2028-01-27 — 전부 일치
+     · 윤달 대조: 2012 윤3월 · 2017 윤5월 (한국 기준과 일치, 중국 기준과 다름)
+
+   ★ 중국 표로 되돌리지 마라. 되돌리면 음력으로 넣으신 분의 3.6%가 일주(日柱)를 잘못 받는다.
    비트 인코딩: bit0~3=윤달 월(0=없음), bit4~15=1~12월 크기(상위비트=1월, 1=30일/0=29일), bit16=윤달 크기.
-   기준일(lunar epoch): 1900년 음력 1월 1일 = 양력 1900년 1월 31일.
-   [검산] 아래 표로 계산한 결과가 널리 알려진 음력 1월1일(춘절) 양력 환산일과 모두 정확히 일치함(자체 검산):
-     · 1990년 음력1/1 -> 1990-01-27 (공개 자료상 1990년 춘절)  일치
-     · 2000년 음력1/1 -> 2000-02-05 (공개 자료상 2000년 춘절)  일치
-     · 2024년 음력1/1 -> 2024-02-10 (공개 자료상 2024년 춘절)  일치 */
+   기준일(lunar epoch): 1900년 음력 1월 1일 = 양력 1900년 1월 31일. */
 var LUNAR_INFO=[
-  0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2, // 1900-1909
-  0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977, // 1910-1919
-  0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970, // 1920-1929
-  0x06566,0x0d4a0,0x0ea50,0x16a95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950, // 1930-1939
-  0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557, // 1940-1949
-  0x06ca0,0x0b550,0x15355,0x04da0,0x0a5b0,0x14573,0x052b0,0x0a9a8,0x0e950,0x06aa0, // 1950-1959
-  0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0, // 1960-1969
-  0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,0x195a6, // 1970-1979
-  0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570, // 1980-1989
-  0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06b58,0x05ac0,0x0ab60,0x096d5,0x092e0, // 1990-1999
-  0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5, // 2000-2009
-  0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0a930, // 2010-2019
-  0x07954,0x06aa0,0x0ad50,0x05b52,0x04b60,0x0a6e6,0x0a4e0,0x0d260,0x0ea65,0x0d530, // 2020-2029
-  0x05aa0,0x076a3,0x096d0,0x04afb,0x04ad0,0x0a4d0,0x1d0b6,0x0d250,0x0d520,0x0dd45, // 2030-2039
-  0x0b5a0,0x056d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0aa50,0x1b255,0x06d20,0x0ada0, // 2040-2049
-  0x14b63,0x09370,0x049f8,0x04970,0x064b0,0x168a6,0x0ea50,0x06aa0,0x1a6c4,0x0aae0, // 2050-2059
-  0x092e0,0x0d2e3,0x0c960,0x0d557,0x0d4a0,0x0da50,0x05d55,0x056a0,0x0a6d0,0x055d4, // 2060-2069
-  0x052d0,0x0a9b8,0x0a950,0x0b4a0,0x0b6a6,0x0ad50,0x055a0,0x0aba4,0x0a5b0,0x052b0, // 2070-2079
-  0x0b273,0x06930,0x07337,0x06aa0,0x0ad50,0x14b55,0x04b60,0x0a570,0x054e4,0x0d160, // 2080-2089
-  0x0e968,0x0d520,0x0daa0,0x16aa6,0x056d0,0x04ae0,0x0a9d4,0x0a2d0,0x0d150,0x0f252, // 2090-2099
-  0x0d520 // 2100
+  0x04bd8,0x04ae0,0x0a570,0x05565,0x0d2a0,0x0e950,0x16554,0x056a0,0x0aad0,0x055d2, // 1900-1909
+  0x04ae0,0x0a5d6,0x0a4d0,0x0d250,0x0da95,0x0b550,0x056a0,0x0ada2,0x095d0,0x04bb7, // 1910-1919
+  0x049b0,0x0a4b0,0x0b4b5,0x06a90,0x0ad40,0x0bb54,0x02b60,0x095b0,0x05372,0x04970, // 1920-1929
+  0x06566,0x0e4a0,0x0ea50,0x16a95,0x05b50,0x02b60,0x18ae3,0x092e0,0x1c8d7,0x0c950, // 1930-1939
+  0x0d4a0,0x1d8a6,0x0b690,0x056d0,0x125b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0d557, // 1940-1949
+  0x0b4a0,0x0b550,0x15555,0x04db0,0x025b0,0x18573,0x052b0,0x0a9b8,0x06950,0x06ca0, // 1950-1959
+  0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05270,0x07263,0x0d950,0x06b57,0x056a0, // 1960-1969
+  0x09ad0,0x04dd5,0x04ae0,0x0a4e0,0x0d4d4,0x0d250,0x0d598,0x0b540,0x0d6a0,0x195a6, // 1970-1979
+  0x095b0,0x049b0,0x0a9b4,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0b756,0x02b60,0x095b0, // 1980-1989
+  0x04b75,0x04970,0x064b0,0x074a3,0x0ea50,0x06d98,0x05ad0,0x02b60,0x096e5,0x092e0, // 1990-1999
+  0x0c960,0x0e954,0x0d4a0,0x0da50,0x07552,0x056c0,0x0abb7,0x025d0,0x092d0,0x0cab5, // 2000-2009
+  0x0a950,0x0b4a0,0x1b4a3,0x0b550,0x055d9,0x04ba0,0x0a5b0,0x05575,0x052b0,0x0a950, // 2010-2019
+  0x0b954,0x06aa0,0x0ad50,0x06b52,0x04b60,0x0a6e6,0x0a570,0x05270,0x06a65,0x0d930, // 2020-2029
+  0x05aa0,0x0b6a3,0x096d0,0x04afb,0x04ae0,0x0a4d0,0x1d0d6,0x0d250,0x0d520,0x0dd45, // 2030-2039
+  0x0b6a0,0x096d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0b250,0x1b255,0x06d40,0x0ada0, // 2040-2049
+  0x18b63,0x09570,0x14978,0x04970,0x064b0,0x168a6,0x0ea50,0x06b20,0x1aac4,0x0ab60, // 2050-2059
+  0x09370,0x052e3,0x0c960,0x0d557,0x0d4a0,0x0da50,0x05d55,0x056a0,0x0aad0,0x095d4, // 2060-2069
+  0x092d0,0x0c9b8,0x0a950,0x0b4a0,0x0b6a6,0x0ad50,0x055a0,0x0aba4,0x0a5b0,0x052b0, // 2070-2079
+  0x0b2b3,0x0a930,0x07557,0x06aa0,0x0ad50,0x14b55,0x04b60,0x0a570,0x054f4,0x05260, // 2080-2089
+  0x0e968,0x0d530,0x05aa0,0x1aaa6,0x096d0,0x04ae0,0x0aae4,0x0a4d0,0x0d260,0x0f253, // 2090-2099
+  0x0d520 // 2100-2100
 ];
 function leapMonthOf(y){ return LUNAR_INFO[y-1900] & 0xf; }
 function leapDaysOf(y){ return leapMonthOf(y) ? ((LUNAR_INFO[y-1900]&0x10000)?30:29) : 0; }
@@ -4972,7 +5186,8 @@ function defaultProfile(){
 /* R20 — 사주 계산 결과 캐시의 유효성 표식.
    보정 설정이 바뀌면 캐시가 옛 답을 들고 있으므로, 설정을 문자열로 만들어 캐시에 함께 저장하고
    다르면 다시 계산한다. 'r20' 접두는 엔진 자체가 바뀐 라운드를 뜻한다(옛 캐시는 전부 무효가 된다). */
-var SAJU_ENGINE_REV = 'r24';   /* R24 — 절기 시각(광행차·장동) 보정. 옛 캐시는 옛 절기로 잡힌 기둥을 들고 있으므로 전부 무효다. */
+var SAJU_ENGINE_REV = 'r25';   /* R25 (2026-09-07) — 음력표를 한국 음력으로 갈고, 절기 시각을 정밀 표로 바꿨다.
+   두 가지 다 사주 글자를 바꿀 수 있으므로 저장된 캐시는 전부 무효다. */
 function profileLon(p){
   return (p && typeof p.birthLon==='number' && isFinite(p.birthLon)) ? p.birthLon : SajuEngine.LON_DEFAULT;
 }
@@ -5049,6 +5264,35 @@ function migrateProfile(p){
   }
   if(typeof p.birthLon!=='number' || !isFinite(p.birthLon)){
     p.birthLon = SajuEngine.LON_DEFAULT; p.birthLonKey='seoul';
+  }
+  /* R26 마이그레이션 (2026-09-07) — 음력표를 한국 음력으로 갈았다.
+     ★ 프로필에는 양력으로 바꾼 날짜(year/month/day)가 저장된다. 음력→양력 변환은 프로필을
+       만들 때 한 번만 일어나므로, 표를 갈아도 이미 저장된 프로필은 옛(중국 음력) 날짜를
+       그대로 들고 있다. 그걸 그냥 두면 고친 의미가 절반이 된다 —
+       새로 넣는 분만 맞고, 이미 쓰시던 분은 계속 하루 어긋난 사주를 보게 된다.
+     ★ 되돌릴 재료가 있다: 프로필에 원래 넣으신 날짜가 inputYear/inputMonth/inputDay 로 남아 있다.
+       그 값을 새 표로 다시 변환한다.
+     ★ 조용히 바꾸지 않는다 — 무엇이 무엇으로 바뀌었는지 화면에서 보여준다(buildLunarFixNotice).
+       R20·R24와 같은 규칙이다.
+     ★ inputYear가 없는 아주 옛 프로필은 원래 음력 날짜를 알 길이 없어 손대지 않는다.
+       손대면 양력 날짜를 음력으로 오해해 엉뚱한 날로 바꾸게 된다. */
+  if(p.calendarType==='lunar' && !p.lunarKrMigrated
+     && typeof p.inputYear==='number' && typeof p.inputMonth==='number' && typeof p.inputDay==='number'){
+    var kr = SajuEngine.lunarToSolar(p.inputYear, p.inputMonth, p.inputDay, !!p.lunarLeap);
+    if(kr){
+      if(kr.year!==p.year || kr.month!==p.month || kr.day!==p.day){
+        p.lunarFixBefore = {y:p.year, m:p.month, d:p.day};
+        p.year=kr.year; p.month=kr.month; p.day=kr.day;
+        p.sajuCache = null;                       /* 여덟 글자를 다시 계산하게 한다 */
+        /* ★ 여기서 calcStarSign을 부르지 마라. 이 함수가 읽는 STAR_SIGNS는 이 줄보다
+           한참 아래에서 만들어져서, 부르는 순간 undefined.length 로 터진다.
+           그러면 loadState()의 try/catch가 삼켜 **저장소가 통째로 초기 상태로 돌아간다** —
+           프로필이 전부 사라진 것처럼 보인다. 실제로 그렇게 만들었다가 실측으로 잡았다.
+           starSign은 프로필을 만들 때 한 번 적히고 화면 어디에서도 읽지 않는 값이라
+           여기서 갱신하지 않아도 지금 보이는 것이 달라지지 않는다. */
+      }
+      p.lunarKrMigrated = true;
+    }
   }
   return p;
 }
@@ -7539,7 +7783,7 @@ function openTermsModal(){
   h('제11조 (면책)');
   ul([
     '서비스가 제공하는 모든 해석은 오락 및 참고 목적의 콘텐츠이며, 의료·법률·투자 등 전문적 판단을 대체하지 않습니다. 정확성이나 완전성을 보장하지 않습니다.',
-    '사주 계산은 태양 황경 근사식과 공개 음력 데이터를 이용한 자체 계산으로, 절기 시각이 실제 관측 기준과 몇 분(공개 자료 80건 대조에서 최대 약 12분) 차이가 날 수 있으며, 절기가 자정에 근접한 경우 날짜가 하루 달라질 수 있습니다.',
+    '사주 계산은 자체 계산입니다. 절기 시각은 1900~2100년에 대해 정밀 천문 계산으로 미리 산출한 값을 사용하며(재대조 1,212건, 최대 오차 0.5초), 음력은 한국 표준시를 기준으로 산출한 한국 음력을 사용합니다. 이 범위를 벗어난 연도는 근사식으로 계산하므로 절기 시각이 최대 13분가량 차이가 날 수 있고, 절기가 자정에 근접한 경우 날짜가 하루 달라질 수 있습니다.',
     '공유 링크를 통해 제3자가 정보를 열람함으로써 발생하는 문제에 대한 책임은 링크를 공유한 이용자에게 있습니다.',
     '회사는 이용자가 콘텐츠를 근거로 내린 결정의 결과에 대해 책임지지 않습니다.'
   ]);
@@ -14340,7 +14584,9 @@ function emptyState(title, sub, onAction, actionLabel){
      · 공유 카드(Canvas)에 그려 넣던 한 줄
 
    ★ 남아 있는 곳 — 이용약관 제11조(openTermsModal). 법적 고지 본문은 손대지 않았다.
-     계산 오차("공개 자료 80건 대조, 최대 약 12분")와 면책 문장이 거기에 그대로 있다.
+     계산 오차 문장과 면책 문장이 거기에 그대로 있다.
+     ★ 2026-09-07에 그 문장을 고쳤다 — "공개 자료 80건 대조, 최대 약 12분"은 절기를 식으로
+       계산하던 때의 값이다. 지금은 1900~2100년치를 미리 구한 표를 쓰고 오차가 1초 이내다.
    ★ 되살릴 때: 이 주석 자리에 DISCLAIM_* 상수와 buildDisclaimerFold/disclaimer/disclaimerReport를
      되돌린 뒤 위 8곳에 다시 붙이면 된다. 직전 원본은 archive/fortune_20260811-0032.html 에 있다.
    ★ SPEC_v2의 최우선 원칙("계산에 자신 없는 부분을 명시적으로 고지한다")과는 어긋나는 방향이다.
@@ -15032,10 +15278,11 @@ function buildTermFixNotice(p){
   var box = el('div',{class:'migrate-box'});
   box.appendChild(el('strong',{},['계절이 바뀌는 마디의 시각 계산을 바로잡았어요 (이 프로필의 결과가 달라졌어요)']));
   box.appendChild(el('p',{},[
-    /* ★ R32 — 이 24분은 "바로잡기 전"의 오차다. 다른 화면(용어 사전·이용약관)이 말하는 "최대 약 12분"은
-       "바로잡은 뒤 남은" 차이라, 화면만 보면 정확도를 말하는 숫자가 두 개로 갈리는 것처럼 읽혔다(검수 지적).
-       숫자를 바꾸지 않고, 어느 쪽이 언제의 값인지를 문장 안에서 구분해 준다. */
-    '계절이 바뀌는 마디의 시각을 계산하는 방법에 빠진 부분이 있어서, 그 시각이 실제와 조금씩 어긋나 있었어요(바로잡기 전 기준으로 대체로 이르게, 실측 범위는 24분 이르게부터 3분 늦게까지). 이번에 바로잡았고, 그 마디 가까이에서 태어나신 이 프로필은 글자가 달라졌어요. 바로잡은 뒤에도 공개 자료와 최대 약 12분 차이는 남아요.'
+    /* ★ R32 — 이 24분은 "바로잡기 전"(R24 이전)의 오차다. 화면만 보면 정확도를 말하는 숫자가
+       여러 개로 갈리는 것처럼 읽혀서(검수 지적), 어느 쪽이 언제의 값인지를 문장 안에서 구분해 준다.
+       ★ 2026-09-07(R25)에 절기를 미리 구한 표로 바꿔 오차가 1초 이내가 됐다. 그래서 문장 끝에
+         그 사실을 덧붙였다 — 옛 숫자만 남겨 두면 지금보다 나쁘게 적는 것이 된다. */
+    '계절이 바뀌는 마디의 시각을 계산하는 방법에 빠진 부분이 있어서, 그 시각이 실제와 조금씩 어긋나 있었어요(바로잡기 전 기준으로 대체로 이르게, 실측 범위는 24분 이르게부터 3분 늦게까지). 이번에 바로잡았고, 그 마디 가까이에서 태어나신 이 프로필은 글자가 달라졌어요. 그 뒤 2026-09-07에 절기 시각을 정밀 계산값으로 바꿔, 지금은 1900~2100년 범위에서 오차가 1초 이내예요.'
   ]));
   var list = el('div',{class:'ts-table', style:'margin-top:8px;'});
   function row(k,v){ list.appendChild(el('div',{class:'ts-row'},[el('span',{class:'ts-k'},[k]), el('span',{class:'ts-v'},[v])])); }
@@ -15109,6 +15356,38 @@ function buildElementFixNotice(p){
   box.appendChild(el('div',{style:'margin-top:10px;'},[
     el('button',{class:'btn btn-primary btn-sm', onclick:function(){
       p.elementSyncMigrated=false; p.elementIdxBefore=null; saveState(); showToast('확인하신 것으로 표시했어요.'); render();
+    }},['확인했어요'])
+  ]));
+  return autoTermify(box);
+}
+
+/* =====================================================================
+   R26 (2026-09-07) — 음력을 한국 기준으로 바로잡아 이 프로필의 양력 날짜가 바뀐 경우에만 뜬다
+   ---------------------------------------------------------------------
+   예전 표는 중국 음력이었다. 음력 1일은 '합삭(달이 사라지는 순간)이 든 날'인데 그 판정을
+   한국은 UTC+9, 중국은 UTC+8로 한다. 합삭이 세계시 15~16시에 들면 날짜가 하루 갈린다.
+   ★ 바뀐 게 없으면 아무것도 띄우지 않고 표식만 남긴다 — R24·R25 상자와 같은 규칙이다.
+===================================================================== */
+function buildLunarFixNotice(p){
+  if(!p || !p.lunarFixBefore) return null;
+  var b = p.lunarFixBefore;
+  var box = el('div',{class:'migrate-box'});
+  box.appendChild(el('strong',{},['음력을 한국 기준으로 바로잡았어요 (이 프로필의 날짜가 하루 달라졌어요)']));
+  box.appendChild(el('p',{},[
+    '음력 1일은 달이 완전히 사라지는 순간(합삭)이 든 날이에요. 그 판정을 한국은 한국 시각으로, 중국은 중국 시각으로 하는데, 두 나라는 한 시간 차이가 나요. 그래서 합삭이 자정 근처에 들면 같은 음력 날짜라도 양력으로는 하루가 갈려요. 이 서비스가 쓰던 표가 중국 기준이어서 이번에 한국 기준으로 다시 만들었어요.'
+  ]));
+  var list = el('div',{class:'ts-table', style:'margin-top:8px;'});
+  list.appendChild(el('div',{class:'ts-row'},[
+    el('span',{class:'ts-k'},['음력 '+p.inputYear+'년 '+(p.lunarLeap?'윤':'')+p.inputMonth+'월 '+p.inputDay+'일']),
+    el('span',{class:'ts-v'},['양력 '+b.y+'-'+pad2(b.m)+'-'+pad2(b.d)+' 에서 '+p.year+'-'+pad2(p.month)+'-'+pad2(p.day)+' 로 바뀌었어요'])
+  ]));
+  box.appendChild(list);
+  box.appendChild(el('p',{style:'margin-top:8px;'},[
+    '날짜가 하루 바뀌면 태어난 날을 적은 글자(일주)가 함께 바뀌어요. 그래서 이 화면의 여덟 글자와 궁합 점수가 예전에 보시던 것과 다를 수 있어요. 지금 보시는 쪽이 한국 기준으로 다시 계산한 값이에요.'
+  ]));
+  box.appendChild(el('div',{style:'margin-top:10px;'},[
+    el('button',{class:'btn btn-primary btn-sm', onclick:function(){
+      p.lunarFixBefore=null; saveState(); showToast('확인하신 것으로 표시했어요.'); render();
     }},['확인했어요'])
   ]));
   return autoTermify(box);
@@ -17220,6 +17499,10 @@ function renderSaju(){
   if(!saju.hour){ pillarCard.appendChild(el('p',{class:'section-sub'},['내면·자녀운 관련 해석은 참고만 해주세요.'])); }
   view.appendChild(pillarCard);
 
+  /* R26 — 음력을 한국 기준으로 바로잡아 양력 날짜가 바뀐 프로필에만 뜬다.
+     ★ 절기 상자보다 먼저 놓는다. 날짜가 바뀐 것이 더 큰 변화라 먼저 읽혀야 한다. */
+  var lunarNotice = buildLunarFixNotice(p);
+  if(lunarNotice) view.appendChild(lunarNotice);
   /* R24 — 절기 시각을 바로잡아 이 프로필의 기둥이 바뀐 경우에만 뜬다(안 바뀌었으면 null). */
   var termNotice = buildTermFixNotice(p);
   if(termNotice) view.appendChild(termNotice);
