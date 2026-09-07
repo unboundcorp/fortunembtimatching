@@ -1058,12 +1058,16 @@ button.today-iljin:active{opacity:.7;}
 /* 시안의 점수 블록 — 위아래 괘선 사이에 큰 숫자 하나와 한 줄 평. */
 .compat-score-blk{margin:26px 0 0;padding:22px 0;text-align:center;
   border-top:1px solid var(--gold-line);border-bottom:1px solid var(--gold-line);}
+.compat-score-blk .csb-nick{margin:0 0 12px;font-family:var(--serif);font-weight:700;
+  font-size:1.06rem;line-height:1.5;color:var(--gold-2);word-break:keep-all;letter-spacing:-.01em;}
 .compat-score-blk .csb-num{display:flex;align-items:flex-end;justify-content:center;gap:9px;}
 .compat-score-blk .csb-num b{font-family:var(--serif);font-weight:700;font-size:2.7rem;line-height:.9;
   color:var(--gold);font-variant-numeric:tabular-nums;}
 .compat-score-blk .csb-num span{padding-bottom:5px;font-size:.8rem;color:var(--ink-faint);}
 .compat-score-blk .csb-verdict{margin-top:13px;font-family:var(--serif);font-weight:700;
   font-size:1.18rem;line-height:1.6;color:var(--ink);word-break:keep-all;}
+.nick-line{margin:22px 0 10px;text-align:center;font-family:var(--serif);font-weight:700;
+  font-size:1.06rem;line-height:1.5;color:var(--gold-2);word-break:keep-all;letter-spacing:-.01em;}
 .gauge-label{text-align:center;color:var(--ink-dim);font-size:.85rem;margin-bottom:6px;}
 
 .disclaimer{font-size:.8rem;color:var(--ink-dim);text-align:center;margin-top:26px;line-height:1.8;border-top:1px dashed rgba(31,28,23,0.18);padding-top:16px;}
@@ -10784,6 +10788,33 @@ var ZODIAC_TRAIT = {
 var ELEMENTS = ['목','화','토','금','수'];
 /* 시안은 오행을 늘 '목(木)'처럼 한글 앞·한자 괄호로 적는다. 계산에는 쓰지 않는다. */
 var ELEMENTS_H = ['木','火','土','金','水'];
+/* ★ 2026-09-07 (대표님 지시 "톤이 딱 좋고 더 많이 만들어서 채워 넣어")
+   사주 화면 맨 위에 붙는 한 줄 별명. 일간(日干)의 오행 다섯 × 음양 둘 = 열 자리다.
+   ELEMENT_TRAIT("뻗어나가려는 성장의 기운 —")과 **다른 것을 말합니다** — 저쪽은 기운의 설명이고
+   이쪽은 비유입니다. 두 줄이 같은 말을 하게 되면 한 줄을 지우십시오.
+   ★ 무작위로 고르지 마세요. 같은 분은 볼 때마다 같은 별명이 나와야 합니다. */
+var PERSON_NICK = {
+  '목': { 양:['🌳 하늘로 곧게 뻗는 나무 같은 사람', '🪵 굽지 않고 자라는 큰 나무 같은 사람'],
+          음:['🌿 바람에 눕되 꺾이지는 않는 풀 같은 사람', '🍃 틈만 있으면 뿌리내리는 덩굴 같은 사람'] },
+  '화': { 양:['☀️ 들어서면 방에 불이 켜지는 사람', '🔥 불씨 하나로 방을 데우는 사람'],
+          음:['🕯 오래 켜 두어도 뜨겁지 않은 촛불 같은 사람', '🏮 어두울수록 잘 보이는 등불 같은 사람'] },
+  '토': { 양:['⛰ 옮기지 않아도 기준이 되는 산 같은 사람', '🧱 밟고 서도 흔들리지 않는 땅 같은 사람'],
+          음:['🌾 아무 씨나 받아 키우는 밭 같은 사람', '🍶 오래 담글수록 깊어지는 항아리 같은 사람'] },
+  '금': { 양:['🗡 한 번에 잘라 내는 칼 같은 사람', '⚒ 두드릴수록 단단해지는 쇠 같은 사람'],
+          음:['💍 작아도 눈에 걸리는 보석 같은 사람', '🪡 가늘어도 정확히 꿰는 바늘 같은 사람'] },
+  '수': { 양:['🌊 조용한데 깊은 물 같은 사람', '🌫 형태가 없어 어디든 스미는 사람'],
+          음:['💧 바위도 뚫는 낙숫물 같은 사람', '❄️ 소리 없이 쌓이는 눈 같은 사람'] }
+};
+function personNickname(saju){
+  if(!saju || !saju.day || typeof saju.day.stemIdx !== 'number') return '';
+  var elem = SajuEngine.ELEM_NAMES[SajuEngine.STEM_ELEM[saju.day.stemIdx]];
+  var yy   = SajuEngine.STEM_YY[saju.day.stemIdx] ? '양' : '음';
+  var bank = PERSON_NICK[elem];
+  var list = bank && bank[yy];
+  if(!list || !list.length) return '';
+  /* 같은 분은 늘 같은 별명 — 일간 글자와 태어난 날의 지지로 고른다(값이 안 바뀐다). */
+  return list[nickHash(String(saju.day.stemIdx) + '-' + String(saju.day.branchIdx)) % list.length];
+}
 var ELEMENT_TRAIT = {
   목:'뻗어나가려는 성장의 기운 — 계획을 세우고 앞으로 나아가는 힘이 강해요.',
   화:'타오르는 정열의 기운 — 표현력이 풍부하고 주변을 밝히는 힘이 있어요.',
@@ -14363,6 +14394,87 @@ function compatSameness(pA, pB, saju){
   return pts >= 2 ? 'same' : (pts <= -2 ? 'different' : 'mixed');
 }
 /* ★ 이 함수 말고 COMPAT_TIER_LINE을 직접 읽지 마라 — 이제 값이 문자열이 아니라 갈래 셋이다. */
+/* ★ 2026-09-07 (대표님 지시: "~같은 인연 으로 어그로를 끌만한 비유적 표현에 이모티콘 좀 더
+   추가하면 컨텐츠가 재밋어질 거 같다 / 20~30대들 인스타에 올릴 수 있게" · "톤이 딱 좋고
+   더 많이 만들어서 채워 넣어")
+   점수 위에 붙는 한 줄 별명이다. 총평 문장(COMPAT_TIER_LINE)과 **같은 갈래로 고른다** —
+   등급(combinedTier) × 닮음/반반/다름(compatSameness). 새 점수를 만들지 않는다.
+   ★ 무작위로 고르지 마세요. 같은 두 분은 볼 때마다 같은 별명이 나와야 합니다 —
+     캡처해서 올린 뒤 다시 열었을 때 문구가 바뀌면 "왜 바뀌었지"가 됩니다.
+     열쇠는 두 성격유형(정렬해서 순서를 없앰)과 점수라, 순서를 바꿔 열어도 같습니다.
+   ★ 여기 문구를 고쳐도 캐시는 안 깨집니다 — sectionTitles도 payload도 아닙니다(화면 글입니다). */
+var COMPAT_NICK = {
+  '찰떡 인연': {
+    same:      ['🫧 거울을 마주 본 것 같은 인연',
+                '🧬 다른 집에서 자란 쌍둥이 같은 사이',
+                '🎼 같은 조로 연주하는 두 악기 같은 인연'],
+    mixed:     ['🧩 모양은 다른데 딱 맞물리는 조각 같은 인연',
+                '🔐 서로가 서로의 열쇠인 인연',
+                '☕ 같은 속도로 식어가는 커피 같은 사이'],
+    different: ['🧲 반대라서 더 붙는, 자석 같은 인연',
+                '🌗 낮과 밤이 만나 하루가 되는 인연',
+                '🧤 왼손과 오른손 장갑 같은 사이']
+  },
+  '강한 인연': {
+    same:      ['🎧 이어폰 한 짝씩 나눠 낀 사이',
+                '🧦 서랍에서 늘 같이 나오는 양말 같은 사이',
+                '🍚 말없이 밥 한 그릇 나눠 먹는 사이'],
+    mixed:     ['🚲 페달을 번갈아 밟는 2인용 자전거 같은 사이',
+                '🧵 결이 다른 실이 한 매듭으로 묶인 인연',
+                '🌤 흐린 날에도 나쁘지 않은 사이'],
+    different: ['🔌 서로 다른 콘센트에 맞는 어댑터 같은 사이',
+                '🪨 파도와 바위처럼 서로를 다듬어 주는 인연',
+                '⚖️ 기울면 상대가 눌러 주는 저울 같은 사이']
+  },
+  '무난한 인연': {
+    same:      ['🫖 뜸 들일수록 진해지는 차 같은 사이',
+                '🪴 물 주는 날만 맞추면 되는 화분 같은 사이',
+                '📻 주파수는 맞는데 볼륨이 작은 사이'],
+    mixed:     ['🚦 신호만 잘 맞추면 되는 사이',
+                '🧭 목적지는 같은데 길이 다른 사이',
+                '🥄 한 냄비를 같이 떠먹는데 취향은 다른 사이'],
+    different: ['🚉 같은 역에서 다른 열차를 타는 인연',
+                '🧶 엉키기 전에 풀면 되는 실타래 같은 사이',
+                '🌗 서로의 시차를 아는 사이']
+  },
+  '엇갈린 인연': {
+    same:      ['🪞 닮아서 오히려 더 부딪히는 사이',
+                '🧲 같은 극끼리 밀어내는 자석 같은 사이',
+                '🥢 젓가락 두 짝이 자꾸 어긋나는 사이'],
+    mixed:     ['🎸 튜닝이 한 번 필요한 기타 같은 사이',
+                '⏰ 5분씩 어긋난 시계 같은 사이',
+                '🧊 녹는 속도가 다른 얼음 같은 사이'],
+    different: ['🌗 낮과 밤처럼 자꾸 엇갈리는 인연',
+                '🛰 같은 하늘, 다른 궤도를 도는 사이',
+                '🗺 같은 지도를 거꾸로 들고 있는 사이']
+  },
+  '상극 인연': {
+    same:      ['🥊 같은 자리를 두고 겨루는 사이',
+                '🪨 부딪히면 둘 다 깎이는 돌 같은 사이',
+                '🔁 매번 같은 지점에서 걸리는 사이'],
+    mixed:     ['🧊 얼음과 불, 만나면 둘 다 사라지는 인연',
+                '🧯 불이 나기 전에 미리 꺼야 하는 사이',
+                '📡 채널을 맞춰야 겨우 들리는 사이'],
+    different: ['🌑 지구와 달만큼 떨어진 인연',
+                '🈳 같은 말을 다른 뜻으로 쓰는 사이',
+                '🧭 나침반이 서로를 반대로 가리키는 사이']
+  }
+};
+/* 문자열 하나를 숫자로 바꾼다(고르기 전용 — 보안과 무관). */
+function nickHash(str){
+  var h = 0, i;
+  for(i=0;i<str.length;i++){ h = ((h<<5) - h + str.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+function compatNickname(res, pA, pB){
+  var bank = res && COMPAT_NICK[res.combinedTier];
+  if(!bank) return '';
+  var list = bank[compatSameness(pA, pB, res.saju)] || bank.mixed;
+  if(!list || !list.length) return '';
+  /* 순서를 없애려고 두 성격유형을 정렬해서 붙인다 — A→B로 열든 B→A로 열든 같은 별명이 나온다. */
+  var key = [ (pA&&pA.mbti)||'', (pB&&pB.mbti)||'' ].sort().join('') + '|' + (res.combined||0);
+  return list[nickHash(key) % list.length];
+}
 function compatTierLine(res, pA, pB){
   var bank = res && COMPAT_TIER_LINE[res.combinedTier];
   if(!bank) return '';
@@ -17551,6 +17663,9 @@ function renderSaju(){
 
   /* R19 — 일간(日干)의 오행 캐릭터. 그림과 한 줄은 무료다(깊은 해설은 아래 유료 리포트가 맡는다). */
   var dayCharKey = charKeyForDayStem(saju);
+  /* ★ 2026-09-07 — 캐릭터 위에 한 줄 별명. 아래 '기운이에요' 줄과 다른 것을 말한다(비유). */
+  var myNick = personNickname(saju);
+  if(myNick) view.appendChild(el('p',{class:'nick-line'},[myNick]));
   if(dayCharKey){
     view.appendChild(buildCharHero(dayCharKey, 118,
       '태어난 날의 나를 가리키는 글자, 일간 '+saju.day.stem+'('+saju.day.stemH+')의 기운이에요. 전체는 캐릭터 도감에서 볼 수 있어요.'));
@@ -19039,6 +19154,8 @@ function renderCompatSummary(p, draft){
   var unit = '점';
   if(r.res.saju && r.res.saju.elemTerm && r.res.saju.elemTerm !== '정보 부족') unit += ' · '+r.res.saju.elemTerm;
   numRow.appendChild(el('span',{'aria-hidden':'true'},[unit]));
+  var nick = compatNickname(r.res, p, r.pB);
+  if(nick) scoreBlk.insertBefore(el('p',{class:'csb-nick'},[nick]), scoreBlk.firstChild);
   scoreBlk.appendChild(numRow);
   scoreBlk.appendChild(el('p',{class:'csb-verdict'},[compatTierLine(r.res, p, r.pB)]));
   box.appendChild(scoreBlk);
@@ -23455,7 +23572,11 @@ function fallbackCopy(text){
     showToast(ok?'텍스트를 복사했어요.':'복사에 실패했어요. 직접 선택해 복사해주세요.');
   }catch(e){ showToast('복사를 지원하지 않는 환경이에요.'); }
 }
-function wrapCanvasText(ctx, text, x, yy, maxWidth, lineHeight){
+function wrapCanvasText(ctx, text, x, yy, maxWidth, lineHeight, align){
+  /* align을 주면 그 정렬로 그리고 원래대로 되돌려 놓는다 — 준 사람이 뒷정리를 잊어도
+     다음 덩이가 엉뚱하게 정렬되지 않는다. 가운데로 그릴 때 x는 가운데 좌표여야 한다. */
+  var prev = ctx.textAlign;
+  if(align) ctx.textAlign = align;
   var words=text.split(''); var line=''; var yy2=yy;
   for(var i=0;i<words.length;i++){
     var test=line+words[i];
@@ -23464,6 +23585,7 @@ function wrapCanvasText(ctx, text, x, yy, maxWidth, lineHeight){
     } else { line=test; }
   }
   ctx.fillText(line, x, yy2);
+  if(align) ctx.textAlign = prev;
   return yy2+lineHeight;
 }
 /* 캐릭터를 얹는 카드 종류. openShareModal(캔버스 높이)과 drawShareCard(그리는 자리)가 같은 표를 본다. */
@@ -23631,6 +23753,12 @@ function drawShareCard(canvas, kind, profile, data){
       {t:sKey ? CHARACTERS[sKey].name : '',     f:'400 14px '+CARD_SANS, c:CARD_ACC, dy:24}
     ]);
     y += 74;
+    var nickS = personNickname(s);
+    if(nickS){
+      ctx.font='700 20px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
+      y = wrapCanvasText(ctx, nickS, w/2, y, w-100, 28, 'center') + 14;
+      ctx.textAlign='left';
+    }
     var cols = s.hour?['year','month','day','hour']:['year','month','day'];
     var labelMap={year:'연주',month:'월주',day:'일주',hour:'시주'};
     var colW=(w-100)/cols.length;
@@ -23719,7 +23847,14 @@ function drawShareCard(canvas, kind, profile, data){
     ctx.font='700 54px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.textAlign='center';
     ctx.fillText(r.res.combined+'점', w/2, y+38); y+=54;
     ctx.font='400 17px '+CARD_SANS; ctx.fillStyle=CARD_INK;
-    ctx.fillText(r.res.combinedTier, w/2, y+18); y+=44;
+    ctx.fillText(r.res.combinedTier, w/2, y+18); y+=40;
+    /* ★ 2026-09-07 대표님 지시 — 인스타에 올릴 때 눈에 걸리는 한 줄.
+       화면(csb-nick)과 **같은 함수**에서 가져온다. 여기에 손으로 적지 마세요. */
+    var nickC = compatNickname(r.res, profile, r.pB);
+    if(nickC){
+      ctx.font='700 22px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
+      y = wrapCanvasText(ctx, nickC, w/2, y+18, w-100, 30, 'center') + 6;
+    }
     ctx.textAlign='left';
 
     /* ③ 한 줄씩 두 관점 */
