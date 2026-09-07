@@ -21224,6 +21224,28 @@ function buildSavedGroupsCard(){
            '친구'라고 적으면 고른 적 없는 값을 적는 것이라 그건 안 한다. 열면 고르게 된다. */
         + ' · ' + (groupRelation(g.id) ? relationLabel(groupRelation(g.id)) : '사이 미정'),
       '열기', function(){ openSavedGroup(g.id); }));
+    /* ★ 2026-09-07 — 자동 저장을 켜면서 함께 넣는다. 손님이 저장을 누른 적이 없는데
+       지우는 길이 없으면 안 된다(자동 저장 고지가 "지우실 수 있어요"라고 말한다).
+       ★ 내가 만든 모임(token이 있는 것)만 서버에서도 지운다. 남이 만든 모임은
+         내 목록에서만 뺀다 — 남의 모임을 지울 권한이 없고, 있어서도 안 된다. */
+    var canDelete = !!g.token;
+    card.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin:-6px 0 8px;',
+      onclick:function(){
+        confirmModal(canDelete
+            ? ('"'+(g.name||'이름 없는 그룹')+'"을 지울까요? 담긴 분들의 정보도 함께 지워져요. 되돌릴 수 없어요.')
+            : ('"'+(g.name||'이름 없는 그룹')+'"을 목록에서 뺄까요? 이 모임은 다른 분이 만든 것이라 서버에서는 지워지지 않아요.'),
+          function(){
+            if(!canDelete){ forgetGroup(g.id); render(); showToast('목록에서 뺐어요.'); return; }
+            showToast('지우는 중이에요…');
+            groupFetch({action:'delete', groupId:g.id, ownerToken:g.token})
+              .then(function(){ forgetGroup(g.id); render(); showToast('지웠어요.'); })
+              /* 서버에 이미 없으면(404) 목록에서 빼는 것이 맞다 — 없는 것을 들고 있을 이유가 없다. */
+              .catch(function(err){
+                if(err && err.status === 404){ forgetGroup(g.id); render(); showToast('이미 지워져 있었어요.'); return; }
+                showToast('지금은 지울 수 없어요.');
+              });
+          }, '지우기');
+      }},[canDelete ? '지우기' : '목록에서 빼기']));
   });
   /* ★ R60 — 눌러만 보고 안 보낸 링크가 쌓였을 때 한 번에 치운다.
      내가 만든 것 중 '아직 아무도 안 들어온 것'만 지운다 — 이 두 조건을 다 만족해야
@@ -21350,6 +21372,64 @@ function renderPairDeep(){
   view.appendChild(compatDisclaimerFold());
   main.appendChild(autoTermify(view));
 }
+/* =====================================================================
+   모임을 열면 자동으로 저장한다 (2026-09-07 대표님 지시)
+   ---------------------------------------------------------------------
+   > "여럿이서 보기는?" → "1) 로 해라" (서버에 저장하는 쪽)
+
+   예전에는 [이름 붙여 저장하기]를 눌러야만 남았다. 그래서 세 명짜리 모임을 만들어
+   결과까지 보고 나가면 **아무 기록도 안 남았다** — 배포본에서 재현해 확인한 사실이다
+   (결과를 본 시점의 저장된 그룹 0개). 둘이서는 compatHistory가 있어 꺼내 오면 됐지만
+   모임은 꺼내 올 것 자체가 없었다.
+
+   ★ PIN은 안 받는다 — 자동이라 물어볼 자리가 없다. 초대 링크와 같은 ownerToken 방식으로
+     만든다(groupFetch가 create에 pin 없이도 답한다 — openInviteLinkModal이 그렇게 쓴다).
+   ★ 한 번만 만든다. render()는 자주 불리므로 **명단이 같으면 다시 만들지 않는다**.
+     안 그러면 화면을 그릴 때마다 새 그룹이 서버에 쌓인다.
+   ★ 담긴 분들의 정보가 서버로 간다. 손님이 저장을 누른 적이 없으므로 **화면에 그 사실을
+     반드시 적는다**(아래 gcAutoSaveNotice). 수동 저장 모달의 고지와 같은 값을 쓴다 —
+     한쪽만 고치면 두 길이 서로 다른 말을 하게 된다.
+===================================================================== */
+var GC_AUTOSAVE = {sig:null, busy:false};
+function gcAutoName(members){
+  var me = activeProfile();
+  var head = (me && me.name) || (members[0] && members[0].name) || '모임';
+  var d = new Date();
+  var md = ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+  return (members.length > 1 ? (head + ' 외 ' + (members.length-1) + '명') : head) + ' · ' + md;
+}
+function autoSaveGroupIfNeeded(members){
+  if(GROUP_VIEW) return;                 /* 이미 저장된 모임을 열어 본 것 — 또 만들지 않는다 */
+  if(!GC_RELATION_SET) return;           /* 사이를 고르기 전에는 결과 자체가 안 나온다 */
+  if(!members || members.length < 2) return;
+  var text = currentGroupMembersText();
+  if(!text) return;
+  if(GC_AUTOSAVE.busy || GC_AUTOSAVE.sig === text) return;
+  GC_AUTOSAVE.busy = true; GC_AUTOSAVE.sig = text;
+  var autoName = gcAutoName(members), n = members.length;
+  groupFetch({action:'create', name:autoName, members:text})
+    .then(function(d){
+      GC_AUTOSAVE.busy = false;
+      if(!d || !d.groupId) return;
+      rememberGroup(d.groupId, autoName, d.ownerToken || null, n, GC_RELATION_SET ? GC_RELATION : null);
+      GROUP_VIEW = {id:d.groupId, name:autoName};
+      render();
+    })
+    .catch(function(err){
+      /* 저장만 못 한 것이다 — 화면은 그대로 둔다. 다만 같은 명단으로 계속 두들기지 않게
+         표식은 남겨 둔다(다음에 사이를 바꾸거나 사람이 바뀌면 다시 시도된다). */
+      GC_AUTOSAVE.busy = false;
+      console.warn('모임 자동 저장 실패', err);
+    });
+}
+/* 자동 저장 고지 — 수동 저장 모달과 같은 값을 쓴다. 한쪽만 고치지 마라. */
+function gcAutoSaveNotice(){
+  return el('p',{class:'biz-hint', style:'margin-top:-4px;'},[
+    '이 모임은 다시 찾으실 수 있게 자동으로 저장돼요. 담긴 분들의 '
+    + inviteFieldsText() + josaOnly(inviteFieldsText(),'이','가') + ' 함께 저장되고 '
+    + GROUP_TTL_PHRASE + ' 동안 보관돼요. 원하지 않으시면 [여럿이서 보기]의 저장한 그룹에서 지우실 수 있어요.'
+  ]);
+}
 function renderGroupCompat(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view'});
@@ -21366,6 +21446,7 @@ function renderGroupCompat(){
        사이는 이제 모임마다 따로다(groupRelation) — 첫 화면의 것은 '다음에 만들 모임'의 값이다. */
     GROUP_VIEW=null; GC_RELATION=COMPAT_RELATION_DEFAULT; GC_RELATION_SET=false;
     GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0};
+    GC_AUTOSAVE={sig:null, busy:false};   /* 다음 모임은 다시 판정한다 */
     ROUTE='compat'; render(); window.scrollTo(0,0);
   }},[dirIcon('left'), '궁합 보기로 돌아가기']));
   view.appendChild(pageHead('궁합 보기 · 그룹',
@@ -21491,6 +21572,15 @@ function renderGroupCompat(){
   }
   var pairs = buildGroupCompatPairs(members);
   var avgAll = Math.round(pairs.reduce(function(s,pr){ return s+pr.res.combined; },0)/pairs.length);
+
+  /* ★ 2026-09-07 — 결과가 실제로 그려지는 이 자리에서만 자동 저장한다.
+     위쪽(사이 고르기 전 · 인원 미달)에서는 return으로 빠지므로 저장도 안 일어난다. */
+  /* ★ 고지는 자동 저장이 끝난 뒤에도 보여야 한다. 저장에 성공하면 GROUP_VIEW가 세워지므로
+     `!GROUP_VIEW`만 보면 **고지가 그 순간 사라진다**(실측으로 잡았다 — 화면에 한 번도 안 떴다).
+     이 명단을 우리가 자동 저장했는지를 함께 본다. */
+  var autoSavedThis = !!(GC_AUTOSAVE.sig && GC_AUTOSAVE.sig === currentGroupMembersText());
+  if(!GROUP_VIEW || autoSavedThis) view.appendChild(gcAutoSaveNotice());
+  autoSaveGroupIfNeeded(members);
 
   var gaugeCard=el('div',{class:'scroll-card'});
   gaugeCard.appendChild(el('div',{class:'gauge-label'},[members.length+'명 · 전체 평균 궁합 지수']));
