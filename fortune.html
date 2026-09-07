@@ -18165,15 +18165,6 @@ function renderCompat(){
           '들어가 계신 모임 ' + savedGroups().length + '개는 [여럿이서 보기]에 있어요.'
         ]));
       }
-      /* ★ 2026-09-07 대표님 지시 — '전에 본 궁합'을 여기 놓는다.
-         새로 보는 것(위 토글)이 먼저고 다시 보는 것이 그다음이다 — [링크 보내기]를
-         [저장한 그룹] 위로 올린 것과 같은 결이다. 아래 입력 칸보다는 위에 둔다.
-         입력 칸이 여덟 줄이라 그 아래로 내리면 스크롤 끝까지 가야 보인다.
-         ★ 여럿이서 화면에는 안 놓는다 — 거기는 '저장한 그룹'이 같은 일을 한다. */
-      if(!isGroupView){
-        var recent = buildRecentCompatCard(p);
-        if(recent) view.appendChild(recent);
-      }
     }
 
     if(isGroupView){
@@ -18261,6 +18252,12 @@ function renderCompat(){
          둘의 관계가 안 보였다. */
       view.appendChild(compatManualHead());
       view.appendChild(renderCompatForm());
+      /* ★ 2026-09-07 대표님 지시 — "전에 본 궁합은 맨 밑으로 내려라".
+         처음에는 토글 바로 아래에 뒀는데, 그러면 새로 보러 온 사람이 남의 기록부터 지나야 한다.
+         새로 보는 흐름(사이 고르기 → 링크 → 입력 칸)을 끝까지 둔 뒤 맨 아래에 놓는다.
+         ★ 여럿이서 화면에는 안 놓는다 — 거기는 '저장한 그룹'이 같은 일을 한다. */
+      var recent = buildRecentCompatCard(p);
+      if(recent) view.appendChild(recent);
     }
   } else {
     view.appendChild(renderCompatBody(p, COMPAT_DRAFT));
