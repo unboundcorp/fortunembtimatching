@@ -15937,7 +15937,7 @@ function renderSetupBirth(){
   }
   box.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:16px;',
     disabled: blocked?'disabled':null,
-    onclick:function(){ if(blocked) return; SETUP.step=2; render(); }},['다음 · 성격유형 고르기']));
+    onclick:function(){ if(blocked) return; gotoSetupStep(2); }},['다음 · 성격유형 고르기']));
   box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin:8px 0 0;'},
     ['여기서 고른 값은 아직 저장된 게 아니에요. 3단계에서 저장을 눌러야 반영돼요.']));
   box.appendChild(setupExitRow());
@@ -15995,9 +15995,9 @@ function renderSetupMbti(){
   }
   box.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:12px;',
     disabled: SETUP.mbti?null:'disabled',
-    onclick:function(){ if(!SETUP.mbti) return; SETUP.step=3; render(); }},['다음 · 확인하고 저장']));
+    onclick:function(){ if(!SETUP.mbti) return; gotoSetupStep(3); }},['다음 · 확인하고 저장']));
   box.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;',
-    onclick:function(){ SETUP.step=1; render(); }},['이전']));
+    onclick:function(){ gotoSetupStep(1); }},['이전']));
   /* R20 — 이 단계에서 고른 값이 아직 저장된 것이 아니라는 사실을 분명히 적는다.
      (마법사 전체가 "작성 중인 사본"이고, 실제 저장은 3단계의 저장 버튼 한 번뿐이다.) */
   box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin:8px 0 0;'},
@@ -16209,11 +16209,22 @@ function renderSetupStep2_legacy(){
   }
 
   var nav=el('div',{style:'display:flex;justify-content:space-between;margin-top:20px;'});
-  nav.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ SETUP.step=1; render(); }},['이전']));
-  nav.appendChild(el('button',{class:'btn btn-primary', disabled: blocked?'disabled':null, onclick:function(){ SETUP.step=3; render(); }},['다음']));
+  nav.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ gotoSetupStep(1); }},['이전']));
+  nav.appendChild(el('button',{class:'btn btn-primary', disabled: blocked?'disabled':null, onclick:function(){ gotoSetupStep(3); }},['다음']));
   box.appendChild(nav);
   box.appendChild(setupExitRow());
   return box;
+}
+/* ★ 2026-09-07 (대표님 제보: "생년월일 입력하고 성격유형 가니깐 맨 위로 안 가고
+   아래로 내려진 채라 위가 잘려 보인다" / "다음 페이지 갈 때는 스크롤 다 올려야 하는 거 아니냐")
+   마법사 단계는 ROUTE가 안 바뀐다. render()는 ROUTE가 바뀔 때만 스크롤을 올리므로,
+   1단계에서 한참 내려간 자리 그대로 2단계가 그려져 **화면 위쪽이 잘린 것처럼 보인다.**
+   단계를 옮기는 자리는 전부 이 함수를 지나가게 한다 — 한 곳에서만 올리면 빠뜨린다.
+   ★ 새 단계 이동을 만들면 `SETUP.step=N; render();`를 손으로 쓰지 말고 이 함수를 쓰십시오. */
+function gotoSetupStep(n){
+  SETUP.step = n;
+  render();
+  scrollToTopNow();
 }
 /* SETUP(또는 같은 모양의 객체)의 입력 날짜를 양력으로 바꿔 돌려준다. 음력 변환 실패 시 null. */
 function setupSolarDate(s){
@@ -16248,7 +16259,7 @@ function renderSetupStep3(){
   var computed = computeSetupSaju();
   if(!computed){
     box.appendChild(el('p',{class:'warn-box'},['입력한 음력 날짜를 변환할 수 없어요. 이전 단계로 돌아가 날짜를 다시 확인해주세요.']));
-    box.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ SETUP.step=1; render(); }},['이전으로']));
+    box.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ gotoSetupStep(1); }},['이전으로']));
     return box;
   }
   var saju = computed.saju;
@@ -16268,7 +16279,7 @@ function renderSetupStep3(){
     + ' · ' + SETUP.mbti
   ]));
   card.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:10px;',
-    onclick:function(){ SETUP.step=1; render(); }},['고치기']));
+    onclick:function(){ gotoSetupStep(1); }},['고치기']));
   if(saju.nearBoundary){ card.appendChild(el('p',{class:'warn-box'},['태어난 날이 계절이 바뀌는 마디와 아주 가까워요. 그래서 태어난 달과 태어난 해를 적은 글자가 다르게 나올 수도 있어요.'])); }
   box.appendChild(card);
 
@@ -16281,7 +16292,7 @@ function renderSetupStep3(){
     lon:SETUP.birthLon, lonKey:SETUP.birthLonKey, adjust:SETUP.solarTimeAdjust
   }));
   if(!SETUP.timeUnknown){
-    tsCard.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:10px;', onclick:function(){ SETUP.step=1; render(); }},
+    tsCard.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:10px;', onclick:function(){ gotoSetupStep(1); }},
       ['출생지·보정 설정 바꾸기']));
   }
   box.appendChild(tsCard);
@@ -16399,7 +16410,7 @@ function renderSetupStep3(){
     render();
   }},[setupSaveLabel()]));
   box.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;',
-    onclick:function(){ SETUP.step=2; render(); }},['이전']));
+    onclick:function(){ gotoSetupStep(2); }},['이전']));
   box.appendChild(setupExitRow());
   return box;
 }
@@ -24421,7 +24432,23 @@ scheduleCharWarm();
         .catch(function(){})
         /* ★ R104 — 로그인해 두셨으면 다른 기기에서 만든 것을 받아 와 합친다. */
         .then(function(){ return syncPull().catch(function(){ return false; }); });
-      return Promise.all([linkThenSync, fetchEntitlements()]);
+
+      /* ★ 2026-09-07 (대표님 지시: "로그인 누르면 이 화면이 뜨긴 뜨는데 3초 정도 기다려야 하네?
+         이거 단축시켜라 무조건")
+         예전에는 Promise.all로 **둘 다** 끝나기를 기다린 뒤에야 결제창을 다시 띄웠다.
+         그런데 결제창을 띄우는 데 필요한 것은 **이용권 조회 하나뿐**이다 —
+         restoreAfterKakao()가 보는 것은 hasAccess() 하나이고, 그건 fetchEntitlements()가 채운다.
+         카카오 상태 조회와 기기 사이 동기화는 결제창과 아무 상관이 없는데,
+         서버를 두 번 더 다녀오는 그 시간이 그대로 대기로 쌓이고 있었다(실측 약 3초).
+         그래서 **이용권만 오면 곧바로 띄운다.** 나머지는 뒤에서 알아서 끝나고,
+         끝나면 아래 마지막 단계가 화면을 한 번 더 그린다.
+         ★ restoreAfterKakao()는 쪽지를 지우므로 두 번 불러도 두 번 뜨지 않는다. */
+      var entThenOpen = fetchEntitlements().then(function(){
+        render();
+        applyPaidReturn();
+        if(kret && kret.kind === 'ok'){ restoreAfterKakao(); }
+      });
+      return Promise.all([linkThenSync, entThenOpen]);
     })
     .then(function(){
       render();
