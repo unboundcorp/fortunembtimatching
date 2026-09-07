@@ -11017,11 +11017,17 @@ function buildCompatCharPair(nameA, pA, pB, tier){
 }
 /* 공유 카드(Canvas)에도 같은 좌표로 그린다 — SVG를 이미지로 굽지 않는다.
    (외부 요청 0건 원칙 + data: URI 금지 + toBlob 오염 위험을 한 번에 피하는 방법이다.) */
-function drawCharOnCanvas(ctx, key, x, y, size, inkColor){
+function drawCharOnCanvas(ctx, key, x, y, size, inkColor, gender){
   /* ★ 그림이 아직 안 왔으면 그냥 건너뛴다. 카드의 나머지는 그대로 나온다 —
      그림 하나 때문에 카드 전체를 못 만들면 그게 더 나쁘다.
-     (도착하면 openShareModal이 다시 그린다.) */
-  var im = CHAR_IMG_CACHE[key];
+     (도착하면 openShareModal이 다시 그린다.)
+     ★ 2026-09-07 — 여기서 성별 없는 이름(mISTJ)으로 찾고 있었다. 2026-09-01에 캐릭터에
+       남녀가 생기면서 캐시 열쇠가 charImgId()가 만드는 'mISTJ-f'로 바뀌었는데 이 줄만
+       옛 이름으로 남았다. 그래서 성격유형 캐릭터가 들어가는 카드 세 종류(궁합·성향
+       리포트·성격유형 풀이)가 전부 그림 없이 나가고 있었다 — 카드 가운데가 통째로 비었다.
+       오행 캐릭터(e0~e4)는 남녀 구분이 없어 charImgId가 이름을 안 바꾸므로 멀쩡했다.
+       ★ 그림 이름을 만드는 곳은 charImgId() 하나다. 여기에 '-f'를 손으로 붙이지 마라. */
+  var im = CHAR_IMG_CACHE[charImgId(key, gender)];
   if(im && im._ok){ try{ ctx.drawImage(im, x, y, size, size); }catch(e){} }
 }
 
@@ -13990,14 +13996,76 @@ function compatBarColor(v){
    옛 이름('찰떡 케미')이 그대로 들어 있으므로, 화면에 낼 때만 갈아 끼운다.
    저장값은 건드리지 않는다 — 다시 열어 계산하면 새 이름으로 덮어써진다. */
 function tierNameFix(t){ return String(t==null?'':t).replace(/ 케미$/, ' 인연'); }
-/* 종합 점수 한 줄 — 등급(combinedTier)에서만 고른다. 새 판정이 아니다. */
+/* 종합 점수 한 줄.
+   ★ 2026-09-07 대표님 지적 — 예전에는 등급 하나만 보고 골랐다. 그런데 등급은 "얼마나
+     잘 맞나"만 말할 뿐 **왜 그 점수인지**를 모른다. 그래서 성격유형도 같고(ISTJ×ISTJ)
+     오행도 같은(비화) 두 분에게 "서로 다른 부분이 오히려 잘 물리는 사이예요"가 나갔다.
+     화면의 다른 모든 줄이 '똑같다'고 말하는데 총평만 '다르다'고 한 것이다 — 모순이다.
+   ★ 그래서 같은 등급 안에서 **닮아서 이 점수인지 · 달라서 이 점수인지**로 한 번 더 가른다.
+     새 점수를 만드는 게 아니다. 이미 계산해 둔 사실(성격유형 네 글자 · 오행 관계 ·
+     일지 관계)만 다시 읽어서 말투를 고른다. */
 var COMPAT_TIER_LINE = {
-  '찰떡 인연':'설명하지 않아도 통하는 대목이 많은 사이예요. 잘 맞는 만큼, 당연하게 여기지만 않으면 오래 가요.',
-  '강한 인연':'서로 다른 부분이 오히려 잘 물리는 사이예요. 맞춰가는 재미가 있는 조합이에요.',
-  '무난한 인연':'첫인상보다 지낼수록 편해지는 쪽이에요. 급하게 결론 내지 않는 편이 좋아요.',
-  '엇갈린 인연':'가만히 두면 어긋나기 쉬운 대신, 말로 맞추면 눈에 띄게 좋아지는 사이예요.',
-  '상극 인연':'결이 많이 다른 조합이에요. 서로 다르다는 걸 인정하는 데서 출발하면 훨씬 수월해져요.'
+  '찰떡 인연': {
+    same:      '닮은 데가 많아서 설명하지 않아도 통하는 사이예요. 편한 만큼, 당연하게 여기지만 않으면 오래 가요.',
+    different: '서로 다른 자리가 빈틈없이 맞물리는 사이예요. 상대에게 없는 것을 각자 채워주는 조합이에요.',
+    mixed:     '설명하지 않아도 통하는 대목이 많은 사이예요. 잘 맞는 만큼, 당연하게 여기지만 않으면 오래 가요.'
+  },
+  '강한 인연': {
+    /* ★ '약한 자리도 닮았다 → 바깥 이야기를 들어라'는 바로 아래 '조심할 점'이 이미 말한다
+       (일지가 같은 글자일 때). 총평에서 또 하면 한 화면에서 같은 말이 두 번이다. */
+    same:      '닮은 데가 많아 처음부터 편한 사이예요. 부딪힐 일이 적은 대신, 새로운 자극은 밖에서 찾는 편이 좋아요.',
+    different: '서로 다른 부분이 오히려 잘 물리는 사이예요. 맞춰가는 재미가 있는 조합이에요.',
+    mixed:     '겹치는 자리와 갈리는 자리가 함께 있는 사이예요. 맞춰가는 재미가 있는 조합이에요.'
+  },
+  '무난한 인연': {
+    same:      '닮은 구석이 있어 지낼수록 편해지는 쪽이에요. 급하게 결론 내지 않는 편이 좋아요.',
+    different: '결이 서로 달라 처음엔 낯설어도, 지낼수록 이해가 붙는 쪽이에요. 급하게 결론 내지 않는 편이 좋아요.',
+    mixed:     '첫인상보다 지낼수록 편해지는 쪽이에요. 급하게 결론 내지 않는 편이 좋아요.'
+  },
+  '엇갈린 인연': {
+    same:      '닮았는데도 자꾸 어긋나는 조합이에요. 비슷한 만큼 같은 자리에서 부딪히니, 서로 맡을 몫을 나눠 두면 훨씬 나아져요.',
+    different: '가만히 두면 어긋나기 쉬운 대신, 말로 맞추면 눈에 띄게 좋아지는 사이예요.',
+    mixed:     '가만히 두면 어긋나기 쉬운 대신, 말로 맞추면 눈에 띄게 좋아지는 사이예요.'
+  },
+  '상극 인연': {
+    same:      '닮은 데가 있는데도 결이 부딪히는 조합이에요. 같은 자리를 두고 겹치기 쉬우니, 각자의 몫을 분명히 해 두면 훨씬 수월해져요.',
+    different: '결이 많이 다른 조합이에요. 서로 다르다는 걸 인정하는 데서 출발하면 훨씬 수월해져요.',
+    mixed:     '결이 많이 다른 조합이에요. 서로 다르다는 걸 인정하는 데서 출발하면 훨씬 수월해져요.'
+  }
 };
+/* 두 사람이 '닮아서' 이 점수인지 '달라서' 이 점수인지.
+   ★ 점수를 새로 매기지 않는다. 이미 나온 판정만 세어 말투를 고르는 값이다.
+   ★ 오행 상생을 '다름'으로 세는 이유: 상생은 서로 다른 기운이 맞물려 흐르는 관계다.
+     같은 기운은 비화 하나뿐이다. */
+function compatSameness(pA, pB, saju){
+  var pts = 0, n = 0;
+  if(pA && pB && MBTI_STACK[pA.mbti] && MBTI_STACK[pB.mbti]){
+    var same4 = 0;
+    for(var i=0;i<4;i++) if(pA.mbti.charAt(i) === pB.mbti.charAt(i)) same4++;
+    pts += (same4 - 2); n += 2;          /* 네 글자 다 같으면 +2, 하나도 안 같으면 -2 */
+  }
+  var et = saju && saju.elemTerm;
+  if(et && et !== '정보 부족'){
+    if(et.indexOf('비화') === 0) pts += 2;
+    else if(et.indexOf('상극') === 0) pts -= 2;
+    else pts -= 1;                        /* 상생 */
+    n += 2;
+  }
+  var bt = saju && saju.branchTerm;
+  if(bt && bt !== '정보 부족'){
+    if(bt === '같은 글자') pts += 1;
+    else if(bt === '충') pts -= 1;
+    n += 1;
+  }
+  if(!n) return 'mixed';
+  return pts >= 2 ? 'same' : (pts <= -2 ? 'different' : 'mixed');
+}
+/* ★ 이 함수 말고 COMPAT_TIER_LINE을 직접 읽지 마라 — 이제 값이 문자열이 아니라 갈래 셋이다. */
+function compatTierLine(res, pA, pB){
+  var bank = res && COMPAT_TIER_LINE[res.combinedTier];
+  if(!bank) return '';
+  return bank[compatSameness(pA, pB, res.saju)] || bank.mixed || '';
+}
 function buildCompatMetricBars(res){
   var list = el('div',{class:'cm-list'});
   COMPAT_METRICS.forEach(function(m){
@@ -18482,7 +18550,7 @@ function renderCompatSummary(p, draft){
   if(r.res.saju && r.res.saju.elemTerm && r.res.saju.elemTerm !== '정보 부족') unit += ' · '+r.res.saju.elemTerm;
   numRow.appendChild(el('span',{'aria-hidden':'true'},[unit]));
   scoreBlk.appendChild(numRow);
-  scoreBlk.appendChild(el('p',{class:'csb-verdict'},[COMPAT_TIER_LINE[r.res.combinedTier] || '']));
+  scoreBlk.appendChild(el('p',{class:'csb-verdict'},[compatTierLine(r.res, p, r.pB)]));
   box.appendChild(scoreBlk);
   /* ★ 2026-08-31 — 어떤 사이로 봤는지, 그래서 무엇을 무겁게 봤는지 결과에도 적는다.
      고른 자리(입력 화면)에만 있고 결과에 없으면 "왜 이 점수지?"에 답을 못 한다.
@@ -18545,7 +18613,9 @@ function renderCompatSummary(p, draft){
      ★ 그룹을 새로 만들지 않고 openInviteLinkModal을 그대로 쓴다. 그래야 아직 아무도
        안 들어온 링크를 다시 쓰는 규칙(R60)이 여기에도 똑같이 적용된다.
   ===================================================================== */
-  var moreCard = el('div',{class:'scroll-card'});
+  /* ★ 2026-09-07 대표님 지시 — 이 카드는 '읽을 결과'가 아니라 '다음에 할 일' 안내다.
+     [이 화면 글 전체 복사]로 남에게 보낸 글에 이게 섞여 나오고 있었다. copy-skip을 붙여 뺀다. */
+  var moreCard = el('div',{class:'scroll-card copy-skip'});
   moreCard.appendChild(el('h3',{},['다른 사람을 더 초대하고 싶다면']));
   moreCard.appendChild(el('p',{class:'biz-hint'},[
     '링크를 보내면 받은 분이 자기 정보를 넣고 바로 들어와요. 두 명이든 '+GC_MAX+'명이든 같은 링크 하나로 되고, 들어온 사람들의 궁합이 한 그림에 함께 나와요.'
@@ -20233,7 +20303,7 @@ function buildCompatReport13(pA, pB, res){
   /* ── 무료 3섹션 ── */
   add(0, '<p><strong>'+A+' × '+B+' — '+res.combined+'점 · '+escapeHtml(res.combinedTier)+'</strong></p>'
        + '<p>'+escapeHtml(compatWeightSentence(res, '')) +'</p>'
-       + '<p>'+escapeHtml(COMPAT_TIER_LINE[res.combinedTier] || '')+'</p>');
+       + '<p>'+escapeHtml(compatTierLine(res, pA, pB))+'</p>');
   add(1, '<p>'+escapeHtml(res.categories.chemistry)+'</p>'
        + '<p>사주로 보면 '+escapeHtml(rs.elemRel||'')+'</p>');
   add(2, '<p>잘 맞는 자리</p>' + listOf(reasons.good, '두드러지게 맞는 자리는 아직 안 보여요.')
@@ -22398,7 +22468,7 @@ function openShareModal(kind, profile, data){
   drawShareCard(canvas, kind, profile, data);
   /* R62 — 캐릭터 그림은 파일이라 늦게 도착할 수 있다. 오면 카드를 다시 그린다. */
   shareCardCharKeys(kind, profile, data).forEach(function(ck){
-    charImage(ck, function(){ drawShareCard(canvas, kind, profile, data); });
+    charImage(ck.key, function(){ drawShareCard(canvas, kind, profile, data); }, ck.gender);
   });
   var preview=el('div',{class:'share-preview'},[canvas]);
   body.appendChild(preview);
@@ -22455,8 +22525,46 @@ function buildShareText(kind, profile, data){
     var rpt=buildMbtiReport16(profile);
     return '['+COMPANY.serviceName+'] '+ownerLabel(profile.name)+' 성격유형 풀이\n유형: '+profile.mbti+' ('+TYPE_TAGLINE[profile.mbti]+')\n'+rpt.sections[0].body.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
   } else {
+    /* ★ 2026-09-07 대표님 지시 ("텍스트 복사도 꽉 채워라") — 예전에는 네 줄뿐이었다.
+       종합 점수 하나만 있고 그 점수가 어디서 왔는지가 없어서, 받은 사람은 물론
+       보낸 사람도 나중에 다시 읽을 때 아무것도 알 수 없었다.
+       ★ 화면에 이미 무료로 떠 있는 것만 담는다. 상세 문장(elemDetail·branchRel·comment)과
+         categories의 love·friend·conflict는 유료다 — 여기에 넣으면 결제하지 않은 사람이
+         본문을 텍스트로 가져가게 된다(2026-08-29에 실제로 났던 사고와 같은 경로).
+       ★ 항목 이름과 값은 화면과 같은 표(COMPAT_WHY_ITEMS)에서 가져온다.
+         여기에 이름을 손으로 적으면 화면과 복사본이 갈라진다. */
     var r=data;
-    return '['+COMPANY.serviceName+'] '+profile.name+' × '+r.pB.name+' 궁합 결과\n종합 점수: '+r.res.combined+'점 ('+r.res.combinedTier+')\n사주: '+r.res.saju.elemRel+'\n성격유형: '+r.res.categories.chemistry;
+    var vals = { mbti: r.res.mbtiScore,
+                 saju: r.res.saju && r.res.saju.score,
+                 elem: r.res.elemScore,
+                 zod:  r.res.zodScore };
+    var picked = COMPAT_WHY_ITEMS
+      .map(function(it){ return {it:it, v:vals[it.key]}; })
+      .filter(function(x){ return typeof x.v === 'number'; });
+    var relKey = r.res.relation;
+    var relLine = (relKey && relationOf(relKey).key === relKey)
+      ? (relationLabel(relKey)+' 사이로 본 결과예요.\n') : '';
+    var scoreBlock = picked.length
+      ? ('\n'+picked.map(function(x){ return '· '+x.it.label+' '+x.v+'점'; }).join('\n')+'\n') : '';
+    /* 표를 한 문장으로 다시 말해 주는 자리 — 화면(buildCompatWhyScores)과 같은 규칙이다.
+       두 항목이 같은 값이면 "끌어올린 자리"와 "깎은 자리"가 같아져 말이 안 되므로 뺀다. */
+    var drive = '';
+    if(picked.length >= 2){
+      var hi = picked.reduce(function(a,b){ return b.v>a.v ? b : a; }, picked[0]);
+      var lo = picked.reduce(function(a,b){ return b.v<a.v ? b : a; }, picked[0]);
+      if(hi.it.key !== lo.it.key && hi.v !== lo.v){
+        drive = '가장 끌어올린 자리 — '+hi.it.label+' '+hi.v+'점\n'
+              + '가장 깎은 자리 — '+lo.it.label+' '+lo.v+'점\n';
+      }
+    }
+    return '['+COMPANY.serviceName+'] '+profile.name+' × '+r.pB.name+' 궁합 결과\n'
+      + relLine
+      + '종합 점수: '+r.res.combined+'점 ('+r.res.combinedTier+')\n'
+      + scoreBlock
+      + drive
+      + '\n사주: '+r.res.saju.elemRel+'\n'
+      + '성격유형: '+r.res.categories.chemistry+'\n'
+      + '\n'+COMPANY.site;
   }
 }
 /* =====================================================================
@@ -22482,6 +22590,9 @@ var COPY_SKIP_SEL = [
      circleCTA는 라벨을 <button> 안이 아니라 그 옆 <div class="btn-circle-label">에 둔다.
      그래서 'button'만 지우면 라벨만 남아, 복사한 글 끝에 '내 성격유형 풀이 읽어보기' 같은
      누를 수 없는 문장이 붙어 나갔다(대표님이 실제로 받아 보심). 감싼 것째로 지운다. */
+  /* ★ .copy-skip — '읽을 결과'가 아니라 '다음에 할 일'인 카드에 붙이는 표식(2026-09-07).
+     글자로 찾아 지우면 문구를 고칠 때마다 복사본이 조용히 망가진다. */
+  '.copy-skip',
   'button', '.btn-circle-wrap', '.tab-btn', '.site-footer', '.biz', '.copy',
   '.locked-block', '.locked-count', '.compat-upsell', '.pay-opens', '.upsell-opens',
   '.cross-sell', '.share-preview', '.fb-callout', '.fb-kinds',
@@ -22524,11 +22635,72 @@ function tidyCopyText(t){
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+/* ★ 2026-09-07 대표님 지시 — "블릿이나 괄호 활용해서 의미 단위로 텍스트 분리".
+   격자 칸을 한 줄로 누르기만 해서는 부족했다. 지표 한 줄이
+     대화가 잘 통해요 76점
+     말이 잘 통하는 편이에요 성격 유형
+   두 줄로 흩어져서, 무엇이 이름이고 무엇이 값이고 무엇이 근거인지 알 수 없었다(실측).
+   ★ 반드시 '지우기'(COPY_SKIP_SEL)보다 **먼저** 돌아야 한다. '왜 N점인가요?' 표의 줄은
+     <button>이라, 지우기가 먼저 돌면 여기 올 때는 이미 없다. 그래서 묶은 뒤 <p>로 바꿔 둔다. */
+function copyPackRows(clone){
+  /* ★ 여기서는 copyLeafTexts로 조각을 잇지 않는다. 용어 풀이(autoTermify)가 문장 한가운데
+     낱말을 감싸 놓아서, 조각마다 사이를 벌리면 이름이 쪼개진다 —
+     '정인테스트'의 '정인'이 십성 용어라 '정인 · 테스트'로 나왔다(실측).
+     껍데기 벗기기(COPY_UNWRAP_SEL)가 이미 끝난 뒤라 textContent가 원래 문장 그대로다. */
+  function txt(e){ return e ? String(e.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
+  function pick(n, sel){ return txt(n.querySelector(sel)); }
+  function asLine(n, text){
+    if(!text || !n.parentNode) return;
+    n.parentNode.replaceChild(el('p',{},[text]), n);
+  }
+  /* 지표 막대 — · 이름 — 76점 (한마디 · 무엇으로 쟀나) */
+  $all('.cm-row', clone).forEach(function(n){
+    var tail = [pick(n,'.cm-verdict'), pick(n,'.cm-src')].filter(Boolean).join(' · ');
+    var num = pick(n,'.cm-num');
+    asLine(n, '· '+pick(n,'.cm-label')+(num?' — '+num:'')+(tail?' ('+tail+')':''));
+  });
+  /* '왜 N점인가요?' 표 — 줄과 그 설명이 따로 떨어져 나왔다. 설명을 괄호에 넣어 한 줄로. */
+  $all('.gc-why-row', clone).forEach(function(n){
+    var desc = n.nextElementSibling;
+    var d = '';
+    if(desc && desc.classList && desc.classList.contains('gc-why-desc')){
+      /* 설명은 span 네 개(한마디 · 무엇으로 쟀나 · 근거 · 그래서 어떻게)다.
+         span끼리는 ' · '로 가르되, 한 span 안은 문장이므로 그대로 둔다. */
+      var parts = [];
+      for(var ci=0; ci<desc.children.length; ci++){ var pt = txt(desc.children[ci]); if(pt) parts.push(pt); }
+      d = parts.length ? parts.join(' · ') : txt(desc);
+      if(desc.parentNode) desc.parentNode.removeChild(desc);
+    }
+    var v = pick(n,'.v');
+    asLine(n, '· '+pick(n,'.k')+(v?' — '+v:'')+(d?' ('+d+')':''));
+  });
+  /* ★ 종합 점수 — 큰 숫자와 단위가 따로 <b>/<span>이라 '73'과 '점 · 비화(같은 오행)'이
+     두 줄로 갈라져 나왔다(2026-09-07 실측). 사이를 벌리지 않고 붙여서 한 줄로 만든다
+     (COPY_INLINE_SEL로 누르면 '73 점'이 된다). */
+  $all('.csb-num', clone).forEach(function(n){
+    var t = txt(n);
+    if(t){ n.textContent = t; n.style.display='block'; }
+  });
+  /* 목록 — 가운뎃점을 붙인다. 안 붙이면 줄글과 구별이 안 된다. */
+  $all('li', clone).forEach(function(n){
+    var t = txt(n);
+    if(t){ n.textContent = '· '+t; n.style.display='block'; }
+  });
+  /* 제목 — 어디서 덩이가 바뀌는지 보이게 */
+  $all('h2, h3, h4', clone).forEach(function(n){
+    var t = txt(n);
+    if(t){ n.textContent = '■ '+t; n.style.display='block'; }
+  });
+}
 /* 지금 화면(#main .view)에 보이는 글을 그대로 돌려준다. 없으면 빈 문자열. */
 function screenTextForCopy(){
   var view = $('#main .view') || $('#main');
   if(!view) return '';
   var clone = view.cloneNode(true);
+  /* ★ 접혀 있는 것(<details>)을 편다. innerText는 접힌 것을 안 돌려주므로, 예전에는
+     '왜 72점인가요?' 같은 제목만 덩그러니 남고 알맹이가 통째로 빠져 있었다(실측).
+     잠긴 유료 글은 아래 .locked-block 지우기가 따로 걷어내므로 여기서 펴도 새지 않는다. */
+  $all('details', clone).forEach(function(d){ d.open = true; });
   /* ★ 순서가 중요하다. 껍데기 벗기기를 먼저 해야 한다 —
      지우기를 먼저 하면 그 안의 낱말이 이미 사라진 뒤다. */
   $all(COPY_UNWRAP_SEL, clone).forEach(function(n){
@@ -22538,6 +22710,7 @@ function screenTextForCopy(){
     var t = copyLeafTexts(n).join(' ');
     n.parentNode.replaceChild(document.createTextNode(t), n);
   });
+  copyPackRows(clone);   /* ★ 반드시 지우기보다 먼저 — 표의 줄이 <button>이라 나중엔 없다 */
   $all(COPY_SKIP_SEL, clone).forEach(function(n){ if(n.parentNode) n.parentNode.removeChild(n); });
   /* 지우기가 끝난 뒤에 눌러야 한다 — 버튼을 지우기 전에 누르면 지울 것까지 한 줄에 섞인다. */
   $all(COPY_INLINE_SEL, clone).forEach(function(n){
@@ -22620,16 +22793,20 @@ var SHARE_CARD_WITH_CHAR = { fortune:1, saju:1, report:1, mbtiReport:1, compatSu
    ★ 아래 drawShareCard가 고르는 규칙과 같아야 한다. 다르면 엉뚱한 그림을 받아 놓고
      정작 필요한 그림은 없어서 카드에 캐릭터가 빈다. */
 function shareCardCharKeys(kind, profile, data){
+  /* ★ 2026-09-07 — {key, gender} 짝으로 돌려준다. 예전에는 열쇠만 돌려줘서
+     미리받기가 지금 프로필의 성별로만 받았고, 궁합 상대가 다른 성별이면
+     그 그림은 영영 안 받아졌다(카드에서 한쪽만 비어 나갔다). */
   if(!SHARE_CARD_WITH_CHAR[kind] || !profile) return [];
   if(kind === 'compatSummary'){
     var kA = charKeyForMbti(profile.mbti);
     var kB = (data && data.pB) ? charKeyForMbti(data.pB.mbti) : null;
-    return [kA, kB].filter(Boolean);
+    return [ kA ? {key:kA, gender:profile.gender} : null,
+             kB ? {key:kB, gender:(data.pB && data.pB.gender)} : null ].filter(Boolean);
   }
   var k = (kind === 'saju' || kind === 'fortune')
     ? charKeyForDayStem(data && data.year ? data : getSajuResult(profile))
     : charKeyForMbti(profile.mbti);
-  return k ? [k] : [];
+  return k ? [{key:k, gender:profile.gender}] : [];
 }
 /* R29 — 공유 카드도 함께 밝은 톤으로 뒤집었다. 앱만 밝히고 내보내는 그림만 어두우면
    "저장하기"를 누른 순간 다른 서비스의 카드가 나온다. 글꼴도 화면과 같은 규칙을 쓴다:
@@ -22649,6 +22826,15 @@ var CARD_DIM  = '#736c5f';            /* 흐린 글씨 = --ink-faint */
 var CARD_SEAL = '#B41E30';            /* 로고색 = --brand */
 var CARD_ACC  = '#AF2B25';            /* 낙관(글자 강조) = --gold */
 var CARD_LINE = 'rgba(31,28,23,0.156)'; /* 먹 괘선 */
+/* ★ 2026-09-07 — 화면의 compatBarColor()는 'var(--gold-2)'를 돌려준다. Canvas는 CSS 변수를
+   못 읽어서 ctx.fillStyle에 넣으면 **조용히 무시되고 직전 색이 그대로 남는다**(오류도 안 난다).
+   그래서 공유 카드의 막대가 전부 괘선색으로 그려졌다. 같은 눈금·같은 값의 canvas용 짝을 둔다.
+   ★ 눈금(75 / 50)과 색은 :root의 --gold-2 · --gold · --ink-faint와 한 쌍이다. 한쪽만 고치지 마라. */
+function compatBarColorCanvas(v){
+  return v>=75 ? '#8F221D'       /* --gold-2 */
+       : (v>=50 ? '#AF2B25'      /* --gold */
+                : '#625b4e');    /* --ink-faint */
+}
 var CARD_SANS  = "'Pretendard Variable','Pretendard','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif";
 var CARD_SERIF = "'Nanum Myeongjo','AppleMyungjo','Batang',serif";
 function drawShareCard(canvas, kind, profile, data){
@@ -22752,6 +22938,44 @@ function drawShareCard(canvas, kind, profile, data){
     ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_INK; y=wrapCanvasText(ctx, r.res.saju.elemRel, 50, y, w-100, 21); y+=16;
     ctx.font='700 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('성격유형 관점', 50, y); y+=22;
     ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_INK; y=wrapCanvasText(ctx, r.res.categories.chemistry, 50, y, w-100, 21);
+    /* ★ 2026-09-07 대표님 지시 ("결과 공유 화면 꽉 채워라") — 카드 가운데가 통째로 비어 있었다.
+       점수가 72점이라는 것만 있고 그게 어디서 나왔는지가 없어서, 받은 사람은 숫자 하나만 봤다.
+       화면의 '왜 N점인가요?' 표와 같은 자료(COMPAT_WHY_ITEMS · compatBarColor)를 쓴다 —
+       여기에 이름이나 색을 손으로 적으면 카드와 화면이 갈라진다.
+       ★ 캐릭터 자리를 뺏지 않도록 짧게 짠다. 아래 캐릭터 블록은 남는 높이가 150 미만이면
+         아예 안 그리므로, 이 블록이 길어지면 그림이 소리 없이 사라진다. */
+    var cVals = { mbti: r.res.mbtiScore,
+                  saju: r.res.saju && r.res.saju.score,
+                  elem: r.res.elemScore,
+                  zod:  r.res.zodScore };
+    var cRows = COMPAT_WHY_ITEMS
+      .map(function(it){ return {it:it, v:cVals[it.key]}; })
+      .filter(function(x){ return typeof x.v === 'number'; });
+    if(cRows.length){
+      y += 20;
+      ctx.font='700 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('점수를 뜯어보면', 50, y); y+=20;
+      var barX = 330, barW = 190, barH = 7;
+      cRows.forEach(function(x){
+        ctx.font='400 13px '+CARD_SANS; ctx.fillStyle=CARD_INK; ctx.textAlign='left';
+        ctx.fillText(x.it.label, 50, y+4);
+        ctx.fillStyle=CARD_LINE; ctx.fillRect(barX, y-3, barW, barH);
+        ctx.fillStyle=compatBarColorCanvas(x.v); ctx.fillRect(barX, y-3, barW*Math.max(0,Math.min(100,x.v))/100, barH);
+        ctx.font='700 13px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.textAlign='right';
+        ctx.fillText(x.v+'점', w-50, y+4);
+        ctx.textAlign='left';
+        y += 22;
+      });
+      /* 표를 한 문장으로 — 화면(buildCompatWhyScores)과 같은 규칙이다. */
+      if(cRows.length >= 2){
+        var cHi = cRows.reduce(function(a,b){ return b.v>a.v ? b : a; }, cRows[0]);
+        var cLo = cRows.reduce(function(a,b){ return b.v<a.v ? b : a; }, cRows[0]);
+        if(cHi.it.key !== cLo.it.key && cHi.v !== cLo.v){
+          y += 6;
+          ctx.font='400 13px '+CARD_SANS; ctx.fillStyle=CARD_DIM;
+          y = wrapCanvasText(ctx, '가장 끌어올린 자리 — '+cHi.it.label+' '+cHi.v+'점 · 가장 깎은 자리 — '+cLo.it.label+' '+cLo.v+'점', 50, y, w-100, 18);
+        }
+      }
+    }
   }
 
   /* R19 — 캐릭터를 카드 아래쪽에 크게 얹는다. 화면과 같은 좌표(CHARACTERS)를 Path2D로 다시 그리는 방식이라
@@ -22766,8 +22990,10 @@ function drawShareCard(canvas, kind, profile, data){
       var kA=charKeyForMbti(profile.mbti), kB=charKeyForMbti(rr.pB.mbti);
       var cs=Math.max(104, Math.min(152, avail-38)), gap=26;
       var x0=(w-(cs*2+gap))/2, cy=top+Math.max(0,(avail-(cs+34))/2);
-      if(kA) drawCharOnCanvas(ctx, kA, x0, cy, cs, CARD_INK);
-      if(kB) drawCharOnCanvas(ctx, kB, x0+cs+gap, cy, cs, CARD_INK);
+      /* ★ 두 사람의 성별이 서로 다를 수 있다. 각자 것을 넘긴다 —
+         하나로 넘기면 상대가 화면에서 본 것과 다른 그림으로 나간다. */
+      if(kA) drawCharOnCanvas(ctx, kA, x0, cy, cs, CARD_INK, profile.gender);
+      if(kB) drawCharOnCanvas(ctx, kB, x0+cs+gap, cy, cs, CARD_INK, rr.pB && rr.pB.gender);
       ctx.font='400 14px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
       if(kA) ctx.fillText(CHARACTERS[kA].name.split(' · ')[0], x0+cs/2, cy+cs+22);
       if(kB) ctx.fillText(CHARACTERS[kB].name.split(' · ')[0], x0+cs+gap+cs/2, cy+cs+22);
@@ -22778,7 +23004,7 @@ function drawShareCard(canvas, kind, profile, data){
       if(key){
         var size=Math.max(120, Math.min(196, avail-38));
         var cyy=top+Math.max(0,(avail-(size+34))/2);
-        drawCharOnCanvas(ctx, key, (w-size)/2, cyy, size, CARD_INK);
+        drawCharOnCanvas(ctx, key, (w-size)/2, cyy, size, CARD_INK, profile && profile.gender);
         ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
         ctx.fillText(CHARACTERS[key].name, w/2, cyy+size+26);
       }
