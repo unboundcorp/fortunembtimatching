@@ -18034,6 +18034,91 @@ function compatDraftDirty(){
   for(var i=0;i<keys.length;i++){ if(COMPAT_DRAFT[keys[i]] !== base[keys[i]]) return true; }
   return false;
 }
+/* =====================================================================
+   전에 본 궁합을 궁합 탭에서 바로 다시 열기 (2026-09-07 대표님 지시)
+   ---------------------------------------------------------------------
+   > "궁합탭에 내가 봤던 궁합 히스토리가 목록으로 보여지고 거기에서 누르면
+   >  상세 궁합으로 넘어가야 할 듯"
+
+   기록은 예전부터 쌓이고 있었다(submitCompat이 compatHistory에 넣는다). 그런데
+   [더보기] → [히스토리] → [궁합 기록]까지 들어가야 나와서, 새 탭으로 앱을 열면
+   궁합 탭이 첫 화면으로 돌아가 **결과가 날아간 것처럼 보였다**(대표님 제보).
+   실제로 재현해서 확인한 사실이다 — 기록은 멀쩡했고 갈 길이 없었을 뿐이다.
+
+   ★ 결과를 저장해 두지 않는다. 기록에는 입력값과 점수·등급만 있고(R24), 상세 문장은
+     한 글자도 저장하지 않는다. 다시 열 때 그 입력값으로 **다시 계산**한다 —
+     결제하고 돌아왔을 때 화면을 되살리는 것과 같은 방식이다.
+   ★ 여럿이서(모임) 궁합은 여기 안 들어온다. 쌍이 많아 기록에 안 쌓기 때문이다.
+     그쪽은 [여럿이서 보기]의 '저장한 그룹'이 맡는다. 두 목록을 섞지 마라.
+===================================================================== */
+function reopenCompatFromHistory(c){
+  var b = c && c.inputs && c.inputs.b;
+  if(!b || !b.mbti){ showToast('이 기록은 다시 열 수 없어요.'); return; }
+  var bt = b.birth || {};
+  if(!(typeof bt.y==='number' && typeof bt.m==='number' && typeof bt.d==='number')){
+    showToast('이 기록은 생년월일이 없어 다시 열 수 없어요.'); return;
+  }
+  var d = defaultCompatDraft();
+  d.mbti = b.mbti;
+  d.name = b.name || '상대방';
+  d.gender = (b.gender==='M') ? 'M' : 'F';
+  /* 기록에 담긴 날짜는 이미 양력으로 바꾼 뒤의 값이다(submitCompat이 그렇게 담는다). */
+  d.calendarType = 'solar'; d.lunarLeap = false;
+  d.year = bt.y; d.month = bt.m; d.day = bt.d;
+  d.timeUnknown = (bt.hour == null);
+  d.hour = (bt.hour == null) ? 12 : bt.hour;
+  d.minute = bt.minute || 0;
+  d.birthLonKey = null;
+  d.birthLon = (typeof bt.lon === 'number') ? bt.lon : null;
+  d.solarTimeAdjust = !!bt.adjust;
+  d.relation = (c.relation && relationOf(c.relation).key === c.relation) ? c.relation : COMPAT_RELATION_DEFAULT;
+  d._set = {cal:true, date:true, time:true, place:true, gender:true, relation:true};
+  COMPAT_DRAFT = d;
+  try{ submitCompat({silent:true}); }
+  catch(e){ console.warn('기록에서 궁합 되살리기 실패', e); COMPAT_DRAFT = null; showToast('다시 여는 데 실패했어요.'); render(); return; }
+  /* 방금 되살린 결과가 그 기록과 같은 줄임을 알려 둔다 — 사이를 바꾸면 이 줄을 같이 고친다. */
+  COMPAT_DRAFT.histId = c.id || null;
+  COMPAT_VIEW = 'pair'; COMPAT_SUB = null; ROUTE = 'compat';
+  render();
+  /* 궁합 탭에서 눌렀으면 ROUTE가 안 바뀌어 render()가 스크롤을 안 올린다 —
+     결과가 위에 그려졌는데 화면은 목록 자리에 머문다. 여기서 직접 올린다. */
+  scrollToTopNow();
+}
+function buildRecentCompatCard(p){
+  var list = (STATE.compatHistory || []).filter(function(c){
+    return c && c.inputs && c.inputs.b && (!p || c.profileId === p.id);
+  });
+  if(!list.length) return null;
+  var card = el('div',{class:'scroll-card'});
+  card.appendChild(el('h3',{},['전에 본 궁합']));
+  card.appendChild(el('p',{class:'section-sub', style:'margin-bottom:8px;'},
+    ['누르면 그때 본 결과가 그대로 다시 열려요.']));
+  list.slice(0,5).forEach(function(c){
+    var item = el('div',{class:'hist-item'});
+    var left = el('button',{class:'hi-main', onclick:function(){ reopenCompatFromHistory(c); }});
+    var ck = charKeyForMbti(c.partnerMbti);
+    if(ck) left.appendChild(buildCharChip(ck, 34, (c.partnerMbti||'')+' 캐릭터', c.partnerGender));
+    var tx = el('div',{class:'hi-text'});
+    tx.appendChild(el('div',{},[nameOr(c.partnerName,'상대방') + (c.partnerMbti ? ' ('+c.partnerMbti+')' : '')]));
+    /* ★ 한 줄에 다 넣으면 폭 390에서 '친구 / 사이'로 어색하게 접힌다(실측).
+       올해 것은 연도를 빼고, '사이'라는 말도 뺀다 — 옆에 등급이 있어 무슨 값인지 읽힌다. */
+    var dt = String(c.date||'');
+    if(dt.slice(0,4) === String(new Date().getFullYear())) dt = dt.slice(5);
+    tx.appendChild(el('div',{class:'meta'},[
+      [dt, (c.score!=null ? c.score+'점' : null), tierNameFix(c.tier||''),
+       (c.relation ? relationLabel(c.relation) : null)].filter(Boolean).join(' · ')
+    ]));
+    left.appendChild(tx);
+    item.appendChild(left);
+    card.appendChild(item);
+  });
+  if(list.length > 5){
+    card.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:10px;',
+      onclick:function(){ HIST_TAB='compat'; ROUTE='history'; render(); }},
+      ['전체 기록 보기 · '+list.length+'개']));
+  }
+  return card;
+}
 function renderCompat(){
   var main=$('#main'); main.innerHTML='';
   var p=activeProfile();
@@ -18046,7 +18131,7 @@ function renderCompat(){
   if(ROOM_WAIT && !COMPAT_DRAFT.result) view.appendChild(buildRoomWaitCard());
   /* R68 — 링크를 보낸 뒤 '기다리는 중' 카드. 아래 입력칸은 그대로 두어 다른 일을 할 수 있다. */
   if(!COMPAT_DRAFT.result){ var iw = buildInviteWatchCard(); if(iw) view.appendChild(iw); }
-  /* R34 — 전에 본 궁합을 다시 열 수 있게 목록을 준다. 새로고침해도 사라지지 않는다. */
+  /* R34 — 전에 본 궁합 목록은 아래 buildRecentCompatCard()가 그린다(둘이서 화면에만). */
   if(!COMPAT_DRAFT.result){
     /* ★ 2026-08-31 대표님 지시 — 둘이서 볼 것인지 여럿이서 볼 것인지 먼저 고른다.
        예전에는 두 갈래가 한 화면에 세로로 쌓여 있었다(상대방 링크 · 그룹 버튼 · 직접 입력 칸).
@@ -18079,6 +18164,15 @@ function renderCompat(){
         view.appendChild(el('p',{class:'biz-hint', style:'margin-top:-8px;'},[
           '들어가 계신 모임 ' + savedGroups().length + '개는 [여럿이서 보기]에 있어요.'
         ]));
+      }
+      /* ★ 2026-09-07 대표님 지시 — '전에 본 궁합'을 여기 놓는다.
+         새로 보는 것(위 토글)이 먼저고 다시 보는 것이 그다음이다 — [링크 보내기]를
+         [저장한 그룹] 위로 올린 것과 같은 결이다. 아래 입력 칸보다는 위에 둔다.
+         입력 칸이 여덟 줄이라 그 아래로 내리면 스크롤 끝까지 가야 보인다.
+         ★ 여럿이서 화면에는 안 놓는다 — 거기는 '저장한 그룹'이 같은 일을 한다. */
+      if(!isGroupView){
+        var recent = buildRecentCompatCard(p);
+        if(recent) view.appendChild(recent);
       }
     }
 
