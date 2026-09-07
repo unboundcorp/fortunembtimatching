@@ -22903,6 +22903,23 @@ function drawCharBeside(ctx, key, gender, x, y, size, lines){
   });
   return ty;
 }
+/* 앱 헤더 로고(.brand-seal)의 SVG path 그대로. viewBox 0 0 48 48 기준이다. */
+var LOGO_PATH = {
+  heart: 'M24 40.5C24 40.5 6.5 30.2 6.5 18.8c0-5.4 4.2-9.3 9-9.3 3.4 0 6.4 1.9 8.5 5 2.1-3.1 5.1-5 8.5-5 4.8 0 9 3.9 9 9.3 0 4.2-2.4 8.2-5.4 11.5',
+  check: 'M16.5 23.5 22 29l10.5-10.5',
+  spark: 'M40.5 6.5c.4 2.1.9 2.6 3 3-2.1.4-2.6.9-3 3-.4-2.1-.9-2.6-3-3 2.1-.4 2.6-.9 3-3Z'
+};
+function drawLogoOnCanvas(ctx, cx, cy, size){
+  if(typeof Path2D !== 'function') return;   /* 아주 옛 브라우저면 로고만 빠지고 카드는 나온다 */
+  var sc = size/48;
+  ctx.save();
+  ctx.translate(cx - size/2, cy - size/2); ctx.scale(sc, sc);
+  ctx.strokeStyle = CARD_SEAL; ctx.lineWidth = 3.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.stroke(new Path2D(LOGO_PATH.heart));
+  ctx.stroke(new Path2D(LOGO_PATH.check));
+  ctx.fillStyle = CARD_SEAL; ctx.fill(new Path2D(LOGO_PATH.spark));
+  ctx.restore();
+}
 function drawShareCard(canvas, kind, profile, data){
   var ctx=canvas.getContext('2d');
   var w=canvas.width, h=canvas.height;
@@ -22910,23 +22927,14 @@ function drawShareCard(canvas, kind, profile, data){
   ctx.strokeStyle=CARD_INK; ctx.lineWidth=3; ctx.strokeRect(18,18,w-36,h-36);
   ctx.strokeStyle=CARD_LINE; ctx.lineWidth=1; ctx.strokeRect(30,30,w-60,h-60);
 
-  ctx.beginPath(); ctx.arc(w-90,90,42,0,Math.PI*2); ctx.strokeStyle=CARD_SEAL; ctx.lineWidth=3; ctx.stroke();
-  ctx.fillStyle=CARD_SEAL; ctx.font='700 26px '+CARD_SERIF; ctx.textAlign='center'; ctx.textBaseline='middle';
-  /* R36 — 인장 글자 자리에 로고 하트를 그린다. Canvas라 SVG를 쓸 수 없어 경로로 직접 그린다. */
-  (function drawLogoMark(cx, cy, sc){
-    ctx.save();
-    ctx.translate(cx, cy); ctx.scale(sc, sc);
-    ctx.strokeStyle = CARD_SEAL; ctx.lineWidth = 3.4; ctx.lineCap='round'; ctx.lineJoin='round';
-    ctx.beginPath();
-    ctx.moveTo(0, 16.5);
-    ctx.bezierCurveTo(-17.5, 6.2, -17.5, -5.2, -8.5, -9.5);
-    ctx.bezierCurveTo(-3.5, -11.5, 0, -8, 0, -8);
-    ctx.bezierCurveTo(0, -8, 3.5, -11.5, 8.5, -9.5);
-    ctx.bezierCurveTo(17.5, -5.2, 15.5, 4.5, 10.5, 10);
-    ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-7.5, -0.5); ctx.lineTo(-2, 5); ctx.lineTo(8.5, -5.5); ctx.stroke();
-    ctx.restore();
-  })(w-84, 78, 1.15);
+  /* ★ 2026-09-07 대표님 지시 — 카드 로고를 앱 로고와 똑같이 맞춘다.
+     이 자리는 원래 낙관(붉은 동그라미)이었고 안에 '緣' 한 글자를 찍었다. R36에서 글자를
+     로고 하트로 바꾸면서 **동그라미만 그대로 남아** "로고를 동그라미가 감싼" 모양이 됐는데,
+     그건 앱 어디에도 없는 모양이었다. 게다가 진짜 로고에 있는 **반짝이가 빠져** 있었다.
+     ★ 이제 헤더 SVG와 **같은 path 문자열**을 Path2D로 그린다. 손으로 옮겨 그리지 않으므로,
+       로고를 바꾸면 아래 세 줄에 새 path만 붙여 넣으면 카드도 같이 바뀐다.
+       (헤더는 fortune.html 위쪽 `.brand-seal` 안의 <svg viewBox="0 0 48 48">다 — 한 쌍이다.) */
+  drawLogoOnCanvas(ctx, w-84, 86, 62);
 
   ctx.fillStyle=CARD_ACC; ctx.font='700 30px '+CARD_SANS; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
   ctx.fillText(COMPANY.serviceName, 50, 100);
