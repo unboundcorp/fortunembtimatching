@@ -249,8 +249,13 @@ async function saveAnswer(res, body) {
     return json(res, 400, { error: 'bad_request', reason: 'id가 필요해요.' });
   }
   const reply = String(body.reply == null ? '' : body.reply).trim().slice(0, MAX_REPLY);
-  const status = STATUS[body.status] ? String(body.status)
+  let status = STATUS[body.status] ? String(body.status)
     : (reply ? 'answered' : 'received');
+  /* ★ 답이 달렸는데 상태가 '접수됨'이면 '답변 완료'로 올린다 (2026-09-08 실측으로 발견).
+     시트에서 [답변] 칸만 적으시면 [상태] 칸은 아직 '접수됨'이라 그 값이 그대로 넘어온다.
+     그러면 손님 화면에 답은 보이는데 딱지는 '접수됨'이라 어긋난다 — 실제로 그렇게 나왔다.
+     '확인 중'·'처리 완료'는 운영자가 일부러 고르신 값이므로 건드리지 않는다. */
+  if (reply && status === 'received') status = 'answered';
 
   const patch = { status, reply: reply || null };
   /* 답이 처음 달린 시각만 남긴다. 오타를 고치실 때마다 시각이 밀리면
