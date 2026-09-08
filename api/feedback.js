@@ -458,7 +458,9 @@ export default async function handler(req, res) {
     if (sheetErr) console.error('개선 의견 시트 적재 실패', sheetErr);
 
     /* 텔레그램 알림. 실패해도 손님에게는 접수 성공이라 답한다(실제로 접수됐다).
-       ★ 이것이 지금 대표님이 새 문의를 아는 유일한 길이다(시트 알림 규칙은 스크립트 변경을 못 본다). */
+       ★ 시트 알림 규칙(구글)이 켜져 있으면 그쪽으로도 알림이 온다. 다만 시트 줄은 Apps Script가
+         넣는 것이라 구글 규칙이 안 볼 수 있다 — 문서 기준이고 실측 전이다(2026-09-08 확인 중).
+         이 통로는 그것과 무관하게 도는 길이다. */
     const tgErr = await sendToTelegram({
       id: row && row.id, body: text, contact: contact || null, kind, screen, orderId: orderId || null,
     });

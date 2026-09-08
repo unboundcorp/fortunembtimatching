@@ -32,6 +32,12 @@
  *      (시트가 저절로 부르는 onEdit 은 바깥으로 인터넷 요청을 못 보냅니다)
  *
  * 5) 한 번 실행해서 권한을 허용합니다: 함수 목록에서 setupSheet 골라 [실행]
+ *
+ * 6) (새 문의 메일 알림) 스크립트 속성에 NOTIFY_EMAIL 을 넣으면 그 주소로 갑니다.
+ *    안 넣으면 이 스크립트를 만든 계정으로 갑니다. 여러 명이면 쉼표로 이어 적으십시오.
+ *    ★ 코드를 고친 뒤에는 [배포] → [배포 관리] → 연필 → 버전 '새 버전' → [배포]까지
+ *      해야 실제로 바뀝니다. 저장만 하면 웹앱은 예전 코드 그대로 돕니다.
+ *    ★ 메일 권한을 새로 묻습니다 — 한 번 허용해 주셔야 보내집니다.
  * =====================================================================
  */
 
@@ -111,6 +117,10 @@ function doPost(e) {
     put('상태', '접수됨');
     put('답변', '');
 
+    /* ★ 메일로 알린다. 실패해도 접수는 이미 끝났으므로 삼킨다 —
+       여기서 던지면 시트에 줄은 들어갔는데 서버는 실패로 알게 된다. */
+    try { notifyNewInquiry_(d); } catch (e2) { console.error('새 문의 메일 실패: ' + e2); }
+
     return ok_({ ok: true, row: r });
   } catch (err) {
     return ok_({ ok: false, error: String(err) });
@@ -179,6 +189,38 @@ function pushRow_(sh, row, col) {
     sh.getRange(row, col['상태']).setValue('답변 완료');
   }
   return { ok: true, msg: body };
+}
+
+/* ── 새 문의가 들어오면 메일로 알린다 (2026-09-08) ────────────────────
+   왜 여기서 보내나: 구글 시트의 [알림 규칙]은 **사람이 손으로 고친 것**만 봅니다.
+   이 줄은 스크립트가 넣는 것이라 규칙이 안 울릴 수 있습니다. 이 함수는 줄을 넣는
+   바로 그 자리에서 보내므로 그 제약을 안 탑니다.
+
+   받는 사람: 스크립트 속성 NOTIFY_EMAIL 에 적힌 주소. 안 적으면 이 스크립트를
+   만든 계정으로 갑니다. 여러 명이면 쉼표로 이어 적으십시오.
+   ★ 문의에는 손님 연락처가 실립니다. 받는 사람을 늘릴 때 그 점을 보십시오. */
+function notifyNewInquiry_(d) {
+  var to = PropertiesService.getScriptProperties().getProperty('NOTIFY_EMAIL');
+  if (!to) to = Session.getEffectiveUser().getEmail();
+  if (!to) return;
+
+  var id = d.id || '?';
+  var kind = d.kind || '적지 않음';
+  var subject = '[인연점] 새 문의 ' + id + '번 · ' + kind;
+
+  var lines = [
+    '접수번호 : ' + id,
+    '갈래     : ' + kind,
+    '화면     : ' + (d.screen || '적지 않음'),
+    '주문번호 : ' + (d.orderId || '없음'),
+    '연락처   : ' + (d.contact || '안 적으심'),
+    '',
+    String(d.body || '').slice(0, 1500),
+    '',
+    '답하기 → ' + APP_BASE + '/fortune.html#admin',
+    '시트   → ' + SpreadsheetApp.getActiveSpreadsheet().getUrl(),
+  ];
+  MailApp.sendEmail(to, subject, lines.join('\n'));
 }
 
 function ok_(obj) {
