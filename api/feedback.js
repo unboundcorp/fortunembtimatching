@@ -147,6 +147,49 @@ async function sendToSheet({ id, body, contact, kind, screen, createdAt, session
   }
 }
 
+/* =====================================================================
+   텔레그램으로 새 문의를 알린다 (2026-09-08)
+   ---------------------------------------------------------------------
+   왜 붙였나: 문의가 들어와도 **아무도 몰랐다.** 관리자 페이지를 직접 열어야 알 수 있었고,
+   약관은 "3영업일 이내 처리"라고 적고 있다. 미리 안 알린 조건은 분쟁거리가 된다.
+   ★ 구글 시트의 [알림 규칙]은 이 경우 **안 됩니다** — 시트 줄을 Apps Script가 넣기 때문입니다.
+     구글 알림 규칙은 사람이 손으로 고친 것만 봅니다(스크립트·API 변경은 안 봅니다).
+   ★ 대표님은 텔레그램으로 서비스를 보십니다. 그래서 그쪽으로 보냅니다.
+   ★ 환경변수 둘을 넣어야 켜집니다 — 없으면 조용히 넘어갑니다(메일·시트와 같은 방식).
+       TELEGRAM_BOT_TOKEN · TELEGRAM_CHAT_ID
+   ★ 절대 던지지 않는다 — 이 함수의 실패가 접수를 무르게 하면 안 된다.
+   ★ 본문은 그대로 넣되 길면 자른다. 연락처는 넣는다(답을 드리려면 필요하다).
+===================================================================== */
+async function sendToTelegram({ id, body, contact, kind, screen, orderId }) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return null;
+  const lines = [
+    `📮 새 문의 ${id ? id + '번' : ''}`,
+    `갈래: ${KINDS[kind] || '적지 않음'}`,
+    screen ? `화면: ${screen}` : null,
+    orderId ? `주문번호: ${orderId}` : null,
+    contact ? `연락처: ${contact}` : '연락처: 안 적으심',
+    '',
+    String(body || '').slice(0, 900),
+    '',
+    '답하기 → www.inyeonjeom.kr/fortune.html#admin',
+  ].filter(Boolean);
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: lines.join('\n'), disable_web_page_preview: true }),
+    });
+    if (!res.ok) return `HTTP ${res.status} ${(await res.text().catch(() => '')).slice(0, 160)}`;
+    const j = await res.json().catch(() => null);
+    if (!j || j.ok !== true) return `응답이 이상함: ${JSON.stringify(j).slice(0, 160)}`;
+    return null;
+  } catch (err) {
+    return String((err && err.message) || err).slice(0, 160);
+  }
+}
+
 /* 메일 한 통. 성공하면 null, 실패하면 사람이 읽을 이유를 돌려준다.
    ★ 절대 던지지 않는다 — 이 함수의 실패가 접수를 무르게 하면 안 된다. */
 async function sendMail({ body, contact, kind, screen, createdAt }) {
@@ -413,6 +456,13 @@ export default async function handler(req, res) {
       } catch (e) { console.error('시트 적재 표시 실패', e && e.message); }
     }
     if (sheetErr) console.error('개선 의견 시트 적재 실패', sheetErr);
+
+    /* 텔레그램 알림. 실패해도 손님에게는 접수 성공이라 답한다(실제로 접수됐다).
+       ★ 이것이 지금 대표님이 새 문의를 아는 유일한 길이다(시트 알림 규칙은 스크립트 변경을 못 본다). */
+    const tgErr = await sendToTelegram({
+      id: row && row.id, body: text, contact: contact || null, kind, screen, orderId: orderId || null,
+    });
+    if (tgErr) console.error('새 문의 텔레그램 알림 실패', tgErr);
 
     /* 메일은 그 다음. 실패해도 손님에게는 접수 성공이라 답한다(실제로 접수됐다). */
     const mailErr = await sendMail({
