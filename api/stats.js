@@ -120,6 +120,51 @@ export default async function handler(req, res) {
       });
     }
 
+    /* ── 이 문의를 보낸 분의 주문 목록 (2026-09-08 대표님 지시) ────────
+       ---------------------------------------------------------------
+       왜 만들었나: 환불 문의에서 주문번호는 "모르시면 비워두세요"인데, 비워 두시면
+       운영자가 그 손님의 결제를 짚을 길이 「최근 주문」 40건을 눈으로 훑는 것뿐이었다.
+       문의 줄에는 이미 session_id 와 (로그인하셨으면) kakao_id 가 들어 있으므로
+       그걸로 바로 찾아 준다.
+       ★ 카카오는 표에 세션이 한 줄만 남는다(가장 최근). 그래서 문의의 세션과
+         카카오가 가리키는 세션 **둘 다** 본다 — 기기를 바꾸셨으면 서로 다르다. */
+    if (body.action === 'customerOrders') {
+      const fid = Number(body.feedbackId);
+      if (!fid || !Number.isFinite(fid)) {
+        return json(res, 400, { error: 'bad_request', reason: '문의 번호가 필요해요.' });
+      }
+      const fs = await rest(`feedback?id=eq.${fid}&select=session_id,kakao_id&limit=1`);
+      const f = fs && fs[0] ? fs[0] : null;
+      if (!f) return json(res, 200, { found: false, reason: '그 번호의 문의가 없어요.' });
+
+      const ids = [];
+      if (f.session_id) ids.push(String(f.session_id));
+      if (f.kakao_id) {
+        try {
+          const link = await rest(
+            `kakao_links?kakao_id=eq.${encodeURIComponent(f.kakao_id)}&select=session_id&limit=1`
+          );
+          const sid2 = link && link[0] ? link[0].session_id : null;
+          if (sid2 && ids.indexOf(String(sid2)) < 0) ids.push(String(sid2));
+        } catch (e) { console.warn('카카오 세션 조회 실패', e && e.message); }
+      }
+      if (!ids.length) return json(res, 200, { found: true, hasKakao: false, orders: [] });
+
+      const inList = ids.map((v) => '"' + v.replace(/"/g, '') + '"').join(',');
+      const rows = await rest(
+        `orders?session_id=in.(${encodeURIComponent(inList)})&select=*&order=created_at.desc&limit=30`
+      );
+      return json(res, 200, {
+        found: true,
+        hasKakao: !!f.kakao_id,
+        orders: (rows || []).map((o) => {
+          const p = productOf(o.product_id);
+          return { receiptId: o.order_id, name: p ? p.name : o.product_id,
+                   amount: o.amount, status: o.status, at: o.paid_at || o.created_at };
+        }),
+      });
+    }
+
     /* ── 전체 현황 ──────────────────────────────────────────────── */
     /* ★ 2026-08-24 대표님 지시("운영자화면에 붙일 건 다 붙이고") — 카카오 로그인·이어보기·문의도 함께 센다.
        이 셋은 이미 표에 쌓여 있는데 현황판에 안 나와서, 대표님이 상태를 알려면 저에게 물어봐야 했다.
