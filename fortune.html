@@ -8815,7 +8815,7 @@ function loadMyTickets(force){
 function renderSupportMine(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view'});
-  view.appendChild(pageHead('내 문의 내역', '접수하신 것이 어떻게 되고 있는지'));
+  view.appendChild(pageHead('문의하기', '내 문의 내역'));
 
   if(SUPPORT_MINE.state === 'idle') loadMyTickets(false);
 
