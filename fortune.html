@@ -22187,9 +22187,11 @@ function renderGroupCompat(){
            캐시 열쇠에 사이가 들어 있어 새 사이는 캐시에 없고, 새로 만들려면 횟수가 필요하기 때문이다.
            처음 문구("새 점수와 어긋날 수 있어요")는 이 사실을 안 말하고 있었다 — 안 밝히면
            돈을 내고도 못 여는 상태에 스스로 들어가게 된다. 되돌리는 길까지 함께 적는다. */
-        confirmModal('사이를 바꾸면 점수를 다시 계산하고, 유료 풀이도 새로 만들어야 해요. '
-          + '횟수를 이미 다 쓰셨으면 한 쌍을 더 여셔야 새 사이의 풀이가 나와요('+formatWon(PRODUCTS.compat_full.price)+'). '
-          + '원래 사이로 되돌리시면 먼저 만든 풀이는 그대로, 돈 들이지 않고 다시 보실 수 있어요. 바꿀까요?',
+        confirmModal([
+          '사이를 바꾸면 점수를 다시 계산해요. 바꿀까요?',
+          '이미 만드신 유료 풀이는 없어지지 않아요. 원래 사이로 되돌리시면 그대로 다시 보여요.',
+          '새 사이의 유료 풀이는 새로 만들어야 해요. 만들 횟수가 남아 있지 않으면 한 쌍을 더 여셔야 나와요('+formatWon(PRODUCTS.compat_full.price)+').'
+        ],
           function(){ GC_RELATION_SET=false; GC_SEL=null;
             GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); window.scrollTo(0,0); },
           '바꾸기');
@@ -23351,8 +23353,22 @@ function openMbtiReportDetailModal(m){
 }
 /* yesLabel을 받지 않으면 예전과 똑같이 '삭제'다(기존 호출부는 전부 삭제·초기화 확인이라 그대로 둔다).
    R20에서 "저장 안 하고 나가기" 확인이 생기면서, 버튼에 '삭제'라고 적혀 있으면 안 되는 자리가 생겼다. */
+/* ★ 2026-09-08 대표님 지적 — "먼 말인지 모르겠다."
+   긴 사정을 한 문단에 몰아넣으면 읽히지 않는다. 배열을 주면 첫 줄은 문장으로,
+   나머지는 목록으로 그린다. 글자를 줄이는 것이 아니라 **덩이로 끊는** 것이다. */
 function confirmModal(msg, onYes, yesLabel){
-  var body=el('p',{},[msg]);
+  var body;
+  if(Array.isArray(msg)){
+    body = el('div',{});
+    body.appendChild(el('p',{},[msg[0]]));
+    if(msg.length > 1){
+      var ul = el('ul',{class:'reason-list', style:'margin-top:10px;'});
+      msg.slice(1).forEach(function(t){ ul.appendChild(el('li',{},[t])); });
+      body.appendChild(ul);
+    }
+  } else {
+    body = el('p',{},[msg]);
+  }
   openModal('확인', body, [
     {label:'취소', cls:'btn-ghost', onclick:closeModal},
     {label: yesLabel || '삭제', cls:'btn-primary', onclick:function(){ closeModal(); onYes(); }}
@@ -24960,6 +24976,7 @@ try{
       buildSajuCompat: buildSajuCompat, zodiacScore: zodiacScore, elementScore: elementScore,
       compatSameness: compatSameness, compatNickname: compatNickname,
       compatTierLine: compatTierLine, personNickname: personNickname,
+      confirmModal: confirmModal, closeModal: closeModal,
       computeCompat: computeCompat,
       productDef: productDef, splitProductId: splitProductId, productIdFor: productIdFor,
       getSajuResult: getSajuResult, charKeyForMbti: charKeyForMbti, charImgId: charImgId
