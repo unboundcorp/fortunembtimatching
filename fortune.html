@@ -6040,8 +6040,15 @@ function kakaoRefresh(){
    ★ 이용권은 보내지도, 받지도 않는다. 권한의 근거는 서버의 주문 기록뿐이다.
 ===================================================================== */
 var SYNC = { on:false, busy:false, err:null, at:null, pulled:false };
+/* ★ 2026-09-08 대표님 지시 — "그룹 목록도 카카오 계정에 실어 보내고, 그 그룹에 속한
+   모든 사람들 카카오 계정에도 보내야 된다."
+   savedGroups를 넣었다. 각자의 브라우저에 이미 자기 몫의 줄이 쌓이므로(링크로 들어간
+   분에게도 rememberGroup이 불린다), 각자 로그인하면 자기 카카오 계정으로 따라간다.
+   ★ 이걸 넣기 전에는 모임만 카카오를 안 따라가서, 다른 기기에서 관리하려면 PIN이
+     유일한 열쇠였다. 결제·프로필·기록은 따라가는데 모임만 안 따라가는 상태였다. */
 var SYNC_KEYS = ['profiles','activeId','onboarded','mode',
-                 'fortuneHistory','compatHistory','sajuHistory','mbtiReportHistory','receiptMemos'];
+                 'fortuneHistory','compatHistory','sajuHistory','mbtiReportHistory','receiptMemos',
+                 'savedGroups'];
 var SYNC_LISTS = ['profiles','fortuneHistory','compatHistory','sajuHistory','mbtiReportHistory'];
 function syncPayload(){
   var out = {};
@@ -6084,6 +6091,36 @@ function syncMergeMemos(local, remote){
   if(out.length > RECEIPT_MEMO_MAX) out.length = RECEIPT_MEMO_MAX;
   return out;
 }
+/* 모임 목록 병합 (2026-09-08).
+   ★ 보통 목록처럼 id로만 견주면 안 된다. 같은 모임인데 기기마다 아는 것이 다르다 —
+     만든 기기에는 관리 열쇠(token)가 있고, 링크로 들어간 기기에는 없다. 사이(rel)나
+     인원(n)도 한쪽에만 있을 수 있다. 그래서 **빈 칸만 상대에게서 채운다.**
+     이 기기에 이미 있는 값은 절대 덮어쓰지 않는다(이름을 여기서 바꾸셨을 수 있다). */
+function syncMergeGroups(local, remote){
+  var out = [], by = {};
+  (local||[]).forEach(function(x){
+    if(!x || !x.id || by[x.id]) return;
+    var c = {id:x.id, name:x.name, at:x.at, token:x.token||null, n:x.n||null, rel:x.rel||null};
+    by[x.id] = c; out.push(c);
+  });
+  (remote||[]).forEach(function(x){
+    if(!x || !x.id) return;
+    var c = by[x.id];
+    if(!c){
+      c = {id:x.id, name:x.name, at:x.at, token:x.token||null, n:x.n||null, rel:x.rel||null};
+      by[x.id] = c; out.push(c);
+      return;
+    }
+    if(!c.token && x.token) c.token = x.token;
+    if(!c.rel   && x.rel)   c.rel   = x.rel;
+    if(!c.n     && x.n)     c.n     = x.n;
+    if(!c.name  && x.name)  c.name  = x.name;
+    if(!c.at    && x.at)    c.at    = x.at;
+  });
+  out.sort(function(a,b){ return (b.at||0) - (a.at||0); });
+  if(out.length > 20) out.length = 20;
+  return out;
+}
 function syncMerge(remote){
   if(!remote || typeof remote !== 'object') return false;
   var changed = false;
@@ -6094,6 +6131,10 @@ function syncMerge(remote){
   });
   var memos = syncMergeMemos(STATE.receiptMemos, remote.receiptMemos);
   if(memos.length !== (STATE.receiptMemos||[]).length){ STATE.receiptMemos = memos; changed = true; }
+  /* ★ 모임은 SYNC_LISTS에 넣지 않는다 — 그 병합은 줄 개수만 보고 빈 칸을 채우지 못한다.
+     열쇠(token)가 상대 쪽에만 있는 경우가 정확히 그 경우다. */
+  var gs = syncMergeGroups(STATE.savedGroups, remote.savedGroups);
+  if(JSON.stringify(gs) !== JSON.stringify(STATE.savedGroups||[])){ STATE.savedGroups = gs; changed = true; }
   /* 지금 보고 있는 사람은 이 기기 것을 그대로 둔다. 다만 이 기기에 없으면 받아온 것을 쓴다. */
   var haveActive = (STATE.profiles||[]).some(function(p){ return p && p.id === STATE.activeId; });
   if(!haveActive){
@@ -6940,14 +6981,16 @@ function openPayLoginModal(product){
   }
   body.appendChild(el('p',{},['결제 전에 카카오 계정으로 로그인해 주세요.']));
   body.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},[
+    /* ★ 2026-09-08 — "로그인 없이 결제하면 이 브라우저에서만 볼 수 있어요"를 뺐다.
+       이 창은 로그인해야 결제가 되기 때문에 뜨는 창이다. 없는 길을 설명하고 있었다. */
     '로그인하시면 결제하신 것이 카카오 계정에 남아요. 그래서 폰에서 사고 노트북에서 보셔도 되고, ' +
-    '브라우저 기록을 지우셔도 그대로 열립니다. 로그인 없이 결제하면 이 브라우저에서만 볼 수 있어요.'
+    '브라우저 기록을 지우셔도 그대로 열립니다.'
   ]));
   body.appendChild(el('p',{class:'biz-hint'},[
     '카카오에서 받는 것은 회원번호 하나뿐입니다. 이름·이메일·전화번호는 받지 않습니다.'
   ]));
   openModal('카카오 로그인이 필요해요', body, [
-    {label:'카카오로 로그인', cls:'btn-primary', onclick:function(){ kakaoStart(product && product.id); }},
+    {label:'카카오 계정으로 로그인', cls:'btn-primary', onclick:function(){ kakaoStart(product && product.id); }},
     {label:'닫기', cls:'btn-ghost', onclick:closeModal}
   ], {overlay:true});
 }
@@ -7891,7 +7934,7 @@ function openPrivacyModal(){
     '그룹을 쓰실 때 — 그룹 이름, 관리용 PIN(설정하신 경우).',
     '결제하실 때 — 주문·결제 기록. 카드번호 등 결제수단 정보는 결제대행사가 직접 처리하며 회사는 받지도, 보관하지도 않습니다. 휴대폰 번호는 수집하지 않습니다.',
     '"카카오 로그인"을 하신 경우 (무료 이용에는 필요하지 않으며, 유료 결제 시에는 필요합니다) — 카카오 회원번호. 여러 기기에서 같은 내용을 보시고, 결제하신 이용권을 되찾는 데에 씁니다. 카카오 로그인으로 이름·이메일·전화번호·프로필 사진은 받지 않으며, 이 번호는 회사 서비스 전용 식별자라 그 값만으로는 개인을 알아볼 수 없습니다.',
-    '카카오로 로그인하신 경우 함께 저장되는 것 — 프로필(닉네임·생년월일·태어난 시각·출생지·성별·성격유형)과 서비스 안에 쌓인 기록(오늘의 운세·궁합·풀이 열람 기록). 다른 기기에서 그대로 보시게 하는 데에만 씁니다. 로그인하지 않으시면 이 항목은 회사 서버로 전송되지 않습니다.',
+    '카카오로 로그인하신 경우 함께 저장되는 것 — 프로필(닉네임·생년월일·태어난 시각·출생지·성별·성격유형), 서비스 안에 쌓인 기록(오늘의 운세·궁합·풀이 열람 기록), 그리고 참여하신 모임 목록(모임 번호·이름·인원·고르신 사이와, 만드신 모임이면 그 모임의 관리 권한 표시). 다른 기기에서 그대로 보시고 관리하시게 하는 데에만 씁니다. 로그인하지 않으시면 이 항목은 회사 서버로 전송되지 않습니다.',
     /* ★ R84 — 개선 의견 창구를 서비스 안에 만들면서 추가한 항목이다(2026-08-14).
        연락처는 답을 받고 싶은 분만 스스로 적는 값이고, 형식도 따지지 않는다.
        받는 것을 만들었으면 여기에도 반드시 적어야 한다 — 화면과 방침이 어긋나면 그게 문제다. */
@@ -8394,9 +8437,12 @@ function renderFeedback(){
   head.appendChild(el('h2',{class:'section-title'},[
     FEEDBACK_FIXED_KIND ? (FEEDBACK_KIND_LABEL[FEEDBACK_FIXED_KIND] || '문의 접수') : '개선 의견'
   ]));
-  head.appendChild(el('p',{class:'section-sub'},[
-    FEEDBACK_FIXED_KIND ? '무엇이 있었는지 적어주세요' : '막히면 여기서 물어보세요 — 빠르게 답을 드려요'
-  ]));
+  /* ★ 2026-09-08 대표님 지시 — 갈래를 정해 들어오신 화면에서는 **소제목을 두지 않는다.**
+     ("무엇이 있었는지 적어주세요 - 이 문장 날려")
+     바로 아래 안내 칸이 무엇을 적으실지 이미 말하고 있어서 같은 말이 두 번이 된다. */
+  if(!FEEDBACK_FIXED_KIND){
+    head.appendChild(el('p',{class:'section-sub'},['막히면 여기서 물어보세요 — 빠르게 답을 드려요']));
+  }
   view.appendChild(head);
 
   /* ── 보냈다 ─────────────────────────────────────────────────────── */
@@ -8670,7 +8716,15 @@ function supportOrdersCard(title, note){
   if(note) card.appendChild(el('p',{class:'biz-hint', style:'margin-bottom:10px;'},[note]));
   var rows = ENT_RECENT || [];
   if(!rows.length){
-    card.appendChild(el('p',{class:'biz-hint'},['이 브라우저에서 만든 주문이 없어요.']));
+    /* ★ 2026-09-08 대표님 지적 — "카카오로 다 맞춰야지 않냐?"
+       이 목록은 브라우저만 보는 것이 아니다. 로그인하셨으면 서버가 카카오 계정에 붙은
+       주문까지 함께 내려준다. 그런데 문구는 늘 "이 브라우저"라고만 말하고 있었다.
+       로그인 여부에 따라 갈라서 말한다 — 안 그러면 로그인한 분에게 거짓말이 된다. */
+    card.appendChild(el('p',{class:'biz-hint'},[
+      (KAKAO && KAKAO.linked)
+        ? '이 카카오 계정으로 결제하신 내역이 없어요.'
+        : '결제하신 내역이 없어요. 다른 기기에서 결제하셨다면, 그때 쓰신 카카오 계정으로 로그인하시면 여기에 나타나요.'
+    ]));
     return card;
   }
   rows.forEach(function(o){
@@ -8742,8 +8796,8 @@ function renderSupportPay(){
   }
   view.appendChild(openCard);
 
-  view.appendChild(supportOrdersCard('이 브라우저에서 만든 주문',
-    '승인까지 못 간 주문도 함께 보여드려요. "승인 전에 멈춤"은 돈이 나가지 않은 상태예요.'));
+  view.appendChild(supportOrdersCard('결제·주문 내역',
+    '카카오 계정으로 로그인하셨으면 다른 기기에서 결제하신 것도 함께 보여드려요. 승인까지 못 간 주문도 나오는데, "승인 전에 멈춤"은 돈이 나가지 않은 상태예요.'));
 
   /* 할 수 있는 것들 */
   var act = el('div',{class:'scroll-card'});
@@ -8801,7 +8855,7 @@ function renderSupportOrders(){
   view.appendChild(c1);
 
   view.appendChild(supportOrdersCard('결제·주문 내역',
-    '영수증 번호는 기기를 바꾸셨을 때 이용권을 되찾는 열쇠예요. 따로 적어 두시면 좋아요.'));
+    '기기를 바꾸셔도 결제하실 때 쓰신 카카오 계정으로 로그인하시면 그대로 열려요. 영수증 번호는 로그인이 어려우실 때 쓰는 두 번째 길이에요.'));
 
   var act = el('div',{class:'scroll-card'});
   act.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:8px;', onclick:function(){
@@ -21267,7 +21321,9 @@ function rememberGroup(id, name, token, count, rel){
   var list = savedGroups().filter(function(x){ return x && x.id !== id; });
   var keepRel = (rel && relationOf(rel).key === rel) ? rel : ((prev && prev.rel) || null);
   /* ★ R39 — 소유자 토큰을 함께 기억한다. 이 기기에서는 PIN 없이 그룹을 고치고 지울 수 있다.
-     토큰은 이 기기 밖으로 나가지 않는다(링크에도, 화면에도 넣지 않는다).
+     ★ 2026-09-08 — 토큰은 **링크에도 화면에도** 넣지 않는다. 다만 카카오 계정으로
+       로그인하신 경우에는 그 계정 서랍(user_sync)에 함께 올라간다 — 다른 기기에서도
+       PIN 없이 관리하시게 하려는 것이다. 그 서랍은 본인 카카오로만 열린다.
      ★ R68 — 인원 수도 함께 기억한다. 목록에서 열어보기 전에는 몇 명이 들어왔는지
        알 수 없었다(대표님 지적). 서버에 다시 묻지 않고 보여주려면 여기 적어 두어야 한다. */
   list.unshift({id:id, name:(name||'').slice(0,40), at:Date.now(),
@@ -22861,12 +22917,20 @@ function showInviteModal(profile, link, live, ttlHours, relationKey){
        기기를 잃고 나서야 알게 된다. 링크를 만든 바로 이 자리에서 한 번 권한다.
        만들 때 PIN을 꼭 받지는 않는다 — 링크 하나 뽑자고 비밀번호부터 정하라고 하면
        정작 링크를 안 보내게 된다(R39에서 그래서 선택으로 바꿨다). */
-    body.appendChild(el('button',{class:'invite-pin', type:'button',
-      /* ★ closeModal()을 먼저 부르면 안 된다. 그건 '사람이 닫은 것'으로 보고 방문 기록을
-         한 칸 되돌리는데(R59), 그 되돌림이 한 박자 뒤에 도착해 방금 연 그룹 관리 창을
-         닫아 버린다. openModal이 어차피 자리를 비우므로 그냥 열면 된다. */
-      onclick:function(){ openGroupManageModal(); }},
-      ['다른 기기에서도 관리하려면 PIN 정하기 (선택)']));
+    /* ★ 2026-09-08 — 카카오 계정으로 로그인하셨으면 모임 목록이 그 계정을 따라가므로
+       (SYNC_KEYS에 savedGroups가 들어갔다) 다른 기기에서도 PIN 없이 관리하신다.
+       그때는 PIN을 권하지 않는다 — 필요 없는 것을 정하라고 하면 그 자체가 걸림돌이다. */
+    if(KAKAO && KAKAO.linked){
+      body.appendChild(el('p',{class:'biz-hint'},
+        ['카카오 계정으로 로그인하셔서, 다른 기기에서도 이 모임이 그대로 보이고 관리하실 수 있어요.']));
+    } else {
+      body.appendChild(el('button',{class:'invite-pin', type:'button',
+        /* ★ closeModal()을 먼저 부르면 안 된다. 그건 '사람이 닫은 것'으로 보고 방문 기록을
+           한 칸 되돌리는데(R59), 그 되돌림이 한 박자 뒤에 도착해 방금 연 그룹 관리 창을
+           닫아 버린다. openModal이 어차피 자리를 비우므로 그냥 열면 된다. */
+        onclick:function(){ openGroupManageModal(); }},
+        ['다른 기기에서도 관리하려면 PIN 정하기 (선택)']));
+    }
   } else {
     body.appendChild(el('p',{},['이 링크를 열면 '+profile.name+'님과의 궁합 결과가 상대방 화면에 나와요. 상대방이 이 서비스를 처음 쓰는 경우에는 자기 프로필을 먼저 만들고, 그다음 결과로 이어져요.']));
     body.appendChild(el('p',{class:'biz-hint'},[
