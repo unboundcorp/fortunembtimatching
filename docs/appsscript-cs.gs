@@ -33,8 +33,11 @@
  *
  * 5) 한 번 실행해서 권한을 허용합니다: 함수 목록에서 setupSheet 골라 [실행]
  *
- * 6) (새 문의 메일 알림) 스크립트 속성에 NOTIFY_EMAIL 을 넣으면 그 주소로 갑니다.
- *    안 넣으면 이 스크립트를 만든 계정으로 갑니다. 여러 명이면 쉼표로 이어 적으십시오.
+ * 6) (새 문의 메일 알림) 스크립트 속성에 NOTIFY_EMAIL 을 **반드시** 넣으십시오.
+ *    받으실 메일 주소입니다. 여러 명이면 쉼표로 이어 적습니다.
+ *    ★ 안 넣으면 메일을 아예 안 보냅니다(어디로 보낼지 모르므로).
+ *      '만든 사람에게 자동으로'는 일부러 안 씁니다 — Session.getEffectiveUser() 가
+ *      권한을 하나 더 요구해서 그대로 터집니다(2026-09-08 실측).
  *    ★ 코드를 고친 뒤에는 [배포] → [배포 관리] → 연필 → 버전 '새 버전' → [배포]까지
  *      해야 실제로 바뀝니다. 저장만 하면 웹앱은 예전 코드 그대로 돕니다.
  *    ★ 메일 권한을 새로 묻습니다 — 한 번 허용해 주셔야 보내집니다.
@@ -196,13 +199,16 @@ function pushRow_(sh, row, col) {
    이 줄은 스크립트가 넣는 것이라 규칙이 안 울릴 수 있습니다. 이 함수는 줄을 넣는
    바로 그 자리에서 보내므로 그 제약을 안 탑니다.
 
-   받는 사람: 스크립트 속성 NOTIFY_EMAIL 에 적힌 주소. 안 적으면 이 스크립트를
-   만든 계정으로 갑니다. 여러 명이면 쉼표로 이어 적으십시오.
+   받는 사람: 스크립트 속성 NOTIFY_EMAIL 에 적힌 주소. 여러 명이면 쉼표로 이어 적습니다.
+   안 적혀 있으면 안 보냅니다.
    ★ 문의에는 손님 연락처가 실립니다. 받는 사람을 늘릴 때 그 점을 보십시오. */
 function notifyNewInquiry_(d) {
+  /* ★ Session.getEffectiveUser() 를 쓰지 않는다 (2026-09-08 실측).
+     그 함수는 userinfo.email 권한을 새로 요구해서 "You do not have permission to call
+     Session.getEffectiveUser" 로 터진다. 받는 주소는 스크립트 속성에 적어 두는 편이
+     권한도 덜 쓰고 어디로 가는지도 분명하다. */
   var to = PropertiesService.getScriptProperties().getProperty('NOTIFY_EMAIL');
-  if (!to) to = Session.getEffectiveUser().getEmail();
-  if (!to) return;
+  if (!to) { console.error('NOTIFY_EMAIL 스크립트 속성이 없습니다 — 메일을 안 보냅니다.'); return; }
 
   var id = d.id || '?';
   var kind = d.kind || '적지 않음';
@@ -232,9 +238,7 @@ function testMail() {
     id: '시험', kind: '시험 발송', screen: '편집기',
     contact: '', orderId: '', body: '메일이 이 주소로 오면 알림 설정이 끝난 것입니다.',
   });
-  var to = PropertiesService.getScriptProperties().getProperty('NOTIFY_EMAIL')
-        || Session.getEffectiveUser().getEmail();
-  Logger.log('보낸 주소: ' + to);
+  Logger.log('보낸 주소: ' + PropertiesService.getScriptProperties().getProperty('NOTIFY_EMAIL'));
   Logger.log('오늘 남은 발송 가능 수: ' + MailApp.getRemainingDailyQuota());
 }
 
