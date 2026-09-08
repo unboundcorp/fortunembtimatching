@@ -223,6 +223,21 @@ function notifyNewInquiry_(d) {
   MailApp.sendEmail(to, subject, lines.join('\n'));
 }
 
+/* 메일이 되는지 편집기에서 바로 확인하는 길 (2026-09-08).
+   ★ 편집기의 [실행]은 **저장된 코드**로 돕니다. 웹앱 배포와 무관합니다.
+     그래서 이 함수가 성공하는데 실제 문의에는 메일이 안 오면,
+     원인은 코드가 아니라 **[배포 관리] → 새 버전**을 안 한 것입니다. */
+function testMail() {
+  notifyNewInquiry_({
+    id: '시험', kind: '시험 발송', screen: '편집기',
+    contact: '', orderId: '', body: '메일이 이 주소로 오면 알림 설정이 끝난 것입니다.',
+  });
+  var to = PropertiesService.getScriptProperties().getProperty('NOTIFY_EMAIL')
+        || Session.getEffectiveUser().getEmail();
+  Logger.log('보낸 주소: ' + to);
+  Logger.log('오늘 남은 발송 가능 수: ' + MailApp.getRemainingDailyQuota());
+}
+
 function ok_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
