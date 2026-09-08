@@ -20,7 +20,24 @@ const merge = new Function('return (' + s.slice(i, j) + ')')();
 
 R.head('── 모임 목록 병합');
 R.note(/'savedGroups'/.test(s.slice(s.indexOf('var SYNC_KEYS'), s.indexOf('var SYNC_LISTS'))),
-  'savedGroups 가 카카오 동기화 목록에 있다');
+  'savedGroups 가 화면 동기화 목록에 있다');
+
+/* ★ 화면 SYNC_KEYS와 서버 ALLOWED는 한 쌍이다. 화면에만 늘리면 서버가 조용히 버린다 —
+   2026-09-08에 실제로 그렇게 됐다(savedGroups가 user_sync에 아예 안 올라갔다).
+   그때는 화면만 보고 "됐다"고 할 뻔했다. 두 목록을 기계로 대조한다. */
+const api = fs.readFileSync(path.join(ROOT, 'api', 'sync.js'), 'utf8');
+const grab = (src, from, to) => {
+  const a = src.indexOf(from); if (a < 0) return [];
+  const b = src.indexOf(to, a);
+  return (src.slice(a, b).match(/'([A-Za-z0-9_]+)'/g) || []).map((x) => x.replace(/'/g, ''));
+};
+const clientKeys = grab(s, 'var SYNC_KEYS', '];');
+const serverKeys = grab(api, 'const ALLOWED', '];');
+const missing = clientKeys.filter((k) => serverKeys.indexOf(k) < 0);
+R.note(clientKeys.length > 0 && serverKeys.length > 0, '두 목록을 다 찾았다',
+  '화면 ' + clientKeys.length + '칸 · 서버 ' + serverKeys.length + '칸');
+R.note(missing.length === 0, '화면이 보내는 칸을 서버가 다 받는다',
+  missing.length ? ('서버가 버리는 칸: ' + missing.join(', ')) : '버리는 칸 없음');
 
 let r = merge([{ id: 'g1', name: '회사 모임', at: 200, token: null, n: 3, rel: null }],
               [{ id: 'g1', name: '회사', at: 100, token: 'TOK', n: null, rel: 'coworker' }]);

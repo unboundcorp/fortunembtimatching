@@ -20,10 +20,16 @@ const MAX_BYTES = 512 * 1024;
 
 /* 담아도 되는 칸만 옮겨 적는다. 브라우저가 무엇을 보내든 이 목록 밖은 버린다.
    ★ entitlements·billingConfig·interpreterConfig는 일부러 뺐다. 권한과 설정은 서버 것이다. */
+/* ★ 2026-09-08 — 여기는 화면의 SYNC_KEYS와 **한 쌍**이다. 화면에만 칸을 늘리면
+   여기서 조용히 버려진다. 실제로 savedGroups를 화면에만 넣었다가 서버가 통째로
+   버리는 것을 실측으로 잡았다(user_sync에 savedGroups 칸이 아예 안 생겼다).
+   ★ 칸을 늘릴 때는 화면과 여기를 **함께** 고치십시오.
+     검사기 `checks/group_sync.cjs` 가 두 목록을 대조합니다. */
 const ALLOWED = [
   'profiles', 'activeId', 'onboarded', 'mode',
   'fortuneHistory', 'compatHistory', 'sajuHistory', 'mbtiReportHistory',
   'receiptMemos',
+  'savedGroups',
 ];
 
 function pick(obj) {
