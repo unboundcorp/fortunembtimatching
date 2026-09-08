@@ -147,6 +147,34 @@ async function sendToSheet({ id, body, contact, kind, screen, createdAt, session
   }
 }
 
+/* 관리자 화면에서 단 답을 시트에도 적는다 (2026-09-08 대표님 지시 "모두 동기화 시켜야지").
+   ---------------------------------------------------------------------
+   ★ 왜 필요한가: 답을 저장하는 자리는 DB만 고쳤다. 그래서 관리자 화면으로 답하면
+     시트 [답변] 칸이 영영 비어 있었다 — 시트를 기록으로 보시면 반쪽만 남는다.
+   ★ 되돌아오는 고리를 조심할 것: 시트에서 답한 것(action:'answer')까지 다시 시트로
+     쏘면 시트 → 서버 → 시트 → … 가 된다. 그래서 **관리자 쪽(action:'reply')에서만**
+     부른다. 부르는 자리를 늘릴 때 이 규칙을 깨지 마십시오.
+   ★ 실패해도 삼킨다. 답은 이미 DB에 들어갔고 손님은 그것을 본다 —
+     시트에 못 적었다고 저장을 실패로 돌리면 안 된다. */
+async function sendAnswerToSheet({ id, status, reply }) {
+  const url = process.env.SHEET_WEBHOOK_URL;
+  if (!url || !id) return null;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'answer', id, status: STATUS[status] || '', reply: reply || '' }),
+    });
+    if (!res.ok) return `HTTP ${res.status}`;
+    const t = (await res.text().catch(() => '')).slice(0, 200);
+    if (t.indexOf('"ok":true') < 0) return `응답이 이상함: ${t}`;
+    return null;
+  } catch (err) {
+    return String((err && err.message) || err).slice(0, 200);
+  }
+}
+
 /* =====================================================================
    텔레그램으로 새 문의를 알린다 (2026-09-08)
    ---------------------------------------------------------------------
@@ -243,7 +271,7 @@ async function sendMail({ body, contact, kind, screen, createdAt }) {
    ★ 키를 안 넣어두면 이 기능은 통째로 꺼진 것으로 본다(404). 설정을 덜 한 상태가
      '아무나 통과'로 이어지면 안 된다.
 ===================================================================== */
-async function saveAnswer(res, body) {
+async function saveAnswer(res, body, opts) {
   const id = Number(body.id);
   if (!id || !Number.isFinite(id)) {
     return json(res, 400, { error: 'bad_request', reason: 'id가 필요해요.' });
@@ -270,6 +298,11 @@ async function saveAnswer(res, body) {
     });
     if (!rows || !rows.length) {
       return json(res, 404, { error: 'not_found', reason: '그 번호의 문의가 없어요.' });
+    }
+    /* 관리자 화면에서 단 답이면 시트에도 적어 둔다. 시트에서 온 답은 이미 시트에 있다. */
+    if (opts && opts.toSheet) {
+      const err2 = await sendAnswerToSheet({ id, status, reply });
+      if (err2) console.error('답변 시트 반영 실패', err2);
     }
     return json(res, 200, { ok: true, id, status });
   } catch (err) {
@@ -381,7 +414,7 @@ export default async function handler(req, res) {
     try {
       const grant = await adminAccessOf(sessionId);
       if (!grant) return json(res, 404, { error: 'not_found', reason: '없는 주소예요.' });
-      return saveAnswer(res, body);
+      return saveAnswer(res, body, { toSheet: true });
     } catch (err) {
       console.error('답변 저장 실패', err && err.message);
       return json(res, 500, { error: 'server_error', reason: '지금은 저장할 수 없어요.' });

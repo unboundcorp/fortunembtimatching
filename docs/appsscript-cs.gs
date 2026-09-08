@@ -105,6 +105,10 @@ function doPost(e) {
     var sh = sheet_();
     var col = ensureHeaders_(sh);
 
+    /* ★ 관리자 화면에서 단 답이 넘어온 것이다 — 새 줄을 만들지 말고 그 줄을 고친다
+       (2026-09-08 대표님 지시 "모두 동기화 시켜야지"). */
+    if (d.action === 'answer') return applyAnswer_(sh, col, d);
+
     var r = sh.getLastRow() + 1;
     var put = function (name, value) {
       if (col[name]) sh.getRange(r, col[name]).setValue(value == null ? '' : value);
@@ -131,6 +135,29 @@ function doPost(e) {
 }
 
 /* ── ② 시트 → 앱 : 답변을 적으면 되쏜다 ──────────────────────────── */
+/* 서비스 → 시트 : 관리자 화면에서 단 답을 그 줄에 적는다 (2026-09-08).
+   ★ 접수번호로 줄을 찾는다. 못 찾으면 아무것도 안 한다 — 엉뚱한 줄을 고치는 것보다 낫다.
+   ★ 여기서 칸을 고쳐도 되쏘기(onSheetEdit)는 안 돕니다. 설치형 트리거는 사람이 손으로
+     고친 것에만 걸리고 스크립트가 고친 것에는 안 걸립니다. 서버 쪽도 관리자 답변만
+     시트로 보내므로, 시트 → 서버 → 시트 로 도는 고리는 생기지 않습니다. */
+function applyAnswer_(sh, col, d) {
+  var want = String(d.id == null ? '' : d.id).trim();
+  if (!want || !col['접수번호']) return ok_({ ok: false, error: 'no id' });
+
+  var last = sh.getLastRow();
+  if (last < 2) return ok_({ ok: false, error: 'empty' });
+
+  var ids = sh.getRange(2, col['접수번호'], last - 1, 1).getValues();
+  for (var i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]).trim() !== want) continue;
+    var row = i + 2;
+    if (col['답변']) sh.getRange(row, col['답변']).setValue(d.reply || '');
+    if (col['상태'] && d.status) sh.getRange(row, col['상태']).setValue(d.status);
+    return ok_({ ok: true, row: row });
+  }
+  return ok_({ ok: false, error: 'not found' });
+}
+
 function onSheetEdit(e) {
   try {
     if (!e || !e.range) return;
