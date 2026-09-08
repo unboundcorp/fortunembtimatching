@@ -18,6 +18,14 @@ if (i < 0) { R.bad('syncMergeGroups 가 없다'); R.done(); }
 const j = s.indexOf('\nfunction syncMerge(', i);
 const merge = new Function('return (' + s.slice(i, j) + ')')();
 
+/* 지운 표식(묘비) 병합 — 2026-09-09 대표님 제보("지웠는데 상대거에 반영이 안 되냐")로 생김 */
+const ti = s.indexOf('function syncMergeTombs(');
+if (ti < 0) { R.bad('syncMergeTombs 가 없다'); R.done(); }
+const tj = s.indexOf('\n}', ti) + 2;
+const DAY = 24 * 60 * 60 * 1000;
+const mergeTombs = new Function('GROUP_TTL_MS',
+  'return (' + s.slice(ti, tj) + ')')(365 * DAY);
+
 R.head('── 모임 목록 병합');
 R.note(/'savedGroups'/.test(s.slice(s.indexOf('var SYNC_KEYS'), s.indexOf('var SYNC_LISTS'))),
   'savedGroups 가 화면 동기화 목록에 있다');
@@ -60,5 +68,56 @@ let died = false;
 try { merge(null, null); merge([null, {}, { id: 'ok' }], undefined); } catch (e) { died = true; }
 R.note(!died && merge(null, null).length === 0 && merge([null, {}, { id: 'ok' }], undefined).length === 1,
   '이상한 값에 죽지 않고 id 없는 줄은 버린다');
+
+R.head('── 지운 모임이 되살아나지 않는가');
+
+/* ★ 이것이 없으면 폰에서 지운 모임이 노트북에서 되돌아온다. 합집합 병합의 구조적 결함이다. */
+{
+  const now = Date.now();
+  const tombs = [{ id: 'G2', at: now }];
+  const got = merge(
+    [{ id: 'G1', name: '남는 것', at: now, token: 't1', n: 2, rel: 'friend' }],
+    [{ id: 'G1', name: '남는 것', at: now, token: 't1', n: 2, rel: 'friend' },
+     { id: 'G2', name: '지운 것', at: now, token: 't2', n: 3, rel: null }],
+    tombs);
+  R.note(got.length === 1 && got[0].id === 'G1',
+    '표식이 있는 모임은 상대 기기에 남아 있어도 되살아나지 않는다',
+    got.map((x) => x.id).join(','));
+}
+{
+  /* 이 기기에 아직 남아 있고 상대가 지웠을 때 — 이쪽에서도 사라져야 한다 */
+  const now = Date.now();
+  const got = merge([{ id: 'G9', name: '내가 들고 있던 것', at: now }], [], [{ id: 'G9', at: now }]);
+  R.note(got.length === 0, '상대 기기에서 지운 것은 이 기기에서도 빠진다', '남은 ' + got.length + '개');
+}
+{
+  /* 표식을 안 주면 예전 그대로 돌아야 한다 — 옛 저장본에는 deletedGroups 칸이 없다 */
+  const now = Date.now();
+  const got = merge([{ id: 'A', at: now }], [{ id: 'B', at: now - 1 }]);
+  R.note(got.length === 2, '표식이 없던 옛 저장본에서도 그대로 돈다', got.map((x) => x.id).join(','));
+}
+{
+  const now = Date.now();
+  const t = mergeTombs([{ id: 'A', at: now - 1000 }], [{ id: 'A', at: now }, { id: 'B', at: now }]);
+  R.note(t.length === 2, '표식을 합칠 때 같은 id는 한 줄로 모은다', t.map((x) => x.id).join(','));
+  const a = t.filter((x) => x.id === 'A')[0];
+  R.note(a && a.at === now, '같은 id면 나중에 지운 시각을 남긴다');
+}
+{
+  const old = mergeTombs([{ id: 'OLD', at: Date.now() - 400 * DAY }], []);
+  R.note(old.length === 0, '보관 기간이 지난 표식은 버린다 (서버에도 없는 모임이다)',
+    '남은 ' + old.length + '개');
+}
+{
+  const many = [];
+  for (let k = 0; k < 80; k++) many.push({ id: 'X' + k, at: Date.now() - k });
+  R.note(mergeTombs(many, []).length === 50, '표식은 쉰 개까지만 들고 있는다');
+}
+{
+  const bad = mergeTombs([null, { at: 1 }, 'x'], [{ id: 'OK', at: Date.now() }]);
+  R.note(bad.length === 1 && bad[0].id === 'OK', '이상한 값에 죽지 않고 id 없는 줄은 버린다');
+}
+R.note(/'deletedGroups'/.test(s.slice(s.indexOf('var SYNC_KEYS'), s.indexOf('var SYNC_LISTS'))),
+  'deletedGroups 가 화면 동기화 목록에 있다');
 
 R.done();

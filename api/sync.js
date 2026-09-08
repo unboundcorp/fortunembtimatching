@@ -30,6 +30,8 @@ const ALLOWED = [
   'fortuneHistory', 'compatHistory', 'sajuHistory', 'mbtiReportHistory',
   'receiptMemos',
   'savedGroups',
+  /* 지운 모임의 표식. 이게 없으면 한쪽에서 지운 모임이 다른 기기에서 되살아난다. */
+  'deletedGroups',
 ];
 
 function pick(obj) {

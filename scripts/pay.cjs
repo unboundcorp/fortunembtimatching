@@ -80,6 +80,16 @@ const WATCH = function(){
     await page.goto(APP + '?kakao=ok', {waitUntil:'load'});
     await L.wait(6000);
     const o = await page.evaluate(() => ({tl:window.__tl, m:window.__m}));
+    /* ★ 2026-09-09 대표님 제보 — "이미 로그인했는데도 [카카오 로그인하고 결제하기]로 보여".
+       결제창을 빨리 띄우려고 카카오 조회를 안 기다리게 한 대가로, 창이 뜨는 순간
+       KAKAO.linked 가 false 라 **방금 로그인한 분에게 또 로그인하라고 적혔다.**
+       화면이 '떴다'까지만 보고 **뭐라고 적혔는지**를 안 봐서 못 잡던 자리다. */
+    const btn = await page.evaluate(() => {
+      const b = document.querySelector('.modal-box');
+      if(!b) return null;
+      const p = [...b.querySelectorAll('button')].find((x) => /결제하기/.test(x.textContent||''));
+      return p ? (p.textContent||'').trim() : null;
+    });
     await page.close();
     if(!(o.m.app && o.m.modal)){
       R.bad(label + ' 결제창', '안 뜸 · 타임라인 ' + JSON.stringify(o.tl));
@@ -90,6 +100,8 @@ const WATCH = function(){
     if(closed){ R.bad(label + ' 결제창', '떴다가 사라짐 ' + JSON.stringify(o.tl)); continue; }
     /* 이용권 조회(0.4초)만 기다리면 되므로 1초를 넘기면 무언가를 더 기다리고 있는 것이다 */
     R.note(Number(sec) < 1.2, label + ' 결제창이 곧바로 뜬다', sec + '초 · ' + (o.tl[1] ? o.tl[1][0] : ''));
+    R.note(btn === '결제하기', label + ' 단추가 [결제하기]다 (또 로그인하라고 하지 않는다)',
+      btn === null ? '단추를 못 찾음' : btn);
   }
 
   /* ── 2. 연도가 붙은 상품을 산 뒤 ────────────────────────────── */
