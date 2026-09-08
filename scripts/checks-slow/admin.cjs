@@ -24,6 +24,11 @@ const CASES = [
   /* 옛 서버는 adminAccess 를 안 내려준다. 그때는 예전처럼 테스터도 열린다 —
      안 그러면 이 코드가 올라간 순간 대표님이 관리자 화면에서 잠긴다. */
   {name:'옛 서버(adminAccess 없음)', ent:{testAccess:true},                       open:true },
+  /* ★ 2026-09-08 대표님이 영상으로 잡아 주신 것 — **프로필이 없는 브라우저**에서
+     [문의]를 누르면 온보딩('만 14세 이상이에요') 화면으로 튕겼다. 관리자 페이지를 보는
+     브라우저에는 손님용 프로필이 없는 것이 오히려 보통이다. 그런데 이 검사는 늘 프로필을
+     하나 심어 놓고 돌려서 못 잡았다. **이 줄이 그 구멍이다.** */
+  {name:'운영자 · 프로필 없음',      ent:{adminAccess:true,  testAccess:true },  open:true, noProfile:true },
 ];
 
 const STATS = (function(){
@@ -43,7 +48,11 @@ const STATS = (function(){
 
   for(const c of CASES){
     R.head('[' + c.name + ']');
-    const page = await L.openPage(browser, {width:390, height:1200});
+    /* 프로필이 없는 상태를 흉내 낸다 — 새 브라우저로 관리자 페이지만 보는 경우다 */
+    const state = c.noProfile
+      ? L.makeState({profiles:[], activeId:null, onboarded:false})
+      : L.makeState();
+    const page = await L.openPage(browser, {width:390, height:1200, state:state});
     const ent = Object.assign({items:{}, pass:null, purchases:[]}, c.ent);
     await page.setRequestInterception(true);
     page.on('request', function(r){
@@ -78,6 +87,10 @@ const STATS = (function(){
       });
       await L.wait(1500);
       const t2 = await page.evaluate(() => ((document.querySelector('#main')||{}).innerText||'').slice(0,150));
+      /* ★ 온보딩으로 튕기는지 반드시 함께 본다. 예전에는 프로필이 없으면 여기서
+         '만 14세 이상이에요' 화면이 떴다 — 관리자 페이지가 통째로 못 열리는 것이다. */
+      R.note(t2.indexOf('만 14세') < 0 && t2.indexOf('우리 인연은 몇 점') < 0,
+             '[문의]가 온보딩으로 안 튕긴다', t2.replace(/\n+/g,' | ').slice(0,50));
       R.note(/문의 관리|접수된 문의가 없어요|운영자 화면/.test(t2), '[문의] 갈래로 넘어간다',
              t2.replace(/\n+/g,' | ').slice(0,50));
     } else {
@@ -100,7 +113,9 @@ const STATS = (function(){
       }
     }
 
-    /* 손님 설정 화면에 관리자 줄이 남아 있으면 안 된다 */
+    /* 손님 설정 화면에 관리자 줄이 남아 있으면 안 된다
+       ★ 프로필이 없으면 설정으로 못 가고 마법사로 간다 — 그 경우는 건너뛴다. */
+    if(c.noProfile){ R.skip('손님 설정 화면 확인', '프로필이 없어 설정에 못 들어감'); await page.close(); continue; }
     await page.goto(APP, {waitUntil:'load'}); await L.wait(2200);
     await L.clickText(page, /^더보기/); await L.wait(700);
     await page.evaluate(() => {

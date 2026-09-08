@@ -14636,6 +14636,8 @@ var MODAL_BACK_PENDING = false;
 
 var LAST_ROUTE = null;
 var LAST_VIEW_KEY = null;   /* 한 화면 안에서 갈아 끼우는 '쪽'까지 담은 열쇠 — render() 참고 */
+/* 관리자 페이지의 화면들. 프로필이 없어도 열려야 하는 자리다(render()의 온보딩 관문 참고). */
+var ADMIN_ROUTES = { stats:1, csAdmin:1 };
 /* ★ 화면 전환은 setRoute() 말고도 코드 곳곳에서 ROUTE='...'; render(); 로 일어난다.
    setRoute 한 군데만 잡으면 절반은 놓친다. 그래서 실제로 그려지는 자리에서 잡는다. */
 function pushRouteHistory(route){
@@ -24174,7 +24176,12 @@ function render(){
   syncModeFab();
   /* ★ R54 — 운영 현황판은 온보딩보다 먼저다. 대표님이 새 브라우저에서 #stats 를 열면
      '만 14세 이상입니다' 화면이 먼저 떠서 현황판에 닿을 수가 없었다(실측). */
-  if(!STATE.onboarded && STATE.profiles.length===0 && ROUTE!=='stats'){ renderOnboarding(); return; }
+  /* ★ 2026-09-08 (대표님이 영상으로 잡아 주심) — 관리자 페이지는 프로필이 없어도 열려야 한다.
+     예전에는 'stats'만 빠져 있고 'csAdmin'이 빠져 있어서, **프로필이 없는 브라우저에서
+     [문의]를 누르면 온보딩(만 14세 이상이에요) 화면으로 튕겼다.**
+     대표님은 손님용 프로필을 안 만든 새 브라우저로 관리자 페이지를 보신다 — 늘 이 조건이다.
+     ★ 관리자 화면을 새로 만들면 ADMIN_ROUTES 에 반드시 넣으십시오. 두 군데가 이 표를 본다. */
+  if(!STATE.onboarded && STATE.profiles.length===0 && !ADMIN_ROUTES[ROUTE]){ renderOnboarding(); return; }
   if(ROUTE==='setup' && SETUP){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderSetup(); return; }
   /* ★ R50 — 프로필이 없어도 홈(고르는 화면)과 안내 문서는 열려야 한다.
      예전에는 프로필이 없으면 무조건 마법사로 보냈다. 그래서 새로 온 사람은
@@ -24182,7 +24189,7 @@ function render(){
      나머지 화면(사주·궁합 등)은 계산할 값이 없으므로 여전히 마법사로 보낸다. */
   /* ★ R84 — feedback(개선 의견)도 프로필 없이 열려야 한다. 서비스를 처음 켜서 막힌 분이야말로
      가장 물어볼 게 많은데, 거기서 생년월일부터 넣으라고 하면 그 말을 들을 길이 없어진다. */
-  var NO_PROFILE_OK = {home:1, about:1, guideSaju:1, guideMbti:1, faq:1, glossary:1, settings:1, stats:1, feedback:1};
+  var NO_PROFILE_OK = {home:1, about:1, guideSaju:1, guideMbti:1, faq:1, glossary:1, settings:1, stats:1, csAdmin:1, feedback:1};
   if(STATE.profiles.length===0 && !NO_PROFILE_OK[ROUTE]){ startSetupWizard(null); renderSetup(); return; }
   if(ROUTE==='groupJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderGroupJoin(); return; }
   if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
