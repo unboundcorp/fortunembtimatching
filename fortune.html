@@ -1715,8 +1715,8 @@ body.has-fab main{padding-bottom:110px;}
 .fb-msg.err{color:var(--red-hi);}
 .fb-done{text-align:center;padding:26px 18px;border:1px solid rgba(31,28,23,0.144);border-radius:var(--r-lg);
   background:var(--gold-soft);}
-.fb-done h3{font-size:1.05rem;color:var(--ink);margin-bottom:8px;}
-.fb-done p{font-size:.86rem;color:var(--ink-dim);line-height:1.7;margin:0 0 14px;}
+.fb-done h3{font-size:1.05rem;color:var(--ink);margin-bottom:8px;word-break:keep-all;}
+.fb-done p{font-size:.86rem;color:var(--ink-dim);line-height:1.7;margin:0 0 14px;text-align:left;word-break:keep-all;}
 /* =====================================================================
    고객지원 (2026-08-22, 대표님 지시)
    ---------------------------------------------------------------------
@@ -8382,7 +8382,7 @@ function renderFeedback(){
   /* ── 보냈다 ─────────────────────────────────────────────────────── */
   if(FEEDBACK_STATE === 'done'){
     var done = el('div',{class:'fb-done'});
-    done.appendChild(el('h3',{},['잘 받았어요' + (FEEDBACK_DONE_ID ? ' · '+FEEDBACK_DONE_ID+'번' : '')]));
+    done.appendChild(el('h3',{},['문의가 접수되었어요' + (FEEDBACK_DONE_ID ? ' (문의번호 : '+FEEDBACK_DONE_ID+')' : '')]));
     done.appendChild(el('p',{},[SUPPORT_SLA + ' 진행 상황은 [내 문의 내역]에서 보실 수 있어요.']));
     done.appendChild(el('button',{class:'btn btn-primary', onclick:function(){
       /* 갈래를 고정해 들어오셨어도 '하나 더'는 처음 상태로 돌린다 —
