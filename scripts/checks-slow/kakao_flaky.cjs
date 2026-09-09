@@ -46,6 +46,29 @@ function serveWith(kakao){
   });
 }
 
+/* 서버가 느리게 답하게 해서 '아직 모르는 동안'을 실제로 만들어 본다 */
+function serveSlow(kakao, delay){
+  const html = fs.readFileSync(path.join(ROOT, 'fortune.html'));
+  return new Promise(function(resolve){
+    const srv = http.createServer(function(req, res){
+      const u = String(req.url).split('?')[0];
+      if(u.indexOf('/api/kakao') === 0){
+        setTimeout(function(){
+          res.writeHead(200, {'content-type':'application/json'});
+          res.end(JSON.stringify(kakao));
+        }, delay);
+        return;
+      }
+      if(u.indexOf('/api/') === 0){ res.writeHead(501); res.end(); return; }
+      res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(html);
+    });
+    srv.listen(0, '127.0.0.1', function(){
+      resolve({base:'http://127.0.0.1:' + srv.address().port,
+               close:function(){ try{ srv.close(); }catch(e){} }});
+    });
+  });
+}
+
 async function look(browser, site, seen){
   const st = makeState({});
   if(seen) st.kakaoSeen = true;
@@ -97,6 +120,43 @@ async function look(browser, site, seen){
            '세 번 다 실패하면 막는다 (로그인 필수가 안 뚫린다)');
     R.note(m.errs.length === 0, 'JS 오류 0건', m.errs.join(' | ') || '없음');
     site.close();
+    /* ④ 첫 그림이 깜빡이지 않는가 (2026-09-09 대표님 제보
+       "초기 화면이 바로 안 뜨고 기존 화면이 0.5초 정도 보인다")
+       ★ 부팅 직후에는 로그인 여부를 모른다. 그때 서비스 화면을 그려 두었다가 동의 화면으로
+         바뀌면 **남의 화면이 잠깐 떴다 사라지는 것**이라 고장으로 보인다.
+         모르는 동안에는 아무 말도 안 하는 기다림 화면을 둔다. */
+    R.head('── ④ 첫 그림이 깜빡이지 않는가');
+    for(const c of [
+      {name:'쓰던 기기인데 로그인이 안 돼 있음', seen:false, onboarded:true,
+       kakao:{ready:true, linked:false}, must:'동의'},
+      {name:'로그인해 둔 기기(표식 있음)',       seen:true,  onboarded:true,
+       kakao:{ready:true, linked:true},  must:'서비스'},
+    ]){
+      const site2 = await serveSlow(c.kakao, 500);
+      const st = makeState({onboarded:c.onboarded});
+      if(c.seen) st.kakaoSeen = true;
+      const p2 = await openPage(browser, {width:390, height:900, state:st});
+      await p2.evaluateOnNewDocument(function(){
+        window.__shots = [];
+        setInterval(function(){
+          try{
+            var t = document.body ? document.body.innerText : '';
+            var kind = t.indexOf('잠시만요') >= 0 ? '기다림'
+                     : (t.indexOf('만 14세 이상이에요') >= 0 ? '동의' : (t.trim() ? '서비스' : '빈화면'));
+            var last = window.__shots[window.__shots.length-1];
+            if(!last || last !== kind) window.__shots.push(kind);
+          }catch(e){}
+        }, 20);
+      });
+      await p2.goto(site2.base + '/fortune.html', {waitUntil:'load'});
+      await wait(2200);
+      const shots = await p2.evaluate(function(){ return window.__shots; });
+      /* 틀린 화면이 먼저 뜨면 안 된다 — 기다림에서 곧장 제 화면으로 가야 한다 */
+      const bad = shots.filter(function(x){ return x !== '기다림' && x !== c.must && x !== '빈화면'; });
+      R.note(bad.length === 0 && shots[shots.length-1] === c.must,
+             c.name + ' — 틀린 화면이 안 보인다', shots.join(' → '));
+      await p2.close(); site2.close();
+    }
   }catch(err){
     R.bad('검사 중 오류', String(err && err.message).slice(0,160));
   }finally{
