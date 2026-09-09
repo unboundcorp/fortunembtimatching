@@ -61,7 +61,9 @@ const APIS = [
            + (liveLen && localLen && liveLen !== localLen
               ? '  ← 배포가 아직 안 끝났거나, 다른 곳에서 먼저 올렸습니다' : ''));
 
-    await wait(2000);
+    /* ★ 2초로는 모자랐습니다(실측 — 배포본에서 거짓 실패 2건). 1.8MB 짜리 파일을
+       내려받아 파싱하고 /api/kakao 왕복까지 끝나야 화면이 정해집니다. 넉넉히 기다립니다. */
+    await wait(5000);
     R.note((page.__errs||[]).length === 0, '켜자마자 나는 JS 오류가 없다',
            (page.__errs||[]).join(' | ') || '없음');
 
