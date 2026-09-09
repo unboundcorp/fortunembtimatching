@@ -30,6 +30,7 @@
 ===================================================================== */
 const path = require('path');
 const os = require('os');
+const fsTop = require('fs');
 
 const ARGS = process.argv.slice(2).filter((x) => x.indexOf('--') !== 0);
 const FLAGS = process.argv.slice(2).filter((x) => x.indexOf('--') === 0);
@@ -57,7 +58,19 @@ function chromePath() {
 }
 
 /* 검사용 프로필. 화면이 그려지려면 프로필이 하나는 있어야 한다. */
+/* ★ 2026-09-09 — 화면에 '기기 비우기' 표식(STATE_RESET_ID)이 생겼다. 표식이 없는 저장분은
+   열자마자 한 번 비워진다. 그래서 여기 심는 상태에도 붙여야 한다 —
+   안 붙이면 프로필이 사라져서 [설정] 화면이 "화면이 안 그려짐"으로 잡힌다(실제로 그랬다).
+   ★ 손으로 베껴 적지 말 것 — fortune.html 에서 그때그때 읽는다. */
+const STATE_RESET_ID = (function(){
+  try{
+    const src = fsTop.readFileSync(path.join(__dirname, '..', 'fortune.html'), 'utf8');
+    const m = /var STATE_RESET_ID = '([^']+)'/.exec(src);
+    return m ? m[1] : null;
+  }catch(e){ return null; }
+})();
 const STATE = {
+  resetId: STATE_RESET_ID,
   onboarded: true, mode: 'self', pendingInviteGroup: null, activeId: 'p1',
   profiles: [{
     id: 'p1', name: '검사', mbti: 'ENTJ', gender: 'M', calendarType: 'solar', lunarLeap: false,
@@ -194,9 +207,15 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
     } else if (!moved) { note(false, route, '탭도 더보기도 못 찾음'); continue; }
     await w(1200);
     const txt = await page.evaluate(() => (document.querySelector('#main') || { innerText: '' }).innerText);
-    const drew = txt.length > 120 && txt.indexOf(must) >= 0;
+    /* ★ 2026-09-09 — 동의·로그인 화면에 갇혀 있는데 통과로 읽히던 것을 막는다.
+       그 화면의 글에 '궁합'·'운세' 같은 말이 들어 있어서, 여덟 화면 중 일곱이
+       **똑같은 443자**인데도 전부 통과였다(실측). 찾는 낱말만 보면 이렇게 새어 나간다. */
+    const stuck = txt.indexOf('만 14세 이상이에요') >= 0;
+    const drew = txt.length > 120 && txt.indexOf(must) >= 0 && !stuck;
     note(errs.length === 0 && drew, route,
-      errs[0] ? errs[0] : (drew ? txt.length + '자' : '화면이 안 그려짐 (' + txt.length + '자)'));
+      errs[0] ? errs[0]
+        : (stuck ? '동의·로그인 화면에 갇힘 (' + txt.length + '자)'
+                 : (drew ? txt.length + '자' : '화면이 안 그려짐 (' + txt.length + '자)')));
   }
 
   }  /* !ONLY_API */

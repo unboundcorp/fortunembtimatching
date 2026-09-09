@@ -5292,7 +5292,7 @@ function sajuOptsOf(p){
 }
 /* ★ 캐시 열쇠에 자오선을 넣어야 한다. 안 넣으면 출생지를 해외로 바꿔도 옛 결과가 그대로 나온다. */
 function sajuOptsKey(o){ return SAJU_ENGINE_REV+'|'+o.lon+'|'+(o.adjust?'1':'0')+'|'+(typeof o.meridian==='number'?o.meridian:'kr'); }
-function defaultState(){ return {onboarded:false, mode:null, pendingInviteGroup:null, profiles:[], activeId:null, fortuneHistory:[], compatHistory:[], sajuHistory:[], mbtiReportHistory:[],
+function defaultState(){ return {resetId:STATE_RESET_ID, onboarded:false, mode:null, pendingInviteGroup:null, profiles:[], activeId:null, fortuneHistory:[], compatHistory:[], sajuHistory:[], mbtiReportHistory:[],
   /* 상용화 v4: 구매한 이용권 / 결제 설정 / AI 해석 설정. 없으면 기존 사용자도 자연스럽게 무료 상태로 시작한다. */
   entitlements:{items:{}, pass:null, purchases:[]}, billingConfig:null, interpreterConfig:null,
   /* 이 브라우저가 알고 있는 영수증(복원) 번호. 권한의 근거가 아니라 "메모"다 —
@@ -5443,9 +5443,43 @@ function healState(s, d){
   if(fixed.length) console.warn('저장소에서 모양이 깨진 값을 기본값으로 되돌렸어요:', fixed.join(', '));
   return fixed;
 }
+/* =====================================================================
+   기기에 남은 것을 한 번 비운다 (2026-09-09 대표님 지시)
+   ---------------------------------------------------------------------
+   > "기존 데이터는 다 날려 그럼" · "니가 못지우냐?"
+
+   서버(Supabase)는 제가 지웠습니다. 그런데 프로필·기록은 **각자 브라우저 안에도** 있고,
+   그건 제가 밖에서 손댈 수 없습니다. 그대로 두면 그 브라우저로 로그인하시는 순간
+   동기화가 그것을 서버로 다시 올려서 "지웠는데 또 생겼네"가 됩니다.
+   그래서 **서비스가 스스로 한 번 비우게** 합니다 — 이 값이 저장분에 적힌 것과 다르면
+   그 기기의 저장분을 버리고 처음 상태로 시작합니다.
+
+   ★ 이 값을 바꾸면 **모든 기기의 저장분이 한 번 사라집니다.** 손님이 만들어 둔 프로필과
+     기록이 전부 없어집니다. **팔기 시작한 뒤에는 절대 바꾸지 마십시오.**
+     지금은 손님이 없고(결제 전부 test 키) 대표님과 지인분들 시험 자료뿐이라 괜찮습니다.
+   ★ 한 번만 비웁니다. 비운 뒤에는 이 값이 저장분에 적혀서 다시 안 비웁니다.
+   ★ 카카오로 로그인하시면 서버 서랍에서 다시 내려받습니다 — 그쪽도 비워 두었으므로
+     지금은 정말 빈 상태에서 시작합니다.
+===================================================================== */
+var STATE_RESET_ID = '20260909-kakao-required';
 function loadState(){
   try{
     var raw=localStorage.getItem(STORAGE_KEY);
+    /* ★ 읽기 **맨 앞**에서 본다. 마이그레이션(migrateProfile 등)을 지난 뒤에 버리면
+       지울 것을 붙들고 헛일을 하게 되고, 그 과정에서 나는 오류가 아래 catch에 먹힌다. */
+    if(raw){
+      try{
+        var pre = JSON.parse(raw);
+        if(!pre || pre.resetId !== STATE_RESET_ID){
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(LEGACY_KEY);
+          raw = null;
+        }
+      }catch(ePre){ localStorage.removeItem(STORAGE_KEY); raw = null; }
+    } else {
+      /* 옛 v1 저장분도 함께 버린다 — 아래에서 그것을 끌어오기 때문이다. */
+      try{ localStorage.removeItem(LEGACY_KEY); }catch(e1){}
+    }
     if(!raw){
       // v1 데이터가 있으면 최소 필드만 이전(사주 관련 필드는 기본값으로 채움, 재계산 유도)
       var legacyRaw = localStorage.getItem(LEGACY_KEY);
@@ -5465,6 +5499,7 @@ function loadState(){
     var parsed=JSON.parse(raw);
     var d=defaultState();
     for(var k in d){ if(!(k in parsed)) parsed[k]=d[k]; }
+    parsed.resetId = STATE_RESET_ID;   /* 이미 비운 기기다. 다시 비우지 않는다 */
     healState(parsed, d);
     parsed.profiles = parsed.profiles.map(migrateProfile);
     if(scrubCompatHistory(parsed.compatHistory)) STORAGE_SCRUBBED = true;

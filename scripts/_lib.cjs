@@ -49,8 +49,21 @@ function person(o){
     timeAdjustMigrated:true, termAccuracyMigrated:true, elementSyncMigrated:true, elementIdxBefore:null,
   }, o||{});
 }
+/* ★ 2026-09-09 — 화면에 '기기 비우기' 표식(STATE_RESET_ID)이 생겼다. 그 표식이 없는
+   저장분은 열자마자 **한 번 비워진다.** 검사기가 심어 두는 상태에도 이 표식을 붙여야
+   검사가 자기 자료를 잃지 않는다.
+   ★ 손으로 베껴 적지 말 것 — fortune.html 에서 그때그때 읽는다. 한쪽만 고치면 어긋난다.
+   ★ 비우기 자체는 `checks-slow/consent_login.cjs` 가 표식을 **일부러 빼고** 확인한다. */
+const STATE_RESET_ID = (function(){
+  try{
+    const src = fs.readFileSync(path.join(ROOT, 'fortune.html'), 'utf8');
+    const m = /var STATE_RESET_ID = '([^']+)'/.exec(src);
+    return m ? m[1] : null;
+  }catch(e){ return null; }
+})();
 function makeState(o){
   return Object.assign({
+    resetId: STATE_RESET_ID,
     onboarded:true, mode:'self', pendingInviteGroup:null, activeId:'p1',
     profiles:[person({})],
     fortuneHistory:[], compatHistory:[], sajuHistory:[], mbtiReportHistory:[],
@@ -176,5 +189,5 @@ async function clickText(page, re, opt){
   }, re.source || String(re), re.flags || '', !!(opt && opt.all));
 }
 
-module.exports = { ROOT, chromePath, puppeteer, person, makeState, STORAGE_KEY,
+module.exports = { ROOT, chromePath, puppeteer, person, makeState, STORAGE_KEY, STATE_RESET_ID,
                    serve, reporter, openPage, wait, clickText };

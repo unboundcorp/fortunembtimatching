@@ -27,6 +27,29 @@ const L = require('../_lib.cjs');
   const browser = await pp.launch({executablePath: exe, headless:'new', args:['--no-sandbox']});
   const fresh = () => L.makeState({profiles:[], activeId:null, onboarded:false});
 
+  /* 화면 소스에 적힌 표식을 그대로 읽어 온다 — 검사기에 손으로 베껴 두면 어긋난다 */
+  const RESET_ID = (function(){
+    const fs = require('fs'), path = require('path');
+    const src = fs.readFileSync(path.join(L.ROOT, 'fortune.html'), 'utf8');
+    const m = /var STATE_RESET_ID = '([^']+)'/.exec(src);
+    return m ? m[1] : null;
+  })();
+  R.note(!!RESET_ID, '기기 비우기 표식(STATE_RESET_ID)이 있다', RESET_ID || '없음');
+
+  function stubLinked(page){
+    return page.setRequestInterception(true).then(function(){
+      page.on('request', function(r){
+        const u = r.url();
+        const j = (o) => r.respond({status:200, contentType:'application/json', body:JSON.stringify(o)});
+        if(u.indexOf('/api/kakao') >= 0) return j({ready:true, linked:true, since:Date.now()});
+        if(u.indexOf('/api/entitlements') >= 0) return j({items:{}, pass:null, purchases:[]});
+        if(u.indexOf('/api/sync') >= 0) return j({ok:true, data:{}});
+        if(u.indexOf('/api/') >= 0) return j({ok:true});
+        r.continue();
+      });
+    });
+  }
+
   /* kakaoReady=false 면 카카오가 꺼진 상태를 흉내 낸다 */
   async function open(hash, kakaoReady){
     const page = await L.openPage(browser, {state:fresh(), width:390, height:1000});
@@ -253,6 +276,39 @@ const L = require('../_lib.cjs');
     R.note(page.__went === 1,
       '★ 부팅 때 한 번 실패했어도 동의하는 자리에서 다시 물어 로그인으로 보낸다',
       '물어본 횟수 ' + asked + ' · 보낸 횟수 ' + page.__went);
+    await page.close();
+  }
+
+  /* ── ⑦ ★ 기기에 남은 옛 저장분을 한 번 비우는가 (2026-09-09 "니가 못지우냐?") ──
+     서버는 지웠지만 프로필·기록은 각자 브라우저 안에도 있다. 그대로 두면 로그인하는 순간
+     동기화가 그것을 서버로 다시 올려서 "지웠는데 또 생겼네"가 된다.
+     ★ 표식이 붙은 저장분은 **건드리면 안 된다** — 열 때마다 비우면 아무것도 못 쓴다. */
+  {
+    const old = L.makeState({onboarded:true});
+    delete old.resetId;                      /* 표식이 없던 시절의 저장분을 흉내 낸다 */
+    const page = await L.openPage(browser, {state:old, width:390, height:1000});
+    await stubLinked(page);
+    await page.goto(APP, {waitUntil:'load'});
+    await L.wait(2200);
+    const gone = await page.evaluate(() => {
+      const s = localStorage.getItem('inyeonjeom.v2');
+      return s === null ? 'gone' : ('kept:' + (JSON.parse(s).profiles||[]).length);
+    });
+    R.note(gone === 'gone', '★ 표식 없는 옛 저장분은 한 번 비운다', gone);
+    await page.close();
+  }
+  {
+    const marked = L.makeState({onboarded:true});
+    marked.resetId = RESET_ID;
+    const page = await L.openPage(browser, {state:marked, width:390, height:1000});
+    await stubLinked(page);
+    await page.goto(APP, {waitUntil:'load'});
+    await L.wait(2200);
+    const kept = await page.evaluate(() => {
+      const s = localStorage.getItem('inyeonjeom.v2');
+      return s === null ? 0 : (JSON.parse(s).profiles||[]).length;
+    });
+    R.note(kept === 1, '★ 이미 비운 기기는 다시 비우지 않는다 (한 번만이다)', '프로필 ' + kept + '개');
     await page.close();
   }
 
