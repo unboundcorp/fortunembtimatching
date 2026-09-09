@@ -290,11 +290,20 @@ const L = require('../_lib.cjs');
     await stubLinked(page);
     await page.goto(APP, {waitUntil:'load'});
     await L.wait(2200);
+    /* ★ 2026-09-09 — 예전에는 '저장 칸이 null 이어야 한다'로 봤는데, 그건 **비워진 뒤에
+       아무도 안 쓴다**는 것에 기대는 조건이었습니다. 비운 다음 서비스가 다시 무언가를
+       적으면(예: 로그인이 확인돼 `kakaoSeen` 을 적는다) 칸이 다시 생기고, 비우기는
+       제대로 됐는데 검사만 실패합니다 — 실제로 그렇게 걸렸습니다.
+       봐야 할 것은 '칸이 없다'가 아니라 **옛 자료가 안 남았다** 입니다. */
     const gone = await page.evaluate(() => {
       const s = localStorage.getItem('inyeonjeom.v2');
-      return s === null ? 'gone' : ('kept:' + (JSON.parse(s).profiles||[]).length);
+      if(s === null) return 'gone';
+      let o = {};
+      try{ o = JSON.parse(s) || {}; }catch(e){ return 'unreadable'; }
+      return 'kept:' + ((o.profiles||[]).length) + ':' + ((o.compatHistory||[]).length);
     });
-    R.note(gone === 'gone', '★ 표식 없는 옛 저장분은 한 번 비운다', gone);
+    R.note(gone === 'gone' || gone === 'kept:0:0',
+           '★ 표식 없는 옛 저장분은 한 번 비운다', gone);
     await page.close();
   }
   {

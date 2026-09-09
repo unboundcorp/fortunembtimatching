@@ -227,17 +227,31 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
   if(ONLY_API){ try{ await page.goto(APP, {waitUntil:'load', timeout:45000}); }catch(e){} await w(400); }
   console.log('\n[3] 서버 함수');
   for (const [p, body, okCodes] of APIS) {
-    let st = 0;
+    let st = 0, text = '';
     try {
-      st = await page.evaluate(async (u, b) => {
+      const r0 = await page.evaluate(async (u, b) => {
         const r = await fetch(u, {
           method: 'POST', headers: { 'content-type': 'application/json' },
           credentials: 'include', body: JSON.stringify(b),
         });
-        return r.status;
+        return { st: r.status, t: (await r.text()).slice(0, 200) };
       }, BASE.replace(/\/+$/, '') + p, body);
+      st = r0.st; text = r0.t;
     } catch (e) { st = -1; }
     note(okCodes.indexOf(st) >= 0, p, 'HTTP ' + st + ' (기대 ' + okCodes.join('/') + ')');
+
+    /* ★ 2026-09-09 — 카카오만은 '살아 있다'로는 부족합니다.
+       2026-09-09부터 **로그인이 예외 없이 필수**입니다. 그래서 /api/kakao 가
+       `ready:false` 를 주면 **아무도 서비스에 들어올 수 없습니다** — 화면은 멀쩡히
+       뜨고 서버도 200을 주는데 손님은 동의 화면에서 한 발도 못 나갑니다.
+       200만 보던 예전 검사는 이걸 통과시켰습니다. 환경변수(KAKAO_REST_API_KEY)가
+       빠지거나 지워지는 것이 실제로 일어날 수 있는 일이라 여기서 못을 박습니다. */
+    if (p === '/api/kakao' && st === 200) {
+      let ready = null;
+      try { ready = JSON.parse(text).ready; } catch (e) {}
+      note(ready === true, '/api/kakao ready:true (로그인이 필수라 이게 false면 아무도 못 들어옵니다)',
+           'ready=' + String(ready));
+    }
   }
 
   }  /* !SKIP_API */

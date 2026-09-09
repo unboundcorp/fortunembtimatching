@@ -6166,18 +6166,53 @@ async function fetchEntitlements(){
    ★ 받는 것은 카카오 회원번호 하나뿐이다. 이름·이메일·전화번호는 요청하지 않는다.
    ★ 서버가 '쓸 수 없다'고 하면 버튼을 아예 감춘다. 눌러도 안 되는 버튼은 두지 않는다.
 ===================================================================== */
-var KAKAO = { loaded:false, ready:false, linked:false, since:null };
+var KAKAO = { loaded:false, ready:false, linked:false, since:null, err:false };
+/* =====================================================================
+   ★ 2026-09-09 (대표님 영상 제보 "왜이러냐 이건") — **쓰고 계시던 분이 동의 화면으로
+   튕기던 것.** 로그인해서 홈까지 보고 계셨는데 1초 뒤 화면이 동의 화면으로 바뀌었습니다.
+   ---------------------------------------------------------------------
+   ★ 뿌리 원인: 이 함수의 `.catch` 가 **물어보지 못한 것을 "안 돼 있다"로 바꿔 놓았습니다.**
+     예전 코드는 실패했을 때 `KAKAO.loaded = true` 를 켰습니다. `linked` 는 그대로
+     false 이므로, 관문(`KAKAO.loaded && !KAKAO.linked`)이 **곧바로 걸립니다.**
+     LTE 에서 요청 한 번이 흔들리기만 해도 로그인하신 분이 동의 화면으로 튕깁니다.
+     (이 구분은 `beginAfterConsent` 쪽에는 이미 적어 두었는데, 관문 쪽에는 안 걸려 있었습니다.)
+
+   ★ 그래서 셋으로 나눕니다.
+     ① 물어봐서 "돼 있다"      → linked=true
+     ② 물어봐서 "안 돼 있다"   → linked=false  (이때만 관문이 걸립니다)
+     ③ **물어보지 못했다**     → err=true. 곧바로 다시 물어봅니다(최대 세 번).
+   ★ 세 번 다 실패하면 그때는 관문을 겁니다 — 안 그러면 서버가 오래 죽었을 때
+     로그인 없이 들어오는 길이 생깁니다(대표님이 정하신 "로그인 필수"가 깨집니다).
+     다만 **이 기기에서 로그인이 확인된 적이 있으면**(`STATE.kakaoSeen`) 그때도 안 겁니다.
+     이미 로그인하신 분을 우리 쪽 통신 사정으로 쫓아내지 않기 위해서입니다.
+   ★ `kakaoSeen` 은 이 기기에만 둡니다(SYNC_KEYS 에 넣지 마십시오). 다른 기기의 로그인
+     여부가 이 기기의 관문을 열어 주면 안 됩니다. */
+var KAKAO_TRIES = 0;
+var KAKAO_MAX_TRIES = 3;
 function kakaoRefresh(){
   return fetch('/api/kakao', {
     method:'POST', headers:{'content-type':'application/json'},
     credentials:'include', body: JSON.stringify({action:'status'})
   }).then(function(r){ return r.json(); }).then(function(d){
     KAKAO.loaded = true;
+    KAKAO.err    = false;
+    KAKAO_TRIES  = 0;
     KAKAO.ready  = !!(d && d.ready);
     KAKAO.linked = !!(d && d.linked);
     KAKAO.since  = d && d.since ? d.since : null;
+    /* 한 번이라도 '돼 있다'를 받았으면 이 기기에 적어 둔다 */
+    if(KAKAO.linked && !STATE.kakaoSeen){ STATE.kakaoSeen = true; saveState(); }
     return KAKAO;
-  }).catch(function(){ KAKAO.loaded = true; KAKAO.ready = false; return KAKAO; });
+  }).catch(function(){
+    KAKAO.err   = true;
+    KAKAO.ready = false;
+    KAKAO_TRIES++;
+    if(KAKAO_TRIES >= KAKAO_MAX_TRIES) KAKAO.loaded = true;
+    else setTimeout(function(){
+      kakaoRefresh().then(function(){ try{ render(); }catch(e){} });
+    }, 1200 * KAKAO_TRIES);
+    return KAKAO;
+  });
 }
 /* =====================================================================
    R104 (2026-08-22 대표님 지시) — 기기 사이 이어보기
@@ -19769,18 +19804,26 @@ function renderCompatSummary(p, draft){
       [relationNoteDetail(r.res.relation)]));
   }
   /* =====================================================================
-     R33 — 두 사람 화면의 점수가 1~2점 다를 수 있다. 그 이유를 미리 적는다.
+     R33 — 두 사람 화면을 나란히 놓았을 때 무엇이 다르고 무엇이 같은지 미리 적는다.
      ---------------------------------------------------------------------
-     사주에서 오행의 상생은 방향이 있는 관계다. "내가 상대를 북돋는 것"과
-     "상대가 나를 북돋는 것"을 같은 것으로 보지 않으므로, 보는 사람이 누구냐에 따라
-     사주 점수가 조금 달라진다(내가 북돋는 쪽 95 · 상대가 북돋는 쪽 90).
-     MBTI·오행·띠 점수는 양쪽이 완전히 같다.
-     ★ 계산을 억지로 대칭으로 만들지 않는다 — 그건 명리의 관계 개념을 지우는 일이다.
-       대신 두 사람이 화면을 나란히 놓고 "왜 다르지?" 하지 않도록 여기서 미리 말한다.
-       (실시간 연결로 두 화면에 동시에 결과가 뜨게 되면서 실제로 보이게 된 자리다.) */
+     ★ 2026-09-09 — **이 문장이 거짓말을 하고 있었습니다. 고쳤습니다.**
+       예전 문장은 상대 화면에서 점수가 한두 점 다르게 나올 수 있다고 적고 있었습니다.
+       (그때 주석도 '내가 북돋는 쪽 95 · 상대가 북돋는 쪽 90'이라 적고 있었습니다.)
+
+       그런데 2026-09-05에 대표님 지시로 **상생을 양방향 92로 맞췄습니다.** 그 뒤로
+       점수는 어느 쪽에서 보든 같습니다 — 실측: 무작위 4,005쌍을 양방향으로 계산해
+       **종합·사주 점수가 다른 쌍 0건**. FAQ('누가 먼저 보든 점수가 같나요?' → '같아요')와도
+       어긋나 있었습니다. 상생은 전체 쌍의 약 40%라, **손님 열 분 중 넉 분이 사실과
+       다른 안내를 보고 있었습니다.**
+
+     ★ 방향이 있는 것은 **설명 문장**입니다(elemPlain·elemMean·elemDetail). 관계에는
+       방향이 있고 점수만 두 사람 공통값이라는 것이 2026-09-05에 정한 규칙입니다.
+       그래서 문장은 남기되 말하는 내용을 사실로 바꿉니다.
+     ★ 점수가 양방향 같다는 것은 `calc.cjs` 의 '순서를 바꿔도 같은 점수'가 지킵니다.
+       옛 문장이 되살아나는 것은 `checks/compat_copy.cjs` 가 막습니다. */
   if(r.res.saju && r.res.saju.elemTerm && /상생/.test(r.res.saju.elemTerm)){
     box.appendChild(el('p',{class:'biz-hint', style:'text-align:center;margin-top:6px;'},[
-      '이 점수는 '+nameOr(p.name)+'님 기준이에요. 사주에서 서로를 북돋는 관계는 방향에 따라 조금 다르게 보기 때문에, 상대방 화면에는 1~2점 다르게 나올 수 있어요.'   /* 상대와 점수가 다를 때 물어보는 자리라 접지 않는다 */
+      '사주에서 서로를 북돋는 관계는 방향이 있어서, 상대방 화면에는 설명이 반대로 적혀요. 점수는 두 분이 같아요.'   /* 상대와 화면을 견줄 때 보는 자리라 접지 않는다 */
     ]));
   }
 
@@ -24989,8 +25032,18 @@ function render(){
        (`/api/kakao` 왕복 0.3초). 알고 난 뒤에만 막는다.
      ★ 관리자 화면은 예외다(ADMIN_ROUTES) — 대표님은 손님용 프로필이 없는 새 브라우저로
        관리자 페이지를 보신다. 2026-09-08에 여기가 빠져서 [문의]가 튕겼다. */
-  var needKakao = KAKAO.loaded && !KAKAO.linked;
-  if((!STATE.onboarded || needKakao) && !ADMIN_ROUTES[ROUTE] && !GATE_FREE_ROUTES[ROUTE]){ renderOnboarding(); return; }
+  /* ★ 2026-09-09 — '물어보지 못했다'로는 막지 않는다 (위 kakaoRefresh 주석 참고).
+     통신이 흔들려 못 물어본 것을 '로그인 안 됨'으로 읽으면, 쓰고 계시던 분이 동의
+     화면으로 튕깁니다 — 대표님이 영상으로 잡아 주신 그 화면입니다. */
+  var kakaoUnknown = !KAKAO.loaded || (KAKAO.err && !!STATE.kakaoSeen);
+  var needKakao = !kakaoUnknown && !KAKAO.linked;
+  if((!STATE.onboarded || needKakao) && !ADMIN_ROUTES[ROUTE] && !GATE_FREE_ROUTES[ROUTE]){
+    /* ★ 머리글과 탭을 함께 숨긴다. 안 숨기면 동의 화면 위에 탭과 프로필 고르개가 그대로
+       남아 **반쯤 들어와 있는 이상한 화면**이 됩니다(대표님 영상에 그대로 찍혔습니다).
+       바로 아래 setup 갈래가 이미 같은 일을 하고 있었는데 여기만 빠져 있었습니다. */
+    $('#appHeader').hidden = true; $('#tabbarWrap').hidden = true;
+    renderOnboarding(); return;
+  }
   if(ROUTE==='setup' && SETUP){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderSetup(); return; }
   /* ★ R50 — 프로필이 없어도 홈(고르는 화면)과 안내 문서는 열려야 한다.
      예전에는 프로필이 없으면 무조건 마법사로 보냈다. 그래서 새로 온 사람은
