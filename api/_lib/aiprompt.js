@@ -281,6 +281,62 @@ export function cacheKeyOf(productId, payload) {
     .slice(0, 43);
 }
 
+/* =====================================================================
+   ★ 2026-09-09 대표님 승인 — "결제하신 글은 무슨 일이 있어도 열린다"
+   ---------------------------------------------------------------------
+   cacheKeyOf 는 payload **통째**의 해시다. 그래서 점수표·등급 선·문구를 고치면 값이
+   달라지고, 이미 결제하신 분이 만들어 둔 글을 못 찾는다. 횟수까지 다 쓰셨으면 다시
+   만들지도 못한다 — **돈은 냈는데 아무것도 못 보는 상태**가 된다.
+
+   subjectKeyOf 는 그와 정반대다. **'누구에 대한 글인가'만** 담는다:
+     · 사주   — 여덟 글자 + 성별            (연도는 productId 에 이미 들어 있다)
+     · 성격유형 — 네 글자 + 성별
+     · 궁합   — 두 분 각각의 네 글자·여덟 글자·성별·띠 + 어떤 사이인가
+
+   ★ **점수·등급·문구는 한 조각도 넣지 않는다.** 넣는 순간 cacheKeyOf 와 같은 신세가 되어
+     이 안전망이 하는 일이 없어진다. 여기 필드를 늘릴 때 이 규칙을 먼저 보라.
+   ★ **궁합은 두 분을 순서 그대로** 쓴다(정렬하지 않는다). 글이 보는 사람 쪽에서 쓰이므로,
+     순서를 섞으면 두 사람을 바꿔 놓은 글이 나갈 수 있다. 못 찾는 것보다 그게 훨씬 나쁘다.
+   ★ **사이(relation)는 넣는다.** 친구로 산 글을 연인으로 바꾼 화면에 띄우면 화면과 글이
+     서로 다른 말을 하게 된다.
+   ★ 재료가 하나라도 비면 **null 을 돌려준다** — 헐거운 표식으로 남의 글을 찾느니
+     안 찾는 편이 낫다.
+===================================================================== */
+function pillarSig(pil) {
+  if (!pil) return '';
+  const one = (x) => (x && x.stem ? x.stem : '') + (x && x.branch ? x.branch : '');
+  return [one(pil.year), one(pil.month), one(pil.day), one(pil.hour)].join('.');
+}
+export function subjectKeyOf(productId, payload) {
+  const kind = aiKindOf(productId);
+  if (!kind || !payload || typeof payload !== 'object') return null;
+  let raw = null;
+
+  if (kind === 'saju') {
+    const sig = pillarSig(payload.pillars);
+    if (!sig.replace(/\./g, '')) return null;
+    raw = ['saju', sig, (payload.person && payload.person.gender) || ''].join('|');
+  } else if (kind === 'mbti') {
+    const m = payload.person && payload.person.mbti;
+    if (!m) return null;
+    raw = ['mbti', m, (payload.person && payload.person.gender) || ''].join('|');
+  } else if (kind === 'compat') {
+    const one = (x) => {
+      if (!x) return '';
+      const sig = pillarSig(x.pillars);
+      if (!x.mbti || !sig.replace(/\./g, '')) return '';
+      return [x.mbti, x.gender || '', sig, x.zodiac || ''].join('~');
+    };
+    const a = one(payload.a), b = one(payload.b);
+    if (!a || !b) return null;
+    raw = ['compat', a, b, payload.relation || ''].join('|');
+  } else {
+    return null;
+  }
+
+  return crypto.createHash('sha256').update(raw).digest('base64url').slice(0, 32);
+}
+
 /* 결제했거나 테스트 허가를 받았는가. 그리고 **몇 편까지 만들 수 있는가**.
    ★ 이용권으로 열렸는지(viaPass)를 함께 돌려준다 — 기본 편수가 다르기 때문이다.
    ★ 2026-09-07 대표님 지시("1쌍에 990원이고 2쌍은 990원*2 이런식으로 추가 과금해야지")

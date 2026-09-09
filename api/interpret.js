@@ -27,12 +27,13 @@ import { KNOWLEDGE_CHARS } from './_lib/knowledge.js';
 /* ★ 2026-09-02 — 프롬프트를 짜고 Anthropic을 부르는 일은 전부 _lib/aigen.js 로 옮겼다.
    여기서는 열쇠 계산·권한·저장만 한다. 그래서 MAX_TOKENS·ANTHROPIC_URL·systemFor·userPrompt를
    더는 안 가져온다 — 안 쓰는 이름을 남겨 두면 "여기서도 부르는구나"로 읽힌다. */
-import { MODEL, aiKindOf, cacheKeyOf, hasAiAccess } from './_lib/aiprompt.js';
+import { MODEL, aiKindOf, cacheKeyOf, subjectKeyOf, hasAiAccess } from './_lib/aiprompt.js';
 /* ★ 2026-09-02 — 장을 몇 덩이로 나눠 동시에 쓰게 한다. 통짜 창구(api/content.js)와 같은 것을 쓴다. */
 import { generateChunked } from './_lib/aigen.js';
 import {
   paidOrdersOf, testAccessOf,
   getAiCache, putAiCache, aiUsedCount, aiAlreadyUsed, noteAiUse, sweepAiOld,
+  latestAiForSubject,
 } from './_lib/store.js';
 
 /* SSE 한 줄. 앱은 이걸 받아 화면에 바로 얹는다. */
@@ -96,6 +97,8 @@ export default async function handler(req, res) {
     return json(res, 500, { error: 'server_error', reason: '서버 설정이 아직 끝나지 않았어요.' });
   }
   const cacheKey = cacheKeyOf(productId, payload);
+  /* 점수·문구가 바뀌어도 안 바뀌는 표식 — 되찾기에 쓴다(아래 quota 갈래) */
+  const subjectKey = subjectKeyOf(productId, payload);
 
   try {
     /* ── 1. 이미 만들어 둔 글이 있으면 그대로 준다 (돈도 횟수도 안 쓴다) ── */
@@ -123,7 +126,25 @@ export default async function handler(req, res) {
       /* ★ 2026-09-07 — 편수는 hasAiAccess가 센다(산 횟수 + 이용권 기본 편수).
          여기서 다시 계산하지 마라 — 두 창구가 서로 다른 값을 쓰게 된다. */
       const quota = allowed.quota;
+/* =====================================================================
+   ★ 2026-09-09 — 되찾기: 열쇠가 안 맞고 횟수도 없을 때, 먼저 만들어 둔 글을 돌려준다
+   ---------------------------------------------------------------------
+   여기가 "돈은 냈는데 아무것도 못 보는 상태"가 생기던 자리다. 점수표·등급 선·문구를
+   고치면 cacheKey 가 달라져 저장해 둔 글을 못 찾고, 횟수를 다 쓰셨으면 새로 만들지도
+   못해 그냥 429 로 끝났다.
+   subject_key(누구에 대한 글인가)로 **이 사람이 · 같은 상품으로 · 같은 대상에 대해**
+   만들어 둔 글을 찾아 돌려준다. 없으면 예전처럼 429 다.
+   ★ 새로 만들지 않는다 · 횟수를 쓰지 않는다 · 돈이 안 나간다.
+   ★ 화면은 `recovered:true` 를 보고 "계산이 바뀌어 먼저 만들어 드린 글을 보여드려요"를 적는다.
+===================================================================== */
       if (used >= quota) {
+        const back = await latestAiForSubject(sessionId, productId, subjectKey);
+        if (back && back.body) {
+          sseHead(res);
+          send(res, { type: 'delta', text: back.body });
+          send(res, { type: 'done', cached: true, recovered: true });
+          return res.end();
+        }
         return json(res, 429, {
           error: 'quota_exceeded',
           reason: `새 해석을 만들 수 있는 횟수(${quota}회)를 다 쓰셨어요. 이미 만든 해석은 계속 보실 수 있어요.`,
@@ -209,7 +230,7 @@ export default async function handler(req, res) {
       return res.end();
     }
 
-    await putAiCache({ cacheKey, productId, body: full, model: MODEL });
+    await putAiCache({ cacheKey, productId, body: full, model: MODEL, subjectKey });
     await noteAiUse(sessionId, cacheKey);
     /* 새로 만들 때 곁들여 오래된 기록을 지운다. 따로 도는 청소 작업이 없어도 쌓이지 않는다. */
     await sweepAiOld();

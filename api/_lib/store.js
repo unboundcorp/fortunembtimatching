@@ -194,8 +194,10 @@ export async function noteRestoreTry(sessionId) {
      product_id text not null,
      body       text not null,
      model      text not null,
+     subject_key text,                    -- 2026-09-09 추가 (아래 latestAiForSubject 참고)
      created_at timestamptz not null default now()
    );
+   create index if not exists ai_cache_subject_idx on ai_cache (product_id, subject_key);
    create table if not exists ai_usage (
      id         bigserial primary key,
      session_id text not null,
@@ -222,14 +224,50 @@ export async function getAiCache(cacheKey) {
   return rows && rows[0] ? rows[0] : null;
 }
 
-export async function putAiCache({ cacheKey, productId, body, model }) {
+export async function putAiCache({ cacheKey, productId, body, model, subjectKey }) {
   /* 같은 열쇠가 이미 있으면 덮지 않는다(먼저 만든 것이 정본이다).
      동시에 두 번 눌러 둘 다 만들어졌을 때 뒤엣것으로 바뀌면 방금 읽던 글이 달라진다. */
+  const row = { cache_key: cacheKey, product_id: productId, body, model };
+  if (subjectKey) row.subject_key = subjectKey;
   await rest('ai_cache?on_conflict=cache_key', {
     method: 'POST',
     headers: { Prefer: 'return=minimal,resolution=ignore-duplicates' },
-    body: JSON.stringify({ cache_key: cacheKey, product_id: productId, body, model }),
+    body: JSON.stringify(row),
   });
+}
+
+/* =====================================================================
+   ★ 2026-09-09 대표님 승인 — "결제하신 글은 무슨 일이 있어도 열린다"
+   ---------------------------------------------------------------------
+   저장 열쇠(cache_key)는 payload 통째의 해시다. 그래서 점수표·등급 선·문구를 고치면
+   값이 달라지고, **이미 결제하신 분이 만들어 둔 글을 못 찾는다.** 횟수까지 다 쓰셨으면
+   다시 만들지도 못한다 — 돈은 냈는데 아무것도 못 보는 상태가 된다.
+
+   subject_key 는 그와 달리 **'누구에 대한 글인가'만** 담는다(생년월일·성별처럼 안 변하는 것).
+   점수를 고쳐도 안 바뀌므로, 열쇠가 안 맞을 때 이것으로 먼저 만든 글을 찾아 돌려준다.
+
+   ★ **반드시 세 가지가 다 맞아야 한다** — 이 사람이 쓴 글(ai_usage) · 같은 상품 · 같은 대상.
+     궁합은 짝마다 다른 글이라, 대상을 안 보면 A×B 를 결제하신 분에게 A×C 글이 나간다.
+     그건 결함이 아니라 사고다.
+   ★ 이건 **되찾기 전용**이다. 여기서 횟수를 쓰지 않고, 새로 만들지도 않는다.
+===================================================================== */
+export async function latestAiForSubject(sessionId, productId, subjectKey) {
+  if (!sessionId || !productId || !subjectKey) return null;
+  /* 이 사람이 쓴 열쇠들 */
+  const used = await rest(
+    `ai_usage?session_id=eq.${encodeURIComponent(sessionId)}&select=cache_key`
+  );
+  const keys = (used || []).map((r) => r.cache_key)
+    .filter((k) => k && !/[,()"']/.test(k)).slice(0, 200);
+  if (!keys.length) return null;
+  /* 그중 같은 상품 · 같은 대상인 것 (가장 나중에 만든 것) */
+  const rows = await rest(
+    `ai_cache?cache_key=in.(${keys.map(encodeURIComponent).join(',')})`
+    + `&product_id=eq.${encodeURIComponent(productId)}`
+    + `&subject_key=eq.${encodeURIComponent(subjectKey)}`
+    + `&select=cache_key,body,model,created_at&order=created_at.desc&limit=1`
+  );
+  return rows && rows[0] ? rows[0] : null;
 }
 
 /* 이 사람이 '새로 만든' 해석이 몇 개인가.
