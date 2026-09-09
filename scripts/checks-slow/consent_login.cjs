@@ -175,6 +175,50 @@ const L = require('../_lib.cjs');
       bad.length ? bad.join(' / ') : '0건');
   }
 
+  /* ── ⑤-2 ★ 이미 쓰시던 분도 예외가 없다 (2026-09-09 "기존 데이터는 다 날려") ──
+     ★ 여기가 제일 조심스러운 자리다. 로그인 여부를 **알기 전에** 막으면 이미 로그인하신
+       분도 동의 화면이 한 번 번쩍인다. 그래서 KAKAO.loaded 를 함께 본다. */
+  {
+    const page = await L.openPage(browser, {state:L.makeState({onboarded:true}), width:390, height:1000});
+    await page.setRequestInterception(true);
+    page.on('request', (r) => {
+      const u = r.url();
+      const j = (o) => r.respond({status:200, contentType:'application/json', body:JSON.stringify(o)});
+      if(u.indexOf('/api/kakao') >= 0) return j({ready:true, linked:false});
+      if(u.indexOf('/api/entitlements') >= 0) return j({items:{}, pass:null, purchases:[]});
+      if(u.indexOf('/api/') >= 0) return j({ok:true});
+      r.continue();
+    });
+    await page.goto(APP, {waitUntil:'load'});
+    await L.wait(2800);
+    const t = await screen(page);
+    R.note(/만 14세 이상이에요/.test(t),
+      '★ 프로필이 있어도 로그인 안 했으면 동의·로그인 화면에 선다 (예외 없음)', t.slice(0,40));
+    const dup = await page.evaluate(() => !!document.querySelector('.modal-box'));
+    R.note(!dup, '그 위에 로그인 권유 창을 또 띄우지 않는다 (같은 말을 두 번 하지 않는다)');
+    await page.close();
+  }
+  {
+    /* 로그인한 분은 그대로 서비스로 들어간다 — 관문이 과하게 걸리면 여기서 잡힌다 */
+    const page = await L.openPage(browser, {state:L.makeState({onboarded:true}), width:390, height:1000});
+    await page.setRequestInterception(true);
+    page.on('request', (r) => {
+      const u = r.url();
+      const j = (o) => r.respond({status:200, contentType:'application/json', body:JSON.stringify(o)});
+      if(u.indexOf('/api/kakao') >= 0) return j({ready:true, linked:true, since:Date.now()});
+      if(u.indexOf('/api/entitlements') >= 0) return j({items:{}, pass:null, purchases:[]});
+      if(u.indexOf('/api/sync') >= 0) return j({ok:true, data:{}});
+      if(u.indexOf('/api/') >= 0) return j({ok:true});
+      r.continue();
+    });
+    await page.goto(APP, {waitUntil:'load'});
+    await L.wait(2800);
+    const t = await screen(page);
+    R.note(!/만 14세 이상이에요/.test(t),
+      '로그인하신 분은 관문에 안 걸린다 (동의 화면이 번쩍이지 않는다)', t.slice(0,40));
+    await page.close();
+  }
+
   /* ── ⑥ ★ 잠깐 못 물어본 것과 정말 못 하는 것을 가르는가 ────────
      부팅 때 /api/kakao 가 실패하면 화면은 ready=false 로 둔다. 그것만 보고 지나가게 두면
      **잠깐 끊겼던 분이 로그인 없이 들어온다.** 동의를 누르는 그 자리에서 한 번 더 물어야 한다. */

@@ -24744,7 +24744,15 @@ function render(){
      [문의]를 누르면 온보딩(만 14세 이상이에요) 화면으로 튕겼다.**
      대표님은 손님용 프로필을 안 만든 새 브라우저로 관리자 페이지를 보신다 — 늘 이 조건이다.
      ★ 관리자 화면을 새로 만들면 ADMIN_ROUTES 에 반드시 넣으십시오. 두 군데가 이 표를 본다. */
-  if(!STATE.onboarded && STATE.profiles.length===0 && !ADMIN_ROUTES[ROUTE]){ renderOnboarding(); return; }
+  /* ★ 2026-09-09 대표님 지시 — 카카오 로그인이 **예외 없이** 필수다("기존 데이터는 다 날려").
+     그래서 로그인 안 하신 분은 프로필이 있어도 이 화면에 선다.
+     ★ `KAKAO.loaded` 를 함께 보는 이유: 부팅 직후에는 아직 로그인 여부를 모른다.
+       그때부터 막으면 **이미 로그인하신 분도 동의 화면이 한 번 번쩍이고** 지나간다
+       (`/api/kakao` 왕복 0.3초). 알고 난 뒤에만 막는다.
+     ★ 관리자 화면은 예외다(ADMIN_ROUTES) — 대표님은 손님용 프로필이 없는 새 브라우저로
+       관리자 페이지를 보신다. 2026-09-08에 여기가 빠져서 [문의]가 튕겼다. */
+  var needKakao = KAKAO.loaded && !KAKAO.linked;
+  if((!STATE.onboarded || needKakao) && !ADMIN_ROUTES[ROUTE]){ renderOnboarding(); return; }
   if(ROUTE==='setup' && SETUP){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderSetup(); return; }
   /* ★ R50 — 프로필이 없어도 홈(고르는 화면)과 안내 문서는 열려야 한다.
      예전에는 프로필이 없으면 무조건 마법사로 보냈다. 그래서 새로 온 사람은
@@ -25350,10 +25358,11 @@ scheduleCharWarm();
       /* ★ 2026-08-29 — 카카오로 보냈는데 연결이 안 된 채 돌아온 경우를 잡는다.
          앱 로그인이 막힌 손님은 여기서만 도움을 받을 수 있다(위 kret 분기는 안 탄다). */
       offerAccountLoginIfStranded(kret);
-      /* ★ 2026-09-09 — 링크를 받고 들어오신 분께 먼저 로그인을 권한다.
-         여기서 부르는 이유: KAKAO.ready 를 알아야 하는데 그건 kakaoRefresh() 가 채우고,
-         그것이 끝나는 자리가 여기다. 더 일찍 부르면 '아직 모름' 상태라 아무것도 못 한다. */
-      offerLoginForInvite();
+      /* ★ 2026-09-09 — 여기서 offerLoginForInvite() 를 부르던 것을 **지웠다.**
+         로그인이 예외 없이 필수가 되면서(대표님 지시) 로그인 안 하신 분은 render() 의
+         관문에서 이미 동의·로그인 화면에 서 있다. 그 위에 창까지 띄우면 같은 말을 두 번 한다.
+         ★ 함수 자체는 남겨 둔다 — 관리자 화면(ADMIN_ROUTES)처럼 관문을 비켜 가는 자리에서
+           쓸 데가 생길 수 있다. 되살릴 때는 관문과 겹치지 않는지 먼저 보십시오. */
       /* ★ R86 — 결제가 안 됐다는 안내는 맨 마지막에 띄운다.
          카카오 토스트보다 뒤여야 모달이 그 위에 온다. */
       showPayFail();

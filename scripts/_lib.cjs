@@ -74,6 +74,18 @@ function serve(dir, port){
   return new Promise(function(resolve){
     const srv = http.createServer(function(req, res){
       const u = decodeURIComponent(String(req.url).split('?')[0]);
+      /* ★ 2026-09-09 — 카카오 로그인이 예외 없이 필수가 되면서(대표님 지시), 로그인 상태를
+         모르는 브라우저는 **어느 화면도 못 봅니다.** 그러면 화면 검사가 전부 동의 화면만
+         보게 됩니다. 그래서 이 시험용 서버는 `/api/kakao` 에만 "로그인돼 있다"고 답합니다 —
+         검사기들이 보려는 것은 로그인한 손님이 보는 화면이기 때문입니다.
+         ★ 관문 자체는 `checks-slow/consent_login.cjs` 가 **자기 가짜 서버로** 따로 봅니다
+           (로그인 안 함 · 카카오 꺼짐 · 이미 쓰던 분). 여기서 통과시켜도 그 검사는 그대로 돕니다.
+         ★ 나머지 `/api/*` 는 그대로 501 입니다. 그건 고장이 아니라 정적 서버라서입니다. */
+      if(u.indexOf('/api/kakao') === 0){
+        res.writeHead(200, {'content-type':'application/json; charset=utf-8'});
+        res.end(JSON.stringify({ready:true, linked:true, since:Date.now()}));
+        return;
+      }
       if(u.indexOf('/api/') === 0){ res.writeHead(501); res.end('no api on static server'); return; }
       let f = path.join(dir, u === '/' ? '/index.html' : u);
       if(!f.startsWith(dir)){ res.writeHead(403); res.end(); return; }

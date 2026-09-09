@@ -40,20 +40,25 @@ const L = require('../_lib.cjs');
   /* ── ① 떠날 때 초대 주소를 쪽지에 적는가 ─────────────────────── */
   {
     const page = await L.openPage(browser, {state:fresh(), width:390, height:1000});
-    let note = null;
+    let note = null, linked = false;
     await page.setRequestInterception(true);
     page.on('request', (r) => {
       const u = r.url();
       const j = (o) => r.respond({status:200, contentType:'application/json', body:JSON.stringify(o)});
       if(u.indexOf('/api/kakao?step=start') >= 0){
+        /* ★ 로그인이 끝났으니 이 뒤로는 서버도 '연결됨'이라고 답해야 한다.
+           계속 linked:false 로 답하면 화면이 관문으로 되돌린다 — 그게 맞는 동작이다
+           (실제로 연결 안 된 분을 들여보내면 안 되므로). 그래서 여기서 뒤집는다. */
+        linked = true;
         /* ★ 응답을 잠깐 붙잡아 둔다. 그 동안 페이지는 아직 옛 문서라 쪽지를 읽을 수 있다 —
            이동이 끝나면 restoreAfterKakao 가 쪽지를 지워서 못 읽는다. */
         return L.wait(900).then(function(){
           r.respond({status:302, headers:{location:'/fortune.html?kakao=ok&moved=0'}});
         });
       }
-      if(u.indexOf('/api/kakao') >= 0) return j({ready:true, linked:false});
+      if(u.indexOf('/api/kakao') >= 0) return j({ready:true, linked:linked, since:Date.now()});
       if(u.indexOf('/api/entitlements') >= 0) return j({items:{}, pass:null, purchases:[]});
+      if(u.indexOf('/api/sync') >= 0) return j({ok:true, data:{}});
       if(u.indexOf('/api/') >= 0) return j({ok:true});
       r.continue();
     });
