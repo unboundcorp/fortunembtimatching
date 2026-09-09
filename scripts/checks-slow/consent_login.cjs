@@ -312,6 +312,27 @@ const L = require('../_lib.cjs');
     await page.close();
   }
 
+  /* ── ⑧ ★ 로그인을 못 하는 분이 우리에게 말할 길이 있는가 ────────
+     `kakaoUnavailableModal` 이 "계속 이러면 [문의하기]로 알려주세요"라고 말한다.
+     그런데 [문의하기]가 관문 뒤에 있으면 **로그인이 안 되는 분에게 로그인해야 닿는
+     곳으로 가라고 한 것**이 된다. 막다른 길이다. 실제로 그렇게 만들었다가 잡았다. */
+  {
+    const page = await open('', true);
+    const links = await page.evaluate(() =>
+      [...document.querySelectorAll('.fl')].map((x) => (x.textContent||'').trim()));
+    R.note(links.indexOf('문의하기') >= 0,
+      '★ 동의 화면에 [문의하기]가 있다 (로그인 못 하는 분의 유일한 길)', links.join(' · '));
+    const moved = await L.clickText(page, /^문의하기$/, {all:true});
+    await L.wait(1400);
+    const t = await screen(page);
+    R.note(!!moved && /무엇이 궁금하신지/.test(t),
+      '★ 눌러서 실제로 문의 화면까지 간다 (프로필도 로그인도 없이)', t.slice(0,40));
+    R.note(!/언제 태어나셨어요/.test(t),
+      '문의하러 가는 길에 생년월일부터 넣으라고 하지 않는다');
+    R.note(page.__errs.length === 0, '⑧ JS 오류 0건', page.__errs.join(' | ').slice(0,120));
+    await page.close();
+  }
+
   await browser.close(); if(srv) srv.close();
   R.done();
 })().catch((e) => { console.log('터짐: ' + (e && e.message)); process.exit(1); });

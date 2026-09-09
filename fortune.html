@@ -14922,6 +14922,16 @@ var LAST_ROUTE = null;
 var LAST_VIEW_KEY = null;   /* 한 화면 안에서 갈아 끼우는 '쪽'까지 담은 열쇠 — render() 참고 */
 /* 관리자 페이지의 화면들. 프로필이 없어도 열려야 하는 자리다(render()의 온보딩 관문 참고). */
 var ADMIN_ROUTES = { stats:1, csAdmin:1 };
+/* ★ 2026-09-09 — 로그인 관문을 비켜 가는 화면.
+   ---------------------------------------------------------------------
+   로그인을 필수로 걸면서 **[문의하기]까지 같이 막혀 있었습니다.** 그런데
+   `kakaoUnavailableModal` 은 "계속 이러면 [문의하기]로 알려주세요"라고 말합니다 —
+   **로그인이 안 되는 분에게 로그인해야 닿는 곳으로 가라고 한 것**입니다. 막다른 길입니다.
+   ★ 로그인을 못 하는 분이 우리에게 말할 길은 반드시 열려 있어야 합니다.
+   ★ 문의 화면은 프로필도 로그인도 필요 없습니다(닉네임 없이 접수됩니다).
+   ★ 여기에 화면을 늘릴 때는 **로그인 없이 봐도 되는 것인지** 먼저 보십시오. */
+var GATE_FREE_ROUTES = { support:1, supportPay:1, supportOrders:1, supportMine:1,
+                         feedback:1, faq:1 };
 /* ★ 화면 전환은 setRoute() 말고도 코드 곳곳에서 ROUTE='...'; render(); 로 일어난다.
    setRoute 한 군데만 잡으면 절반은 놓친다. 그래서 실제로 그려지는 자리에서 잡는다. */
 function pushRouteHistory(route){
@@ -16051,9 +16061,14 @@ function renderOnboarding(){
     + '결제하신 것과 만드신 기록이 계정에 남아서, 기기를 바꾸셔도 그대로 열려요. '
     + '시작하시면 이용약관과 개인정보처리방침에 동의하신 것으로 봐요.'
   ]));
-  var docRow = el('div',{style:'display:flex;gap:10px;justify-content:center;margin-top:4px;'});
+  var docRow = el('div',{style:'display:flex;gap:10px;justify-content:center;margin-top:4px;flex-wrap:wrap;'});
   docRow.appendChild(el('button',{class:'fl', type:'button', onclick:openTermsModal},['이용약관']));
   docRow.appendChild(el('button',{class:'fl', type:'button', onclick:openPrivacyModal},['개인정보처리방침']));
+  /* ★ 2026-09-09 — 로그인이 필수가 되면서 이 화면이 서비스의 문이 됐습니다.
+     로그인이 안 되는 분이 우리에게 말할 길이 여기 없으면 그분은 아무것도 못 합니다.
+     (`kakaoUnavailableModal` 도 "[문의하기]로 알려주세요"라고 말합니다 — 그 말이
+      성립하려면 여기에 있어야 합니다.) */
+  docRow.appendChild(el('button',{class:'fl', type:'button', onclick:function(){ openSupport(); }},['문의하기']));
   wrap.appendChild(docRow);
   main.appendChild(autoTermify(wrap));
 }
@@ -24787,7 +24802,7 @@ function render(){
      ★ 관리자 화면은 예외다(ADMIN_ROUTES) — 대표님은 손님용 프로필이 없는 새 브라우저로
        관리자 페이지를 보신다. 2026-09-08에 여기가 빠져서 [문의]가 튕겼다. */
   var needKakao = KAKAO.loaded && !KAKAO.linked;
-  if((!STATE.onboarded || needKakao) && !ADMIN_ROUTES[ROUTE]){ renderOnboarding(); return; }
+  if((!STATE.onboarded || needKakao) && !ADMIN_ROUTES[ROUTE] && !GATE_FREE_ROUTES[ROUTE]){ renderOnboarding(); return; }
   if(ROUTE==='setup' && SETUP){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderSetup(); return; }
   /* ★ R50 — 프로필이 없어도 홈(고르는 화면)과 안내 문서는 열려야 한다.
      예전에는 프로필이 없으면 무조건 마법사로 보냈다. 그래서 새로 온 사람은
@@ -24795,7 +24810,12 @@ function render(){
      나머지 화면(사주·궁합 등)은 계산할 값이 없으므로 여전히 마법사로 보낸다. */
   /* ★ R84 — feedback(개선 의견)도 프로필 없이 열려야 한다. 서비스를 처음 켜서 막힌 분이야말로
      가장 물어볼 게 많은데, 거기서 생년월일부터 넣으라고 하면 그 말을 들을 길이 없어진다. */
-  var NO_PROFILE_OK = {home:1, about:1, guideSaju:1, guideMbti:1, faq:1, glossary:1, settings:1, stats:1, csAdmin:1, feedback:1};
+  /* ★ 2026-09-09 — [문의하기] 갈래도 넣는다. 로그인이 필수가 되면서 이 길이
+     **로그인을 못 하는 분이 우리에게 말할 유일한 길**이 됐는데, 프로필이 없다고
+     마법사로 보내면 거기서 또 막힌다(실측으로 잡음 — 누르니 생년월일 입력이 떴다).
+     `GATE_FREE_ROUTES` 와 짝이다. 한쪽만 열면 여기서 막힌다. */
+  var NO_PROFILE_OK = {home:1, about:1, guideSaju:1, guideMbti:1, faq:1, glossary:1, settings:1, stats:1, csAdmin:1, feedback:1,
+                       support:1, supportPay:1, supportOrders:1, supportMine:1};
   if(STATE.profiles.length===0 && !NO_PROFILE_OK[ROUTE]){ startSetupWizard(null); renderSetup(); return; }
   if(ROUTE==='groupJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderGroupJoin(); return; }
   if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
