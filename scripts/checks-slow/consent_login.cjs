@@ -126,17 +126,27 @@ const L = require('../_lib.cjs');
     await page.close();
   }
 
-  /* ── ④ ★ 카카오를 쓸 수 없으면 막지 않는다 (막다른 길 방지) ──── */
+  /* ── ④ ★ 카카오를 못 써도 **들여보내지 않는다** ────────────────
+     2026-09-09 대표님 지시 "카카오 로그인은 필수로 해라 그냥".
+     ★ 다만 막다른 길이면 안 된다 — 왜 안 되는지 말하고 [다시 시도]가 있어야 한다. */
   {
     const page = await open('', false);
     await consent(page);
     await L.clickText(page, /^동의하고 시작하기$/);
-    await L.wait(2500);   /* 지나가게 두기 전에 한 번 더 물어보므로 조금 더 기다린다 */
+    await L.wait(3000);   /* 지나가게 두기 전에 한 번 더 물어보므로 조금 더 기다린다 */
     const t = await screen(page);
+    const m = await page.evaluate(() => {
+      const b = document.querySelector('.modal-box');
+      return b ? (b.innerText||'').replace(/\s+/g,' ').trim() : '';
+    });
     R.note(page.__went === 0, '카카오가 꺼져 있으면 로그인으로 보내지 않는다', '보낸 횟수 ' + page.__went);
-    R.note(/언제 태어나셨어요/.test(t),
-      '★ 그래도 서비스는 들어갈 수 있다 (카카오가 멈춰도 아무도 못 쓰는 상태를 만들지 않는다)',
-      t.slice(0,40));
+    R.note(!/언제 태어나셨어요/.test(t),
+      '★ 로그인 없이는 사주 입력으로 들어가지 못한다 (예외 없음)', t.slice(0,40));
+    R.note(/지금은 카카오 로그인을 할 수 없어요/.test(m),
+      '★ 왜 안 되는지 말해 준다 (아무 말 없이 멈춰 있지 않는다)', m.slice(0,44));
+    R.note(/다시 시도/.test(m), '★ 다시 해 볼 길을 준다 (막다른 길이 아니다)');
+    const on = await page.evaluate(() => (JSON.parse(localStorage.getItem('inyeonjeom.v2')||'{}')).onboarded);
+    R.note(on !== true, '로그인 전에는 시작한 것으로 치지 않는다', 'onboarded=' + on);
     await page.close();
   }
 

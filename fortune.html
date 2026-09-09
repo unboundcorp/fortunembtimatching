@@ -17672,9 +17672,9 @@ function renderLandingIntro(){
    ★ 왜 이렇게 정하셨나: 이 서비스의 모든 것(결제·기기 사이 이어보기·모임 목록)이
      카카오 계정에 달려 있습니다. 계정 없이 사주를 다 넣으면 그 브라우저 안에만 남고,
      나중에 결제하려면 처음부터 다시 해야 합니다.
-   ★ **카카오를 쓸 수 없을 때는 요구하지 않습니다**(`KAKAO.ready === false`).
-     카카오가 잠깐 멈춘 동안 아무도 서비스를 못 쓰는 상태를 만들면 안 됩니다.
-     막는 것이 아니라 "요구할 수 없을 때는 요구하지 않는다"는 뜻입니다.
+   ★ **예외가 없습니다** (2026-09-09 대표님 지시 "카카오 로그인은 필수로 해라 그냥").
+     카카오를 못 쓰는 상태여도 들여보내지 않습니다. 대신 왜 안 되는지 말하고
+     [다시 시도]를 줍니다(`kakaoUnavailableModal`). 막다른 길과 다릅니다.
    ★ **이미 쓰시던 분은 다시 막지 않습니다.** 이 관문은 처음 오신 분(온보딩)에만 걸립니다.
      쓰던 분을 갑자기 가로막으면 그분이 만들어 둔 것 앞에서 문이 닫힙니다.
      그분들께는 `offerLoginForInvite()` 가 한 번 권합니다.
@@ -17686,24 +17686,38 @@ function beginAfterConsent(mode){
   STATE.consentAt = Date.now(); saveState();
   if(KAKAO.linked){ finishConsent(mode); return; }
   if(KAKAO.ready){ kakaoStart(null, false, mode || 'home'); return; }
-  /* ★ 2026-09-09 대표님 질문("우리 서버가 ready false 일 수 있어?")으로 조인 자리.
-     `KAKAO.ready` 가 false 인 경우는 둘이다.
-       ① 서버가 정말 못 한다 — `KAKAO_REST_API_KEY` 환경변수가 없으면 `/api/kakao` 가
-          `ready:false` 를 돌려준다. 이건 우리 설정 사고다.
-       ② **물어보지를 못했다** — 부팅 때 `kakaoRefresh()` 의 fetch 가 실패하면 catch 가
-          `ready=false` 로 놓는다. 폰이 잠깐 끊기기만 해도 이렇게 된다. 이쪽이 훨씬 흔하다.
-     ②를 ①로 착각하면 **잠깐 끊겼던 분이 로그인 없이 들어옵니다.** 그래서 지나가게
-     두기 전에 이 자리에서 한 번 더 물어본다. 그래도 안 되면 막지 않는다 —
-     물어볼 수 없는 것을 요구하면 아무도 서비스에 못 들어온다. */
+  /* ★ `KAKAO.ready === false` 는 두 가지를 뜻한다 (2026-09-09 대표님 질문으로 조인 자리).
+       ① 서버가 정말 못 한다 — `KAKAO_REST_API_KEY` 환경변수가 없다. 거의 없는 일이다.
+       ② **물어보지를 못했다** — `kakaoRefresh()` 의 catch 가 무조건 false 로 놓는다.
+          폰이 부팅 순간에 잠깐 끊기기만 해도 이렇게 된다. 이쪽이 훨씬 흔하다.
+     ②를 ①로 착각해 그냥 들여보내면 잠깐 끊겼던 분이 로그인 없이 들어온다.
+     그래서 이 자리에서 한 번 더 물어본다. */
   showToast('카카오 로그인을 준비하는 중이에요…');
   kakaoRefresh().then(function(){
     hideToast();
     if(KAKAO.linked){ finishConsent(mode); return; }
     if(KAKAO.ready){ kakaoStart(null, false, mode || 'home'); return; }
-    finishConsent(mode);
-  }).catch(function(){ hideToast(); finishConsent(mode); });
+    kakaoUnavailableModal(mode);
+  }).catch(function(){ hideToast(); kakaoUnavailableModal(mode); });
 }
-/* 로그인까지 끝났다(또는 카카오를 쓸 수 없다). 이제 사주 정보를 받는다. */
+/* 두 번 물어도 카카오를 쓸 수 없다. **그래도 들여보내지 않는다**
+   (2026-09-09 대표님 지시 "카카오 로그인은 필수로 해라 그냥").
+   ★ 다만 **막다른 길로 두지는 않는다.** 왜 안 되는지 말하고 다시 해 볼 길을 준다.
+     아무 말 없이 멈춰 있는 화면과, 이유를 적고 [다시 시도]가 있는 화면은 다르다.
+   ★ 여기서 finishConsent 를 부르지 마십시오 — 그게 곧 '로그인 없이 통과'입니다. */
+function kakaoUnavailableModal(mode){
+  var body = el('div',{class:'sheet-body'});
+  body.appendChild(el('p',{},['지금은 카카오 로그인을 할 수 없어요.']));
+  body.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},[
+    '인터넷 연결이 잠깐 끊겼을 수 있어요. 잠시 뒤 [다시 시도]를 눌러주세요. ' +
+    '계속 이러면 화면 아래 [문의하기]로 알려주시면 확인해 드릴게요.'
+  ]));
+  openModal('카카오 로그인', body, [
+    {label:'다시 시도', cls:'btn-primary', onclick:function(){ closeModal(); beginAfterConsent(mode); }},
+    {label:'닫기', cls:'btn-ghost', onclick:closeModal}
+  ]);
+}
+/* 로그인까지 끝났다. 이제 사주 정보를 받는다. */
 function finishConsent(mode){
   STATE.onboarded = true; saveState();
   if(mode === 'invited'){
