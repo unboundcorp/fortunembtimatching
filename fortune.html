@@ -14220,6 +14220,62 @@ function relationLabel(key){ return relationOf(key).label; }
 function relationNote(key){ return relationLabel(key) + ' 사이로 봐요. ' + relationOf(key).note; }
 function relationNoteDetail(key){ return relationOf(key).note; }
 
+/* =====================================================================
+   종합 궁합 등급 — 자르는 선 (2026-09-09 대표님 결정 "나로 가라")
+   ---------------------------------------------------------------------
+   예전 선은 85 / 70 / 55 / 40 이었습니다. 0~100 을 다섯으로 나눈 값인데,
+   **실제로 나올 수 있는 점수가 44~88 뿐**이라 등급이 가운데 둘에 몰렸습니다.
+
+   실측 (사람 320명 · 모든 쌍 51,040개 · 사이 네 가지 각각. 성격유형은 균등 추출):
+
+   | 등급 | 옛 선에서 (친구) |
+   |---|---|
+   | 찰떡 85+ | 0.6% |
+   | 강한 70~84 | 46.2% |
+   | 무난한 55~69 | 50.3% |
+   | 엇갈린 40~54 | 2.9% |
+   | 상극 40 미만 | **0%** |
+
+   ★ '상극 인연'은 확률이 낮았던 것이 아니라 **수학적으로 나올 수 없었습니다.**
+     하위 네 점수의 바닥이 성격유형 47 · 사주 43 · 다섯 기운 40 · 띠 35 이라,
+     가중평균이 43.5 밑으로 안 내려갑니다. 다섯 등급 중 하나가 죽어 있었습니다.
+   ★ '찰떡'도 최대값이 87~88 이라 3~4점짜리 틈이었습니다.
+
+   새 선 80 / 74 / 64 / 56 으로 재면 **7 / 22 / 47 / 21 / 4 %** 가 됩니다.
+   ★ **하위 점수표는 한 글자도 안 건드렸습니다.** 그쪽은 원전과 맞춰 둔 값입니다
+     (어느 글자쌍이 육합·충인지는 문헌에서 오고 크기는 우리가 정한 값 — 위 '점수 숫자에는
+     출처가 없습니다' 절). 여기서 옮긴 것은 **등급 이름을 붙이는 선뿐**입니다.
+   ★ 선을 다시 바꾸려면 **반드시 분포를 다시 재십시오.** 하위 점수표를 손대면 이 표도 낡습니다.
+   ★ 등급 이름은 AI 재료(payload)에 들어갑니다 — 선을 바꾸면 저장된 궁합 유료 글이
+     안 열립니다(cacheKeyOf가 payload 해시). 바꾼 시점은 결제가 전부 테스트 키라
+     실손해 0원이었습니다. **팔기 시작한 뒤에는 바꾸지 마십시오.**
+   ★ 화면 범례(TIER_RANGE)를 손으로 다시 적지 마십시오 — combinedTierRange()가 이 표에서
+     만듭니다. 한쪽만 고치면 범례가 거짓말을 합니다.
+===================================================================== */
+var COMBINED_TIERS = [
+  {name:'찰떡 인연',   min:80},
+  {name:'강한 인연',   min:74},
+  {name:'무난한 인연', min:64},
+  {name:'엇갈린 인연', min:56},
+  {name:'상극 인연',   min:0}
+];
+function combinedTierOf(score){
+  for(var i=0;i<COMBINED_TIERS.length;i++){
+    if(score >= COMBINED_TIERS[i].min) return COMBINED_TIERS[i].name;
+  }
+  return COMBINED_TIERS[COMBINED_TIERS.length-1].name;
+}
+/* 범례에 적을 점수 구간. 위 표에서 만든다 — 손으로 적지 않는다. */
+function combinedTierRange(name){
+  for(var i=0;i<COMBINED_TIERS.length;i++){
+    if(COMBINED_TIERS[i].name !== name) continue;
+    if(i === 0) return COMBINED_TIERS[0].min + '점 이상';
+    if(i === COMBINED_TIERS.length - 1) return (COMBINED_TIERS[i-1].min - 1) + '점 이하';
+    return COMBINED_TIERS[i].min + '~' + (COMBINED_TIERS[i-1].min - 1) + '점';
+  }
+  return '';
+}
+
 function computeCompat(pA, pB, relationKey){
   var mbti = MBTI_MATRIX[pA.mbti][pB.mbti];
   var elem = elementScore(pA.elementIdx, pB.elementIdx);
@@ -14244,7 +14300,7 @@ function computeCompat(pA, pB, relationKey){
   /* ★ 관계별 비중(위 COMPAT_RELATIONS). 관계를 안 주면 지금까지와 똑같은 친구 비중이다. */
   var rel = relationOf(relationKey || COMPAT_RELATION_DEFAULT);
   var combined = blend([[mbti,rel.w.mbti],[saju.score,rel.w.saju],[elem,rel.w.elem],[zod,rel.w.zod]]);
-  var combinedTier = combined>=85?'찰떡 인연':combined>=70?'강한 인연':combined>=55?'무난한 인연':combined>=40?'엇갈린 인연':'상극 인연';
+  var combinedTier = combinedTierOf(combined);
   return {total:total, tier:tier, mbtiScore:mbti, elemScore:elem, zodScore:zod, categories:cats,
     saju:saju, combined:combined, combinedTier:combinedTier,
     relation:rel.key, relationLabel:rel.label, relationNote:rel.note};
@@ -20792,14 +20848,13 @@ function buildGroupCompatGraph(members, pairs, onSelect){
 
   /* ★ R36 — 예전에는 '일상어 (등급 이름)' 두 벌을 나란히 적었다. 이름이 하나로 합쳐진 지금
      그대로 두면 '찰떡 인연 (찰떡 인연)'가 된다. 점수 구간을 대신 적어 범례가 실제로 쓸모 있게 한다. */
-  var TIER_RANGE = {'찰떡 인연':'85점 이상','강한 인연':'70~84점','무난한 인연':'55~69점',
-                    '엇갈린 인연':'40~54점','상극 인연':'39점 이하'};
+  /* ★ 구간을 손으로 적지 않는다 — COMBINED_TIERS 에서 만든다(2026-09-09). */
   var legend=el('div',{class:'gc-legend'});
   GC_TIER_ORDER.forEach(function(t){
     legend.appendChild(el('span',{},[
       el('span',{class:'dot', style:'background:'+gcTierColor(t)+';'}),
       t,
-      el('span',{class:'gl-term'},[TIER_RANGE[t] || ''])
+      el('span',{class:'gl-term'},[combinedTierRange(t) || ''])
     ]));
   });
   wrap.appendChild(legend);
@@ -25611,6 +25666,9 @@ try{
       getSajuResult: getSajuResult, charKeyForMbti: charKeyForMbti, charImgId: charImgId,
       /* 2026-09-09 — 그룹 나가기 검사(checks-slow/group_leave.cjs)가 쓴다.
          명단 한 줄을 만드는 규칙(gcMeetRow)을 검사기가 베껴 적으면 한쪽만 고쳐져 어긋난다. */
+      /* 궁합 등급 분포 검사(checks-slow/compat_dist.cjs)가 쓴다 — 사람을 만들려면 이 셋이 필요하다 */
+      dominantElementIdx: dominantElementIdx, calcZodiac: calcZodiac, ELEMENTS: ELEMENTS,
+      COMBINED_TIERS: COMBINED_TIERS, combinedTierRange: combinedTierRange,
       activeProfile: activeProfile, gcMeetRow: gcMeetRow,
       openSavedGroup: openSavedGroup, groupMyMemberRow: groupMyMemberRow
     };
