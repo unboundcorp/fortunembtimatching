@@ -333,6 +333,39 @@ const L = require('../_lib.cjs');
     await page.close();
   }
 
+  /* ── ⑨ ★★ 쪽지가 사라진 채 돌아와도 동의를 두 번 시키지 않는가 ──
+     안드로이드에서는 카카오 로그인이 카카오톡 앱이나 다른 탭으로 다녀오는 일이 있고,
+     그러면 sessionStorage 쪽지가 통째로 없어진다. 대표님 갤럭시에서 실제로 그랬다 —
+     "로그인했어요" 알림이 뜬 채 동의 화면이 다시 서 있었다.
+     ★ 동의는 localStorage 에 남아 있으므로 그것으로 이어 가야 한다. */
+  {
+    const page = await L.openPage(browser, {state:L.makeState({profiles:[], activeId:null,
+      onboarded:false, consentAt:Date.now()}), width:390, height:1000});
+    await stubLinked(page);
+    /* 쪽지를 **심지 않는다** — 사라진 상황 그대로 */
+    await page.goto(APP + '?kakao=ok&moved=0', {waitUntil:'load'});
+    await L.wait(3200);
+    const t = await screen(page);
+    R.note(/언제 태어나셨어요/.test(t),
+      '★ 쪽지가 없어져도 동의한 것을 기억해 사주 입력으로 이어간다', t.slice(0,40));
+    R.note(!/만 14세 이상이에요/.test(t), '동의를 두 번 시키지 않는다');
+    const on = await page.evaluate(() => (JSON.parse(localStorage.getItem('inyeonjeom.v2')||'{}')).onboarded);
+    R.note(on === true, '시작한 것으로 친다', 'onboarded=' + on);
+    R.note(page.__errs.length === 0, '⑨ JS 오류 0건', page.__errs.join(' | ').slice(0,120));
+    await page.close();
+  }
+  {
+    /* 동의도 안 한 채 kakao=ok 로 들어오면? 그때는 그냥 동의 화면이어야 한다 */
+    const page = await L.openPage(browser, {state:fresh(), width:390, height:1000});
+    await stubLinked(page);
+    await page.goto(APP + '?kakao=ok&moved=0', {waitUntil:'load'});
+    await L.wait(3200);
+    const t = await screen(page);
+    R.note(/만 14세 이상이에요/.test(t),
+      '동의한 적이 없으면 그냥 동의 화면이다 (동의를 건너뛰지 않는다)', t.slice(0,36));
+    await page.close();
+  }
+
   await browser.close(); if(srv) srv.close();
   R.done();
 })().catch((e) => { console.log('터짐: ' + (e && e.message)); process.exit(1); });

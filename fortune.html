@@ -6516,10 +6516,20 @@ function restoreAfterKakao(){
     var raw = sessionStorage.getItem(KAKAO_BACK_KEY);
     sessionStorage.removeItem(KAKAO_BACK_KEY);
     if(raw) saved = JSON.parse(raw);
-  }catch(e){ return; }
-  if(!saved) return;
-  /* 오래된 기록은 쓰지 않는다(탭을 켜 둔 채 한참 뒤에 돌아온 경우). */
-  if(!saved.at || Date.now() - saved.at > 10 * 60 * 1000) return;
+  }catch(e){ saved = null; }
+  /* ★★ 2026-09-09 대표님 갤럭시 화면으로 잡음 — **로그인은 됐는데 동의 화면에 그대로 있었다.**
+     ("로그인했어요" 알림이 뜬 채로 동의 두 칸이 다시 보였습니다.)
+     원인: 안드로이드에서는 카카오 로그인이 **카카오톡 앱이나 다른 탭**으로 다녀오는 일이 있고,
+     그러면 `sessionStorage` 쪽지가 통째로 사라진다. 쪽지가 없으면 `finishConsent()` 가 안 불려서
+     `STATE.onboarded` 가 false 로 남고, 관문이 다시 동의 화면을 세운다.
+     **동의를 두 번 하게 되는 자리다.**
+     ★ 동의는 `localStorage`(`STATE.consentAt`)에 남아 있다 — 탭이 바뀌어도 살아 있다.
+       그래서 쪽지가 없어도 그것으로 이어 간다. `consentAt` 을 로그인보다 **먼저** 저장해 둔
+       이유가 바로 이것이다(beginAfterConsent). 그 순서를 바꾸지 마십시오. */
+  if(!saved || !saved.at || Date.now() - saved.at > 10 * 60 * 1000){
+    if(STATE.consentAt && !STATE.onboarded && KAKAO.linked){ finishConsent(null); }
+    return;
+  }
   try{
     if(saved.mode === 'self' || saved.mode === 'compat') setMode(saved.mode);
     /* ★ 2026-09-09 — 초대가 기다리고 있으면 **그쪽이 이긴다.**
