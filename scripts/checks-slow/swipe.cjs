@@ -46,18 +46,24 @@ const L = require('../_lib.cjs');
   });
   R.note(/왼쪽으로 밀면/.test(hint), '왼쪽으로 밀라고 화면이 알려준다', hint.slice(0,44));
 
-  /* [지우기] 단추가 줄 뒤에 깔려 있고, 밀기 전에는 안 보인다 */
+  /* ★ 쉴 때 [지우기]는 **감싼 것 바깥**에 있어야 한다.
+     처음에는 z-index 로만 가렸는데 대표님 아이폰에서는 그대로 보였다("클릭하자마자 지우기가
+     뜬다"). 가려 놓은 것은 기기에 따라 새어 나온다 — 밖에 내놓으면 새어 나올 수가 없다. */
   const hidden = await page.evaluate(() => {
     const w = document.querySelector('.swipe-wrap');
     const del = w.querySelector('.swipe-del');
-    const row = w.querySelector('.settings-row');
-    const wr = w.getBoundingClientRect(), dr = del.getBoundingClientRect(), rr = row.getBoundingClientRect();
-    return { covered: rr.right >= dr.right - 1, inside: dr.right <= wr.right + 1,
-             clip: getComputedStyle(w).overflow, label: del.textContent.trim() };
+    const wr = w.getBoundingClientRect(), dr = del.getBoundingClientRect();
+    return { outside: dr.left >= wr.right - 1, clip: getComputedStyle(w).overflow,
+             label: del.textContent.trim(), w: Math.round(dr.width), h: Math.round(dr.height),
+             rowH: Math.round(w.querySelector('.settings-row').getBoundingClientRect().height) };
   });
-  R.note(hidden.covered && hidden.clip === 'hidden', '밀기 전에는 [지우기]가 줄에 가려 안 보인다',
-         '겹침 ' + hidden.covered + ' · overflow ' + hidden.clip);
+  R.note(hidden.outside && hidden.clip === 'hidden',
+    '★ 쉴 때 [지우기]는 감싼 것 바깥에 있다 (가리는 게 아니라 밖에 둔다)',
+    '바깥 ' + hidden.outside + ' · overflow ' + hidden.clip);
   R.note(hidden.label === '지우기', '단추 글자가 [지우기]다', hidden.label);
+  R.note(hidden.w <= 80 && hidden.h < hidden.rowH,
+    '빨간 칸이 줄 높이를 다 쓰지 않는다 (대표님: "너무 붉은 영역이 크다")',
+    hidden.w + '×' + hidden.h + ' / 줄 높이 ' + hidden.rowH);
 
   /* ── 손가락 흉내 ──────────────────────────────────────────────── */
   async function swipe(idx, dx, dy){
@@ -84,6 +90,35 @@ const L = require('../_lib.cjs');
              open: document.querySelectorAll('.swipe-wrap')[i].classList.contains('swipe-open') };
   }, i);
 
+  /* ★ 미는 동안 [지우기]가 **따라 들어온다** (대표님 지시 "스와이프하면서 뜨게").
+     손을 떼기 전 중간 지점에서 잰다 — 떼고 나서 재면 열렸는지만 알 수 있다. */
+  {
+    const mid = await page.evaluate(() => {
+      const w = document.querySelectorAll('.swipe-wrap')[0];
+      const row = w.querySelector('.settings-row'), del = w.querySelector('.swipe-del');
+      const r = row.getBoundingClientRect();
+      const x0 = r.left + r.width - 30, y0 = r.top + r.height/2;
+      function t(type, x, y){
+        const touch = new Touch({identifier:1, target:row, clientX:x, clientY:y});
+        row.dispatchEvent(new TouchEvent(type, {bubbles:true, cancelable:true,
+          touches: type==='touchend' ? [] : [touch],
+          changedTouches:[touch], targetTouches: type==='touchend' ? [] : [touch]}));
+      }
+      t('touchstart', x0, y0);
+      const seen = [];
+      [10, 24, 40].forEach(function(d){
+        t('touchmove', x0 - d, y0);
+        const wr = w.getBoundingClientRect(), dr = del.getBoundingClientRect();
+        seen.push(Math.round(Math.max(0, wr.right - dr.left)));   /* 안으로 들어온 만큼 */
+      });
+      t('touchend', x0 - 40, y0);
+      return seen;
+    });
+    await L.wait(320);
+    R.note(mid[0] < mid[1] && mid[1] < mid[2] && mid[2] > 0,
+      '★ 미는 동안 [지우기]가 조금씩 따라 들어온다', '들어온 폭 ' + mid.join(' → '));
+  }
+
   /* ① 살짝만 스친 것은 안 열린다 */
   await swipe(0, -20, 0); await L.wait(320);
   let st = await shiftOf(0);
@@ -97,7 +132,7 @@ const L = require('../_lib.cjs');
   /* ③ 제대로 밀면 열린다 */
   await swipe(0, -100, 0); await L.wait(320);
   st = await shiftOf(0);
-  R.note(st.open && st.x <= -80, '왼쪽으로 밀면 [지우기]가 나온다', 'x=' + st.x);
+  R.note(st.open && st.x <= -70, '왼쪽으로 밀면 [지우기]가 나온다', 'x=' + st.x);
 
   /* ④ 다른 줄을 밀면 먼저 열린 줄이 닫힌다 (한 번에 하나만) */
   await swipe(1, -100, 0); await L.wait(320);
