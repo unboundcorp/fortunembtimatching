@@ -173,6 +173,48 @@ export async function joinGroup(groupId, memberRow) {
   return { ok: true, name: row.name, members: next };
 }
 
+/* =====================================================================
+   ★ 2026-09-09 — 스스로 그룹에서 나가기 (대표님 지시 "내가 스스로 그룹 못나가?")
+   ---------------------------------------------------------------------
+   지금까지 명단에서 빠지는 길은 **그룹을 만든 분께 부탁하는 것**뿐이었다.
+   참여 화면에도 그렇게 적혀 있었다 — 내 정보인데 내가 못 뺀다는 뜻이라 맞지 않는다.
+
+   ★ PIN을 요구하지 않는다. joinGroup과 같은 이유다 — 요구하면 나가는 길이 다시 막힌다.
+     대신 **정확히 그 한 줄만** 지운다. 이름을 바꾸거나, 남을 무더기로 지우거나,
+     그룹 자체를 지우는 것은 여전히 만든 분(ownerToken)이나 PIN이 있어야 한다.
+
+   ★ 이 결정의 대가를 적어 둔다(숨기지 않는다): 그룹 링크를 아는 사람은 이미
+     ① 명단 전체를 볼 수 있고 ② join으로 줄을 **더할** 수 있다. 여기에 ③ 줄을 **뺄** 수도
+     있게 된다. 뺀 것은 같은 링크로 다시 참여하면 되돌아오므로 되돌릴 수 없는 손해는 아니다.
+     그래도 무더기로 비우는 것은 막아야 해서, 호출 쪽(api/group.js)에서 횟수를 제한한다.
+
+   ★ 마지막 한 명이 나가면 그룹을 지운다. 빈 명단은 열어도 아무것도 못 보는 껍데기이고,
+     members 칸은 비워 둘 수 없다(not null).
+===================================================================== */
+export async function leaveGroup(groupId, memberRow) {
+  const row = await getGroupWithPin(groupId);
+  if (!row) return { ok: false, reason: 'not_found' };
+
+  const rows = String(row.members || '').split(';').filter(Boolean);
+  const idx = rows.indexOf(memberRow);
+  if (idx < 0) return { ok: false, reason: 'not_member' };
+
+  rows.splice(idx, 1);
+  const next = rows.join(';');
+  if (!next) {
+    await rest(`groups?group_id=eq.${encodeURIComponent(groupId)}`, {
+      method: 'DELETE', headers: { Prefer: 'return=minimal' },
+    });
+    return { ok: true, emptied: true };
+  }
+  await rest(`groups?group_id=eq.${encodeURIComponent(groupId)}`, {
+    method: 'PATCH', headers: { Prefer: 'return=minimal' },
+    /* ★ 나가도 기한은 안 민다. 기준은 어디까지나 '만든 날'이다(joinGroup과 같다). */
+    body: JSON.stringify({ members: next, updated_at: new Date().toISOString() }),
+  });
+  return { ok: true, name: row.name, members: next };
+}
+
 export async function updateGroup(groupId, pin, patch, ownerToken) {
   const row = await getGroupWithPin(groupId);
   if (!row) return { ok: false, reason: 'not_found' };

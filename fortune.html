@@ -332,7 +332,7 @@ body{
     radial-gradient(ellipse at 15% -10%, rgba(31,28,23,0.018), transparent 55%),
     radial-gradient(ellipse at 100% 0%, rgba(31,28,23,0.015), transparent 45%);
   color:var(--ink);
-  min-height:100vh;
+  min-height:var(--app-vh, 100vh);
   /* R22 — 줄간격을 1.6에서 1.75로 넓혔다. "귀엽게"의 절반은 여백이라, 색을 건드리지 않고
      분위기를 바꿀 수 있는 가장 큰 손잡이가 줄간격·모서리·여백 세 가지다. */
   line-height:1.75;
@@ -391,7 +391,7 @@ h1,h2,h3,h4{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;}
 [hidden]{display:none !important;}
 
 /* ===================== 레이아웃 ===================== */
-#app{max-width:960px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;}
+#app{max-width:960px;margin:0 auto;min-height:var(--app-vh, 100vh);display:flex;flex-direction:column;position:relative;}
 .app-header{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:16px 20px;border-bottom:1px solid var(--gold-line);
@@ -867,7 +867,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .stat-mini .v{font-family:var(--sans);font-weight:700;font-size:1.15rem;letter-spacing:-.02em;color:var(--gold);}
 
 /* 온보딩 */
-.onboard{min-height:calc(100vh - 0px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 24px;gap:10px;}
+.onboard{min-height:var(--app-vh, 100vh);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 24px;gap:10px;}
 /* ★ R79 — 320px이던 것을 화면 높이에 따라 줄인다 (외부 실사 지적).
    iPhone SE(375×667)에서 [시작하기] 버튼 상단이 747px이라 첫 화면 밖으로 나가 있었다.
    스크롤해야 시작할 수 있는 첫 화면은 그 자체로 이탈이다.
@@ -5462,6 +5462,48 @@ function healState(s, d){
      지금은 정말 빈 상태에서 시작합니다.
 ===================================================================== */
 var STATE_RESET_ID = '20260909-kakao-required';
+/* 카카오톡 안의 브라우저에서 열렸는가. 카카오톡은 UA에 KAKAOTALK 을 붙인다.
+   ★ 이 값으로 **동작을 바꾸지 마십시오.** 안내 문구를 고르는 데에만 씁니다 —
+     UA는 언제든 바뀔 수 있고, 틀렸을 때 기능이 막히면 안 됩니다. */
+var IN_KAKAO_BROWSER = /KAKAOTALK/i.test(navigator.userAgent || '');
+/* =====================================================================
+   'PC 버전으로 보기'가 켜진 폰을 되돌린다 (2026-09-09 대표님 제보)
+   ---------------------------------------------------------------------
+   > "갤럭시 폰에서는 왜 작아보이냐!" → "PC 버전으로 보기가 기본값으로 눌려있대"
+   > "갤럭시 그냥 기본 인터넷으로 열었대"
+
+   삼성 인터넷에서 그 설정이 켜져 있으면 브라우저가 `meta viewport` 를 무시하고 화면 폭을
+   **980px 로 잡습니다.** 그러면 412px짜리 폰에 980px 짜리 화면을 그려 넣으므로 모든 것이
+   **0.42배로 줄어들어** 글자가 안 보입니다. 대표님 사진이 정확히 그 모양이었습니다.
+
+   ★ 되돌리는 방법: `#app` 을 **폰 폭(412px)으로 잡고** 그만큼 `zoom` 으로 키웁니다.
+     안쪽 배치는 412px 기준으로 계산되고(=폰 화면 그대로), 그린 결과만 커집니다.
+     `transform:scale` 이 아니라 `zoom` 인 이유: transform 은 자리를 안 차지해서 스크롤이
+     어긋나고, `position:fixed` 자식이 그 요소에 갇힙니다.
+   ★ **`vh` 를 함께 고쳐야 합니다.** zoom 안에서도 `100vh` 는 원래 화면 높이(2130px)라
+     2.38배로 부풀어 **빈 화면이 한참 이어집니다**(실측으로 잡음 — 제목이 저 아래 있었습니다).
+     그래서 `--app-vh` 로 나눠 줍니다. 화면 높이를 쓰는 규칙은 이 변수를 쓰십시오.
+   ★ **마우스가 있는 기기에는 안 겁니다.** 진짜 PC는 지금 그대로가 맞습니다.
+   ★ 이 값으로 기능을 바꾸지 마십시오 — 보이는 크기만 되돌리는 것입니다.
+===================================================================== */
+function fitPhoneViewport(){
+  try{
+    if(!window.matchMedia || !matchMedia('(pointer:coarse)').matches) return;  /* 폰만 */
+    var app = document.getElementById('app'); if(!app) return;
+    var de = document.documentElement;
+    var w = de.clientWidth || window.innerWidth || 0;
+    if(w <= 600){                       /* 정상 폰 — 손대지 않는다 */
+      app.style.width=''; app.style.zoom=''; de.style.removeProperty('--app-vh');
+      return;
+    }
+    var k = w / 412;
+    app.style.width = '412px';
+    app.style.margin = '0';
+    app.style.zoom = String(k);
+    /* 화면 높이도 같은 비율로 줄여 둔다 — 안 하면 위아래로 빈 화면이 길게 남는다. */
+    de.style.setProperty('--app-vh', ((de.clientHeight || window.innerHeight || 0) / k) + 'px');
+  }catch(e){ /* 되돌리기가 실패해도 서비스는 그대로 돈다 */ }
+}
 function loadState(){
   try{
     var raw=localStorage.getItem(STORAGE_KEY);
@@ -8445,7 +8487,8 @@ function renderFaq(){
         ['1:1 궁합에서 친구가 볼 수 있는 정보는?',
          '링크에 담긴 사람의 닉네임·성격유형·생년월일·태어난 시각·성별·출생지가 상대방 화면에 나타나요. 궁합을 계산하는 데 필요한 값이에요. 링크를 만들기 전에 화면에서 같은 내용을 알려드려요.'],
         ['그룹이나 멤버를 삭제·수정하고 싶어요',
-         '그룹 화면 아래 [그룹 관리]를 눌러주세요. 그룹을 만드신 기기에서는 PIN 없이 바로 이름을 바꾸거나, 지금 화면에 있는 사람들로 명단을 다시 저장하거나, 그룹을 지우실 수 있어요. 다른 기기에서도 관리하시려면 [그룹 관리]에서 관리용 PIN을 정해 두시면 돼요.'],
+         '그룹 화면 아래 [그룹 관리]를 눌러주세요. 그룹을 만드신 기기에서는 PIN 없이 바로 이름을 바꾸거나, 지금 화면에 있는 사람들로 명단을 다시 저장하거나, 그룹을 지우실 수 있어요. 다른 기기에서도 관리하시려면 [그룹 관리]에서 관리용 PIN을 정해 두시면 돼요.',
+         '내 정보만 빼고 싶으시면 PIN 없이 [이 그룹에서 나가기]를 누르시면 돼요. 회원님 줄만 명단에서 빠지고 그룹은 그대로 남아요. 마지막 한 분이 나가시면 그룹도 함께 사라져요.'],
         ['그룹 PIN을 잊어버렸어요',
          'PIN은 되돌릴 수 없는 형태로만 보관해서 저희도 알 수 없어요. 알려드릴 방법이 원리적으로 없어요. 새로 그룹을 만들어 링크를 다시 보내주시는 편이 빨라요. 다만 그룹을 지우고 싶으신 경우에는 그룹 주소와 함께 '+companyValue(COMPANY.supportEmail)+' 로 알려주시면 확인 후 지워드려요.'],
         ['그룹에 사람을 더 받고 싶어요',
@@ -16066,6 +16109,20 @@ function renderOnboarding(){
      카카오 로그인으로 넘어가는 자리이기 때문이다(대표님 지시). 카드는 무엇을 볼지
      고르는 자리로 그대로 두고, 카드를 눌러도 같은 곳(beginAfterConsent)으로 간다. */
   wrap.appendChild(startBtn);
+  /* ★ 2026-09-09 대표님 지시 — "카카오 브라우저에서 여는 상황 대비해서 안내가 있어야지
+     않냐? 카카오로그인이 자동으로 된다고 해야지"
+     ---------------------------------------------------------------------
+     카카오톡 안에서 열면 이미 그 폰의 카카오로 로그인돼 있어서, 카카오가 다시 묻지 않고
+     그 자리에서 통과시킵니다. 손님 눈에는 **로그인을 건너뛴 것처럼** 보입니다
+     (대표님도 "카카오 로그인 안뜨고 바로 사주정보 입력으로 빠지네?"라고 물으셨습니다).
+     건너뛴 것이 아니라 이미 되어 있는 것이므로, 그 자리에서 그렇게 말해 둡니다.
+     ★ 카카오톡 안에서 열었을 때만 적습니다 — 아닌 분에게는 틀린 말이 됩니다. */
+  if(IN_KAKAO_BROWSER){
+    wrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
+      '카카오톡에서 열어 주셨네요. 이미 로그인돼 있어서 [동의하고 시작하기]를 누르시면 '
+      + '따로 로그인 화면 없이 바로 넘어가요.'
+    ]));
+  }
   wrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
     '만 14세 미만은 이용하실 수 없어요. 카카오 계정으로 로그인하고 시작해요 — '
     + '결제하신 것과 만드신 기록이 계정에 남아서, 기기를 바꾸셔도 그대로 열려요. '
@@ -21698,6 +21755,50 @@ function noteGroupRelation(rel){
   var g = savedGroups().filter(function(x){ return x && x.id === gid; })[0];
   rememberGroup(gid, g.name, null, g.n, rel);
 }
+/* =====================================================================
+   ★ 2026-09-09 — 이 그룹에 있는 '내 줄'을 찾는다 (대표님 지시 "내가 스스로 그룹 못나가?")
+   ---------------------------------------------------------------------
+   ★ 비교는 **다시 만든 줄끼리** 한다(gcMeetRow ↔ inviteObjToRow). 두 함수가 같은
+     INVITE_FIELDS 규칙을 쓰므로 표기 차이 없이 맞대어 볼 수 있다.
+   ★ 서버로 보내는 것은 **GROUP_VIEW.rows의 그 자리 줄, 즉 서버가 준 원문**이다.
+     다시 만든 줄을 보내면 옛 링크에서 온 줄과 어긋나 '명단에서 못 찾음'이 된다.
+   ★ 프로필이 여럿이면 지금 고른 프로필만 본다. 그게 지금 이 화면의 '나'다.
+===================================================================== */
+function groupMyMemberRow(){
+  if(!GROUP_VIEW) return null;
+  var me = activeProfile(); if(!me) return null;
+  var mine = gcMeetRow(me);
+  var list = PENDING_MEET || [];
+  for(var i=0;i<list.length;i++){
+    if(inviteObjToRow(list[i]) === mine){
+      return (GROUP_VIEW.rows && GROUP_VIEW.rows[i]) ? GROUP_VIEW.rows[i] : mine;
+    }
+  }
+  return null;
+}
+function confirmLeaveGroup(){
+  if(!GROUP_VIEW) return;
+  var row = groupMyMemberRow();
+  if(!row){ showToast('이 그룹 명단에서 회원님을 찾지 못했어요.'); return; }
+  var gid = GROUP_VIEW.id, gname = GROUP_VIEW.name || '이 그룹';
+  var last = (PENDING_MEET || []).length <= 1;
+  confirmModal(
+    '"'+gname+'"에서 나갈까요? 회원님 정보가 이 그룹 명단에서 빠지고, 남은 분들 화면에서도 안 보이게 돼요.'
+    + (last ? ' 마지막 한 분이라 그룹도 함께 사라져요.' : ' 다시 들어오시려면 같은 주소로 참여하시면 돼요.'),
+    function(){
+      groupFetch({action:'leave', groupId:gid, member:row})
+        .then(function(){
+          forgetGroup(gid);   /* 내 목록에서도 빼고, 다른 기기에서 되살아나지 않게 표식을 남긴다 */
+          GROUP_VIEW=null; PENDING_MEET=null; GC_SOURCE='profiles';
+          GC_SEL=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0};
+          showToast('이 그룹에서 나왔어요.');
+          ROUTE='compat'; render(); scrollToTopNow();
+        })
+        .catch(function(err){ showToast(String(err && err.message || '지금은 나갈 수 없어요.')); });
+    },
+    '나가기'
+  );
+}
 function forgetGroup(id){
   STATE.savedGroups = savedGroups().filter(function(x){ return x && x.id !== id; });
   markGroupDeleted(id);   /* 다른 기기에서 되살아나지 않게 표식을 남긴다 */
@@ -21838,9 +21939,18 @@ function openSavedGroup(id){
   groupFetch({action:'get', groupId:id}).then(function(d){
     if(!d || !d.members) throw new Error('그룹을 찾을 수 없어요.');
     var rows = String(d.members).split(';').filter(Boolean);
-    PENDING_MEET = rows.map(function(r){ return inviteRowToObj(r); }).filter(inviteObjValid);
+    /* ★ 2026-09-09 — 읽어들인 값(objs)과 **서버가 준 줄 그대로**(raw)를 자리를 맞춰 함께 든다.
+       나가기는 서버 명단에서 **정확히 같은 문자열**을 찾아 지운다. 다시 만들어 낸 줄은
+       옛 링크에서 온 줄과 한 글자라도 다를 수 있어서, 그걸 보내면 '못 찾음'이 된다.
+       읽지 못한 줄은 objs에서 빠지므로, 여기서 함께 걸러야 자리 번호가 어긋나지 않는다. */
+    var gvObjs = [], gvRaw = [];
+    rows.forEach(function(r){
+      var o = inviteRowToObj(r);
+      if(inviteObjValid(o)){ gvObjs.push(o); gvRaw.push(r); }
+    });
+    PENDING_MEET = gvObjs;
     if(!PENDING_MEET.length) throw new Error('명단을 읽지 못했어요.');
-    GROUP_VIEW = {id:id, name:d.name};
+    GROUP_VIEW = {id:id, name:d.name, rows:gvRaw};
     /* ★ rememberGroup보다 먼저 읽는다. 뒤에서 읽어도 값은 같지만(rel은 이어받는다),
        "이 그룹에 적혀 있던 값"을 쓴다는 것을 읽는 순서로도 분명히 해 둔다. */
     var savedRel = groupRelation(id);
@@ -22032,8 +22142,11 @@ function renderGroupJoin(){
        읽히지 않는 고지는 고지가 아니다. 꼭 알아야 할 세 가지만 남긴다:
        누구에게 보이는가 · 얼마나 남는가 · 어떻게 빠지는가.
        (자세한 항목은 개인정보처리방침에 그대로 있다.) */
+    /* ★ 2026-09-09 — 예전에는 명단에서 빠지려면 그룹을 만든 분께 부탁하라고 적혀 있었다.
+       내 정보인데 남에게 부탁해야 빠진다는 뜻이라 맞지 않았다(대표님 지적). 이제 직접 나간다.
+       ★ 옛 문장이 되살아나지 않게 checks/group_leave_pair.cjs 가 그 글자를 막고 있다. */
     '참여하면 입력하신 정보가 이 그룹에 참여한 분들에게 보여요. '
-    + GROUP_TTL_PHRASE + ' 동안 보관되고, 그룹을 만든 분께 빼달라고 하실 수 있어요.'
+    + GROUP_TTL_PHRASE + ' 동안 보관되고, 그룹 화면의 [이 그룹에서 나가기]로 언제든 직접 빠지실 수 있어요.'
   ]));
   var notReady = GROUP_JOIN_STATE.busy || GROUP_JOIN_STATE.name === null;
   wrap.appendChild(el('button',{class:'btn btn-primary', disabled: notReady?'disabled':null, onclick:function(){
@@ -22811,6 +22924,16 @@ function renderGroupCompat(){
     gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:openGroupManageModal},['그룹 관리']));
     gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:confirmDeleteGroup},['그룹 지우기']));
     gsCard.appendChild(gRow);
+    /* ★ 2026-09-09 — 내 줄이 명단에 있을 때만 내놓는다 (대표님 지시 "내가 스스로 그룹 못나가?").
+       [그룹 지우기]는 그룹 전체를 없애는 것이고, 이건 **내 줄 하나만** 빼는 것이다.
+       둘을 나란히 두면 헷갈리므로 한 줄 띄우고 아래에 따로 놓는다. */
+    if(groupMyMemberRow()){
+      gsCard.appendChild(el('button',{class:'btn btn-ghost btn-block btn-sm',
+        style:'margin-top:12px;', onclick:confirmLeaveGroup},['이 그룹에서 나가기']));
+      gsCard.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},[
+        '나가면 회원님 정보만 명단에서 빠져요. 그룹은 남은 분들에게 그대로 남아요.'
+      ]));
+    }
     view.appendChild(gsCard);
     var joinCard = buildGroupJoinCard();
     if(joinCard) view.appendChild(joinCard);
@@ -23368,7 +23491,7 @@ function showInviteModal(profile, link, live, ttlHours, relationKey){
     ]));
     var noteList = el('ul',{class:'invite-note'});
     [ '그룹을 처음 만든 날로부터 ' + GROUP_TTL_TEXT + ' 동안 보관돼요.',
-      '이름을 바꾸거나 사람을 제외하고 싶으시면 궁합 화면의 [그룹 관리]에서 하실 수 있어요.'
+      '이름을 바꾸거나 사람을 제외하고 싶으시면 궁합 화면의 [그룹 관리]에서, 회원님만 빠지고 싶으시면 [이 그룹에서 나가기]로 하실 수 있어요.'
     ].forEach(function(t){ noteList.appendChild(el('li',{},[t])); });
     fold.appendChild(noteList);
     body.appendChild(fold);
@@ -25231,6 +25354,9 @@ if(PENDING_MEET && STATE.profiles.length>0){
     if(early.mode === 'self' || early.mode === 'compat') setMode(early.mode);
   }
 }
+fitPhoneViewport();
+window.addEventListener('resize', function(){ fitPhoneViewport(); });
+window.addEventListener('orientationchange', function(){ setTimeout(fitPhoneViewport, 200); });
 render();
 /* R59 — 첫 화면을 그린 뒤부터 방문 기록을 쌓는다.
    ★ 맨 처음 상태를 기록에 심어 둔다. 안 그러면 서비스 안에서 한 번 움직인 뒤
@@ -25482,7 +25608,11 @@ try{
       confirmModal: confirmModal, closeModal: closeModal,
       computeCompat: computeCompat,
       productDef: productDef, splitProductId: splitProductId, productIdFor: productIdFor,
-      getSajuResult: getSajuResult, charKeyForMbti: charKeyForMbti, charImgId: charImgId
+      getSajuResult: getSajuResult, charKeyForMbti: charKeyForMbti, charImgId: charImgId,
+      /* 2026-09-09 — 그룹 나가기 검사(checks-slow/group_leave.cjs)가 쓴다.
+         명단 한 줄을 만드는 규칙(gcMeetRow)을 검사기가 베껴 적으면 한쪽만 고쳐져 어긋난다. */
+      activeProfile: activeProfile, gcMeetRow: gcMeetRow,
+      openSavedGroup: openSavedGroup, groupMyMemberRow: groupMyMemberRow
     };
   }
 }catch(e){}

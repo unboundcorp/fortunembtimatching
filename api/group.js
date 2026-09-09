@@ -3,6 +3,7 @@
    ---------------------------------------------------------------------
    create — 이름·PIN·명단을 받아 저장하고 주소(group_id)를 돌려준다
    get    — 링크를 아는 사람이면 볼 수 있다 (PIN 불필요)
+   leave  — 명단에서 자기 줄 하나만 뺀다 (PIN 불필요 · 자기 줄만)
    update — 이름이나 명단을 고친다 (PIN 필요)
    delete — 지운다 (PIN 필요)
 
@@ -11,7 +12,7 @@
    ★ PIN은 서버도 모른다(해시만 보관). 잊으면 복구할 수 없고, 그건 설계된 결과다.
 ===================================================================== */
 import { json, methodGuard, readBody } from './_lib/http.js';
-import { createGroup, getGroup, joinGroup, updateGroup, deleteGroup, tooManyPinTries, notePinTry, GROUP_TTL_DAYS, GROUP_MAX_MEMBERS } from './_lib/groups.js';
+import { createGroup, getGroup, joinGroup, leaveGroup, updateGroup, deleteGroup, tooManyPinTries, notePinTry, GROUP_TTL_DAYS, GROUP_MAX_MEMBERS } from './_lib/groups.js';
 
 const MAX_MEMBERS_TEXT = 8000;   /* 30명 × 한 줄 여유 */
 const DENY = '그룹을 찾을 수 없거나 PIN이 맞지 않아요.';
@@ -55,6 +56,29 @@ export default async function handler(req, res) {
         return json(res, 404, { ok: false, reason: '그룹을 찾을 수 없거나 기간이 지났어요.' });
       }
       return json(res, 200, { ok: true, already: !!r.already, name: r.name, members: r.members });
+    }
+
+    /* 스스로 나간다. PIN을 요구하지 않는 대신 **자기 줄 하나만** 지운다.
+       ★ 무더기로 비우는 것은 막는다 — 한 그룹에서 10분에 10번까지다.
+         (PIN 시도 제한과 같은 표를 쓰되 이름표를 달리해 서로 안 섞이게 한다.) */
+    if (body.action === 'leave') {
+      if (typeof body.groupId !== 'string' || !body.groupId) return json(res, 400, { error: 'bad_group' });
+      if (typeof body.member !== 'string' || !body.member || body.member.length > 400) {
+        return json(res, 400, { error: 'bad_member' });
+      }
+      const limitKey = 'leave:' + body.groupId;
+      if (await tooManyPinTries(limitKey)) {
+        return json(res, 429, { ok: false, reason: '잠시 뒤에 다시 해주세요.' });
+      }
+      await notePinTry(limitKey);
+      const r = await leaveGroup(body.groupId, body.member);
+      if (!r.ok) {
+        if (r.reason === 'not_member') {
+          return json(res, 404, { ok: false, reason: '이 그룹 명단에서 회원님을 찾지 못했어요.' });
+        }
+        return json(res, 404, { ok: false, reason: '그룹을 찾을 수 없거나 기간이 지났어요.' });
+      }
+      return json(res, 200, { ok: true, emptied: !!r.emptied, members: r.members || '' });
     }
 
     if (body.action === 'update' || body.action === 'delete') {
