@@ -63,8 +63,19 @@ const L = require('../_lib.cjs');
     const page = await open('', true);
     const t = await screen(page);
     R.note(/만 14세 이상이에요/.test(t), '만 14세 확인을 묻는다');
-    R.note(/생년월일·태어난 시각·성별·출생지를 받는 데 동의/.test(t),
+    R.note(/사주 분석에 필요한 정보 제공에 동의해요/.test(t)
+        && /생년월일, 태어난 시각, 성별, 출생지/.test(t),
       '사주 분석 목적으로 무엇을 받는지 적고 따로 동의를 받는다');
+    const left = await page.evaluate(() => {
+      const l = document.querySelector('.chk-list label[for="privacyOk"]');
+      if(!l) return null;
+      const row = l.closest('.chk-row'), list = document.querySelector('.chk-list');
+      return { align: getComputedStyle(l).textAlign,
+               flush: Math.round(row.getBoundingClientRect().left - list.getBoundingClientRect().left) };
+    });
+    R.note(!!left && left.align === 'left' && left.flush <= 1,
+      '동의 줄이 왼쪽으로 가지런히 선다',
+      left ? (left.align + ' · 왼쪽 여백 ' + left.flush) : '못 찾음');
     const both = await page.evaluate(() => !!(document.querySelector('#ageOk14') && document.querySelector('#privacyOk')));
     R.note(both, '동의 칸이 두 개다 (나이 확인과 개인정보 동의는 별개다)');
 
@@ -120,7 +131,7 @@ const L = require('../_lib.cjs');
     const page = await open('', false);
     await consent(page);
     await L.clickText(page, /^동의하고 시작하기$/);
-    await L.wait(1500);
+    await L.wait(2500);   /* 지나가게 두기 전에 한 번 더 물어보므로 조금 더 기다린다 */
     const t = await screen(page);
     R.note(page.__went === 0, '카카오가 꺼져 있으면 로그인으로 보내지 않는다', '보낸 횟수 ' + page.__went);
     R.note(/언제 태어나셨어요/.test(t),
@@ -152,6 +163,43 @@ const L = require('../_lib.cjs');
     R.note(bad.length === 0,
       '약관·처리방침·FAQ 에 "로그인 없이 써도 된다"는 옛 문장이 남아 있지 않다',
       bad.length ? bad.join(' / ') : '0건');
+  }
+
+  /* ── ⑥ ★ 잠깐 못 물어본 것과 정말 못 하는 것을 가르는가 ────────
+     부팅 때 /api/kakao 가 실패하면 화면은 ready=false 로 둔다. 그것만 보고 지나가게 두면
+     **잠깐 끊겼던 분이 로그인 없이 들어온다.** 동의를 누르는 그 자리에서 한 번 더 물어야 한다. */
+  {
+    const page = await L.openPage(browser, {state:fresh(), width:390, height:1000});
+    page.__went = 0;
+    let asked = 0, linked = false;
+    await page.setRequestInterception(true);
+    page.on('request', (r) => {
+      const u = r.url();
+      const j = (o) => r.respond({status:200, contentType:'application/json', body:JSON.stringify(o)});
+      if(u.indexOf('/api/kakao?step=start') >= 0){
+        page.__went++; linked = true;
+        return r.respond({status:302, headers:{location:'/fortune.html?kakao=ok&moved=0'}});
+      }
+      if(u.indexOf('/api/kakao') >= 0){
+        asked++;
+        /* 첫 물음은 실패시킨다(부팅 때 잠깐 끊긴 상황). 두 번째는 정상으로 답한다. */
+        if(asked === 1) return r.abort();
+        return j({ready:true, linked:linked, since:Date.now()});
+      }
+      if(u.indexOf('/api/entitlements') >= 0) return j({items:{}, pass:null, purchases:[]});
+      if(u.indexOf('/api/') >= 0) return j({ok:true});
+      r.continue();
+    });
+    await page.goto(APP, {waitUntil:'load'});
+    await L.wait(2500);
+    await consent(page);
+    await L.clickText(page, /^동의하고 시작하기$/);
+    await page.waitForNavigation({waitUntil:'load', timeout:15000}).catch(() => {});
+    await L.wait(3000);
+    R.note(page.__went === 1,
+      '★ 부팅 때 한 번 실패했어도 동의하는 자리에서 다시 물어 로그인으로 보낸다',
+      '물어본 횟수 ' + asked + ' · 보낸 횟수 ' + page.__went);
+    await page.close();
   }
 
   await browser.close(); if(srv) srv.close();
