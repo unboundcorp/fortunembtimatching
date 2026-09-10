@@ -147,10 +147,12 @@ export default async function handler(req, res) {
        (onDelta를 안 넘긴다) — 다 모아서 한 번에 돌려준다. */
     let full = '';
     let stops = [];
+    let usage = null;   /* 실제로 쓴 토큰 (2026-09-11) */
     try {
       const out = await generateChunked({ key, payload: askPayload, allTitles: paidTitles });
       full = out.full;
       stops = out.stops;
+      usage = out.usage || null;
     } catch (e) {
       console.error('유료 본문 생성 실패', String((e && e.message) || e).slice(0, 200));
       return json(res, 502, { error: 'upstream', reason: '해석을 만들지 못했어요. 잠시 후 다시 시도해 주세요.' });
@@ -167,7 +169,7 @@ export default async function handler(req, res) {
     }
 
     await putAiCache({ cacheKey, productId, body: full, model: MODEL, subjectKey });
-    await noteAiUse(sessionId, cacheKey);
+    await noteAiUse(sessionId, cacheKey, usage);
     /* 새로 만들 때 곁들여 오래된 기록을 지운다. 따로 도는 청소 작업이 없어도 쌓이지 않는다. */
     await sweepAiOld();
 

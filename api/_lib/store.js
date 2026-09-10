@@ -371,11 +371,19 @@ export async function aiUsedProductIds(sessionId) {
   return [...new Set((rows || []).map((r) => r.product_id).filter(Boolean))];
 }
 
-export async function noteAiUse(sessionId, cacheKey) {
+/* ★ 2026-09-11 — 토큰 수를 함께 적는다 (대표님 지시 "anthropic 토큰 얼마나 썼는지 확인 해").
+   ★ 이 값은 **그때 받아 적지 않으면 영영 알 수 없습니다.** Anthropic 콘솔은 조직 전체
+     합계라 이 서비스만 따로 못 가릅니다. 그래서 만드는 그 자리에서 적습니다.
+   ★ 안 넘기면 예전처럼 빈칸으로 들어갑니다 — 옛 줄은 토큰이 없고, 화면은 그때
+     '건당 추정'으로 셈합니다(그 사실을 화면에도 적습니다). */
+export async function noteAiUse(sessionId, cacheKey, usage) {
+  const row = { session_id: sessionId, cache_key: cacheKey };
+  if (usage && Number.isFinite(usage.in) && usage.in > 0) row.in_tokens = Math.round(usage.in);
+  if (usage && Number.isFinite(usage.out) && usage.out > 0) row.out_tokens = Math.round(usage.out);
   await rest('ai_usage?on_conflict=session_id,cache_key', {
     method: 'POST',
     headers: { Prefer: 'return=minimal,resolution=ignore-duplicates' },
-    body: JSON.stringify({ session_id: sessionId, cache_key: cacheKey }),
+    body: JSON.stringify(row),
   });
 }
 

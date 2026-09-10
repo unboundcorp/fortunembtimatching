@@ -124,6 +124,34 @@ R.note(/function statsWindow/.test(html) && /function statsSum/.test(html),
 R.note(/type:'date'/.test(html), '날짜를 직접 고르는 칸이 있다');
 R.note(/type:'datetime-local'/.test(html), '공지 기간을 시각까지 고른다');
 
+R.head('── AI 비용·토큰 (2026-09-11 대표님 지시)');
+const aigen = fs.readFileSync(path.join(ROOT, 'api/_lib/aigen.js'), 'utf8');
+const store = fs.readFileSync(path.join(ROOT, 'api/_lib/store.js'), 'utf8');
+const content = fs.readFileSync(path.join(ROOT, 'api/content.js'), 'utf8');
+const interpret = fs.readFileSync(path.join(ROOT, 'api/interpret.js'), 'utf8');
+R.note(/ev\.type === 'message_start'/.test(aigen), '입력 토큰을 받아 적는다 (message_start)');
+R.note(/st\.outTok = ev\.usage\.output_tokens/.test(aigen),
+       '출력 토큰은 **갈아 끼운다** (누적값이라 더하면 몇 배가 된다)');
+R.note(/usage: \{\s*in:/.test(aigen), 'generateChunked 가 토큰을 돌려준다');
+R.note(/noteAiUse\(sessionId, cacheKey, usage\)/.test(content), 'content 가 토큰을 넘긴다');
+R.note(/noteAiUse\(sessionId, cacheKey, usage\)/.test(interpret), 'interpret 가 토큰을 넘긴다');
+R.note(/row\.in_tokens = Math\.round/.test(store) && /row\.out_tokens = Math\.round/.test(store),
+       '토큰을 표에 적는다');
+R.note(/in_tokens,out_tokens/.test(api), '현황이 토큰 칸을 읽는다');
+R.note(/const AI_PRICE = \{/.test(api), '값이 서버 한 곳에 있다');
+R.note(/x\.ai\.estimated \+= 1/.test(api), '토큰이 없는 옛 줄은 추정으로 세고 그 수를 따로 센다');
+R.note(/function adminTokenText/.test(html), '화면이 토큰을 사람 말로 적는다');
+R.note(/건은 토큰 기록이 없어/.test(html), '몇 건이 추정인지 화면에 적는다');
+R.note(/Anthropic 콘솔이 정본/.test(html), '진짜 청구액이 어디에 있는지 적는다');
+R.note(/label:'남는 것'/.test(html), '남는 것(매출 − AI 비용) 카드가 있다');
+R.note(/결제 수수료·서버비는 안 뺀 값/.test(html), '무엇이 안 빠진 값인지 적는다');
+R.note(/\['가입\(첫 로그인\)', statsTime\(r\.at\)\]/.test(html), '회원 서랍에 가입 일자가 있다');
+R.note(/\['마지막 로그인', statsTime\(r\.updatedAt\)\]/.test(html), '회원 서랍에 마지막 로그인이 있다');
+
+R.head('── 서랍이 실제로 눌리는가 (겹침)');
+R.note(/\.ad-drawer \.ad-scrim\{z-index:0;\}/.test(html),
+       '서랍 안의 어두운 막이 패널보다 아래다 (안 그러면 단추가 하나도 안 눌린다)');
+
 R.head('── 주소에 화면이 적히는가 (새로고침해도 그 자리)');
 R.note(/function adminSyncHash/.test(html), '주소에 화면을 적는다');
 R.note(/function adminFromHash/.test(html), '주소를 읽어 화면을 맞춘다');

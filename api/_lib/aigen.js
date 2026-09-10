@@ -79,8 +79,23 @@ async function drainChunk({ key, payload, allTitles, chunk, st }) {
           try { ev = JSON.parse(raw); } catch { continue; }
           if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
             st.text += ev.delta.text;
-          } else if (ev.type === 'message_delta' && ev.delta?.stop_reason) {
-            st.stop = ev.delta.stop_reason;
+          } else if (ev.type === 'message_start') {
+            /* ★ 2026-09-11 대표님 지시 "anthropic 토큰 얼마나 썼는지 확인 해".
+               토큰 수는 **응답이 알려 준다** — 여기서 안 받아 적으면 나중에 알 길이 없다
+               (Anthropic 콘솔은 조직 전체 합계라 이 서비스만 따로 못 가른다).
+               입력 토큰은 message_start 에, 출력 토큰은 message_delta 에 실려 온다. */
+            const u = ev.message && ev.message.usage;
+            if (u) {
+              st.inTok += (u.input_tokens || 0)
+                        + (u.cache_read_input_tokens || 0)
+                        + (u.cache_creation_input_tokens || 0);
+              if (u.output_tokens) st.outTok += u.output_tokens;
+            }
+          } else if (ev.type === 'message_delta') {
+            if (ev.delta?.stop_reason) st.stop = ev.delta.stop_reason;
+            /* message_delta 의 output_tokens 는 **누적값**이다. 더하지 말고 갈아 끼운다 —
+               더하면 실제의 몇 배가 찍힌다. */
+            if (ev.usage && typeof ev.usage.output_tokens === 'number') st.outTok = ev.usage.output_tokens;
           } else if (ev.type === 'error') {
             console.error('anthropic 스트림 오류', ev.error?.type);
             st.err = new Error('stream_error');
@@ -106,7 +121,7 @@ export async function generateChunked({ key, payload, allTitles, onDelta }) {
   const chunks = splitTitles(allTitles);
   if (!chunks.length) throw new Error('no_titles');
 
-  const states = chunks.map(() => ({ text: '', done: false, err: null, stop: null, flushed: 0 }));
+  const states = chunks.map(() => ({ text: '', done: false, err: null, stop: null, flushed: 0, inTok: 0, outTok: 0 }));
 
   /* 모든 덩이를 한꺼번에 출발시킨다. 여기가 시간을 줄이는 자리다. */
   const drains = chunks.map((chunk, i) =>
@@ -140,5 +155,10 @@ export async function generateChunked({ key, payload, allTitles, onDelta }) {
     full: states.map((s) => s.text).join(JOIN),
     stops: states.map((s) => s.stop),
     parts: chunks.length,
+    /* 덩이를 나눠 맡기므로 토큰도 덩이마다 온다. 여기서 합쳐 한 벌로 돌려준다. */
+    usage: {
+      in: states.reduce((a, s) => a + (s.inTok || 0), 0),
+      out: states.reduce((a, s) => a + (s.outTok || 0), 0),
+    },
   };
 }

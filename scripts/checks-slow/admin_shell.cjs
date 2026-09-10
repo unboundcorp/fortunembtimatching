@@ -17,7 +17,8 @@ const APP = BASE + '/fortune.html';
 
 const day = (i) => new Date(Date.now() + 9*3600*1000 - i*86400000).toISOString().slice(0,10);
 const blank = (d, o) => Object.assign({d, rooms:{made:0,joined:0}, groups:{made:0,people:0,max:0},
-  orders:{created:0,paid:0,failed:0,revenue:0,byProduct:{}}, ai:{generated:0}, kakao:{linked:0},
+  orders:{created:0,paid:0,failed:0,revenue:0,byProduct:{}},
+  ai:{generated:0,inTok:0,outTok:0,costKrw:0,estimated:0}, kakao:{linked:0},
   feedback:{created:0}}, o||{});
 const DAILY = (function(){
   const out = [];
@@ -25,12 +26,14 @@ const DAILY = (function(){
   out[27].orders = {created:3, paid:2, failed:1, revenue:2890,
                     byProduct:{'궁합 심층 해석':{count:2, amount:1980}}};
   out[27].ai.generated = 2;
+  out[27].ai.inTok = 12000; out[27].ai.outTok = 9000; out[27].ai.costKrw = 157; out[27].ai.estimated = 0;
   out[29].rooms.made = 2; out[29].rooms.joined = 1; out[29].kakao.linked = 1;
   return out;
 })();
 const SUMMARY = {now:new Date().toISOString(), daily:DAILY, dailyDays:90,
   rooms:{d1:{},d7:{},d30:{},all:12}, groups:{d1:{},d7:{},d30:{},all:4},
-  orders:{d1:{},d7:{},d30:{},all:6}, ai:{d1:{},d7:{},d30:{},cached:5,reuse:2,costPerKrw:101},
+  orders:{d1:{},d7:{},d30:{},all:6}, ai:{d1:{},d7:{},d30:{},cached:5,reuse:2,costPerKrw:101,
+      price:{inPerMTokUsd:2,outPerMTokUsd:10,usdKrw:1380}},
   kakao:{linked:7,d1:1,d7:3}, sync:{saved:5,d7:2},
   feedback:{all:2,d1:1,d7:2,byStatus:{received:1,answered:1},waiting:1}, recent:[]};
 
@@ -58,7 +61,11 @@ const ROWS = {
   groups:[{id:'GR-777',name:'회사 모임',people:2,members:[P_A,P_B],hasPin:false,hasOwner:true,
            at:'2026-09-08T05:06:07Z',updatedAt:'2026-09-09T05:06:07Z',expiresAt:'2026-11-08T05:06:07Z'}],
   ai:[{id:'ck-0011',name:'궁합 심층 해석',model:'claude-sonnet-5',chars:6841,
-       sessionId:'sess-abc',at:'2026-09-10T02:04:05Z'}],
+       sessionId:'sess-abc',at:'2026-09-10T02:04:05Z',
+       inTok:12000,outTok:9000,costKrw:157,estimated:false},
+      {id:'ck-0012',name:'사주 풀이 · 2026년',model:'claude-sonnet-5',chars:5000,
+       sessionId:'sess-abc',at:'2026-09-08T02:04:05Z',
+       inTok:null,outTok:null,costKrw:101,estimated:true}],
   sync:[{id:'5057959396',rev:7,profiles:2,history:5,groups:1,bytes:4096,
          at:'2026-09-01T00:00:01Z',updatedAt:'2026-09-10T00:00:02Z'}],
 };
@@ -158,7 +165,7 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
 
   R.head('② 대시보드');
   let o = await go('dash');
-  ['오늘 처리할 일','결제 매출','새 회원','궁합 링크','AI 해석','결제 실패율',
+  ['오늘 처리할 일','결제 매출','새 회원','궁합 링크','AI 비용','남는 것',
    '활동 추이','궁합 링크 퍼널','상품별 매출','서비스 상태']
     .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "'" + w + "' 가 있다"); });
   const dash = await page.evaluate(() => ({
@@ -167,8 +174,12 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
     lines: document.querySelectorAll('#adminRoot .ad-chart polyline').length,
     segs: [...document.querySelectorAll('#adminRoot .ad-seg button')].map(b => b.textContent.trim()),
   }));
-  R.note(dash.kpis === 5, 'KPI 카드가 다섯이다', dash.kpis + '개');
-  R.note(dash.sparks === 5, '카드마다 스파크라인이 있다', dash.sparks + '개');
+  R.note(dash.kpis === 6, 'KPI 카드가 여섯이다', dash.kpis + '개');
+  R.note(dash.sparks === 6, '카드마다 스파크라인이 있다', dash.sparks + '개');
+  /* ★ 비용과 남는 것이 실제 값으로 셈되는가 — 매출 2,890 − AI 157 = 2,733 */
+  R.note(/157원/.test(o.text), 'AI 비용이 토큰으로 셈된다 (건당 추정이 아니라)');
+  R.note(/2,733원/.test(o.text), '남는 것 = 매출 − AI 비용', o.text.slice(0,0));
+  R.note(/토큰 입력 12,000 · 출력 9,000/.test(o.text), '쓴 토큰이 그대로 보인다');
   R.note(dash.lines === 3, '활동 추이가 세 줄이다', dash.lines + '줄');
   R.note(['7일','30일','90일','직접'].every(x => dash.segs.indexOf(x) >= 0), '기간이 넷이다', dash.segs.join(','));
   R.note(/2,890원/.test(o.text), '고른 기간의 매출이 더해진다');
@@ -198,7 +209,30 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
     return p ? (p.innerText||'').replace(/\s+/g,' ') : '';
   });
   R.note(!!dr, '[상세] 를 누르면 오른쪽 서랍이 열린다');
-  ['넣으신 날짜 1990-02-09','민수','ISTJ','결제 이력','궁합 심층 해석']
+  /* ★ 여기가 이 검사의 핵심이다 — element.click() 은 가림을 무시하고 바로 부른다.
+     실제로 어두운 막이 패널을 덮어 단추가 하나도 안 눌리는 상태를 그렇게 통과시켰다
+     (대표님이 폰에서 잡아 주셨다). 그 자리에 실제로 무엇이 있는지 좌표로 확인한다. */
+  const hit = await page.evaluate(() => {
+    const out = [];
+    ['닫기','이 분 주문 보기'].forEach(function(label){
+      const b = [...document.querySelectorAll('#adminRoot .ad-drawer-panel button')]
+        .find(x => x.textContent.trim() === label);
+      if(!b){ out.push([label, '단추 없음']); return; }
+      const r = b.getBoundingClientRect();
+      const top = document.elementFromPoint(Math.round(r.left + r.width/2), Math.round(r.top + r.height/2));
+      out.push([label, (top && (top === b || b.contains(top))) ? 'ok' : ('가림: ' + (top ? top.className || top.tagName : '없음'))]);
+    });
+    const panel = document.querySelector('#adminRoot .ad-drawer-panel');
+    const pr = panel.getBoundingClientRect();
+    const mid = document.elementFromPoint(Math.round(pr.left + pr.width/2), Math.round(pr.top + 60));
+    out.push(['패널 가운데', (mid && panel.contains(mid)) ? 'ok' : ('가림: ' + (mid ? mid.className || mid.tagName : '없음'))]);
+    return out;
+  });
+  hit.forEach(function(pr){
+    R.note(pr[1] === 'ok', '서랍의 「' + pr[0] + '」 가 실제로 눌리는 자리에 있다', pr[1]);
+  });
+  ['넣으신 날짜 1990-02-09','민수','ISTJ','결제 이력','궁합 심층 해석',
+   '가입(첫 로그인)','마지막 로그인']
     .forEach(function(w){ R.note(dr.indexOf(w) >= 0, "서랍에 '" + w + "' 가 있다"); });
   await page.evaluate(() => {
     const b = [...document.querySelectorAll('#adminRoot .ad-drawer-panel button')]
@@ -242,12 +276,16 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
     .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "결제 — '" + w + "' 가 보인다"); });
 
   o = await go('compat');
-  ['RM-001','회사 모임','아직 안 들어옴','PIN 없음']
+  ['RM-001','회사 모임','아직 안 들어옴','PIN 없음','만든 분이 관리','열쇠가 저장돼 있어요']
     .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "궁합 — '" + w + "' 가 보인다"); });
 
   o = await go('ai');
-  ['claude-sonnet-5','6841자','추정 원가']
+  ['claude-sonnet-5','6841자','입력 토큰','출력 토큰','12,000','9,000','157원']
     .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "AI — '" + w + "' 가 보인다"); });
+  /* ★ 토큰을 안 적던 옛 줄은 '추정'이라고 분명히 적어야 한다 — 지어낸 값을 진짜처럼 두지 않는다 */
+  R.note(/\(추정\)/.test(o.text), '토큰 기록이 없는 줄을 (추정) 으로 적는다');
+  R.note(o.text.indexOf('1건은 토큰 기록이 없어') >= 0, '몇 건이 추정인지 적는다');
+  R.note(o.text.indexOf('Anthropic 콘솔이 정본') >= 0, '진짜 청구액이 어디에 있는지 적는다');
 
   R.head('⑤ 공지 · 배너');
   o = await go('notices');
@@ -297,7 +335,7 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   R.note(narrow0.burger, '햄버거 단추가 보인다');
   R.note(narrow0.sideX < 0, '사이드바가 처음엔 숨어 있다', 'left ' + Math.round(narrow0.sideX));
   R.note(narrow0.docW <= narrow0.cliW + 1, '가로로 안 넘친다', narrow0.docW + ' / ' + narrow0.cliW);
-  R.note(narrow0.kpis === 5, '좁은 화면에서도 KPI 다섯이 다 있다', narrow0.kpis + '개');
+  R.note(narrow0.kpis === 6, '좁은 화면에서도 KPI 여섯이 다 있다', narrow0.kpis + '개');
 
   await m.evaluate(() => { document.querySelector('#adminRoot .ad-burger').click(); });
   await L.wait(700);

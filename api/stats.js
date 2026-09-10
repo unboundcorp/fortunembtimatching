@@ -26,6 +26,23 @@ import { decodePersonRow, describeProfile } from './_lib/person.js';
    ★ 실제 청구액이 아니라 추정이다. 화면에도 '추정'이라고 적는다. */
 const AI_COST_KRW = 101;
 
+/* ★ 2026-09-11 대표님 지시 "수익의 비용도 넣고 anthropic 토큰 얼마나 썼는지 확인 해".
+   ---------------------------------------------------------------------
+   토큰 수는 **글을 만들 때 받아 적은 값**(ai_usage.in_tokens/out_tokens)입니다.
+   Anthropic 콘솔은 조직 전체 합계라 이 서비스만 따로 못 가릅니다 — 그래서 우리가 적습니다.
+   ★ 2026-09-11 이전에 만든 글에는 토큰이 없습니다(그때는 안 적었습니다).
+     그 줄은 건당 추정(AI_COST_KRW)으로 셈하고, 화면에 **몇 건이 추정인지** 함께 적습니다.
+     지어낸 값을 진짜처럼 보이게 두지 않기 위해서입니다.
+   ★ 값이 바뀌면 여기만 고치십시오. 화면은 서버가 내려준 값을 그대로 씁니다. */
+const AI_PRICE = {
+  inPerMTokUsd: 2,     /* Claude Sonnet 5 입력  $2 / 100만 토큰 */
+  outPerMTokUsd: 10,   /* 출력 $10 / 100만 토큰 */
+  usdKrw: 1380,        /* 환율은 고정값입니다 — 정확한 청구액은 Anthropic 콘솔이 정본입니다 */
+};
+const tokenCostKrw = (inTok, outTok) =>
+  ((inTok || 0) / 1e6) * AI_PRICE.inPerMTokUsd * AI_PRICE.usdKrw
+  + ((outTok || 0) / 1e6) * AI_PRICE.outPerMTokUsd * AI_PRICE.usdKrw;
+
 function conf() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -240,7 +257,7 @@ export default async function handler(req, res) {
       if (kind === 'ai') {
         /* ai_usage 는 '언제 만들었나'만 알고, 무슨 글인지는 ai_cache 에 있다. 열쇠로 맞댄다. */
         const [uses, cache] = await Promise.all([
-          rest(`ai_usage?select=session_id,cache_key,created_at&order=created_at.desc&limit=${N}`),
+          rest(`ai_usage?select=session_id,cache_key,created_at,in_tokens,out_tokens&order=created_at.desc&limit=${N}`),
           rest('ai_cache?select=cache_key,product_id,model,body&order=created_at.desc&limit=2000'),
         ]);
         const by = {};
@@ -255,6 +272,12 @@ export default async function handler(req, res) {
             chars: c && c.body ? String(c.body).length : 0,
             sessionId: u.session_id || '',
             at: u.created_at,
+            inTok: u.in_tokens || null,
+            outTok: u.out_tokens || null,
+            costKrw: (u.in_tokens || u.out_tokens)
+              ? Math.round(tokenCostKrw(u.in_tokens, u.out_tokens))
+              : AI_COST_KRW,
+            estimated: !(u.in_tokens || u.out_tokens),
           };
         }) });
       }
@@ -351,7 +374,7 @@ export default async function handler(req, res) {
       rest('orders?select=order_id,product_id,amount,status,created_at,paid_at&order=created_at.desc&limit=2000'),
       rest('rooms?select=room_id,created_at,joined_at&order=created_at.desc&limit=2000'),
       rest('groups?select=group_id,members,created_at&order=created_at.desc&limit=2000'),
-      rest('ai_usage?select=cache_key,created_at&order=created_at.desc&limit=2000'),
+      rest('ai_usage?select=cache_key,created_at,in_tokens,out_tokens&order=created_at.desc&limit=2000'),
       rest('ai_cache?select=cache_key,product_id,created_at&order=created_at.desc&limit=2000'),
       soft('kakao_links?select=kakao_id,created_at&order=created_at.desc&limit=2000'),
       soft('user_sync?select=kakao_id,rev,updated_at&order=updated_at.desc&limit=2000'),
@@ -421,7 +444,7 @@ export default async function handler(req, res) {
       rooms: { made: 0, joined: 0 },
       groups: { made: 0, people: 0, max: 0 },
       orders: { created: 0, paid: 0, failed: 0, revenue: 0, byProduct: {} },
-      ai: { generated: 0 },
+      ai: { generated: 0, inTok: 0, outTok: 0, costKrw: 0, estimated: 0 },
       kakao: { linked: 0 },
       feedback: { created: 0 },
     });
@@ -460,7 +483,19 @@ export default async function handler(req, res) {
         });
       }
     });
-    (aiUse || []).forEach((u) => bump(u.created_at, (x) => { x.ai.generated += 1; }));
+    (aiUse || []).forEach((u) => bump(u.created_at, (x) => {
+      x.ai.generated += 1;
+      /* 토큰이 적힌 줄은 실제 값으로, 없는 옛 줄은 건당 추정으로 센다.
+         몇 건이 추정인지(estimated)도 함께 세서 화면이 그 사실을 적을 수 있게 한다. */
+      if (u.in_tokens || u.out_tokens) {
+        x.ai.inTok += u.in_tokens || 0;
+        x.ai.outTok += u.out_tokens || 0;
+        x.ai.costKrw += tokenCostKrw(u.in_tokens, u.out_tokens);
+      } else {
+        x.ai.costKrw += AI_COST_KRW;
+        x.ai.estimated += 1;
+      }
+    }));
     (kakao || []).forEach((k) => bump(k.created_at, (x) => { x.kakao.linked += 1; }));
     (feedback || []).forEach((f) => bump(f.created_at, (x) => { x.feedback.created += 1; }));
 
@@ -474,7 +509,8 @@ export default async function handler(req, res) {
       groups: { d1: groupStat(d1), d7: groupStat(d7), d30: groupStat(d30), all: groups.length },
       orders: { d1: paidStat(d1), d7: paidStat(d7), d30: paidStat(d30), all: orders.length },
       ai: { d1: aiStat(d1), d7: aiStat(d7), d30: aiStat(d30),
-            cached: (aiCache || []).length, reuse, costPerKrw: AI_COST_KRW },
+            cached: (aiCache || []).length, reuse, costPerKrw: AI_COST_KRW,
+            price: AI_PRICE },
       /* 카카오 로그인 — 몇 분이 로그인해 두셨나. 결제가 로그인 뒤에 오므로 이 숫자가 곧 결제 가능 인원이다. */
       kakao: {
         linked: (kakao || []).length,

@@ -174,6 +174,7 @@ export default async function handler(req, res) {
        나누고 합치는 규칙은 _lib/aigen.js 한 곳에 있다 — 통짜 창구와 같은 것을 쓴다. */
     let full = '';
     let stops = [];
+    let usage = null;   /* 실제로 쓴 토큰 (2026-09-11) */
     let parts = 1;
     try {
       const out = await generateChunked({
@@ -191,6 +192,7 @@ export default async function handler(req, res) {
         return res.end();
       }
       stops = out.stops;
+      usage = out.usage || null;
       parts = out.parts;
     } catch (e) {
       console.error('해석 생성 실패', String((e && e.message) || e).slice(0, 200));
@@ -231,7 +233,7 @@ export default async function handler(req, res) {
     }
 
     await putAiCache({ cacheKey, productId, body: full, model: MODEL, subjectKey });
-    await noteAiUse(sessionId, cacheKey);
+    await noteAiUse(sessionId, cacheKey, usage);
     /* 새로 만들 때 곁들여 오래된 기록을 지운다. 따로 도는 청소 작업이 없어도 쌓이지 않는다. */
     await sweepAiOld();
     send(res, { type: 'done', cached: false });

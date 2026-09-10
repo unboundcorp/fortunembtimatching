@@ -1943,6 +1943,12 @@ body.has-fab main{padding-bottom:110px;}
 .ad-empty{font-size:13px;color:var(--ink-faint);padding:18px 8px;text-align:center;}
 .ad-scrim{position:fixed;inset:0;background:rgba(31,28,23,0.55);z-index:46;border:0;padding:0;}
 .ad-drawer{position:fixed;inset:0;z-index:48;display:flex;justify-content:flex-end;}
+/* ★ 서랍 안의 어두운 막은 **패널보다 아래**여야 한다. `.ad-scrim` 의 z-index 46 을 그대로 두면
+   서랍(z-index 48)이 만든 겹침 칸 안에서 막(46)이 패널(1)을 덮어, 화면은 보이는데
+   단추가 하나도 안 눌린다. 대표님이 폰에서 "이 페이지 왜 아무것도 안 되지?" 로 잡아 주셨다.
+   ★ element.click() 으로 누르는 검사는 이걸 못 잡는다 — 가림을 무시하고 바로 부르기 때문이다.
+     반드시 elementFromPoint 로 "그 자리에 실제로 무엇이 있나"를 봐야 한다. */
+.ad-drawer .ad-scrim{z-index:0;}
 .ad-drawer-panel{width:min(420px,100%);height:100%;overflow-y:auto;padding:20px;
   background:var(--paper-raised);box-shadow:0 0 0 1px rgba(31,28,23,0.13), 0 16px 40px rgba(31,28,23,0.16);
   display:flex;flex-direction:column;gap:14px;position:relative;z-index:1;}
@@ -17509,7 +17515,8 @@ function statsWindow(){
 function statsSum(rows){
   var o = {rooms:{made:0,joined:0,rate:0}, groups:{made:0,people:0,avg:0,max:0},
            orders:{created:0,paid:0,failed:0,revenue:0,byProduct:{}},
-           ai:{generated:0,costKrw:0}, kakao:{linked:0}, feedback:{created:0}};
+           ai:{generated:0,costKrw:0,inTok:0,outTok:0,estimated:0},
+           kakao:{linked:0}, feedback:{created:0}};
   rows.forEach(function(r){
     o.rooms.made += r.rooms.made; o.rooms.joined += r.rooms.joined;
     o.groups.made += r.groups.made; o.groups.people += r.groups.people;
@@ -17522,12 +17529,22 @@ function statsSum(rows){
       o.orders.byProduct[k] = b;
     }
     o.ai.generated += r.ai.generated;
+    /* 비용은 서버가 이미 셈해 둔 값을 더한다 — 화면에서 다시 계산하면 두 곳이 갈린다 */
+    o.ai.costKrw += (r.ai.costKrw || 0);
+    o.ai.inTok += (r.ai.inTok || 0);
+    o.ai.outTok += (r.ai.outTok || 0);
+    o.ai.estimated += (r.ai.estimated || 0);
     o.kakao.linked += r.kakao.linked;
     o.feedback.created += r.feedback.created;
   });
   o.rooms.rate = o.rooms.made ? Math.round((o.rooms.joined / o.rooms.made) * 100) : 0;
   o.groups.avg = o.groups.made ? Math.round((o.groups.people / o.groups.made) * 10) / 10 : 0;
-  o.ai.costKrw = o.ai.generated * ((STATS_DATA && STATS_DATA.ai && STATS_DATA.ai.costPerKrw) || 0);
+  /* 옛 배포본(비용을 안 내려주는 서버)에서는 예전처럼 건당 추정으로 채운다 */
+  if(!o.ai.costKrw && o.ai.generated){
+    o.ai.costKrw = o.ai.generated * ((STATS_DATA && STATS_DATA.ai && STATS_DATA.ai.costPerKrw) || 0);
+    o.ai.estimated = o.ai.generated;
+  }
+  o.ai.costKrw = Math.round(o.ai.costKrw);
   return o;
 }
 /* 날짜별 막대 그래프. 라이브러리를 쓰지 않는다 — 이 파일은 혼자 열려야 한다. */
@@ -18002,10 +18019,17 @@ function adminDash(body){
     delta:statsDelta(W.rooms.made, P.rooms.made),
     note:'상대가 연 것 ' + W.rooms.joined + '개 · ' + W.rooms.rate + '%',
     spark:days.map(function(r){ return r.rooms.made; })}));
-  kpi.appendChild(adKpi({label:'AI 해석', icon:'spark', value:W.ai.generated + '건',
-    delta:statsDelta(W.ai.generated, P.ai.generated),
-    note:'추정 원가 ' + formatWon(W.ai.costKrw),
-    spark:days.map(function(r){ return r.ai.generated; })}));
+  kpi.appendChild(adKpi({label:'AI 비용', icon:'spark', value:formatWon(W.ai.costKrw),
+    delta:statsDelta(W.ai.costKrw, P.ai.costKrw, true),
+    note:W.ai.generated + '건 · ' + adminTokenText(W.ai),
+    spark:days.map(function(r){ return r.ai.costKrw || 0; })}));
+  /* 남는 것 = 매출 − AI 비용. 결제 수수료·서버비는 안 빠진 값이라 그 사실을 적는다. */
+  kpi.appendChild(adKpi({label:'남는 것', icon:'gauge',
+    value:formatWon(W.orders.revenue - W.ai.costKrw),
+    delta:statsDelta(W.orders.revenue - W.ai.costKrw, P.orders.revenue - P.ai.costKrw, true),
+    note:'매출 ' + formatWon(W.orders.revenue) + ' − AI ' + formatWon(W.ai.costKrw)
+       + ' (결제 수수료·서버비는 안 뺀 값)',
+    spark:days.map(function(r){ return Math.max(0, r.orders.revenue - (r.ai.costKrw || 0)); })}));
   var tried = W.orders.created;
   kpi.appendChild(adKpi({label:'결제 실패율', icon:'gauge',
     value:(tried ? (Math.round((W.orders.failed / tried) * 1000) / 10) : 0) + '%',
@@ -18158,7 +18182,10 @@ function adminMemberDrawer(r){
   [['성격유형', p0 && p0.mbti ? p0.mbti : '—'],
    ['사주', p0 && p0.saju ? p0.saju : '아직 계산 안 됨'],
    ['누적 결제', r.paidCount ? (formatWon(r.revenue) + ' · ' + r.paidCount + '건') : '없음'],
-   ['이어보기', r.synced ? ('저장본 ' + r.rev + '번') : '없음']
+   ['이어보기', r.synced ? ('저장본 ' + r.rev + '번') : '없음'],
+   /* 2026-09-11 대표님 지시 "로그인 일자 가입 일자도 추가해라" */
+   ['가입(첫 로그인)', statsTime(r.at)],
+   ['마지막 로그인', statsTime(r.updatedAt)]
   ].forEach(function(c){
     var cell = el('div',{style:'padding:10px;border-radius:8px;background:var(--paper);'});
     cell.appendChild(el('div',{class:'ad-sub2'},[c[0]]));
@@ -18408,13 +18435,18 @@ function adminCompat(body){
       return hay.indexOf(q) >= 0;
     });
     if(!groups.length) gcard.appendChild(adEmpty('아직 만든 모임이 없어요.'));
-    else groups.forEach(function(g){
+    else gcard.appendChild(el('p',{class:'ad-note'},[
+      '「만든 분이 관리」 — 모임을 만든 분의 기기에 열쇠가 저장돼 있어요. 그분이 카카오 로그인만 하면 어느 기기에서든 이름 바꾸기·지우기를 할 수 있어요. '
+      + '「PIN으로도 관리」 — PIN을 아는 분도 관리할 수 있어요. 둘 다 없으면 아무도 이 모임을 고칠 수 없어요(명단 보기와 참여는 링크로 계속 됩니다).']));
+    if(groups.length) groups.forEach(function(g){
       var box = el('div',{style:'padding:10px 0;border-bottom:1px solid rgba(31,28,23,0.08);'});
       var t = el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap;'});
       t.appendChild(el('span',{style:'font-weight:600;'},[g.name || '(이름 없음)']));
       t.appendChild(adTag(g.people + '명'));
-      t.appendChild(adTag(g.hasPin ? 'PIN 있음' : 'PIN 없음','out'));
-      t.appendChild(adTag(g.hasOwner ? '만든 분 표식 있음' : '만든 분 표식 없음','out'));
+      /* ★ 2026-09-11 대표님 질문 "만든 분 표식 있음이 머야" — 무슨 말인지 알 수 없는 말이었다.
+         이 모임을 **누가 관리할 수 있는가**를 적는 자리이므로 그대로 적는다. */
+      t.appendChild(adTag(g.hasOwner ? '만든 분이 관리' : '만든 분 관리 못 함','out'));
+      t.appendChild(adTag(g.hasPin ? 'PIN으로도 관리' : 'PIN 없음','out'));
       box.appendChild(t);
       box.appendChild(el('div',{class:'ad-sub2'},[
         g.id + ' · 만든 시각 ' + statsTime(g.at) + ' · 보관 끝 ' + statsTime(g.expiresAt)]));
@@ -18427,6 +18459,18 @@ function adminCompat(body){
   }
   body.appendChild(gcard);
 }
+/* 토큰을 사람이 읽는 말로. 옛 줄(토큰을 안 적던 때)이 섞여 있으면 그 사실을 함께 적는다 —
+   지어낸 값을 진짜처럼 보이게 두지 않는다. */
+function adminTokenText(ai){
+  if(!ai || !ai.generated) return '토큰 기록 없음';
+  var t = [];
+  if(ai.inTok || ai.outTok){
+    t.push('토큰 입력 ' + adminNum(ai.inTok) + ' · 출력 ' + adminNum(ai.outTok));
+  }
+  if(ai.estimated) t.push(ai.estimated + '건은 토큰 기록이 없어 건당 추정');
+  return t.length ? t.join(' · ') : '토큰 기록 없음';
+}
+function adminNum(n){ return (n || 0).toLocaleString('ko-KR'); }
 function adminPersonText(p){
   if(!p) return '—';
   return [p.name || '(이름 없음)', p.mbti, p.gender, p.birth, p.time, p.lon ? '경도 ' + p.lon : '', p.solarTime]
@@ -18452,11 +18496,17 @@ function adminAi(body){
   });
   var per = (STATS_DATA && STATS_DATA.ai && STATS_DATA.ai.costPerKrw) || 0;
 
+  /* ★ 표에 실린 것(최근 200건)만 셉니다. 기간별로 보시려면 대시보드를 쓰십시오 —
+     거기 [AI 비용] 카드가 고르신 기간을 따릅니다. */
+  var sumIn = rows.reduce(function(a2,r){ return a2 + (r.inTok || 0); }, 0);
+  var sumOut = rows.reduce(function(a2,r){ return a2 + (r.outTok || 0); }, 0);
+  var sumCost = rows.reduce(function(a2,r){ return a2 + (r.costKrw || 0); }, 0);
+  var estN = rows.filter(function(r){ return r.estimated; }).length;
   var mini = el('div',{class:'ad-grid ad-mini'});
-  [['만든 글', all.length + '건'],
-   ['추정 원가', formatWon(all.length * per)],
-   ['저장된 글', ((STATS_DATA && STATS_DATA.ai && STATS_DATA.ai.cached) || 0) + '편'],
-   ['다시 쓴 횟수', ((STATS_DATA && STATS_DATA.ai && STATS_DATA.ai.reuse) || 0) + '회']
+  [['만든 글', rows.length + '건'],
+   ['비용', formatWon(sumCost)],
+   ['입력 토큰', adminNum(sumIn)],
+   ['출력 토큰', adminNum(sumOut)]
   ].forEach(function(c){
     var box = adCard(null);
     box.appendChild(el('div',{class:'ad-k'},[el('span',{},[c[0]])]));
@@ -18473,21 +18523,34 @@ function adminAi(body){
       var tr = el('tr',{});
       tr.appendChild(adTd([r.name]));
       tr.appendChild(adTd([r.chars ? (r.chars + '자') : '(글이 지워졌어요)'],'ad-num'));
+      tr.appendChild(adTd([r.inTok ? adminNum(r.inTok) : '—'],'ad-num'));
+      tr.appendChild(adTd([r.outTok ? adminNum(r.outTok) : '—'],'ad-num'));
+      tr.appendChild(adTd([formatWon(r.costKrw) + (r.estimated ? ' (추정)' : '')],'ad-num'));
       tr.appendChild(adTd([el('span',{class:'ad-sub2'},[r.model || '—'])],'ad-nowrap'));
       tr.appendChild(adTd([el('span',{class:'ad-sub2'},[statsTime(r.at)])],'ad-nowrap'));
-      tr.appendChild(adTd([el('span',{class:'ad-sub2'},[r.sessionId || '—'])]));
       return tr;
     });
-    card.appendChild(adTable(['상품','길이','모델','만든 시각','세션'], trs, 700));
+    card.appendChild(adTable(['상품','길이','입력 토큰','출력 토큰','비용','모델','만든 시각'], trs, 860));
     card.appendChild(adPager('ai', rows.length));
   }
+  var price = (STATS_DATA && STATS_DATA.ai && STATS_DATA.ai.price) || null;
   card.appendChild(el('p',{class:'ad-note'},[
-    '원가는 1건 ' + formatWon(per) + '로 잡은 추정이에요. 실제 청구액은 Anthropic 콘솔에서 보셔야 정확해요.']));
+    price ? ('입력 $' + price.inPerMTokUsd + ' · 출력 $' + price.outPerMTokUsd
+             + ' / 100만 토큰, 환율 ' + adminNum(price.usdKrw) + '원으로 셈한 값이에요.')
+          : ('원가는 1건 ' + formatWon(per) + '로 잡은 추정이에요.')]));
+  card.appendChild(el('p',{class:'ad-note'},[
+    estN ? (estN + '건은 토큰 기록이 없어 건당 ' + formatWon(per) + '로 잡았어요 — 2026-09-11 전에 만든 글이라 그때는 토큰을 안 적었어요.')
+         : '토큰 수는 글을 만들 때 받아 적은 실제 값이에요.']));
+  card.appendChild(el('p',{class:'ad-note'},[
+    '실제 청구액은 Anthropic 콘솔이 정본이에요. 콘솔은 조직 전체 합계라 이 서비스만 따로 못 가르기 때문에, 여기 값은 우리가 직접 세어 둔 것이에요. 기간별로 보시려면 대시보드의 [AI 비용] 카드를 쓰세요.']));
   body.appendChild(card);
 }
 function adminAiCsv(rows){
-  var out = [['상품','글자수','모델','만든시각','세션','저장열쇠']];
-  rows.forEach(function(r){ out.push([r.name, r.chars, r.model || '', r.at || '', r.sessionId || '', r.id]); });
+  var out = [['상품','글자수','입력토큰','출력토큰','비용원','추정여부','모델','만든시각','세션','저장열쇠']];
+  rows.forEach(function(r){
+    out.push([r.name, r.chars, r.inTok || '', r.outTok || '', r.costKrw || '',
+              r.estimated ? '추정' : '실측', r.model || '', r.at || '', r.sessionId || '', r.id]);
+  });
   return out;
 }
 
