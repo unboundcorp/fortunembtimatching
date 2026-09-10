@@ -2212,6 +2212,18 @@ body.has-fab main{padding-bottom:110px;}
   .svc-card:hover,.svc-card:focus-visible{transform:none;}
 }
 .svc-arrow{position:absolute;top:18px;right:16px;color:var(--gold);opacity:.75;display:flex;}
+/* ★ 2026-09-10 대표님 지시 — 동의 화면 카드는 화살표를 뺐다. 화살표 자리로 비워 두던
+   오른쪽 44px 을 글에 돌려주고, 설명 한 줄이 접히지 않게 글자를 조금 줄인다.
+   ★ 이 두 줄은 한 쌍이다. 화살표를 되살리면 padding 도 함께 되돌려야 글자와 겹친다. */
+.svc-card.no-arrow{padding-right:18px;}
+.svc-card.no-arrow .svc-desc{font-size:.86rem;}
+/* ★ 폭 320(아이폰 SE 1세대급)에서도 한 줄에 들어가게 한다. 그 폭에서는 좌우 여백을
+   줄여 글에 폭을 돌려주고 글자를 한 단 더 줄인다. 실측으로 정한 값이다 —
+   칸 194px / 한 줄에 필요 231px 이라 여백만 줄여서는 모자랐다. */
+@media (max-width:340px){
+  .onboard{padding-left:12px;padding-right:12px;}
+  .svc-card.no-arrow .svc-desc{font-size:.78rem;}
+}
 .svc-arrow svg{width:20px;height:20px;}
 .svc-title{font-family:var(--sans);font-size:1.1rem;font-weight:800;letter-spacing:-.02em;color:var(--gold);}
 .svc-desc{color:var(--ink);font-size:.94rem;font-weight:600;margin-top:6px;line-height:1.65;word-break:keep-all;}
@@ -16155,7 +16167,7 @@ function renderOnboarding(){
        원인을 모른 채 막히는 자리다.
        그래서 누를 수는 있게 두고, 왜 안 되는지 그 자리에서 말해 준다.
        ★ 실제로 못 넘어가게 막는 것은 그대로다 — aria-disabled로 낭독기에도 알린다. */
-    var c = el('button',{class:'svc-card', type:'button', 'aria-disabled':'true', onclick:function(){
+    var c = el('button',{class:'svc-card no-arrow', type:'button', 'aria-disabled':'true', onclick:function(){
       if(!consentOk()){
         showToast(!ageOk ? '만 14세 이상 확인에 먼저 체크해 주세요.'
                          : '개인정보 수집·이용 동의에 체크해 주세요.');
@@ -16172,13 +16184,19 @@ function renderOnboarding(){
     }});
     c.appendChild(el('div',{class:'svc-title'},[title]));
     c.appendChild(el('div',{class:'svc-desc'},[desc]));
-    c.appendChild(el('span',{class:'svc-arrow','aria-hidden':'true'},[dirIcon('right')]));
+    /* ★ 2026-09-10 대표님 지시 "이거 빼라" — 오른쪽 위 화살표를 뺐습니다.
+       카드 전체가 단추라 화살표로 그것을 알리던 자리였는데(R51), 동의 화면에서는
+       카드가 둘뿐이고 제목이 이미 눈에 들어와 없어도 눌러 보게 됩니다.
+       ★ 소개 화면(renderLandingIntro)의 카드에는 그대로 두었습니다 — 그쪽은 목록이 딸린
+         다른 모양이고 대표님이 지시하신 자리가 아닙니다. */
     svcCards.push(c);
     return c;
   }
   if(!invited){
     wrap.appendChild(onbCard('내 사주 × 성격유형',
-      '오늘의 운세 · 사주팔자 · 대운 흐름 · 성격 강점', 'self'));
+      /* ★ 2026-09-10 대표님 지시 — 네 낱말로 줄여 **한 줄에 들어가게** 맞췄습니다.
+         예전 문구('… 대운 흐름 · 성격 강점')는 폭 390에서 두 줄로 접혔습니다. */
+      '오늘의 운세 · 사주팔자 · 대운 · 성격유형', 'self'));
     wrap.appendChild(onbCard('타인과 궁합 보기',
       '링크 하나로 1:1부터 '+GC_MAX+'명 모임까지', 'compat'));
     wrap.appendChild(el('p',{class:'onboard-trust'},[

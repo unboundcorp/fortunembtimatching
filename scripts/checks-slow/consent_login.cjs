@@ -375,6 +375,43 @@ const L = require('../_lib.cjs');
     await page.close();
   }
 
+  /* ── ⑩ 동의 화면 카드 모양 (2026-09-10 대표님 지시) ──
+     "→ 이거 빼라" · "오늘의 운세 사주팔자 대운 성격유형 으로 한줄로 맞춰"
+     ★ 설명 줄이 두 줄로 접히면 안 됩니다. 폭마다 재서 봅니다 — 글자 크기나 여백을
+       건드리면 여기서 걸립니다. */
+  {
+    R.head('── ⑩ 동의 화면 카드');
+    for(const w of [320, 360, 390]){
+      const page = await L.openPage(browser, {state:fresh(), width:w, height:1000});
+      await stubLinked(page);
+      await page.goto(APP, {waitUntil:'load'});
+      await L.wait(2200);
+      const m = await page.evaluate(() => {
+        const cards = [...document.querySelectorAll('.onboard .svc-card')];
+        return {
+          n: cards.length,
+          arrows: document.querySelectorAll('.onboard .svc-arrow').length,
+          descs: cards.map(function(c){
+            const d = c.querySelector('.svc-desc');
+            if(!d) return {t:'(없음)', lines:0, over:0};
+            const cs = getComputedStyle(d);
+            const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.65;
+            return { t:(d.textContent||'').trim(),
+                     lines: Math.round(d.getBoundingClientRect().height / lh),
+                     over: d.scrollWidth - d.clientWidth };
+          }),
+        };
+      });
+      R.note(m.n === 2, w + 'px — 카드가 두 장이다', m.n + '장');
+      R.note(m.arrows === 0, w + 'px — 화살표가 없다', m.arrows + '개');
+      m.descs.forEach(function(d){
+        R.note(d.lines === 1 && d.over <= 1, w + 'px — 「' + d.t.slice(0,22) + '」 한 줄',
+               d.lines + '줄 · 넘침 ' + d.over);
+      });
+      await page.close();
+    }
+  }
+
   await browser.close(); if(srv) srv.close();
   R.done();
 })().catch((e) => { console.log('터짐: ' + (e && e.message)); process.exit(1); });
