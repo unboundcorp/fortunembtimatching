@@ -157,6 +157,71 @@ const R = reporter('그룹 나가기(화면)');
     R.note((p.__errs||[]).length === 0, 'JS 오류 0건', (p.__errs||[]).join(' | ') || '없음');
     await p.close();
 
+    /* ── ③ 만드신 분이 나갈 때 관리 권한을 잃지 않는가 (2026-09-10 대표님 질문
+       "모임장이 실수로 나가기하면 모임 지워지나?") ──────────────────
+       ★ 재 보니 모임은 안 지워지는데 **만든 분의 열쇠(ownerToken)가 사라지고** 있었습니다.
+         나가면 저장 목록에서 그 줄을 통째로 빼는데 열쇠가 그 줄 안에 있고, 묘비까지 남겨
+         다른 기기에서도 사라졌습니다. PIN을 안 정해 두셨으면 되돌릴 수 없습니다. */
+    R.head('── ③ 만드신 분이 나갈 때');
+    roster = rows.mine + ';' + rows.other + ';' + rows.third;
+    leaveBody = null;
+    p = await openPage(browser, {hook:true, width:390, height:900,
+      state: (function(){
+        const st = require('../_lib.cjs').makeState({});
+        st.savedGroups = [{id:GID, name:'검사 모임', at:Date.now(), token:'TOKEN-ABC', n:3, rel:'friend'}];
+        return st;
+      })()});
+    await p.setRequestInterception(true);
+    p.on('request', function(req){
+      const u = req.url();
+      if(u.indexOf('/api/group') >= 0){
+        let body = {};
+        try{ body = JSON.parse(req.postData() || '{}'); }catch(e){}
+        if(body.action === 'get'){
+          return req.respond({status:200, contentType:'application/json',
+            body: JSON.stringify({name:'검사 모임', members:roster, ttlDays:365})});
+        }
+        if(body.action === 'leave'){
+          leaveBody = body;
+          const rs = String(roster).split(';').filter(Boolean);
+          const i = rs.indexOf(body.member);
+          if(i >= 0){ rs.splice(i,1); roster = rs.join(';'); }
+          return req.respond({status:200, contentType:'application/json',
+            body: JSON.stringify({ok:true, members:roster})});
+        }
+        return req.respond({status:400, contentType:'application/json', body:'{}'});
+      }
+      req.continue();
+    });
+    await p.goto(site.url + '/fortune.html', {waitUntil:'domcontentloaded'});
+    await wait(900);
+    await openGroup(p);
+    await clickText(p, /이 그룹에서 나가기/);
+    await wait(400);
+    const ownerModal = await p.evaluate(function(){
+      const m = document.querySelector('.modal-box'); return m ? m.innerText : '';
+    });
+    R.note(/만드셨어요/.test(ownerModal),
+           '만드신 분에게는 "모임은 그대로 남는다"를 미리 말한다');
+    await clickText(p, /^나가기$/);
+    await wait(1200);
+    const own = await p.evaluate(function(k){
+      let st = {};
+      try{ st = JSON.parse(localStorage.getItem(k) || '{}'); }catch(e){}
+      const g = (st.savedGroups || []).filter(function(x){ return x && x.id === 'testgroup123'; })[0];
+      return { kept: !!g, token: g ? g.token : null, n: g ? g.n : null,
+               tomb: (st.deletedGroups || []).some(function(x){ return x && x.id === 'testgroup123'; }) };
+    }, STORAGE_KEY);
+    R.note(!!leaveBody, '서버에서 명단은 빠진다');
+    R.note(own.kept, '★ 만드신 모임은 저장 목록에 그대로 남는다');
+    R.note(own.token === 'TOKEN-ABC',
+           '★ 만든 사람의 열쇠가 살아 있다 (이름 바꾸기·지우기를 계속 할 수 있다)',
+           String(own.token));
+    R.note(own.tomb === false, '묘비를 남기지 않는다 (다른 기기에서도 안 사라진다)');
+    R.note(own.n === 2, '남은 인원이 갱신된다', String(own.n));
+    R.note((p.__errs||[]).length === 0, 'JS 오류 0건', (p.__errs||[]).join(' | ') || '없음');
+    await p.close();
+
   }catch(err){
     R.bad('검사 중 오류', String(err && err.message).slice(0,160));
   }finally{
