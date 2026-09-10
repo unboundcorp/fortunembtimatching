@@ -122,6 +122,9 @@ const R = reporter('그룹 나가기(화면)');
       try{ return (JSON.parse(localStorage.getItem(k)||'{}').savedGroups||[]).length; }catch(e){ return -1; }
     }, STORAGE_KEY);
     R.note(savedBefore >= 1, '열어 본 그룹이 저장 목록에 들어갔다', savedBefore + '개');
+    /* 열쇠가 없는 기기(만든 분이 아님)에는 PIN 안내를 안 적는다 — 정할 수 없는 일이다 */
+    R.note(txt.indexOf('다른 분께 관리를 맡기시려면') < 0,
+           '만든 분이 아니면 PIN 안내를 안 적는다');
 
     const hit = await clickText(p, /이 그룹에서 나가기/);
     await wait(400);
@@ -196,6 +199,13 @@ const R = reporter('그룹 나가기(화면)');
     await p.goto(site.url + '/fortune.html', {waitUntil:'domcontentloaded'});
     await wait(900);
     await openGroup(p);
+    /* ★ 2026-09-10 대표님 지시 — PIN 은 '남에게 맡길 때'만 쓰는 선택 사항이고, 그 사실을
+       [그룹 관리] 창을 열어 보지 않아도 알 수 있어야 합니다. 만드신 분에게만 적습니다. */
+    const pinHint = await p.evaluate(function(){
+      return document.body.innerText.indexOf('다른 분께 관리를 맡기시려면') >= 0;
+    });
+    R.note(pinHint, '만드신 분 화면에 PIN 안내가 보인다 (관리를 남에게 맡기는 길)');
+
     await clickText(p, /이 그룹에서 나가기/);
     await wait(400);
     const ownerModal = await p.evaluate(function(){

@@ -23124,6 +23124,21 @@ function renderGroupCompat(){
     gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:openGroupManageModal},['그룹 관리']));
     gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:confirmDeleteGroup},['그룹 지우기']));
     gsCard.appendChild(gRow);
+    /* ★ 2026-09-10 대표님 지시 — PIN 을 정할 수 있다는 것을 아는 길이 [그룹 관리] 창을
+       열어 보는 것뿐이었습니다. 그래서 대개 모르고 지나갑니다.
+       ★ 만드신 분(열쇠가 있는 기기)에게만 적습니다 — 열쇠가 없으면 PIN 을 정할 수도
+         없어서, 적어 두면 못 하는 일을 하라고 시키는 셈이 됩니다.
+       ★ **PIN 을 의무로 만들지 마십시오** (2026-09-10 대표님과 정한 것). 카카오 로그인이
+         필수라 만든 사람의 열쇠가 계정 서랍(user_sync 의 savedGroups)을 타고 따라갑니다 —
+         본인 관리에는 PIN 이 필요 없습니다. PIN 은 **남에게 맡길 때**만 쓰는 선택 사항입니다.
+         의무로 하면 "잊었어요"에 답할 방법이 없고(되돌릴 수 없는 형태로만 보관합니다),
+         모임이 자동 저장되는 지금은 물어볼 자리도 없습니다. */
+    if(groupToken(GROUP_VIEW.id)){
+      gsCard.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
+        '다른 분께 관리를 맡기시려면 [그룹 관리]에서 PIN을 정해 알려주세요. '
+        + '회원님은 카카오 로그인만 하시면 어느 기기에서든 PIN 없이 관리하실 수 있어요.'
+      ]));
+    }
     /* ★ 2026-09-09 — 내 줄이 명단에 있을 때만 내놓는다 (대표님 지시 "내가 스스로 그룹 못나가?").
        [그룹 지우기]는 그룹 전체를 없애는 것이고, 이건 **내 줄 하나만** 빼는 것이다.
        둘을 나란히 두면 헷갈리므로 한 줄 띄우고 아래에 따로 놓는다. */
