@@ -19,6 +19,7 @@ import { ensureSession } from './_lib/session.js';
 import { adminAccessOf } from './_lib/store.js';
 import { productOf, aiQuotaOf } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
+import { decodePersonRow } from './_lib/person.js';
 
 /* AI 해석 1건당 대략 얼마가 나가는지 — 원가 감을 잡기 위한 값이다.
    Sonnet 5 기준 입력 $2 / 출력 $10 per MTok, 유료 10섹션 ≈ 7천 토큰으로 잡았다.
@@ -163,6 +164,136 @@ export default async function handler(req, res) {
                    amount: o.amount, status: o.status, at: o.paid_at || o.created_at };
         }),
       });
+    }
+
+    /* ── 원자료 표 (2026-09-10 대표님 지시) ─────────────────────────
+       > "관리자 페이지에서는 모든 정보가 다 보여야한다 일목 요연하게!
+       >  시간부터 내용 멘트 하나하나 다 보여야된다"
+
+       왜 만들었나: 현황판이 셈한 숫자만 보여 줘서, "그룹 2개 · 3명"에서 그게 어느
+       그룹인지 볼 길이 없었습니다. 이제 카드를 누르면 그 원자료를 그대로 봅니다.
+       ★ 처음에는 생년월일을 빼고 내려보내려 했는데, 대표님이 전부 보이라고 정하셨습니다.
+         운영자(주식회사 언바운드)는 이 자료의 관리자이고, 화면에 닿는 길은 운영자
+         코드 하나뿐입니다(adminAccessOf). **손님 화면에는 이 창구를 절대 붙이지 마십시오.**
+       ★ 사람 한 줄(a_payload · members 의 한 칸)은 화면의 INVITE_FIELDS 와 같은 형식입니다 —
+         n,m,y,mo,d,h,mi,g,lo,ts. 여기서 손으로 다시 세지 말고 아래 decodePerson 을 쓰십시오. */
+    if (body.action === 'rows') {
+      const kind = String(body.kind || '');
+      const N = 200;
+
+      const decodePerson = decodePersonRow;   /* api/_lib/person.js — 화면 INVITE_FIELDS 와 한 쌍 */
+
+      if (kind === 'rooms') {
+        const rows = await rest(
+          `rooms?select=room_id,a_payload,b_payload,created_at,joined_at,expires_at&order=created_at.desc&limit=${N}`
+        );
+        return json(res, 200, { kind, rows: (rows || []).map((r) => ({
+          id: r.room_id,
+          a: decodePerson(r.a_payload),
+          b: decodePerson(r.b_payload),
+          at: r.created_at,
+          joinedAt: r.joined_at || null,
+          expiresAt: r.expires_at || null,
+        })) });
+      }
+
+      if (kind === 'groups') {
+        const rows = await rest(
+          `groups?select=group_id,name,members,pin_hash,owner_hash,created_at,updated_at,expires_at&order=created_at.desc&limit=${N}`
+        );
+        return json(res, 200, { kind, rows: (rows || []).map((g) => {
+          const parts = String(g.members || '').split(';').filter(Boolean);
+          return {
+            id: g.group_id,
+            name: g.name || '',
+            people: parts.length,
+            members: parts.map(decodePerson).filter(Boolean),
+            hasPin: !!g.pin_hash,
+            hasOwner: !!g.owner_hash,
+            at: g.created_at,
+            updatedAt: g.updated_at || null,
+            expiresAt: g.expires_at || null,
+          };
+        }) });
+      }
+
+      if (kind === 'orders') {
+        const rows = await rest(
+          `orders?select=order_id,session_id,product_id,amount,status,payment_key,created_at,paid_at&order=created_at.desc&limit=${N}`
+        );
+        return json(res, 200, { kind, rows: (rows || []).map((o) => {
+          const p = productOf(o.product_id);
+          return {
+            id: o.order_id,
+            productId: o.product_id,
+            name: p ? p.name : o.product_id,
+            amount: o.amount,
+            status: o.status,
+            sessionId: o.session_id || '',
+            paymentKey: o.payment_key ? '있음' : '없음',
+            at: o.created_at,
+            paidAt: o.paid_at || null,
+          };
+        }) });
+      }
+
+      if (kind === 'ai') {
+        /* ai_usage 는 '언제 만들었나'만 알고, 무슨 글인지는 ai_cache 에 있다. 열쇠로 맞댄다. */
+        const [uses, cache] = await Promise.all([
+          rest(`ai_usage?select=session_id,cache_key,created_at&order=created_at.desc&limit=${N}`),
+          rest('ai_cache?select=cache_key,product_id,model,body&order=created_at.desc&limit=2000'),
+        ]);
+        const by = {};
+        (cache || []).forEach((c) => { by[c.cache_key] = c; });
+        return json(res, 200, { kind, rows: (uses || []).map((u) => {
+          const c = by[u.cache_key] || null;
+          const p = c ? productOf(c.product_id) : null;
+          return {
+            id: String(u.cache_key || '').slice(0, 12),
+            name: p ? p.name : (c ? c.product_id : '(저장된 글이 지워졌어요)'),
+            model: c ? c.model : '',
+            chars: c && c.body ? String(c.body).length : 0,
+            sessionId: u.session_id || '',
+            at: u.created_at,
+          };
+        }) });
+      }
+
+      if (kind === 'kakao') {
+        const rows = await rest(
+          `kakao_links?select=kakao_id,session_id,created_at,updated_at&order=created_at.desc&limit=${N}`
+        );
+        return json(res, 200, { kind, rows: (rows || []).map((k) => ({
+          id: k.kakao_id, sessionId: k.session_id || '',
+          at: k.created_at, updatedAt: k.updated_at || null,
+        })) });
+      }
+
+      if (kind === 'sync') {
+        /* data 통째는 무겁다(프로필·기록 전부). 무엇이 몇 개 들었는지만 세어 보낸다. */
+        const rows = await rest(
+          `user_sync?select=kakao_id,rev,data,created_at,updated_at&order=updated_at.desc&limit=60`
+        );
+        return json(res, 200, { kind, rows: (rows || []).map((s) => {
+          const d = s.data || {};
+          const cnt = (v) => (Array.isArray(v) ? v.length : 0);
+          /* ★ 기록 칸 이름은 api/sync.js 의 ALLOWED 와 한 쌍이다. 거기에 기록을 하나 더
+             늘리면 여기도 늘려야 한다 — 안 늘리면 관리자 화면이 실제보다 적게 센다.
+             checks/stats_rows_pair.cjs 가 두 목록을 대조한다. */
+          const history = cnt(d.fortuneHistory) + cnt(d.compatHistory)
+                        + cnt(d.sajuHistory) + cnt(d.mbtiReportHistory);
+          return {
+            id: s.kakao_id, rev: s.rev,
+            profiles: cnt(d.profiles),
+            history,
+            groups: cnt(d.savedGroups),
+            bytes: JSON.stringify(d).length,
+            at: s.created_at, updatedAt: s.updated_at || null,
+          };
+        }) });
+      }
+
+      return json(res, 400, { error: 'bad_request', reason: '모르는 갈래예요.' });
     }
 
     /* ── 전체 현황 ──────────────────────────────────────────────── */
