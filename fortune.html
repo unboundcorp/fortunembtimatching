@@ -17403,7 +17403,7 @@ var STATS_DATA = null, STATS_ERR = null, STATS_RANGE = 'd7';
 var STATS_ROWS = null;   /* {kind, label, loading|err|rows} · null이면 요약 화면 */
 var STATS_ROW_KINDS = {
   rooms:'궁합 링크', groups:'그룹', orders:'결제',
-  ai:'AI 해석', kakao:'카카오 로그인', sync:'이어보기'
+  ai:'AI 해석', kakao:'회원', sync:'이어보기'
 };
 function openStatsRows(kind){
   STATS_ROWS = {kind:kind, label:STATS_ROW_KINDS[kind]||kind, loading:true};
@@ -17523,11 +17523,39 @@ function renderStatsRows(){
         ['세션', r.sessionId]
       ]));
     } else if(S.kind === 'kakao'){
+      /* ★ 회원 한 명을 통째로 — 카카오 번호 · 넣으신 사주·성격유형 · 결제 여부 (2026-09-10 대표님 지시) */
+      var subs2 = [];
+      if(!r.profiles || !r.profiles.length){
+        subs2.push(r.synced ? '이 계정에 저장된 프로필이 없어요.'
+                            : '아직 이어보기 저장이 없어요 (로그인만 하시고 사주를 안 넣으셨어요).');
+      } else {
+        r.profiles.forEach(function(p, i){
+          subs2.push((i+1)+'. ' + [
+            p.name || '(이름 없음)', p.mbti || '유형 없음', p.gender,
+            (p.birth || '생일 없음') + '(' + p.calendar + ')'
+              + (p.inputBirth ? ' · 넣으신 날짜 ' + p.inputBirth : ''),
+            p.time, p.place ? ('출생지 ' + p.place) : '',
+            p.saju ? ('사주 ' + p.saju) : '사주 아직 계산 안 됨',
+            p.element ? (p.element + ' 기운') : '', p.zodiac ? (p.zodiac + '띠') : '',
+            p.solarTime
+          ].filter(function(x){ return x; }).join(' · '));
+        });
+      }
+      (r.orders || []).forEach(function(o){
+        subs2.push('· ' + o.name + ' ' + formatWon(o.amount) + ' — '
+          + ({paid:'결제완료', created:'승인 전에 멈춤', failed:'실패'}[o.status] || o.status)
+          + ' · ' + statsTime(o.at) + ' · ' + o.id);
+      });
       card.appendChild(statsRawRow('회원번호 '+r.id, [
+        ['결제', r.paidCount ? (r.paidCount+'건 · '+formatWon(r.revenue)) : '없음'],
+        ['프로필', (r.profiles ? r.profiles.length : 0)+'개'],
+        ['기록', r.history+'건'],
+        ['저장한 그룹', r.groups+'개'],
         ['처음 로그인', statsTime(r.at)],
         ['마지막', statsTime(r.updatedAt)],
+        ['이어보기 저장', r.synced ? (statsTime(r.syncedAt) + ' · 저장본 ' + r.rev + '번') : '없음'],
         ['세션', r.sessionId]
-      ]));
+      ], subs2));
     } else if(S.kind === 'sync'){
       card.appendChild(statsRawRow('회원번호 '+r.id, [
         ['프로필', r.profiles+'개'],

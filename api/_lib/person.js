@@ -43,3 +43,41 @@ export function decodePersonRow(row) {
     solarTime: f[9] === '1' ? '보정함' : '보정 안 함',
   };
 }
+
+/* =====================================================================
+   프로필 한 개를 관리자 화면용으로 풀어 준다 (2026-09-10 대표님 지시)
+   > "카카오 아이디랑 회원마다 넣은 사주랑 성격유형 넣어줘야지 유료결제 했는지 안했는지 유무도"
+   ---------------------------------------------------------------------
+   재료는 `user_sync.data.profiles` 의 프로필 객체다. 화면이 만든 그대로 서버에 사본이 있다.
+   ★ 사주 여덟 글자는 **다시 계산하지 않는다.** 프로필 안의 `sajuCache` 를 그대로 읽는다.
+     서버에 SajuEngine 사본을 두면 화면과 갈라지고, 갈라진 줄 아무도 모른다.
+     캐시가 없으면 빈 값으로 두고 화면이 '아직 계산 안 됨'이라고 적는다.
+   ★ 음력으로 넣으신 분은 **넣으신 날짜(inputY/M/D)와 양력으로 바꾼 날짜가 다르다.** 둘 다 적는다 —
+     하나만 적으면 "내가 넣은 날짜가 아닌데?"가 된다.
+===================================================================== */
+export function describeProfile(p) {
+  if (!p || typeof p !== 'object') return null;
+  const bt = p.birthTime;
+  const sc = p.sajuCache || null;
+  const one = (x) => (x && x.text ? x.text : '');
+  const ymd = (y, m, d) => (y && m && d ? `${y}-${pad(m)}-${pad(d)}` : '');
+  const solar = ymd(p.year, p.month, p.day);
+  const input = ymd(p.inputYear, p.inputMonth, p.inputDay);
+  return {
+    name: String(p.name || '').slice(0, 20),
+    mbti: p.mbti || '',
+    gender: p.gender === 'M' ? '남' : p.gender === 'F' ? '여' : '',
+    birth: solar,
+    /* 음력으로 넣으셨고 양력 변환 결과가 다를 때만 원래 날짜를 따로 적는다 */
+    inputBirth: input && input !== solar ? input : '',
+    calendar: p.calendarType === 'lunar' ? ('음력' + (p.lunarLeap ? ' 윤달' : '')) : '양력',
+    time: bt && typeof bt.hour === 'number' ? `${pad(bt.hour)}:${pad(bt.minute || 0)}` : '모름',
+    place: p.birthLonKey || '',
+    lon: typeof p.birthLon === 'number' ? String(p.birthLon) : '',
+    solarTime: p.solarTimeAdjust ? '보정함' : '보정 안 함',
+    element: p.element || '',
+    zodiac: p.zodiac || '',
+    saju: sc ? [one(sc.year), one(sc.month), one(sc.day), one(sc.hour)].filter(Boolean).join(' ') : '',
+    createdAt: p.createdAt || null,
+  };
+}

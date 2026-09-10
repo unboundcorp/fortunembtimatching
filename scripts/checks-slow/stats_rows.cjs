@@ -43,7 +43,20 @@ const ROWS = {
             sessionId:'sess-abcdef', paymentKey:'있음', at:'2026-09-10T02:03:04Z', paidAt:'2026-09-10T02:03:44Z'}],
   ai: [{id:'ck-0011aa22', name:'궁합 심층 해석', model:'claude-sonnet-5', chars:6841,
         sessionId:'sess-abcdef', at:'2026-09-10T02:04:05Z'}],
-  kakao: [{id:'4123456789', sessionId:'sess-abcdef', at:'2026-09-01T00:00:01Z', updatedAt:'2026-09-10T00:00:01Z'}],
+  /* 회원 한 명 통째 — 카카오 번호 · 넣으신 사주/성격유형 · 결제 여부 (2026-09-10) */
+  kakao: [
+    {id:'4123456789', sessionId:'sess-abcdef', at:'2026-09-01T00:00:01Z', updatedAt:'2026-09-10T00:00:01Z',
+     synced:true, rev:7, syncedAt:'2026-09-10T00:00:02Z', history:5, groups:1,
+     paidCount:1, revenue:990,
+     profiles:[{name:'가영', mbti:'ENFP', gender:'여', birth:'1990-03-05', inputBirth:'1990-02-09',
+                calendar:'음력', time:'09:30', place:'seoul', lon:'126.98', solarTime:'보정함',
+                element:'목', zodiac:'말', saju:'경오 임오 신해 계사', createdAt:1757000000000}],
+     orders:[{id:'ORD-12345', name:'궁합 심층 해석', amount:990, status:'paid', at:'2026-09-10T02:03:44Z'}]},
+    /* 로그인만 하고 사주를 안 넣은 분 — 여기가 비면 화면이 조용히 빈 줄을 그린다 */
+    {id:'4198765432', sessionId:'sess-zzz', at:'2026-09-02T00:00:01Z', updatedAt:'2026-09-02T00:00:01Z',
+     synced:false, rev:null, syncedAt:null, history:0, groups:0,
+     paidCount:0, revenue:0, profiles:[], orders:[]},
+  ],
   sync: [{id:'4123456789', rev:7, profiles:2, history:5, groups:1, bytes:4096,
           at:'2026-09-01T00:00:01Z', updatedAt:'2026-09-10T00:00:02Z'}],
 };
@@ -151,7 +164,20 @@ const ROWS = {
   ['claude-sonnet-5','6841자','ck-0011aa22'].forEach(function(w){
     R.note(o.text.indexOf(w) >= 0, "AI — '" + w + "' 가 보인다"); });
   await back(); o = await open('kakao');
-  R.note(o.text.indexOf('4123456789') >= 0, '카카오 — 회원번호가 보인다');
+  R.note(o.clicked, '[회원] 카드의 원자료 단추를 눌렀다');
+  R.head('⑤-2 회원 — 사주·성격유형·결제 여부가 다 보이는가');
+  ['4123456789','가영','ENFP','1990-03-05','음력','넣으신 날짜 1990-02-09','09:30','seoul',
+   '사주 경오 임오 신해 계사','목 기운','말띠','보정함']
+    .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "회원 — '" + w + "' 가 보인다"); });
+  R.note(/결제\s*1건/.test(o.text), '결제한 분은 건수와 금액이 보인다');
+  R.note(o.text.indexOf('궁합 심층 해석') >= 0 && o.text.indexOf('ORD-12345') >= 0,
+         '무엇을 샀는지 · 영수증 번호까지 보인다');
+  R.note(o.text.indexOf('저장본 7번') >= 0, '이어보기 저장본 번호가 보인다');
+  /* ★ 안 낸 분을 '없음'이라고 분명히 적는가 — 빈칸으로 두면 '아직 안 불러온 것'과 구별이 안 된다 */
+  R.note(o.text.indexOf('4198765432') >= 0, '결제 안 한 분도 줄이 있다');
+  R.note(/결제\s*없음/.test(o.text), "결제가 없으면 '없음'이라고 적는다");
+  R.note(o.text.indexOf('로그인만 하시고 사주를 안 넣으셨어요') >= 0,
+         '프로필이 없는 분에게 그 이유를 적는다');
   await back(); o = await open('sync');
   R.note(o.clicked, '[이어보기 원자료 보기] 단추를 눌렀다');
   ['2개','5건','4096자'].forEach(function(w){

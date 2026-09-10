@@ -19,7 +19,7 @@ import { ensureSession } from './_lib/session.js';
 import { adminAccessOf } from './_lib/store.js';
 import { productOf, aiQuotaOf } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
-import { decodePersonRow } from './_lib/person.js';
+import { decodePersonRow, describeProfile } from './_lib/person.js';
 
 /* AI 해석 1건당 대략 얼마가 나가는지 — 원가 감을 잡기 위한 값이다.
    Sonnet 5 기준 입력 $2 / 출력 $10 per MTok, 유료 10섹션 ≈ 7천 토큰으로 잡았다.
@@ -259,14 +259,60 @@ export default async function handler(req, res) {
         }) });
       }
 
+      /* ── 회원 한 명을 통째로 (2026-09-10 대표님 지시) ──────────────
+         > "카카오 아이디랑 회원마다 넣은 사주랑 성격유형 넣어줘야지 유료결제 했는지 안했는지 유무도"
+
+         카카오 로그인 줄만 보여 주니 번호와 시각뿐이라 "이 사람이 누구인지"를 알 수 없었습니다.
+         세 표를 맞대어 한 줄로 만듭니다 — kakao_links(누구) · user_sync(무엇을 넣었나) ·
+         orders(돈을 냈나).
+         ★ 결제는 **kakao_links 가 가리키는 세션**으로 찾습니다. 기기를 바꾸시면 그 표에
+           최신 세션 하나만 남으므로, 옛 기기에서만 한 결제는 여기 안 잡힙니다.
+           그 경우는 [결제] 원자료나 영수증 번호로 찾으십시오 — 없는 것을 있는 척하지 않습니다. */
       if (kind === 'kakao') {
-        const rows = await rest(
+        const links = await rest(
           `kakao_links?select=kakao_id,session_id,created_at,updated_at&order=created_at.desc&limit=${N}`
         );
-        return json(res, 200, { kind, rows: (rows || []).map((k) => ({
-          id: k.kakao_id, sessionId: k.session_id || '',
-          at: k.created_at, updatedAt: k.updated_at || null,
-        })) });
+        const inList = (arr) => encodeURIComponent(
+          arr.map((v) => '"' + String(v).replace(/"/g, '') + '"').join(',')
+        );
+        const ids = (links || []).map((l) => l.kakao_id).filter(Boolean);
+        const sids = (links || []).map((l) => l.session_id).filter(Boolean);
+        const [syncRows, orderRows] = await Promise.all([
+          ids.length ? rest(`user_sync?kakao_id=in.(${inList(ids)})&select=kakao_id,data,rev,updated_at`) : [],
+          sids.length ? rest(`orders?session_id=in.(${inList(sids)})&select=session_id,order_id,product_id,amount,status,created_at,paid_at&order=created_at.desc`) : [],
+        ]);
+        const syncBy = {}; (syncRows || []).forEach((x) => { syncBy[x.kakao_id] = x; });
+        const ordBy = {}; (orderRows || []).forEach((o) => {
+          (ordBy[o.session_id] = ordBy[o.session_id] || []).push(o);
+        });
+        const cnt = (v) => (Array.isArray(v) ? v.length : 0);
+
+        return json(res, 200, { kind, rows: (links || []).map((l) => {
+          const sy = syncBy[l.kakao_id] || null;
+          const d = (sy && sy.data) || {};
+          const os = ordBy[l.session_id] || [];
+          const paid = os.filter((o) => o.status === 'paid');
+          return {
+            id: l.kakao_id,
+            sessionId: l.session_id || '',
+            at: l.created_at,
+            updatedAt: l.updated_at || null,
+            synced: !!sy,
+            rev: sy ? sy.rev : null,
+            syncedAt: sy ? sy.updated_at : null,
+            profiles: (Array.isArray(d.profiles) ? d.profiles : []).map(describeProfile).filter(Boolean),
+            history: cnt(d.fortuneHistory) + cnt(d.compatHistory)
+                   + cnt(d.sajuHistory) + cnt(d.mbtiReportHistory),
+            groups: cnt(d.savedGroups),
+            paidCount: paid.length,
+            revenue: paid.reduce((a, o) => a + (o.amount || 0), 0),
+            orders: os.map((o) => {
+              const pr = productOf(o.product_id);
+              return { id: o.order_id, name: pr ? pr.name : o.product_id, amount: o.amount,
+                       status: o.status, at: o.paid_at || o.created_at };
+            }),
+          };
+        }) });
       }
 
       if (kind === 'sync') {

@@ -113,6 +113,54 @@ R.note(/parts\.push\(STATS_ROWS \?/.test(html), '원자료가 viewKeyNow 에 들
   R.note(g3 && g3.time === '00:05', '0시 5분을 00:05 로 적는다', g3 ? g3.time : '(없음)');
 
   /* 서버가 이 모듈을 실제로 쓰는가 (베껴 적어 두면 한쪽만 고쳐진다) */
+  /* ── 회원 한 줄 (2026-09-10 대표님 지시) ─────────────────────────
+     > "카카오 아이디랑 회원마다 넣은 사주랑 성격유형 넣어줘야지 유료결제 했는지 안했는지 유무도"
+     ★ 사주 여덟 글자를 **다시 계산하지 않고** 프로필의 sajuCache 를 읽는지 본다.
+       서버가 스스로 계산하기 시작하면 화면과 갈라지고, 갈라진 줄 아무도 모른다. */
+  R.head('── 회원 풀이(describeProfile) 를 실제로 돌린다');
+  const { describeProfile } = person;
+  const prof = {
+    name:'가영', mbti:'ENFP', gender:'F',
+    year:1990, month:3, day:5, inputYear:1990, inputMonth:2, inputDay:9,
+    calendarType:'lunar', lunarLeap:false, birthTime:{hour:9, minute:30},
+    birthLonKey:'seoul', birthLon:126.98, solarTimeAdjust:true,
+    element:'목', zodiac:'말',
+    sajuCache:{year:{text:'경오'}, month:{text:'임오'}, day:{text:'신해'}, hour:{text:'계사'}},
+  };
+  const dp = describeProfile(prof);
+  [['name','가영'],['mbti','ENFP'],['gender','여'],['birth','1990-03-05'],
+   ['inputBirth','1990-02-09'],['calendar','음력'],['time','09:30'],
+   ['solarTime','보정함'],['saju','경오 임오 신해 계사']].forEach(function(pr){
+    R.note(dp && dp[pr[0]] === pr[1], '회원 풀이의 ' + pr[0] + ' 가 맞다',
+           (dp ? String(dp[pr[0]]) : '(없음)') + ' (기대 ' + pr[1] + ')');
+  });
+  /* 양력으로 넣으신 분은 '넣으신 날짜'를 따로 안 적는다 — 같은 값을 두 번 쓰지 않는다 */
+  const dp2 = describeProfile(Object.assign({}, prof, {calendarType:'solar', inputMonth:3, inputDay:5}));
+  R.note(dp2 && dp2.inputBirth === '', '양력이면 넣으신 날짜를 따로 안 적는다', dp2 ? ('"'+dp2.inputBirth+'"') : '(없음)');
+  /* 시각 모름 · 사주 아직 계산 안 됨 */
+  const dp3 = describeProfile(Object.assign({}, prof, {birthTime:null, sajuCache:null}));
+  R.note(dp3 && dp3.time === '모름', '태어난 시각이 없으면 모름', dp3 ? dp3.time : '(없음)');
+  R.note(dp3 && dp3.saju === '', '사주 캐시가 없으면 빈 값을 준다 (지어내지 않는다)');
+  R.note(describeProfile(null) === null, '프로필이 없으면 null 을 준다');
+  /* 서버가 사주를 스스로 계산하려 들지 않는가 */
+  /* ★ 주석은 빼고 본다 — 안 그러면 "여기서 계산하지 마라"라고 적어 둔 주석이
+     스스로 걸린다(실제로 걸렸다). 이 프로젝트에서 되풀이된 실수라 방식으로 막는다. */
+  const stripComments = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const personSrc = fs.readFileSync(path.join(ROOT, 'api/_lib/person.js'), 'utf8');
+  const noComment = stripComments(api) + '\n' + stripComments(personSrc);
+  R.note(!/computeSaju|SajuEngine/.test(noComment),
+         '서버가 사주를 다시 계산하지 않는다 (sajuCache 를 읽는다)');
+  R.note(/sajuCache/.test(stripComments(personSrc)), '프로필의 sajuCache 를 실제로 읽는다');
+
+  R.head('── 회원 줄이 세 표를 맞대는가');
+  R.note(/kakao_links\?select=/.test(api), 'kakao_links 를 읽는다');
+  R.note(/user_sync\?kakao_id=in\./.test(api), '그 번호들의 user_sync 를 읽는다');
+  R.note(/orders\?session_id=in\./.test(api), '그 세션들의 orders 를 읽는다');
+  R.note(/paidCount:/.test(api) && /revenue:/.test(api), '결제 건수와 금액을 함께 준다');
+  R.note(/\.map\(describeProfile\)/.test(api), '프로필을 describeProfile 로 푼다');
+  R.note(/결제\s*안\s*한|paidCount \? /.test(html) || /없음/.test(html),
+         "결제가 없으면 화면이 '없음'이라고 적는다");
+
   /* 이어보기 칸이 실제 저장 항목과 맞는가 — 여기가 어긋나면 관리자 화면이
      실제보다 적게 세고, 그것을 눈으로는 알 수 없다. */
   R.head('── 이어보기 셈이 저장 항목과 맞는가');
