@@ -1824,6 +1824,23 @@ body.has-fab main{padding-bottom:110px;}
 .raw-v{color:var(--ink);word-break:break-all;}
 .raw-sub{margin:6px 0 0;padding:6px 0 0;border-top:1px dashed rgba(31,28,23,0.12);font-size:.78rem;line-height:1.7;color:var(--ink);word-break:break-all;}
 @media (max-width:340px){ .raw-kv{grid-template-columns:80px 1fr;} }
+/* 관리자 대시보드 (2026-09-10) — 기간 고르기 · 요약 · 날짜별 그래프 */
+.dash-dates{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-top:10px;}
+.dash-dates .biz-input{margin:0;padding:8px 10px;font-size:.82rem;}
+.dash-dates .dash-tilde{color:var(--ink-faint);font-size:.8rem;}
+.dash-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.dash-cell{background:rgba(31,28,23,0.035);border-radius:10px;padding:10px 12px;}
+.dash-k{font-size:.72rem;color:var(--ink-faint);}
+.dash-v{font-size:1.15rem;font-weight:700;color:var(--ink);line-height:1.3;margin-top:2px;}
+.dash-d{font-size:.7rem;margin-top:2px;color:var(--ink-faint);}
+.dash-up{color:var(--gold-2);}
+.dash-down{color:var(--red-hi);}
+.dash-metrics{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 8px;}
+.dash-metrics button{border:1px solid rgba(31,28,23,0.14);background:transparent;color:var(--ink-faint);
+  border-radius:999px;padding:5px 11px;font-size:.75rem;cursor:pointer;}
+.dash-metrics button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.dash-chart{width:100%;height:auto;display:block;}
+.dash-axis{display:flex;justify-content:space-between;font-size:.68rem;color:var(--ink-faint);margin-top:2px;}
 
 /* 궁합 요약 좌우 배치 */
 .compat-pair{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin:14px 0;}
@@ -17401,6 +17418,107 @@ var STATS_DATA = null, STATS_ERR = null, STATS_RANGE = 'd7';
      닿는 길은 운영자 코드 하나뿐이고(서버 adminAccessOf) 손님 화면에는 이 창구를 붙이지 않는다.
    ★ 시각은 반드시 초까지 적는다 — 승인 전에 멈춘 결제를 짚을 때 분 단위로는 못 가른다. */
 var STATS_ROWS = null;   /* {kind, label, loading|err|rows} · null이면 요약 화면 */
+
+/* ★ 2026-09-10 대표님 지시 "대시보드도 좀 넣어둬라! 날짜 요소도 넣어두고!"
+   서버가 하루치씩(90일) 내려주므로, 기간은 **화면에서 더하기만** 하면 된다 —
+   기간을 바꿀 때마다 서버를 다시 부르지 않는다(예전엔 오늘·7일·30일 셋뿐이었다). */
+var STATS_FROM = null, STATS_TO = null;   /* 'YYYY-MM-DD' · 직접 고르기일 때만 */
+var STATS_METRIC = 'revenue';
+var STATS_METRICS = [
+  {k:'revenue', label:'매출',   get:function(r){ return r.orders.revenue; },  won:true},
+  {k:'paid',    label:'결제',   get:function(r){ return r.orders.paid; }},
+  {k:'kakao',   label:'새 회원', get:function(r){ return r.kakao.linked; }},
+  {k:'rooms',   label:'링크',   get:function(r){ return r.rooms.made; }},
+  {k:'groups',  label:'그룹',   get:function(r){ return r.groups.made; }},
+  {k:'ai',      label:'AI 해석', get:function(r){ return r.ai.generated; }}
+];
+function statsMetricOf(k){
+  for(var i=0;i<STATS_METRICS.length;i++){ if(STATS_METRICS[i].k===k) return STATS_METRICS[i]; }
+  return STATS_METRICS[0];
+}
+/* 고른 기간의 날짜 목록. 프리셋도 직접 고르기도 여기 한 곳을 지난다. */
+function statsWindow(){
+  var daily = (STATS_DATA && STATS_DATA.daily) || [];
+  if(!daily.length) return {rows:[], from:null, to:null, prev:[]};
+  var last = daily[daily.length-1].d;
+  var from, to;
+  if(STATS_RANGE === 'custom' && STATS_FROM && STATS_TO){
+    from = STATS_FROM < STATS_TO ? STATS_FROM : STATS_TO;
+    to   = STATS_FROM < STATS_TO ? STATS_TO : STATS_FROM;
+  } else {
+    var n = STATS_RANGE === 'd1' ? 1 : STATS_RANGE === 'd7' ? 7 : STATS_RANGE === 'all' ? daily.length : 30;
+    var i0 = Math.max(0, daily.length - n);
+    from = daily[i0].d; to = last;
+  }
+  var rows = daily.filter(function(r){ return r.d >= from && r.d <= to; });
+  /* 바로 앞의 같은 길이 기간 — '늘었나 줄었나'의 기준. 없으면 빈 배열이다(비교를 안 적는다). */
+  var i1 = daily.findIndex(function(r){ return r.d === from; });
+  var prev = i1 > 0 ? daily.slice(Math.max(0, i1 - rows.length), i1) : [];
+  return {rows:rows, from:from, to:to, prev:prev};
+}
+/* 날짜 목록을 하나로 더한다. 카드가 읽는 모양(rm/gp/od/ai)을 그대로 만든다. */
+function statsSum(rows){
+  var o = {rooms:{made:0,joined:0,rate:0}, groups:{made:0,people:0,avg:0,max:0},
+           orders:{created:0,paid:0,failed:0,revenue:0,byProduct:{}},
+           ai:{generated:0,costKrw:0}, kakao:{linked:0}, feedback:{created:0}};
+  rows.forEach(function(r){
+    o.rooms.made += r.rooms.made; o.rooms.joined += r.rooms.joined;
+    o.groups.made += r.groups.made; o.groups.people += r.groups.people;
+    if(r.groups.max > o.groups.max) o.groups.max = r.groups.max;
+    o.orders.created += r.orders.created; o.orders.paid += r.orders.paid;
+    o.orders.failed += r.orders.failed; o.orders.revenue += r.orders.revenue;
+    for(var k in r.orders.byProduct){
+      var b = o.orders.byProduct[k] || {count:0, amount:0};
+      b.count += r.orders.byProduct[k].count; b.amount += r.orders.byProduct[k].amount;
+      o.orders.byProduct[k] = b;
+    }
+    o.ai.generated += r.ai.generated;
+    o.kakao.linked += r.kakao.linked;
+    o.feedback.created += r.feedback.created;
+  });
+  o.rooms.rate = o.rooms.made ? Math.round((o.rooms.joined / o.rooms.made) * 100) : 0;
+  o.groups.avg = o.groups.made ? Math.round((o.groups.people / o.groups.made) * 10) / 10 : 0;
+  o.ai.costKrw = o.ai.generated * ((STATS_DATA && STATS_DATA.ai && STATS_DATA.ai.costPerKrw) || 0);
+  return o;
+}
+/* 날짜별 막대 그래프. 라이브러리를 쓰지 않는다 — 이 파일은 혼자 열려야 한다. */
+function statsChart(rows, metric){
+  var W = 320, H = 96, PAD = 2;
+  var vals = rows.map(metric.get);
+  var max = Math.max.apply(null, vals.concat([0]));
+  var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  svg.setAttribute('class','dash-chart');
+  svg.setAttribute('role','img');
+  svg.setAttribute('aria-label', metric.label + ' 날짜별 그래프 — 가장 큰 날 ' + max);
+  var n = Math.max(1, rows.length);
+  var bw = W / n;
+  rows.forEach(function(r, i){
+    var v = metric.get(r);
+    var h = max ? Math.max(v > 0 ? 2 : 0, Math.round((v / max) * (H - 8))) : 0;
+    var rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x', String(i * bw + PAD/2));
+    rect.setAttribute('y', String(H - h));
+    rect.setAttribute('width', String(Math.max(1, bw - PAD)));
+    rect.setAttribute('height', String(h));
+    rect.setAttribute('fill', v > 0 ? 'var(--gold-2)' : 'rgba(31,28,23,0.10)');
+    /* 값이 0인 날도 자리를 남긴다 — 빈 날을 건너뛰면 '매일 팔린 것'처럼 보인다 */
+    if(!v){ rect.setAttribute('y', String(H - 2)); rect.setAttribute('height','2'); }
+    var t = document.createElementNS('http://www.w3.org/2000/svg','title');
+    t.textContent = r.d + ' — ' + (metric.won ? formatWon(v) : (v + '건'));
+    rect.appendChild(t);
+    svg.appendChild(rect);
+  });
+  return svg;
+}
+function statsDelta(now, before, won){
+  if(before === 0 && now === 0) return null;
+  if(before === 0) return {text:'앞 기간엔 0', cls:''};
+  var pct = Math.round(((now - before) / before) * 100);
+  return {text:(pct > 0 ? '▲ ' : pct < 0 ? '▼ ' : '± ') + Math.abs(pct) + '% (앞 기간 '
+          + (won ? formatWon(before) : before) + ')',
+          cls: pct > 0 ? 'dash-up' : pct < 0 ? 'dash-down' : ''};
+}
 var STATS_ROW_KINDS = {
   rooms:'궁합 링크', groups:'그룹', orders:'결제',
   ai:'AI 해석', kakao:'회원', sync:'이어보기'
@@ -17595,13 +17713,87 @@ function renderStats(){
   }
   var D = STATS_DATA, R = STATS_RANGE;
 
-  /* 기간 고르기 */
-  var seg=el('div',{class:'seg-toggle', style:'margin-bottom:16px;'});
-  [['d1','오늘'],['d7','7일'],['d30','30일']].forEach(function(pair){
+  /* ── 대시보드 (2026-09-10 대표님 지시) ────────────────────────────
+     기간 고르기 · 요약 넷 · 날짜별 그래프. 기간은 서버를 다시 안 부르고 화면에서 더한다.
+     ★ 옛 배포본은 daily 를 안 내려준다. 그때는 예전처럼 오늘·7일·30일만 쓴다. */
+  var HAS_DAILY = !!(D.daily && D.daily.length);
+  var win = HAS_DAILY ? statsWindow() : null;
+
+  var seg=el('div',{class:'seg-toggle'});
+  var presets = HAS_DAILY
+    ? [['d1','오늘'],['d7','7일'],['d30','30일'],['all','전체'],['custom','직접']]
+    : [['d1','오늘'],['d7','7일'],['d30','30일']];
+  presets.forEach(function(pair){
     seg.appendChild(el('button',{type:'button','aria-pressed':R===pair[0]?'true':'false',
-      onclick:(function(k){ return function(){ STATS_RANGE=k; render(); }; })(pair[0])},[pair[1]]));
+      onclick:(function(k){ return function(){
+        STATS_RANGE=k;
+        /* 직접 고르기를 처음 누르면 지금 보고 있던 기간을 그대로 넣어 준다 — 빈 칸을 주지 않는다 */
+        if(k==='custom' && !(STATS_FROM && STATS_TO) && win){ STATS_FROM=win.from; STATS_TO=win.to; }
+        render();
+      }; })(pair[0])},[pair[1]]));
   });
   view.appendChild(seg);
+
+  if(HAS_DAILY){
+    var dash = el('div',{class:'scroll-card'});
+    dash.appendChild(el('h3',{},['대시보드']));
+
+    if(R === 'custom'){
+      var minD = D.daily[0].d, maxD = D.daily[D.daily.length-1].d;
+      var dates = el('div',{class:'dash-dates'});
+      var f = el('input',{class:'biz-input', type:'date', value:STATS_FROM||minD, min:minD, max:maxD,
+        'aria-label':'시작 날짜', onchange:function(){ STATS_FROM=this.value; render(); }});
+      var t2 = el('input',{class:'biz-input', type:'date', value:STATS_TO||maxD, min:minD, max:maxD,
+        'aria-label':'끝 날짜', onchange:function(){ STATS_TO=this.value; render(); }});
+      dates.appendChild(f);
+      dates.appendChild(el('span',{class:'dash-tilde'},['~']));
+      dates.appendChild(t2);
+      dash.appendChild(dates);
+      dash.appendChild(el('p',{class:'biz-hint', style:'margin-top:6px;'},[
+        '서버에 하루치씩 '+D.dailyDays+'일 남아 있어요 ('+minD+' ~ '+maxD+'). 그 밖은 못 고르세요.'
+      ]));
+    }
+
+    var W = statsSum(win.rows), P = statsSum(win.prev);
+    dash.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
+      win.from === win.to ? win.from : (win.from + ' ~ ' + win.to),
+      ' · ' + win.rows.length + '일'
+    ]));
+
+    var sum = el('div',{class:'dash-sum'});
+    [['매출', formatWon(W.orders.revenue), statsDelta(W.orders.revenue, P.orders.revenue, true)],
+     ['결제', W.orders.paid+'건',           statsDelta(W.orders.paid, P.orders.paid)],
+     ['새 회원', W.kakao.linked+'명',       statsDelta(W.kakao.linked, P.kakao.linked)],
+     ['궁합 링크', W.rooms.made+'개',        statsDelta(W.rooms.made, P.rooms.made)]
+    ].forEach(function(c){
+      var cell = el('div',{class:'dash-cell'});
+      cell.appendChild(el('div',{class:'dash-k'},[c[0]]));
+      cell.appendChild(el('div',{class:'dash-v'},[c[1]]));
+      if(c[2]) cell.appendChild(el('div',{class:'dash-d '+c[2].cls},[c[2].text]));
+      sum.appendChild(cell);
+    });
+    dash.appendChild(sum);
+
+    var mrow = el('div',{class:'dash-metrics'});
+    STATS_METRICS.forEach(function(m){
+      mrow.appendChild(el('button',{type:'button','aria-pressed':STATS_METRIC===m.k?'true':'false',
+        onclick:(function(k){ return function(){ STATS_METRIC=k; render(); }; })(m.k)},[m.label]));
+    });
+    dash.appendChild(mrow);
+
+    var metric = statsMetricOf(STATS_METRIC);
+    var mx = Math.max.apply(null, win.rows.map(metric.get).concat([0]));
+    dash.appendChild(statsChart(win.rows, metric));
+    dash.appendChild(el('div',{class:'dash-axis'},[
+      el('span',{},[win.rows.length ? win.rows[0].d : '']),
+      el('span',{},['가장 큰 날 ' + (metric.won ? formatWon(mx) : (mx+'건'))]),
+      el('span',{},[win.rows.length ? win.rows[win.rows.length-1].d : ''])
+    ]));
+    dash.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
+      '날짜는 한국 시간으로 갈라요. 매출은 결제가 끝난 날로, 「결제창까지 감」과 「실패」는 만든 날로 세요 — 돈이 실제로 들어온 날을 매출로 잡기 위해서예요.'
+    ]));
+    view.appendChild(dash);
+  }
 
   /* ★ 2026-09-10 — 넷째 인자로 갈래를 주면 [원자료 보기] 단추가 생긴다.
      숫자만 보여 주면 "그룹 2개·3명"에서 그게 어느 그룹인지 볼 길이 없다. */
@@ -17622,7 +17814,12 @@ function renderStats(){
     return c;
   }
 
-  var rm = D.rooms[R], gp = D.groups[R], od = D.orders[R], ai = D.ai[R];
+  /* 카드가 읽는 값 — daily 가 있으면 고른 기간의 합, 없으면 옛 방식(오늘·7일·30일) */
+  var WSUM = HAS_DAILY ? statsSum(win.rows) : null;
+  var rm = WSUM ? WSUM.rooms : D.rooms[R];
+  var gp = WSUM ? WSUM.groups : D.groups[R];
+  var od = WSUM ? WSUM.orders : D.orders[R];
+  var ai = WSUM ? WSUM.ai : D.ai[R];
 
   view.appendChild(card('궁합 링크', [
     ['만든 링크', rm.made+'개'],
@@ -17654,8 +17851,11 @@ function renderStats(){
   if(D.kakao){
     view.appendChild(card('카카오 로그인', [
       ['로그인해 둔 사람', D.kakao.linked+'명'],
-      ['오늘 새로', D.kakao.d1+'명'],
-      ['7일 새로', D.kakao.d7+'명'],
+      /* 고른 기간에 새로 로그인한 분 — 기간을 바꾸면 이 칸도 따라와야 한다 */
+      [WSUM ? '이 기간 새로' : '오늘 새로', (WSUM ? WSUM.kakao.linked : D.kakao.d1)+'명'],
+      [WSUM ? '누적 대비' : '7일 새로',
+       WSUM ? (D.kakao.linked ? Math.round((WSUM.kakao.linked/D.kakao.linked)*100)+'%' : '0%')
+            : (D.kakao.d7+'명')],
       ['이어보기 저장', (D.sync ? D.sync.saved : 0)+'명']
     ], D.kakao.linked === 0
         ? '아직 아무도 로그인하지 않았어요. 유료 결제는 로그인을 거치므로, 이 숫자가 0이면 결제도 0이에요. 이 경로를 한 번은 끝까지 확인해 보셔야 해요.'
@@ -17668,8 +17868,8 @@ function renderStats(){
     var fb = D.feedback, fbs = fb.byStatus || {};
     view.appendChild(card('문의', [
       ['답을 기다리는 것', fb.waiting+'건'],
-      ['오늘 접수', fb.d1+'건'],
-      ['7일 접수', fb.d7+'건'],
+      [WSUM ? '이 기간 접수' : '오늘 접수', (WSUM ? WSUM.feedback.created : fb.d1)+'건'],
+      [WSUM ? '오늘 접수' : '7일 접수', (WSUM ? fb.d1 : fb.d7)+'건'],
       ['전체', fb.all+'건']
     ], '접수됨 '+(fbs.received||0)+' · 확인 중 '+(fbs.working||0)+' · 답변 완료 '+(fbs.answered||0)+' · 처리 완료 '+(fbs.closed||0)
        + '. 답은 아래 [문의 관리]에서 다실 수 있어요.'));

@@ -15,11 +15,34 @@ const L = require('../_lib.cjs');
 const BASE = (process.argv[2] || 'http://127.0.0.1:8899').replace(/\/+$/, '');
 const APP = BASE + '/fortune.html';
 
+/* 날짜별 흐름 — 대시보드가 이걸로 기간을 더한다 (2026-09-10)
+   ★ 날짜를 오늘 기준으로 만든다. 못 박아 두면 내일 이 검사가 저절로 깨진다. */
+const DAILY = (function(){
+  const day = (i) => new Date(Date.now() + 9*3600*1000 - i*86400000).toISOString().slice(0,10);
+  const blank = (d, o) => Object.assign({
+    d, rooms:{made:0, joined:0}, groups:{made:0, people:0, max:0},
+    orders:{created:0, paid:0, failed:0, revenue:0, byProduct:{}},
+    ai:{generated:0}, kakao:{linked:0}, feedback:{created:0},
+  }, o || {});
+  const out = [];
+  for(let i = 9; i >= 0; i--) out.push(blank(day(i)));
+  /* 앞 5일: 매출 0 · 뒤 5일: 매출 있음 → '늘었다'가 나와야 한다 */
+  out[7].kakao.linked = 1;
+  out[8].rooms.made = 2; out[8].rooms.joined = 1;
+  out[9].orders.paid = 2; out[9].orders.revenue = 1980; out[9].orders.created = 2;
+  out[9].orders.byProduct = {'궁합 심층 해석':{count:2, amount:1980}};
+  out[9].kakao.linked = 1; out[9].ai.generated = 1; out[9].groups.made = 1;
+  out[9].groups.people = 2; out[9].groups.max = 2;
+  return out;
+})();
+
 /* 현황 요약 — 화면이 읽는 모양 그대로 */
 const SUMMARY = (function(){
   const per = (o) => ({d1:o, d7:o, d30:o});
   return {
     now: new Date().toISOString(),
+    daily: DAILY,
+    dailyDays: 90,
     rooms: Object.assign(per({made:2, joined:1, rate:50}), {all:2}),
     groups: Object.assign(per({made:1, people:2, avg:2, max:2}), {all:1}),
     orders: Object.assign(per({created:1, paid:1, failed:0, revenue:990, byProduct:{}}), {all:1}),
@@ -90,6 +113,107 @@ const ROWS = {
 
   await page.goto(APP + '#admin', {waitUntil:'load'});
   await L.wait(3000);
+
+  /* ⓪ 대시보드 (2026-09-10 대표님 지시 "대시보드도 좀 넣어둬라! 날짜 요소도 넣어두고!") */
+  R.head('⓪ 대시보드 — 기간 고르기·요약·그래프');
+  const dash0 = await page.evaluate(() => {
+    const t = ((document.querySelector('#main')||{}).innerText||'').replace(/\s+/g,' ');
+    return {
+      text: t,
+      presets: [...document.querySelectorAll('#main .seg-toggle button')].map(b => b.textContent.trim()),
+      cells: [...document.querySelectorAll('#main .dash-cell')].map(c => (c.innerText||'').replace(/\s+/g,' ')),
+      bars: document.querySelectorAll('#main .dash-chart rect').length,
+      metrics: [...document.querySelectorAll('#main .dash-metrics button')].map(b => b.textContent.trim()),
+    };
+  });
+  R.note(dash0.text.indexOf('대시보드') >= 0, '대시보드 칸이 있다');
+  R.note(['오늘','7일','30일','전체','직접'].every(x => dash0.presets.indexOf(x) >= 0),
+         '기간 프리셋 다섯이 있다', dash0.presets.join(','));
+  R.note(dash0.metrics.length === 6, '그래프 지표가 여섯이다', dash0.metrics.join(','));
+  R.note(dash0.cells.length === 4, '요약 칸이 넷이다', String(dash0.cells.length));
+  /* 처음 열면 7일이다(STATS_RANGE 기본값). 막대도 이레치여야 한다. */
+  R.note(/1,980/.test(dash0.cells.join(' ')), '고른 기간의 매출이 더해진다', dash0.cells[0]);
+  R.note(dash0.bars === 7, '처음 열면 이레치를 그린다 (값이 0인 날도)', dash0.bars + '개');
+
+  /* [30일] 로 넓히면 있는 만큼(열흘) 다 그려야 한다 */
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('#main .dash-metrics')].length ?
+      [...document.querySelectorAll('#main .seg-toggle button')].find(x => x.textContent.trim() === '30일') : null;
+    if(b) b.click();
+  });
+  await L.wait(700);
+  const wide = await page.evaluate(() => document.querySelectorAll('#main .dash-chart rect').length);
+  R.note(wide === 10, '[30일] 은 가진 날(열흘)을 다 그린다', wide + '개');
+
+  /* [오늘] 로 좁히면 숫자가 실제로 줄어야 한다 — 안 줄면 기간 고르기가 장식이다 */
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('#main .seg-toggle button')]
+      .find(x => x.textContent.trim() === '오늘');
+    if(b) b.click();
+  });
+  await L.wait(700);
+  const dash1 = await page.evaluate(() => ({
+    cells: [...document.querySelectorAll('#main .dash-cell')].map(c => (c.innerText||'').replace(/\s+/g,' ')),
+    bars: document.querySelectorAll('#main .dash-chart rect').length,
+  }));
+  R.note(dash1.bars === 1, '[오늘] 은 하루치만 그린다', dash1.bars + '개');
+  R.note(/1,980/.test(dash1.cells.join(' ')), '오늘 매출이 1,980원이다 (마지막 날에 넣었다)', dash1.cells[0]);
+
+  /* [직접] — 날짜 입력이 실제로 생기고, 바꾸면 숫자가 따라오는가 */
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('#main .seg-toggle button')]
+      .find(x => x.textContent.trim() === '직접');
+    if(b) b.click();
+  });
+  await L.wait(700);
+  const dates = await page.evaluate(() => [...document.querySelectorAll('#main input[type="date"]')]
+    .map(i => ({v:i.value, min:i.min, max:i.max})));
+  R.note(dates.length === 2, '날짜 고르는 칸이 둘이다', JSON.stringify(dates));
+  R.note(!!(dates[0] && dates[0].min && dates[0].max), '고를 수 있는 범위가 정해져 있다',
+         dates[0] ? (dates[0].min + ' ~ ' + dates[0].max) : '');
+  /* 매출이 없는 앞쪽 닷새로 옮긴다 → 매출 0원이 나와야 한다 */
+  const early = await page.evaluate((d) => {
+    const ins = [...document.querySelectorAll('#main input[type="date"]')];
+    ins[0].value = d.from; ins[0].dispatchEvent(new Event('change', {bubbles:true}));
+    return true;
+  }, {from: DAILY[0].d});
+  await L.wait(500);
+  await page.evaluate((d) => {
+    const ins = [...document.querySelectorAll('#main input[type="date"]')];
+    ins[1].value = d.to; ins[1].dispatchEvent(new Event('change', {bubbles:true}));
+  }, {to: DAILY[4].d});
+  await L.wait(700);
+  const dash2 = await page.evaluate(() => ({
+    cells: [...document.querySelectorAll('#main .dash-cell')].map(c => (c.innerText||'').replace(/\s+/g,' ')),
+    bars: document.querySelectorAll('#main .dash-chart rect').length,
+    text: ((document.querySelector('#main')||{}).innerText||'').replace(/\s+/g,' '),
+  }));
+  R.note(early && dash2.bars === 5, '고른 날짜만큼만 그린다', dash2.bars + '개');
+  R.note(/0원/.test(dash2.cells[0]), '매출이 없는 기간은 0원으로 나온다', dash2.cells[0]);
+  R.note(dash2.text.indexOf(DAILY[0].d) >= 0 && dash2.text.indexOf(DAILY[4].d) >= 0,
+         '고른 기간이 화면에 적힌다');
+
+  /* 지표를 바꾸면 그래프가 그 값을 그리는가 */
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('#main .dash-metrics button')]
+      .find(x => x.textContent.trim() === '링크');
+    if(b) b.click();
+  });
+  await L.wait(600);
+  const picked = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('#main .dash-metrics button')]
+      .find(x => x.getAttribute('aria-pressed') === 'true');
+    return b ? b.textContent.trim() : '';
+  });
+  R.note(picked === '링크', '고른 지표가 눌린 채로 남는다', picked);
+
+  /* 30일로 되돌려 놓고 아래 검사를 이어간다 */
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('#main .seg-toggle button')]
+      .find(x => x.textContent.trim() === '30일');
+    if(b) b.click();
+  });
+  await L.wait(700);
 
   /* ① 요약 화면에 원자료로 가는 길이 있는가 */
   R.head('① 카드마다 원자료로 가는 길');

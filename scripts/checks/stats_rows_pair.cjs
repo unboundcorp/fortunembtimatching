@@ -63,6 +63,27 @@ R.head('── 시각을 초까지 적는가');
 R.note(/second:'2-digit'/.test(html), '화면이 초까지 그린다');
 R.note(/function statsTime/.test(html), '시각 만드는 곳이 한 곳이다 (statsTime)');
 
+R.head('── 대시보드 (2026-09-10)');
+R.note(/daily,/.test(api) && /const daily = dayList\.map/.test(api), '서버가 하루치 흐름을 내려준다');
+R.note(/const DAILY_DAYS = 90/.test(api), '90일치를 담는다');
+R.note(/t \+ 9 \* 3600 \* 1000/.test(api), '날짜를 한국 시간으로 가른다 (UTC 로 가르면 밤 일이 다음 날로 넘어간다)');
+R.note(/o\.status === 'paid'/.test(api) && /o\.paid_at \|\| o\.created_at/.test(api),
+       '매출은 결제가 끝난 날로 센다');
+R.note(/function statsWindow/.test(html), '화면이 기간을 스스로 자른다 (서버를 다시 안 부른다)');
+R.note(/function statsSum/.test(html), '기간 합계를 만드는 곳이 한 곳이다');
+R.note(/type:'date'/.test(html), '날짜를 직접 고르는 칸이 있다');
+R.note(/\['all','전체'\]/.test(html) && /\['custom','직접'\]/.test(html), '전체·직접 고르기가 있다');
+R.note(/function statsChart/.test(html), '날짜별 그래프를 그린다');
+R.note(/STATS_METRICS/.test(html) && (html.match(/\{k:'/g)||[]).length >= 6, '그래프 지표가 여섯이다');
+R.note(/function statsDelta/.test(html), '앞 기간과 견준다');
+/* 옛 배포본(daily 없음)에서도 화면이 살아야 한다 — 안 그러면 배포 사이에 현황판이 통째로 죽는다 */
+R.note(/var HAS_DAILY = !!\(D\.daily && D\.daily\.length\)/.test(html),
+       'daily 가 없는 옛 서버에서도 예전 방식으로 그린다');
+R.note(/WSUM \? WSUM\.rooms : D\.rooms\[R\]/.test(html), '되돌림 길이 실제로 이어져 있다');
+/* 라이브러리를 붙이지 않았는가 — 이 파일은 혼자 열려야 한다 */
+R.note(!/cdn\.|chart\.js|d3\.min/i.test(html.slice(html.indexOf('function statsChart'),
+       html.indexOf('function statsChart') + 3000)), '그래프에 바깥 라이브러리를 안 쓴다');
+
 R.head('── 되돌아갈 길이 있는가');
 R.note(/현황으로/.test(html), '[← 현황으로] 가 있다');
 R.note(/STATS_ROWS=null/.test(html) || /STATS_ROWS = null/.test(html),

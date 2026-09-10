@@ -403,8 +403,73 @@ export default async function handler(req, res) {
     /* 캐시가 실제로 일을 하고 있는지 — 만든 글 수보다 사용 기록이 많으면 재사용된 것이다. */
     const reuse = Math.max(0, (aiUse || []).length - (aiCache || []).length);
 
+    /* ── 날짜별 흐름 (2026-09-10 대표님 지시 "대시보드도 좀 넣어둬라! 날짜 요소도 넣어두고!") ──
+       ★ 화면이 기간을 자유롭게 고를 수 있게 **하루치씩** 내려보낸다. 그러면 오늘·7일·30일은
+         물론 "9월 3일~9월 8일" 같은 것도 서버를 다시 부르지 않고 더하기만 하면 된다.
+       ★ 날짜는 **한국 시간(KST) 기준**으로 가른다. UTC 로 가르면 밤 9시 이후의 일이
+         다음 날로 넘어가서 "어제 결제가 오늘로 잡히는" 일이 생긴다.
+       ★ 매출은 **결제된 날(paid_at)** 로 센다 — 돈이 실제로 들어온 날이다.
+         결제창까지 간 것·실패한 것은 **만든 날(created_at)** 로 센다. 두 기준이 다른 이유를
+         화면에도 적어 두었다. 여기만 바꾸면 화면이 거짓말을 한다. */
+    const DAILY_DAYS = 90;
+    const kstDay = (v) => {
+      const t = new Date(v).getTime();
+      if (!isFinite(t)) return null;
+      return new Date(t + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    };
+    const blankDay = () => ({
+      rooms: { made: 0, joined: 0 },
+      groups: { made: 0, people: 0, max: 0 },
+      orders: { created: 0, paid: 0, failed: 0, revenue: 0, byProduct: {} },
+      ai: { generated: 0 },
+      kakao: { linked: 0 },
+      feedback: { created: 0 },
+    });
+    const dayMap = {};
+    const dayList = [];
+    for (let i = DAILY_DAYS - 1; i >= 0; i--) {
+      const d = kstDay(Date.now() - i * 86400000);
+      dayList.push(d);
+      dayMap[d] = blankDay();
+    }
+    const bump = (v, fn) => { const d = kstDay(v); if (d && dayMap[d]) fn(dayMap[d]); };
+
+    (rooms || []).forEach((r) => {
+      bump(r.created_at, (x) => { x.rooms.made += 1; });
+      if (r.joined_at) bump(r.joined_at, (x) => { x.rooms.joined += 1; });
+    });
+    (groups || []).forEach((g) => {
+      const n = String(g.members || '').split(';').filter(Boolean).length;
+      bump(g.created_at, (x) => { x.groups.made += 1; x.groups.people += n;
+                                  if (n > x.groups.max) x.groups.max = n; });
+    });
+    (orders || []).forEach((o) => {
+      const p = productOf(o.product_id);
+      const nm = p ? p.name : o.product_id;
+      bump(o.created_at, (x) => {
+        x.orders.created += 1;
+        if (o.status === 'failed') x.orders.failed += 1;
+      });
+      if (o.status === 'paid') {
+        bump(o.paid_at || o.created_at, (x) => {
+          x.orders.paid += 1;
+          x.orders.revenue += o.amount || 0;
+          const b = x.orders.byProduct[nm] || { count: 0, amount: 0 };
+          b.count += 1; b.amount += o.amount || 0;
+          x.orders.byProduct[nm] = b;
+        });
+      }
+    });
+    (aiUse || []).forEach((u) => bump(u.created_at, (x) => { x.ai.generated += 1; }));
+    (kakao || []).forEach((k) => bump(k.created_at, (x) => { x.kakao.linked += 1; }));
+    (feedback || []).forEach((f) => bump(f.created_at, (x) => { x.feedback.created += 1; }));
+
+    const daily = dayList.map((d) => Object.assign({ d }, dayMap[d]));
+
     return json(res, 200, {
       now: new Date().toISOString(),
+      daily,
+      dailyDays: DAILY_DAYS,
       rooms: { d1: roomStat(d1), d7: roomStat(d7), d30: roomStat(d30), all: rooms.length },
       groups: { d1: groupStat(d1), d7: groupStat(d7), d30: groupStat(d30), all: groups.length },
       orders: { d1: paidStat(d1), d7: paidStat(d7), d30: paidStat(d30), all: orders.length },
