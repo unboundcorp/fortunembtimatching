@@ -16282,6 +16282,13 @@ function renderOnboarding(){
     '카카오 계정으로 로그인하고 시작해요 - 결제 기록과 내 사주, 성격유형 풀이가 '
     + '카카오 계정에 남아서 언제 어디서든지 다시 볼 수 있어요.'
   ]));
+  /* ★ 2026-09-10 대표님이 직접 정하신 고지 문장입니다. 바꾸거나 지우지 마십시오.
+     ★ 이 줄은 **고지**입니다 — 접거나 작게 감추지 마십시오(결제·법적 고지는 안 접는 규칙).
+     ★ 바로 아래 [개인정보처리방침] 단추와 한 쌍입니다. 이 문장이 가리키는 곳을
+       그 자리에서 열 수 있어야 고지가 성립합니다. */
+  wrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:6px;'},[
+    '개인정보처리방침에 따라 개인정보가 수집·이용됩니다.'
+  ]));
   var docRow = el('div',{style:'display:flex;gap:10px;justify-content:center;margin-top:4px;flex-wrap:wrap;'});
   docRow.appendChild(el('button',{class:'fl', type:'button', onclick:openTermsModal},['이용약관']));
   docRow.appendChild(el('button',{class:'fl', type:'button', onclick:openPrivacyModal},['개인정보처리방침']));
