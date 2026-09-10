@@ -222,3 +222,25 @@ create index if not exists user_sync_updated_idx on user_sync (updated_at desc);
 
 alter table user_sync enable row level security;
 -- 정책을 하나도 만들지 않는다 = service_role(서버)만 읽고 쓸 수 있다.
+
+-- =====================================================================
+-- 공지 · 배너 (2026-09-11 대표님 지시 "공지/배너는 나중을 위해서 구현은 해놔라")
+-- ★ 손님 화면은 /api/notice 의 action:'active' 만 부른다 — 지금 띄울 것의 제목·본문뿐이다.
+--   관리(list·save·delete)는 운영자만(adminAccessOf).
+-- ★ 기간은 비워 둘 수 있다. 시작이 없으면 지금부터, 끝이 없으면 계속이다.
+-- =====================================================================
+create table if not exists notices (
+  id         bigserial primary key,
+  title      text not null,
+  body       text not null default '',
+  kind       text not null default 'notice',   -- notice(공지) | banner(배너)
+  starts_at  timestamptz,
+  ends_at    timestamptz,
+  active     boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists notices_active_idx on notices (active, starts_at, ends_at);
+
+alter table notices enable row level security;
+-- 정책 없음 = service_role(서버 함수)만 접근

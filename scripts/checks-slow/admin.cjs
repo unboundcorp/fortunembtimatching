@@ -67,36 +67,45 @@ const STATS = (function(){
 
     await page.goto(APP + '#admin', {waitUntil:'load'});
     await L.wait(3000);
+    /* ★ 2026-09-11 — 관리자 화면이 #adminRoot(사이드바 셸)로 옮겨졌다.
+       열린 상태는 그쪽에서, 잠긴 상태는 예전대로 #main 에서 본다.
+       화면 하나하나는 checks-slow/admin_shell.cjs 가 따로 본다. */
     const o = await page.evaluate(() => {
       const t = ((document.querySelector('#main')||{}).innerText) || '';
+      const root = document.querySelector('#adminRoot');
       return {
-        segs: [...document.querySelectorAll('#main .seg-toggle button')].map(function(x){ return x.textContent.trim(); }),
+        segs: [...document.querySelectorAll('#adminRoot .ad-nav')].map(function(x){ return x.textContent.trim(); }),
         locked: t.indexOf('운영자만 볼 수 있어요') >= 0,
+        shellOn: !!(root && !root.hidden),
         head: t.split('\n').filter(Boolean).slice(0,2).join(' | ').slice(0,50),
       };
     });
 
     if(c.open){
-      R.note(!o.locked, '#admin 이 열린다', o.head);
-      R.note(o.segs.indexOf('현황') >= 0 && o.segs.indexOf('문의') >= 0,
-             '현황·문의 두 갈래가 있다', JSON.stringify(o.segs));
+      R.note(o.shellOn && !o.locked, '#admin 이 열린다', o.head || '(어드민 셸)');
+      R.note(o.segs.some(function(x){ return x.indexOf('대시보드') === 0; })
+             && o.segs.some(function(x){ return x.indexOf('문의') === 0; }),
+             '대시보드·문의 메뉴가 있다', JSON.stringify(o.segs.slice(0,3)));
       await page.evaluate(() => {
-        const b = [...document.querySelectorAll('#main .seg-toggle button')]
-          .find(function(x){ return x.textContent.trim() === '문의'; });
+        const b = [...document.querySelectorAll('#adminRoot .ad-nav')]
+          .find(function(x){ return x.textContent.trim().indexOf('문의') === 0; });
         if(b) b.click();
       });
       await L.wait(1500);
-      const t2 = await page.evaluate(() => ((document.querySelector('#main')||{}).innerText||'').slice(0,150));
+      const t2 = await page.evaluate(() => ({
+        admin: ((document.querySelector('#adminRoot')||{}).innerText||'').slice(0,200),
+        main: ((document.querySelector('#main')||{}).innerText||'').slice(0,150),
+      }));
       /* ★ 온보딩으로 튕기는지 반드시 함께 본다. 예전에는 프로필이 없으면 여기서
          '만 14세 이상이에요' 화면이 떴다 — 관리자 페이지가 통째로 못 열리는 것이다. */
-      R.note(t2.indexOf('만 14세') < 0 && t2.indexOf('우리 인연은 몇 점') < 0,
-             '[문의]가 온보딩으로 안 튕긴다', t2.replace(/\n+/g,' | ').slice(0,50));
-      R.note(/문의 관리|접수된 문의가 없어요|운영자 화면/.test(t2), '[문의] 갈래로 넘어간다',
-             t2.replace(/\n+/g,' | ').slice(0,50));
+      R.note(t2.main.indexOf('만 14세') < 0 && t2.main.indexOf('우리 인연은 몇 점') < 0,
+             '[문의]가 온보딩으로 안 튕긴다', t2.main.replace(/\n+/g,' | ').slice(0,50));
+      R.note(/문의 · CS|아직 받은 문의가 없어요|답변 저장/.test(t2.admin), '[문의] 갈래로 넘어간다',
+             t2.admin.replace(/\n+/g,' | ').slice(0,50));
     } else {
       /* ★ 이 줄이 이 검사의 핵심이다 */
-      R.note(o.locked, '#admin 이 **잠겨 있다**', o.head);
-      R.note(o.segs.length === 0, '관리자 갈래가 안 보인다', JSON.stringify(o.segs));
+      R.note(o.locked && !o.shellOn, '#admin 이 **잠겨 있다**', o.head);
+      R.note(o.segs.length === 0, '관리자 메뉴가 안 보인다', JSON.stringify(o.segs));
 
       /* 잠긴 화면의 [운영자 코드 넣기]가 **운영자 전용 창**을 열고,
          서버에 want:'admin' 을 보내는지. 이 표시가 빠지면 테스트 코드로도 열린다. */
