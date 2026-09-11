@@ -65,7 +65,12 @@ const ROWS = {
        inTok:12000,outTok:9000,costKrw:157,estimated:false},
       {id:'ck-0012',name:'사주 풀이 · 2026년',model:'claude-sonnet-5',chars:5000,
        sessionId:'sess-abc',at:'2026-09-08T02:04:05Z',
-       inTok:null,outTok:null,costKrw:101,estimated:true}],
+       inTok:null,outTok:null,costKrw:101,estimated:true},
+      /* ★ 옛 서버가 토큰·비용 칸을 아예 안 내려주는 경우. 이 줄이 없으면
+         "값이 없으면 터지는" 결함을 못 잡는다 — 실제로 그렇게 [AI 해석] 화면이
+         통째로 죽는 것을 스크린샷으로 잡았다(2026-09-11). */
+      {id:'ck-0013',name:'성격유형 풀이',model:'',chars:0,
+       sessionId:'sess-old',at:'2026-09-07T02:04:05Z'}],
   sync:[{id:'5057959396',rev:7,profiles:2,history:5,groups:1,bytes:4096,
          at:'2026-09-01T00:00:01Z',updatedAt:'2026-09-10T00:00:02Z'}],
 };
@@ -286,6 +291,10 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   R.note(/\(추정\)/.test(o.text), '토큰 기록이 없는 줄을 (추정) 으로 적는다');
   R.note(o.text.indexOf('1건은 토큰 기록이 없어') >= 0, '몇 건이 추정인지 적는다');
   R.note(o.text.indexOf('Anthropic 콘솔이 정본') >= 0, '진짜 청구액이 어디에 있는지 적는다');
+  /* 값이 하나도 없는 줄이 섞여도 화면이 죽지 않아야 한다 */
+  R.note(o.text.indexOf('성격유형 풀이') >= 0, '토큰·비용 칸이 아예 없는 줄도 그려진다');
+  R.note(o.text.indexOf('Cannot read') < 0 && o.text.indexOf('undefined') < 0,
+         '오류 글자가 화면에 안 뜬다', o.text.slice(0, 60));
 
   R.head('⑤ 공지 · 배너');
   o = await go('notices');

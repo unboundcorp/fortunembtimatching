@@ -7430,7 +7430,14 @@ function openPayLoginModal(product){
   ], {overlay:true});
 }
 
-function formatWon(n){ return n.toLocaleString('ko-KR')+'원'; }
+/* ★ 값이 없으면 0원으로 읽는다. 예전에는 undefined 가 들어오면 여기서 터졌고,
+   그 한 줄 때문에 관리자 [AI 해석] 화면이 통째로 안 그려졌다(2026-09-11, 스크린샷으로 잡음).
+   서버가 아직 안 내려주는 칸이 하나만 있어도 화면 전체가 죽는 것은 지나치다. */
+function formatWon(n){
+  var v = Number(n);
+  if(!isFinite(v)) v = 0;
+  return v.toLocaleString('ko-KR')+'원';
+}
 
 /* =====================================================================
    잠금 표시 아이콘.
@@ -17608,7 +17615,7 @@ var ADMIN_META = {
   tickets:  {title:'문의 · CS',   sub:'손님 문의와 답변'},
   payments: {title:'결제',        sub:'주문 원장과 열람 여부'},
   compat:   {title:'궁합 · 모임', sub:'초대 링크와 모임 명단'},
-  ai:       {title:'AI 해석',     sub:'만든 글과 추정 원가'},
+  ai:       {title:'AI 해석',     sub:'만든 글 · 쓴 토큰 · 비용'},
   notices:  {title:'공지 · 배너', sub:'손님 화면에 띄우는 알림'},
   export:   {title:'데이터 내보내기', sub:'지금 화면의 자료를 CSV 로'}
 };
