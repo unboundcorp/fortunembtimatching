@@ -13,7 +13,7 @@
 import { readBody, json } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
 import { kakaoLinkOfSession, unlinkKakao } from './_lib/store.js';
-import { AUTH_URL, redirectUri, restKey, newState, stateCookie, addCookie, hostAllowed, hostOf, allowedHosts } from './_lib/kakao.js';
+import { AUTH_URL, redirectUri, restKey, newState, stateCookie, addCookie, hostAllowed, hostOf, allowedHosts, loginPrompt } from './_lib/kakao.js';
 
 export default async function handler(req, res) {
   /* ── 로그인 시작 — 카카오로 보낸다 ─────────────────────────────── */
@@ -43,6 +43,10 @@ export default async function handler(req, res) {
         state: st,
         /* scope를 적지 않는다 — 회원번호는 동의 없이도 늘 온다. */
       });
+      /* ★ 2026-09-11 — 카카오톡 앱으로 넘어가면 손님이 거기 남습니다(대표님 영상).
+         브라우저 안에서 끝내도록 `prompt` 를 붙입니다. 자세한 이유는 _lib/kakao.js 참고. */
+      const prompt = loginPrompt(req);
+      if (prompt) q.set('prompt', prompt);
       /* ★ 2026-08-29 — 여기에 through_account=true 를 붙였다가 되돌렸다. 기록으로 남긴다.
          앱 로그인이 IP 검사에 막히는 걸 피하려고, 카카오톡을 안 거치는 계정 로그인으로
          바로 보내려 했다. 그런데 through_account 는 **카카오가 스스로 붙이는 내부 표시**이고
