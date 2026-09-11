@@ -70,8 +70,13 @@ const kakaoLib = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'kakao.js'), 'ut
   const app = strip(fs.readFileSync(path.join(ROOT, 'fortune.html'), 'utf8'));
   const hits = (app.match(/카카오 로그인 되었어요/g) || []).length;
   R.note(hits > 0, "돌아오면 '카카오 로그인 되었어요' 를 띄운다 (대표님이 정하신 문구)");
-  R.note(hits === 2, '두 갈래(결제 가져옴 · 그냥 로그인) 모두 그렇게 적는다', hits + '곳');
+  /* ★ 2026-09-11 대표님 지시 "카카오 로그인 되었어요. 만 써라" — 꼬리말을 뺐다.
+     갈래가 둘이면 안 된다(한 문장 하나만 나간다). */
+  R.note(hits === 1, '한 문장 하나만 쓴다 (갈래를 다시 만들지 않는다)', hits + '곳');
+  R.note(/showToast\('카카오 로그인 되었어요\.'\)/.test(app), '그 한 문장을 그대로 띄운다');
   R.note(!/showToast\('로그인했어요/.test(app), "옛 문구('로그인했어요…')가 남아 있지 않다");
+  R.note(!/카카오 로그인 되었어요\. (다른 기기|결제하신)/.test(app),
+         '꼬리말(다른 기기… · 결제하신 것을…)이 안 붙어 있다');
 
   R.done();
 })();

@@ -77,8 +77,14 @@ async function look(browser, site, seen){
   await wait(6000);   /* 재시도(1.2초 · 2.4초)까지 다 지나가게 넉넉히 */
   const m = await p.evaluate(function(){
     const h = document.getElementById('appHeader'), t = document.getElementById('tabbarWrap');
+    /* ★ 2026-09-11 — 떠 있는 단추도 함께 본다. 머리글·탭만 숨기고 이것만 남겨 두었더니
+       동의 화면 오른쪽 아래에 [궁합도 봐보기] 가 떠 있어, 2026-09-09에 고친
+       "반쯤 들어와 있는 화면"이 그대로 다시 났습니다(대표님 영상 제보). */
+    const f = document.querySelector('.mode-fab');
     return { txt: document.body.innerText.slice(0, 400),
-             headerHidden: !!(h && h.hidden), tabHidden: !!(t && t.hidden) };
+             headerHidden: !!(h && h.hidden), tabHidden: !!(t && t.hidden),
+             fabShown: !!(f && f.getBoundingClientRect().width > 0),
+             fabText: f ? (f.innerText || '').trim() : '' };
   });
   m.errs = p.__errs || [];
   await p.close();
@@ -96,6 +102,8 @@ async function look(browser, site, seen){
     R.head('── ① 통신이 안 되는데, 전에 로그인했던 기기');
     let site = await serveWith('fail');
     let m = await look(browser, site, true);
+    R.note(m.fabShown, '정상 화면에서는 떠 있는 단추가 그대로 있다 (지나치게 숨기지 않는다)',
+           m.fabShown ? m.fabText : '사라짐');
     R.note(m.txt.indexOf('만 14세 이상이에요') < 0, '동의 화면으로 쫓아내지 않는다',
            m.txt.slice(0,40).replace(/\n/g,' '));
     R.note(m.txt.indexOf('검사님의 오늘') >= 0 || m.txt.indexOf('오늘') >= 0,
@@ -109,6 +117,8 @@ async function look(browser, site, seen){
     R.note(m.txt.indexOf('만 14세 이상이에요') >= 0, '이때는 관문이 걸린다');
     R.note(m.headerHidden && m.tabHidden, '머리글과 탭이 함께 숨는다',
            '머리글 ' + (m.headerHidden?'숨김':'보임') + ' · 탭 ' + (m.tabHidden?'숨김':'보임'));
+    R.note(!m.fabShown, '떠 있는 단추도 함께 숨는다 (반쯤 들어와 있는 화면이 안 된다)',
+           m.fabShown ? ('보임: ' + m.fabText) : '숨김');
     site.close();
 
     /* ③ 한 번도 로그인한 적 없는 기기인데 통신도 안 될 때 —

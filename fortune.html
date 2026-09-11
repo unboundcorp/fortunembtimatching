@@ -26380,10 +26380,27 @@ try{
   window.addEventListener('scroll', updateFabAway, {passive:true});
   window.addEventListener('resize', updateFabAway);
 }catch(e){ /* 아주 옛 브라우저 — 못 걸어도 버튼은 그대로 뜬다 */ }
+/* ★ 2026-09-11 대표님 영상 제보 "이 오류 또 발생한다" —
+   동의·로그인 관문이 걸린 화면에 **떠 있는 단추([궁합도 봐보기])만 그대로 남아** 있었습니다.
+   머리글과 탭은 숨기고 있었는데 이것만 빠져서, 2026-09-09에 고쳤던
+   **"반쯤 들어와 있는 화면"과 같은 모양**이 다시 났습니다.
+   ★ 원인은 `syncModeFab()` 이 **render() 맨 앞**에서 도는 것입니다 — 관문 갈래는
+     그보다 뒤에 있어서, 관문이 걸려도 단추는 이미 그려진 뒤였습니다.
+   ★ 그래서 관문 판정을 함수로 빼서 **두 곳이 같은 것을 보게** 했습니다.
+     관문 조건을 고칠 일이 생기면 여기 하나만 고치십시오. */
+function loginGateBlocks(){
+  if(ADMIN_ROUTES[ROUTE] || GATE_FREE_ROUTES[ROUTE]) return false;
+  /* 아직 모르는 동안(기다림 화면)도 막는 것으로 본다 — 그 화면에도 단추를 띄우지 않는다. */
+  if(!KAKAO.loaded && !STATE.kakaoSeen) return true;
+  var kakaoOk = KAKAO.loaded ? KAKAO.linked : true;
+  if(KAKAO.err && STATE.kakaoSeen) kakaoOk = true;
+  return !STATE.onboarded || !kakaoOk;
+}
 function syncModeFab(){
   var host = document.body;
   var fab = document.getElementById('modeFab');
   var show = !!activeProfile()
+          && !loginGateBlocks()
           && !FAB_HIDDEN_ROUTES[ROUTE]
           && !(ROUTE==='setup' && SETUP)
           && !(!STATE.onboarded && STATE.profiles.length===0);
@@ -26482,11 +26499,9 @@ function render(){
     $('#appHeader').hidden = true; $('#tabbarWrap').hidden = true;
     renderBootWait(); return;
   }
-  var kakaoOk = KAKAO.loaded ? KAKAO.linked : true;   /* 여기 오면 kakaoSeen 이 있다 */
-  /* 물어보지 못한 것으로는 쫓아내지 않는다 (위 kakaoRefresh 주석) */
-  if(KAKAO.err && STATE.kakaoSeen) kakaoOk = true;
-  var needKakao = !kakaoOk;
-  if((!STATE.onboarded || needKakao) && !ADMIN_ROUTES[ROUTE] && !GATE_FREE_ROUTES[ROUTE]){
+  /* ★ 판정은 loginGateBlocks() 하나에 있습니다 — 떠 있는 단추도 같은 것을 봅니다.
+     여기에 조건을 다시 적지 마십시오. 두 벌이 되면 한쪽만 고치게 됩니다. */
+  if(loginGateBlocks()){
     /* ★ 머리글과 탭을 함께 숨긴다. 안 숨기면 동의 화면 위에 탭과 프로필 고르개가 그대로
        남아 **반쯤 들어와 있는 이상한 화면**이 됩니다(대표님 영상에 그대로 찍혔습니다).
        바로 아래 setup 갈래가 이미 같은 일을 하고 있었는데 여기만 빠져 있었습니다. */
@@ -27018,12 +27033,13 @@ scheduleCharWarm();
        다 끝난 뒤에야 알렸는데, 그때는 이미 결제창이 그 위에 떠 있었다. */
   if(kret && kret.kind === 'ok'){
     KAKAO.loaded = true; KAKAO.ready = true; KAKAO.linked = true;
-    /* ★ 2026-09-11 대표님 지시 — 문구에 **'카카오'** 를 넣습니다.
-       예전에는 '로그인했어요' 라고만 적혀서, 카카오에서 돌아온 그 로그인이 맞는지
-       바로 안 이어졌습니다. 대표님이 주신 말("카카오 로그인 되었어요")을 그대로 씁니다. */
-    showToast(kret.moved > 0
-      ? '카카오 로그인 되었어요. 결제하신 것을 이 기기로 가져왔어요.'
-      : '카카오 로그인 되었어요. 다른 기기에서도 그대로 보실 수 있어요.');
+    /* ★ 2026-09-11 대표님 지시 — **"카카오 로그인 되었어요. 만 써라"**.
+       뒤에 붙이던 두 꼬리말("다른 기기에서도 그대로 보실 수 있어요" ·
+       "결제하신 것을 이 기기로 가져왔어요")을 **뺐습니다.** 한 문장만 씁니다.
+       ★ 갈래를 다시 만들지 마십시오. 알림은 '됐다'만 알리는 자리입니다.
+       ★ 결제를 이 기기로 가져온 사실은 [더보기] → [설정]의 구매 내역에서 보입니다 —
+         알림에서 뺐다고 그 사실이 없어진 것은 아닙니다. */
+    showToast('카카오 로그인 되었어요.');
   }
 
   /* 결제하고 돌아온 사람을 방금 산 화면으로 데려가고, 영수증 안내를 띄운다.
