@@ -7564,7 +7564,7 @@ function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles){
   var gap = singleProductsTotal() - PRODUCTS.premium_pass.price;
   if(gap > 0){
     cta.appendChild(el('p',{class:'locked-compare'},[
-      '따로 셋을 사면 '+formatWon(singleProductsTotal())+'이에요 — 전체 이용권이 '+formatWon(gap)+' 덜 들어요.'
+      '따로 셋을 구매하면 '+formatWon(singleProductsTotal())+'이에요 — 전체 이용권이 '+formatWon(gap)+' 덜 들어요.'
     ]));
   }
   wrap.appendChild(cta);
@@ -7717,10 +7717,10 @@ function openPaywall(product){
     if(passPrice < product.price){
       upsellText = '전체 이용권이면 '+formatWon(passPrice)+'으로 더 싸게, 모든 상세 해석이 열려요.';
     } else if(passPrice === product.price){
-      upsellText = '같은 '+formatWon(passPrice)+'으로 전체 이용권을 사면 이것 말고 나머지 상세 해석도 '+passPeriodText()+' 다 열려요.';
+      upsellText = '같은 '+formatWon(passPrice)+'으로 전체 이용권을 구매하면 이것 말고 나머지 상세 해석도 '+passPeriodText()+' 다 열려요.';
     } else if(passPrice < singlesTotal){
       /* '원'은 받침이 있으므로 조사는 '로'가 아니라 '으로'다. */
-      upsellText = '상세 해석을 하나씩 다 사면 '+formatWon(singlesTotal)+'인데, 전체 이용권은 '+formatWon(passPrice)+'으로 세 가지가 다 열려요.';
+      upsellText = '상세 해석을 하나씩 다 구매하면 '+formatWon(singlesTotal)+'인데, 전체 이용권은 '+formatWon(passPrice)+'으로 세 가지가 다 열려요.';
     } else {
       upsellText = '전체 이용권('+formatWon(passPrice)+')이면 모든 상세 해석이 열려요.';
     }
@@ -20116,7 +20116,7 @@ function buildYearPicker(){
   wrap.appendChild(el('p',{class:'biz-hint', style:'margin:0 0 16px;'},[
     hasAccess(sajuProductId())
       ? VIEW_YEAR + '년 풀이는 열려 있어요. 다른 해는 그 해마다 따로 결제가 필요해요.'
-      : '해마다 흐름이 달라서 ' + VIEW_YEAR + '년 풀이는 따로 결제가 필요해요. 한 번 사시면 몇 년이 지나도 그대로 다시 보실 수 있어요.'
+      : '해마다 흐름이 달라서 ' + VIEW_YEAR + '년 풀이는 따로 결제가 필요해요. 한 번 구매하면 해당 년도 사주는 그대로 다시 보실 수 있어요.'
   ]));
   return wrap;
 }
