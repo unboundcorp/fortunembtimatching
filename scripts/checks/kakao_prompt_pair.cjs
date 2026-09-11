@@ -64,5 +64,14 @@ const kakaoLib = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'kakao.js'), 'ut
   R.note(!/prompt/.test(strip(fs.readFileSync(path.join(ROOT, 'api', 'kakaocb.js'), 'utf8'))),
          '돌아오는 문은 이 값을 안 본다 (건드리지 않았다)');
 
+  R.head('⑥ 돌아오면 손님께 알린다');
+  /* ★ 주석을 먼저 걷어낸다. 안 걷으면 **내가 쓴 설명 주석이 내 검사에 걸립니다** —
+     이 프로젝트에서 네 번째 겪은 함정이라 여기 적어 둡니다. */
+  const app = strip(fs.readFileSync(path.join(ROOT, 'fortune.html'), 'utf8'));
+  const hits = (app.match(/카카오 로그인 되었어요/g) || []).length;
+  R.note(hits > 0, "돌아오면 '카카오 로그인 되었어요' 를 띄운다 (대표님이 정하신 문구)");
+  R.note(hits === 2, '두 갈래(결제 가져옴 · 그냥 로그인) 모두 그렇게 적는다', hits + '곳');
+  R.note(!/showToast\('로그인했어요/.test(app), "옛 문구('로그인했어요…')가 남아 있지 않다");
+
   R.done();
 })();
