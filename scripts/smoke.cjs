@@ -128,9 +128,21 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
   }
 
   const fails = [];
+  const skipped = [];
   const note = (ok, what, detail) => {
     console.log(`  ${ok ? '✓' : '✗'} ${what}${detail ? '   ' + detail : ''}`);
     if (!ok) fails.push(what + (detail ? ' — ' + detail : ''));
+  };
+  /* ★ 2026-09-11 — '못 쟀음'을 실패와 가른다.
+     -------------------------------------------------------------------
+     배포본에 대고 이 검사를 돌리면 **로그인 관문 때문에 화면 여덟 개가 전부 막힙니다.**
+     카카오 로그인을 검사기가 대신 해 줄 수 없기 때문입니다(실제 카카오 계정이 필요).
+     그런데 그걸 '실패'로 찍으면 **늘 빨간 검사**가 되고, 늘 빨가면 사람이 안 봅니다 —
+     그때부터는 진짜 고장도 같이 묻힙니다. 그래서 **못 쟀다고 분명히 적고 따로 셉니다.**
+     ★ 이것을 '통과'로 적지 마십시오. 통과와 못 쟀음은 다릅니다. */
+  const skip = (what, why) => {
+    console.log(`  – ${what}   못 쟀음 (${why})`);
+    skipped.push(what + ' — ' + why);
   };
 
   const browser = await puppeteer.launch({ executablePath: exe, headless: 'new', args: ['--no-sandbox'] });
@@ -178,7 +190,31 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
   }
 
   /* ── 2. 탭마다 화면이 그려지는가 ─────────────────────────────────── */
-  console.log('\n[2] 화면 여덟 개');
+  /* ★ 먼저 **이 서버에서 관문을 지날 수 있는지** 물어본다.
+     시험용 정적 서버(_serve.cjs)는 /api/kakao 에 "로그인돼 있다"고 답하므로 지날 수 있고,
+     진짜 배포본은 카카오 로그인을 해야만 지날 수 있어 검사기로는 못 지난다.
+     이것을 안 가르면 배포본 검사가 **늘 여덟 건 실패**로 찍혀, 진짜 고장도 같이 묻힌다. */
+  let CAN_PASS_GATE = false;
+  try {
+    CAN_PASS_GATE = await page.evaluate(async () => {
+      const r = await fetch('/api/kakao', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', body: JSON.stringify({ action: 'status' }),
+      });
+      const d = await r.json().catch(() => null);
+      return !!(d && d.linked);
+    });
+  } catch (e) { CAN_PASS_GATE = false; }
+  /* ★ **로컬 시험 서버에서는 못 지나면 그것이 곧 실패다.**
+     `_serve.cjs` 는 /api/kakao 에 "로그인돼 있다"고 답하도록 돼 있다. 그게 망가지면
+     화면 여덟 개가 조용히 '못 쟀음'으로 넘어가고 verify.sh 가 통과 도장을 찍는다 —
+     '늘 있는 것'이 사라졌는데 아무도 모르는 그 상태다. 여기서 못 박는다. */
+  const IS_LOCAL = /^https?:\/\/(127\.0\.0\.1|localhost)/.test(APP);
+  if (IS_LOCAL && !CAN_PASS_GATE) {
+    note(false, '시험 서버가 "로그인돼 있다"고 답한다',
+         '_serve.cjs 의 /api/kakao 흉내가 망가졌습니다 — 화면 검사가 통째로 안 돕니다');
+  }
+  console.log('\n[2] 화면 여덟 개' + (CAN_PASS_GATE ? '' : '  (이 서버에서는 로그인 관문을 못 지납니다)'));
   for (const [route, must] of TABS) {
     errs = [];
     /* ★ R93 — 탭 막대는 다섯 개(홈·오늘·내 사주·궁합·더보기)로 줄었다.
@@ -212,6 +248,8 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
        **똑같은 443자**인데도 전부 통과였다(실측). 찾는 낱말만 보면 이렇게 새어 나간다. */
     const stuck = txt.indexOf('만 14세 이상이에요') >= 0;
     const drew = txt.length > 120 && txt.indexOf(must) >= 0 && !stuck;
+    /* 로그인이 안 되는 곳(배포본)에서 관문에 막힌 것은 **못 쟀음**이다 — 고장이 아니다. */
+    if (stuck && !CAN_PASS_GATE) { skip(route, '로그인 관문 — 검사기가 카카오 로그인을 못 함'); continue; }
     note(errs.length === 0 && drew, route,
       errs[0] ? errs[0]
         : (stuck ? '동의·로그인 화면에 갇힘 (' + txt.length + '자)'
@@ -259,12 +297,18 @@ const w = (ms) => new Promise((r) => setTimeout(r, ms));
   await browser.close();
 
   console.log('');
+  if (skipped.length) {
+    console.log('못 쟀음 ' + skipped.length + '건 — "통과"가 아닙니다');
+    skipped.forEach((f) => console.log('  – ' + f));
+    console.log('');
+  }
   if (fails.length) {
     console.log('실패 ' + fails.length + '건 — 배포하지 마세요');
     fails.forEach((f) => console.log('  · ' + f));
     process.exit(1);
   }
-  console.log('전부 통과 — 내보내도 됩니다');
+  console.log(skipped.length ? '잰 것은 전부 통과 (못 잰 것 ' + skipped.length + '건은 위에)'
+                             : '전부 통과 — 내보내도 됩니다');
 })().catch((e) => {
   console.error('검사 자체가 터졌습니다:', e && e.message);
   process.exit(2);
