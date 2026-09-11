@@ -5982,8 +5982,15 @@ var PRODUCTS = {
                   desc:'사주 · 성격유형 · 궁합 세 가지를 한 번에',
                   /* ★ '만든 글은 계속 보인다'는 말은 여기 두지 않는다.
                      결제창 아래 편수 줄이 이미 그 말을 한다 — 한 창에서 두 번 하지 않는다. */
+                  /* ★ 2026-09-11 — '사주는 고르신 해의 것'을 **반드시** 적습니다.
+                     이용권은 이름이 '전체'라, 안 적으면 2027년 사주까지 포함된다고 읽힙니다.
+                     실제로는 그 해 것만 열립니다(hasAccess 의 연도 판정) — 미리 안 알리면
+                     돈을 내신 뒤에야 알게 되는 조건이 됩니다.
+                     ★ 이것은 **사실 고지**이지 '다음에 또 사시라'는 말이 아닙니다.
+                       사주 결제창의 "해마다 흐름이 달라서…"와 같은 자리입니다. */
                   opens:['사주 풀이 · 성격유형 풀이 · 궁합 상세 전부',
-                         '고르신 해가 끝날 때까지 언제든 만드시면 돼요'] }
+                         '고르신 해가 끝날 때까지 언제든 만드시면 돼요',
+                         '사주 풀이는 고르신 해의 것이에요 (성격유형 · 궁합은 해와 상관없어요)'] }
 };
 
 /* =====================================================================
@@ -6193,7 +6200,8 @@ function adminSimResponse(url, payload){
       for(var k in ADMIN_GRANTS){
         if(!ADMIN_GRANTS[k] || !PRODUCTS[k]) continue;
         if(k === 'premium_pass'){
-          pass = { productId:'premium_pass', purchasedAt:Date.now(),
+          pass = { productId: productIdFor('premium_pass', kstYearOf(Date.now())),
+                   purchasedAt:Date.now(),
                    expiresAt: Date.now() + PRODUCTS.premium_pass.days*86400000 };
         } else {
           items[k] = { purchasedAt: Date.now() };
@@ -7040,15 +7048,34 @@ function passActive(){ return realPassActive() || adminPassActive(); }
 /* 특정 상품에 대한 접근 권한이 있는지. 전체 이용권이 살아 있으면 개별 상품도 모두 열린다.
    ★ localStorage를 직접 보지 않는다. 서버 모드에서는 ENT.data가 곧 서버 응답이다.
    ★ adminGranted()는 서버 권위 모드에서 항상 false다(관리자가 서버 판정을 이길 수 없다). */
+/* 한국 시각으로 몇 년도인가. 연도 판정은 전부 KST 로 한다 — UTC 로 재면
+   12월 31일 밤 9시 이후에 산 이용권이 다음 해 것으로 잡힌다.
+   ★ 서버 api/_lib/entitlements.js 의 kstYearOf 와 한 쌍이다. */
+function kstYearOf(ms){
+  var t = Number(ms);
+  if(!isFinite(t) || !t) return null;
+  return new Date(t + 9*3600*1000).getUTCFullYear();
+}
+/* 이 이용권은 어느 해 것인가. 연도가 안 붙어 있으면 **산 해**로 본다. */
+function passYearOf(pass){
+  if(!pass) return null;
+  var y = pass.productId ? splitProductId(pass.productId).year : null;
+  if(y !== null && y !== undefined && y === y) return y;   /* NaN 도 거른다 */
+  return kstYearOf(pass.purchasedAt);
+}
 function hasAccess(productId){
   if(adminGranted(productId)) return true;
   /* ★ 2026-09-04 — 연도 이용권은 '그 해 것'만 연다. 12월에 2026년 이용권을 산 분이
      2027년 사주까지 받아 가면 "연도마다 따로 결제"가 무너진다.
-     연도가 없는 쪽(옛 이용권 · 궁합 · 성격유형)은 예전처럼 막지 않는다.
+     ★ 2026-09-11 대표님 지시 **"연도별로 가야지 전체 이용권도"** — 연도가 **안 붙은**
+       이용권(옛 결제 · 테스트 허가)이 여기서 모든 해를 열고 있었습니다(실측으로 확인).
+       이제 연도가 없으면 **산 해**를 그 이용권의 해로 봅니다.
+     ★ 궁합·성격유형처럼 **연도가 없는 상품**은 그대로 다 열립니다 — 그 풀이는 해가
+       바뀌어도 같은 이야기이고, 연도를 붙이지 않기로 정한 상품입니다.
+     ★ 산 시각조차 모르면 가리지 않습니다. 알 수 없는 것을 근거로 손님을 막지 않습니다.
      ★ 서버 api/_lib/entitlements.js 의 hasAccess와 한 쌍이다. 한쪽만 고치지 마라. */
   if(passActive()){
-    var pid = (entitlements().pass && entitlements().pass.productId) || null;
-    var py = pid ? splitProductId(pid).year : null;
+    var py = passYearOf(entitlements().pass);
     var wy = splitProductId(productId).year;
     if(adminPassActive() || py === null || wy === null || py === wy) return true;
   }
@@ -26828,7 +26855,10 @@ function grantAllForTest(){
   for(var pid in PRODUCTS){
     if(PRODUCTS[pid].kind === 'once') e.items[pid] = { purchasedAt: now };
   }
-  e.pass = { productId:'premium_pass', purchasedAt: now, expiresAt: now + PRODUCTS.premium_pass.days*86400000 };
+  /* ★ 2026-09-11 — 허가에도 연도를 붙입니다. 안 붙이면 테스터 화면만 모든 해가 열려,
+     대표님이 보시는 것과 손님이 보시는 것이 갈립니다(이번 제보가 정확히 그것이었습니다). */
+  e.pass = { productId: productIdFor('premium_pass', kstYearOf(now)), purchasedAt: now,
+             expiresAt: now + PRODUCTS.premium_pass.days*86400000 };
   saveState();
   ENT.data = e;   /* 체험 모드에서도 판정은 ENT를 거친다 */
 }

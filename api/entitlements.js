@@ -11,8 +11,8 @@
 import { json, methodGuard } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
 import { paidOrdersOf, recentOrdersOf, testAccessOf, adminAccessOf, aiUsedProductIds } from './_lib/store.js';
-import { buildEntitlements } from './_lib/entitlements.js';
-import { productOf } from './_lib/products.js';
+import { buildEntitlements, kstYearOf } from './_lib/entitlements.js';
+import { productOf, productIdFor } from './_lib/products.js';
 import { isTossTestKey } from './_lib/company.js';
 
 export default async function handler(req, res) {
@@ -81,7 +81,10 @@ export default async function handler(req, res) {
     if (test) {
       const until = test.expires_at ? new Date(test.expires_at).getTime() : Date.now() + 86400000;
       if (!ent.pass || until > ent.pass.expiresAt) {
-        const pass = productOf('premium_pass');
+        /* ★ 2026-09-11 — 허가에도 **연도를 붙인다**(대표님 지시 "연도별로 가야지 전체 이용권도").
+           예전에는 연도 없는 이용권이라 테스터에게만 모든 해가 열렸습니다. 그러면
+           대표님이 보시는 화면이 손님 화면과 달라져, 이번처럼 "결제 안 했는데 왜 열리지"가 됩니다. */
+        const pass = productOf(productIdFor('premium_pass', kstYearOf(Date.now())));
         ent.pass = {
           productId: pass ? pass.id : 'premium_pass',
           purchasedAt: Date.now(),

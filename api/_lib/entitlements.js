@@ -64,9 +64,31 @@ export function buildEntitlements(paidOrders) {
      · 궁합·성격유형은 애초에 연도가 없는 상품이라 어느 해 이용권으로든 열린다.
    ★ 화면(fortune.html)의 hasAccess와 한 쌍이다. 한쪽만 고치면 화면은 열어 주는데
      서버가 본문을 안 주는(또는 그 반대) 어긋남이 생긴다. */
+/* 한국 시각으로 몇 년도인가. 연도 판정은 전부 KST 로 한다 —
+   UTC 로 재면 12월 31일 밤 9시 이후에 산 이용권이 다음 해 것으로 잡힌다. */
+export function kstYearOf(ms) {
+  const t = Number(ms);
+  if (!isFinite(t) || !t) return null;
+  return new Date(t + 9 * 3600 * 1000).getUTCFullYear();
+}
+
+/* ★ 2026-09-11 대표님 지시 **"연도별로 가야지 전체 이용권도"**
+   ---------------------------------------------------------------------
+   이용권에 연도를 붙이는 규칙은 2026-09-04부터 있었는데, **연도가 안 붙은 이용권**
+   (옛 결제 · 테스트 허가)이 `passYear == null` 갈래로 빠져 **모든 해를 열고 있었습니다.**
+   실측으로 그 상태를 확인했습니다 — 연도 없는 이용권 하나로 2026·2027이 다 열렸습니다.
+   이제 연도가 안 붙어 있으면 **산 해**(purchasedAt)를 그 이용권의 해로 봅니다.
+   ★ 산 시각조차 없으면 가리지 않습니다 — 알 수 없는 것을 근거로 손님을 막지 않습니다. */
+export function passYearOf(pass) {
+  if (!pass) return null;
+  const y = splitProductId(pass.productId).year;
+  if (y != null) return y;
+  return kstYearOf(pass.purchasedAt);
+}
+
 export function hasAccess(ent, productId) {
   if (ent.pass && ent.pass.expiresAt > Date.now()) {
-    const passYear = splitProductId(ent.pass.productId).year;
+    const passYear = passYearOf(ent.pass);
     const wantYear = splitProductId(productId).year;
     if (passYear == null || wantYear == null || passYear === wantYear) return true;
   }
