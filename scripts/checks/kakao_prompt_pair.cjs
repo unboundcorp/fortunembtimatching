@@ -56,8 +56,10 @@ const kakaoLib = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'kakao.js'), 'ut
   R.note(!/through_account/.test(api), "요청에 through_account 가 없다 (2026-08-29 사고)");
   R.note(/through_account/.test(kakaoLib) || /through_account/.test(kakaoApi),
          '왜 쓰면 안 되는지는 주석으로 남아 있다');
-  R.note(!/prompt['"]?\s*:\s*['"]login/.test(api) && !/'prompt', 'login'/.test(api),
-         "prompt=login 을 쓰지 않는다 (매번 비밀번호를 다시 받게 된다)");
+  /* ★ 2026-09-11 — select_account 로는 앱 전환이 안 막혀 login 으로 올렸습니다.
+     되돌릴 때는 이 줄과 위 ①②를 함께 보십시오. */
+  R.note(!/through_account/.test(strip(kakaoLib)) || /다시 쓰지 마십시오|되살아나면/.test(kakaoLib),
+         'through_account 는 주석으로만 남아 있다 (쓰는 코드가 아니다)');
 
   R.head('⑤ 돌아올 주소는 그대로다');
   R.note(/\/api\/kakaocb/.test(kakaoLib), '돌아올 주소가 우리 창구다');
