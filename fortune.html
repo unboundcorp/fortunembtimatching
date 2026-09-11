@@ -8138,7 +8138,10 @@ function openKakaoModal(){
       {label:'로그아웃', cls:'btn-ghost', onclick:function(){
         kakaoUnlink().then(function(){
           SYNC.on = false; SYNC.pulled = false; SYNC.at = null;
-          closeModal(); showToast('로그아웃했어요. 이 기기의 것은 그대로 있어요.'); render();
+          /* ★ 2026-09-11 대표님 지시 "로그아웃했어요 만 해라 뒤에 말 필요없어" —
+             꼬리말("이 기기의 것은 그대로 있어요")을 뺐습니다. 알림은 '됐다'만 알립니다.
+             ★ 로그인 알림도 같은 규칙입니다("카카오 로그인 되었어요."). 꼬리말을 다시 붙이지 마십시오. */
+          closeModal(); showToast('로그아웃했어요.'); render();
         }).catch(function(){ showToast('지금은 처리할 수 없어요.'); });
       }},
       {label:'닫기', cls:'btn-primary', onclick:closeModal}

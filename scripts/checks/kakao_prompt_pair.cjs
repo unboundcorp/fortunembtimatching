@@ -79,6 +79,9 @@ const kakaoLib = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'kakao.js'), 'ut
   R.note(!/showToast\('로그인했어요/.test(app), "옛 문구('로그인했어요…')가 남아 있지 않다");
   R.note(!/카카오 로그인 되었어요\. (다른 기기|결제하신)/.test(app),
          '꼬리말(다른 기기… · 결제하신 것을…)이 안 붙어 있다');
+  /* ★ 2026-09-11 대표님 지시 — 로그아웃 알림도 한 문장뿐입니다. */
+  R.note(/showToast\('로그아웃했어요\.'\)/.test(app), "로그아웃 알림도 '로그아웃했어요.' 한 문장이다");
+  R.note(!/로그아웃했어요\. 이 기기의 것은/.test(app), '로그아웃 알림에 꼬리말이 없다');
 
   R.done();
 })();
