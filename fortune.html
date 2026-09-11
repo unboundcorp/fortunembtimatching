@@ -1970,15 +1970,6 @@ textarea.ad-input{min-height:90px;resize:vertical;}
 #adminRoot :focus-visible{outline:2px solid var(--gold-2);outline-offset:2px;}
 /* 어드민이 떠 있는 동안에는 손님 화면에 떠 있는 것들을 숨긴다 (그것들이 z-index 40~90이라 위로 올라온다) */
 body.admin-on .mode-fab, body.admin-on .admin-flag{display:none !important;}
-/* 손님 화면 맨 위 공지 띠 (2026-09-11) — 켜 둔 공지가 없으면 아예 안 그려진다 */
-.notice-bar{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;
-  background:var(--panel-3);border-bottom:1px solid var(--gold-line);font-size:.82rem;line-height:1.55;}
-.notice-txt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;}
-.notice-txt strong{font-weight:600;}
-.notice-txt span{color:var(--ink-faint);font-size:.78rem;}
-.notice-x{flex:0 0 auto;border:0;background:transparent;color:var(--ink-faint);font-size:.9rem;
-  cursor:pointer;padding:2px 4px;border-radius:6px;line-height:1;}
-.notice-x:hover{background:rgba(31,28,23,0.08);}
 @media (max-width:899px){
   .ad-side{position:fixed;top:0;left:0;bottom:0;transform:translateX(-100%);z-index:47;}
   #adminRoot.ad-open .ad-side{transform:none;}
@@ -9550,7 +9541,7 @@ function buildAdminLocked(){
     openAdminUnlockModal();
   }},['운영자 코드 넣기']));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:function(){
-    ROUTE='home'; render();
+    adminForgetScreen(); ROUTE='home'; render();
   }},['홈으로']));
   return view;
 }
@@ -17616,7 +17607,7 @@ var ADMIN_META = {
   payments: {title:'결제',        sub:'주문 원장과 열람 여부'},
   compat:   {title:'궁합 · 모임', sub:'초대 링크와 모임 명단'},
   ai:       {title:'AI 해석',     sub:'만든 글 · 쓴 토큰 · 비용'},
-  notices:  {title:'공지 · 배너', sub:'손님 화면에 띄우는 알림'},
+  notices:  {title:'공지 · 배너', sub:'적어 두는 알림 (지금은 손님 화면에 안 나감)'},
   export:   {title:'데이터 내보내기', sub:'지금 화면의 자료를 CSV 로'}
 };
 /* 어느 화면이 어떤 원자료를 쓰나 — 들어갈 때 그것만 불러온다(다 부르지 않는다) */
@@ -17653,14 +17644,34 @@ function adminIcon(name, size){
   svg.appendChild(path);
   return svg;
 }
-/* 주소에 지금 화면을 적어 둔다 — 새로고침해도 보던 자리에서 다시 열린다.
-   ★ pushState 가 아니라 replaceState 다. 어드민 안에서 화면을 옮길 때마다 방문 기록이
-     쌓이면 뒤로가기가 어드민 안에서만 맴돌게 된다. */
+/* ★ 2026-09-11 대표님 제보 (영상) — "관리자 페이지 보다가 본 서비스 링크 열면 처음에
+   관리자 페이지가 뜬다".
+   ---------------------------------------------------------------------
+   **주소창에 `#admin/members` 를 적어 두던 것이 원인이었습니다.** 그 주소가 방문 기록에
+   남고, 브라우저의 [자주 방문]·즐겨찾기·주소 자동완성이 **그 주소를 서비스 주소로**
+   물고 있었습니다. 그래서 손님 링크를 여는 셈인데 **운영자 전용 화면**이 떴습니다
+   (영상: 네이버 앱 바로가기로 열자 "이 화면은 운영자만 볼 수 있어요").
+   ★ 이제 **주소에는 아무것도 안 적습니다.** 지금 보던 화면은 그 탭에만 남는 쪽지
+     (sessionStorage)에 적어 두고, **새로고침일 때만** 되살립니다.
+   ★ 들어오는 문은 그대로 `#admin` 입니다 — 손으로 치면 열립니다. 들어온 뒤에 주소를
+     지우므로, 그 뒤에 쌓이는 방문 기록은 전부 깨끗합니다.
+   ★ **`#admin` 을 주소에 남기는 방식으로 되돌리지 마십시오.** 남기는 순간 이 제보가
+     그대로 돌아옵니다. */
+var ADMIN_SCREEN_KEY = 'inyeon_admin_screen';
 function adminSyncHash(){
+  try{ sessionStorage.setItem(ADMIN_SCREEN_KEY, ADMIN_SCREEN || 'dash'); }catch(e){}
+  adminDropHash();
+}
+/* 주소창에서 #admin 을 걷어 낸다. 방문 기록에 남기지 않는 것이 핵심이다. */
+function adminDropHash(){
   try{
-    var want = '#admin' + (ADMIN_SCREEN && ADMIN_SCREEN !== 'dash' ? '/' + ADMIN_SCREEN : '');
-    if(location.hash !== want) history.replaceState(history.state, '', location.pathname + location.search + want);
+    if(location.hash) history.replaceState(history.state, '', location.pathname + location.search);
   }catch(e){}
+}
+/* 관리자 화면에서 나갈 때. 쪽지를 지워야 다음에 새로고침해도 안 되살아난다. */
+function adminForgetScreen(){
+  try{ sessionStorage.removeItem(ADMIN_SCREEN_KEY); }catch(e){}
+  adminDropHash();
 }
 /* 주소(#admin/members)를 읽어 화면을 맞춘다. hashchange 와 부팅 두 곳이 함께 쓴다. */
 function adminFromHash(h){
@@ -17670,6 +17681,7 @@ function adminFromHash(h){
   ADMIN_SCREEN = known ? part : 'dash';
   ROUTE = (ADMIN_SCREEN === 'tickets') ? 'csAdmin' : 'stats';
   if(ADMIN_SCREEN === 'dash') loadStats();
+  adminSyncHash();   /* 쪽지에 적고 주소에서는 걷어 낸다 */
   render();
 }
 function adminGo(screen){
@@ -17880,7 +17892,7 @@ function renderAdmin(){
   whoTxt.appendChild(el('div',{style:'font-size:10.5px;color:var(--ink-faint);'},['최고 관리자']));
   whoBox.appendChild(whoTxt);
   whoBox.appendChild(el('button',{class:'ad-link', style:'margin-left:auto;', 'aria-label':'서비스 화면으로',
-    onclick:function(){ ADMIN_MENU=false; ROUTE='today'; render(); }},[adminIcon('out',15)]));
+    onclick:function(){ ADMIN_MENU=false; adminForgetScreen(); ROUTE='today'; render(); }},[adminIcon('out',15)]));
   who.appendChild(whoBox);
   who.appendChild(el('p',{class:'ad-note', style:'margin-top:8px;'},['서비스 화면으로 돌아가려면 오른쪽 아이콘을 누르세요.']));
   side.appendChild(who);
@@ -18648,7 +18660,6 @@ function saveNotice(row){
       if(!r.ok || !r.j || !r.j.ok) throw new Error((r.j && r.j.reason) || '저장하지 못했어요.');
       NOTICE_ADMIN.saving = false; NOTICE_ADMIN.editing = null;
       NOTICE_ADMIN.msg = '저장했어요.';
-      NOTICE_BAR.loaded = false;          /* 손님 화면 배너도 다시 받아 온다 */
       loadNotices(true); showToast('저장했어요.');
     })
     .catch(function(e){
@@ -18661,7 +18672,7 @@ function deleteNotice(id){
   confirmModal('이 공지를 지울까요? 되돌릴 수 없어요.', function(){
     fetch('/api/notice',{method:'POST',headers:{'Content-Type':'application/json'},
       credentials:'include', body:JSON.stringify({action:'delete', id:id})})
-      .then(function(){ NOTICE_BAR.loaded = false; loadNotices(true); showToast('지웠어요.'); })
+      .then(function(){ loadNotices(true); showToast('지웠어요.'); })
       .catch(function(){ showToast('지우지 못했어요.'); });
   }, '지우기');
 }
@@ -18700,7 +18711,7 @@ function adminNotices(body){
   if(NOTICE_ADMIN.editing) body.appendChild(adminNoticeEditor(NOTICE_ADMIN.editing));
 
   var card = adCard([adH('공지 목록')]);
-  if(!items.length) card.appendChild(adEmpty('아직 만든 공지가 없어요. [새 공지 쓰기]로 만들면 손님 화면 맨 위에 띄울 수 있어요.'));
+  if(!items.length) card.appendChild(adEmpty('아직 만든 공지가 없어요. [새 공지 쓰기]로 적어 두시면 여기에 쌓입니다.'));
   else {
     var trs = items.map(function(n){
       var tr = el('tr',{});
@@ -18726,7 +18737,7 @@ function adminNotices(body){
     card.appendChild(adTable(['제목','종류','기간','상태',''], trs, 760));
   }
   card.appendChild(el('p',{class:'ad-note'},[
-    '「노출 중」인 것만 손님 화면 맨 위에 띠로 뜹니다. 손님이 닫으면 그 기기에서는 다시 안 보여요.']));
+    '지금은 이 화면 안에서만 보여요 — 손님 화면에는 안 나갑니다(대표님 지시). 「노출 중」은 기간과 켜기가 다 맞는다는 뜻이에요. 나중에 손님께 띄우기로 하시면 그때 연결하겠습니다.']));
   body.appendChild(card);
 }
 function noticeLive(n){
@@ -18738,7 +18749,7 @@ function noticeLive(n){
 }
 function adminNoticeEditor(e){
   var card = adCard([adH(e.id ? ('#' + e.id + ' 고치기') : '새 공지')]);
-  var title = el('input',{class:'ad-input', type:'text', value:e.title, maxlength:'80', placeholder:'제목 (손님 화면에 띠로 보이는 줄)'});
+  var title = el('input',{class:'ad-input', type:'text', value:e.title, maxlength:'80', placeholder:'제목'});
   card.appendChild(el('label',{class:'ad-sub2'},['제목']));
   card.appendChild(title);
   var bodyIn = el('textarea',{class:'ad-input', maxlength:'2000', placeholder:'자세한 내용 (비워두면 제목만 보여요)'});
@@ -18764,7 +18775,7 @@ function adminNoticeEditor(e){
   on.checked = !!e.active;
   var onRow = el('label',{style:'display:flex;align-items:center;gap:8px;font-size:13px;margin-top:4px;'});
   onRow.appendChild(on);
-  onRow.appendChild(el('span',{},['켜기 (켜야 손님 화면에 뜹니다)']));
+  onRow.appendChild(el('span',{},['켜기 (나중에 손님께 띄울 때 이 표시를 봅니다)']));
   card.appendChild(onRow);
 
   var acts = el('div',{class:'ad-bar', style:'margin-top:8px;'});
@@ -18782,49 +18793,14 @@ function adminNoticeEditor(e){
   return card;
 }
 
-/* ── 손님 화면의 공지 띠 ─────────────────────────────────────────
-   ★ 켜 둔 공지가 없으면 아무것도 안 그립니다. 닫으면 그 기기에서만 다시 안 보입니다
-     (기기에만 두는 값이라 SYNC_KEYS 에 넣지 않습니다 — 남의 기기에서 닫은 것이
-      이 기기의 공지를 숨기면 안 됩니다). */
-var NOTICE_BAR = { loaded:false, items:[] };
-function loadNoticeBar(){
-  if(NOTICE_BAR.loaded) return;
-  NOTICE_BAR.loaded = true;
-  fetch('/api/notice',{method:'POST',headers:{'Content-Type':'application/json'},
-    credentials:'include', body:JSON.stringify({action:'active'})})
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      var items = (d && d.items) || [];
-      if(items.length){ NOTICE_BAR.items = items; try{ render(); }catch(e){} }
-    })
-    .catch(function(){ /* 공지를 못 받아도 서비스는 그대로 돌아야 한다 */ });
-}
-function noticeSeenKey(){ return 'inyeonjeom.noticeSeen'; }
-function noticeSeen(){
-  try{ return JSON.parse(localStorage.getItem(noticeSeenKey()) || '[]') || []; }catch(e){ return []; }
-}
-function noticeDismiss(id){
-  try{
-    var seen = noticeSeen();
-    if(seen.indexOf(id) < 0) seen.push(id);
-    localStorage.setItem(noticeSeenKey(), JSON.stringify(seen.slice(-30)));
-  }catch(e){}
-  render();
-}
-function buildNoticeBar(){
-  var seen = noticeSeen();
-  var show = (NOTICE_BAR.items || []).filter(function(n){ return seen.indexOf(n.id) < 0; });
-  if(!show.length) return null;
-  var n = show[0];
-  var bar = el('div',{class:'notice-bar', role:'status'});
-  var txt = el('div',{class:'notice-txt'});
-  txt.appendChild(el('strong',{},[n.title]));
-  if(n.body) txt.appendChild(el('span',{},[n.body]));
-  bar.appendChild(txt);
-  bar.appendChild(el('button',{class:'notice-x', type:'button', 'aria-label':'공지 닫기',
-    onclick:function(){ noticeDismiss(n.id); }},['✕']));
-  return bar;
-}
+/* ★ 2026-09-11 대표님 지시 "공지는 관리자 화면에만 할 거야 본 서비스에는 만들지 마"
+   ---------------------------------------------------------------------
+   손님 화면 맨 위에 띠를 띄우던 코드는 **지웠습니다.** 공지는 관리자 화면 안에서만 씁니다.
+   ★ 나중에 손님께 띄우기로 정하시면 그때 다시 만듭니다. 지금 껍데기만 남겨 두면
+     "되는 줄 알았는데 안 나오는" 자리가 됩니다.
+   ★ 서버 쪽 손님용 창구(action:'active')도 함께 없앴습니다 — 읽는 데가 없는데
+     밖에서 부를 수 있는 문을 열어 둘 이유가 없습니다.
+   ★ `checks-slow/admin_shell.cjs` 가 손님 화면에 공지 띠가 **없는지** 봅니다. */
 /* ★ 2026-09-11 — 운영자에게는 이 함수가 안 불립니다. render() 가 그 전에 #adminRoot
    (사이드바형 어드민 셸)로 넘기고 돌아옵니다. 여기 남은 것은 **운영자가 아닐 때의 잠김 안내**뿐입니다.
    ★ 예전의 현황판 본문(카드·기간 세그·원자료 표)은 어드민 셸로 옮기며 지웠습니다.
@@ -26561,18 +26537,6 @@ function render(){
     adminRootEl.innerHTML = '';
   }
 
-  /* 손님 화면 맨 위 공지 띠.
-     ★ 그리기 전에 먼저 지운다 — 안 지우면 render() 를 부를 때마다 띠가 한 줄씩 쌓인다. */
-  var oldBar = $('#noticeBar');
-  if(oldBar && oldBar.parentNode) oldBar.parentNode.removeChild(oldBar);
-  loadNoticeBar();
-  var noticeBar = buildNoticeBar();
-  if(noticeBar){
-    noticeBar.id = 'noticeBar';
-    var mainEl = $('#main');
-    if(mainEl && mainEl.parentNode) mainEl.parentNode.insertBefore(noticeBar, mainEl);
-  }
-
   if(ROUTE==='stats') renderStats();
   else if(ROUTE==='home') renderLanding();
   else if(ROUTE==='today') renderHome();
@@ -26885,8 +26849,20 @@ if(String(location.hash||'').replace(/^#/,'') === 'unlock'){
 (function(){
   var h0 = String(location.hash||'').replace(/^#/,'');
   if(h0 === 'admin' || h0.indexOf('admin/') === 0){
-    setTimeout(function(){ adminFromHash(h0); }, 0);
+    setTimeout(function(){ adminFromHash(h0); }, 0);   /* 손으로 친 문 */
+    return;
   }
+  /* ★ 쪽지(sessionStorage)로 되살리는 것은 **새로고침일 때뿐**입니다.
+     같은 탭에서 손님 주소를 새로 열었을 때까지 되살리면, 이번에 고친 그 증상이
+     탭 안에서 그대로 되풀이됩니다. */
+  var saved = '';
+  try{ saved = sessionStorage.getItem(ADMIN_SCREEN_KEY) || ''; }catch(e){}
+  if(!saved) return;
+  var nav = null;
+  try{ nav = (performance.getEntriesByType('navigation') || [])[0] || null; }catch(e){}
+  var reloaded = nav ? nav.type === 'reload' : false;
+  if(reloaded) setTimeout(function(){ adminFromHash('admin/' + saved); }, 0);
+  else { try{ sessionStorage.removeItem(ADMIN_SCREEN_KEY); }catch(e){} }
 })();
 
 /* ★ R50 — 링크로 바로 들어온 사람은 '궁합을 하러 온' 것이다. 탭도 그쪽으로 맞춘다. */
@@ -26958,11 +26934,12 @@ render();
 /* R59 — 첫 화면을 그린 뒤부터 방문 기록을 쌓는다.
    ★ 맨 처음 상태를 기록에 심어 둔다. 안 그러면 서비스 안에서 한 번 움직인 뒤
      뒤로가기를 눌렀을 때 되돌아갈 '서비스의 첫 화면'이 기록에 없어 그대로 밖으로 나간다. */
-/* ★ #admin 은 남긴다 — 지우면 새로고침할 때마다 관리자가 손님 홈으로 튕긴다.
+/* ★ 2026-09-11 — 주소에서 해시를 **전부** 걷어 낸다(예전에는 `#admin` 만 남겼다).
+   남기면 그 주소가 방문 기록·즐겨찾기에 박혀서, 손님 링크를 열었는데 운영자 전용 화면이
+   뜹니다(대표님 영상 제보). 새로고침으로 되살리는 일은 위 쪽지가 맡습니다.
    손님용 해시(초대·모임)는 이미 각자 소비한 뒤라 여기서 지우는 것이 맞다. */
 try{
-  var keepHash = /^#admin(\/|$)/.test(location.hash || '') ? location.hash : '';
-  history.replaceState({app:1, route:ROUTE}, '', location.pathname + location.search + keepHash);
+  history.replaceState({app:1, route:ROUTE}, '', location.pathname + location.search);
 }catch(e){}
 LAST_ROUTE = ROUTE;
 HISTORY_ON = true;

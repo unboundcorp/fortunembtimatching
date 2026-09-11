@@ -202,7 +202,11 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   R.note(o.clicked, '[회원 관리] 를 눌렀다');
   ['5057959396','가영','ENFP','경오 임오 신해 계사','결제 2건','2,890원','5073954894','사주 없음']
     .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "'" + w + "' 가 보인다"); });
-  R.note(o.hash === '#admin/members', '주소에 화면이 적힌다', o.hash);
+  /* ★ 2026-09-11 대표님 영상 제보로 뒤집힌 검사입니다.
+     예전에는 주소에 `#admin/members` 를 적는 것이 통과 조건이었는데, 그 주소가
+     방문 기록에 박혀 **손님 링크가 운영자 전용 화면을 열었습니다.** 이제 주소에
+     아무것도 안 적는 것이 통과 조건입니다. */
+  R.note(o.hash === '', '주소에 #admin 이 안 남는다', o.hash || '(빈칸)');
   /* [상세] 서랍 */
   await page.evaluate(() => {
     const b = [...document.querySelectorAll('#adminRoot .ad-link')].find(x => x.textContent.trim() === '상세');
@@ -394,43 +398,78 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   R.note(g.__errs.length === 0, 'JS 오류 0건', g.__errs[0] || '');
   await g.close();
 
-  /* ── 손님 화면의 공지 띠 ─────────────────────────────────────── */
-  R.head('⑨ 손님 화면 공지 띠');
+  /* ── 손님 화면에는 공지가 **없어야** 한다 ──────────────────────
+     2026-09-11 대표님 지시 "공지는 관리자 화면에만 할 거야 본 서비스에는 만들지 마".
+     ★ 없는 것을 확인하는 검사이므로 **있었으면 보였을 자리**에서 잰다 —
+       공지를 실제로 켜 둔 서버를 흉내 내고, 그래도 손님 화면에 안 뜨는지 본다.
+       그냥 빈 서버로 재면 코드를 되살려 놔도 통과한다. */
+  R.head('⑨ 손님 화면에는 공지가 없다');
   const c = await L.openPage(browser, {width:390, height:900, state:L.makeState()});
   await c.setRequestInterception(true);
+  let noticeCalls = 0;
   c.on('request', function(r){
     const u = r.url();
     const j = (o) => ({status:200, contentType:'application/json', body:JSON.stringify(o)});
     if(u.indexOf('/api/kakao') >= 0) return r.respond(j({ready:true, linked:true}));
-    if(u.indexOf('/api/notice') >= 0) return r.respond(j({items:[{id:1, title:'9월 12일 새벽 점검 안내',
-      body:'02:00~03:00 잠시 멈춥니다.', kind:'banner'}]}));
+    if(u.indexOf('/api/notice') >= 0){
+      noticeCalls += 1;
+      return r.respond(j({items:[{id:1, title:'9월 12일 새벽 점검 안내',
+        body:'02:00~03:00 잠시 멈춥니다.', kind:'banner'}]}));
+    }
     if(u.indexOf('/api/') >= 0) return r.respond(j({}));
     r.continue();
   });
   await c.goto(APP, {waitUntil:'load'});
   await L.wait(3000);
-  const bar = await c.evaluate(() => {
-    const b = document.querySelector('#noticeBar');
-    return b ? {text:(b.innerText||'').replace(/\s+/g,' '), count:document.querySelectorAll('#noticeBar').length} : null;
-  });
-  R.note(!!bar, '공지 띠가 손님 화면에 뜬다');
-  R.note(bar && bar.text.indexOf('9월 12일 새벽 점검 안내') >= 0, '공지 제목이 보인다', bar ? bar.text.slice(0,40) : '');
-  /* ★ render() 를 여러 번 불러도 띠가 쌓이면 안 된다 — 실제로 그렇게 만들 뻔했다 */
-  await c.evaluate(() => { for(let i=0;i<3;i++) window.dispatchEvent(new Event('resize')); });
-  await L.wait(600);
-  const cnt = await c.evaluate(() => document.querySelectorAll('#noticeBar').length);
-  R.note(cnt <= 1, '다시 그려도 띠가 쌓이지 않는다', cnt + '개');
-  /* 닫으면 사라지고, 다시 켜도 안 보여야 한다 */
-  await c.evaluate(() => { const x = document.querySelector('.notice-x'); if(x) x.click(); });
-  await L.wait(600);
-  const gone = await c.evaluate(() => !document.querySelector('#noticeBar'));
-  R.note(gone, '닫으면 사라진다');
-  await c.reload({waitUntil:'load'});
-  await L.wait(2500);
-  const still = await c.evaluate(() => !document.querySelector('#noticeBar'));
-  R.note(still, '다시 열어도 그 기기에서는 안 보인다');
+  const cust = await c.evaluate(() => ({
+    bar: !!document.querySelector('#noticeBar, .notice-bar'),
+    text: ((document.querySelector('#app')||{}).innerText || '').replace(/\s+/g,' '),
+  }));
+  R.note(!cust.bar, '손님 화면에 공지 띠가 없다');
+  R.note(cust.text.indexOf('새벽 점검 안내') < 0, '켜 둔 공지가 있어도 손님 화면에 안 샌다');
+  R.note(noticeCalls === 0, '손님 화면이 공지 창구를 부르지도 않는다', noticeCalls + '번');
   R.note(c.__errs.length === 0, 'JS 오류 0건', c.__errs[0] || '');
   await c.close();
+
+  /* ── 관리자를 보고 나서 손님 주소를 열면 ──────────────────────────
+     2026-09-11 대표님 영상 제보: 네이버 앱 [바로가기]로 서비스를 여니
+     "이 화면은 운영자만 볼 수 있어요" 가 떴습니다. 주소에 남아 있던 `#admin` 탓입니다.
+     ★ 같은 탭에서 ① 어드민을 열고 ② 손님 주소로 옮겨 갑니다. */
+  R.head('⑩ 관리자를 보고 나서 손님 주소를 열면');
+  const k = await L.openPage(browser, {width:390, height:900, state:L.makeState()});
+  await k.setRequestInterception(true);
+  wire(k);
+  await k.goto(APP + '#admin', {waitUntil:'load'});
+  await L.wait(2600);
+  const inAdmin = await k.evaluate(() => ({
+    open: !document.querySelector('#adminRoot').hidden, hash: location.hash,
+    url: location.href,
+  }));
+  R.note(inAdmin.open, '먼저 관리자 화면이 열린다');
+  R.note(inAdmin.hash === '', '열린 뒤 주소에 #admin 이 없다', inAdmin.hash || '(빈칸)');
+
+  /* 운영자에게 손해가 없어야 한다 — 새로고침은 보던 자리 그대로 */
+  await k.reload({waitUntil:'load'});
+  await L.wait(2600);
+  const kept = await k.evaluate(() => !document.querySelector('#adminRoot').hidden);
+  R.note(kept, '새로고침하면 관리자 화면 그대로다 (운영자가 안 튕긴다)');
+
+  await k.goto(APP, {waitUntil:'load'});      /* 손님 주소 (해시 없음) */
+  await L.wait(2600);
+  const back = await k.evaluate(() => ({
+    open: !document.querySelector('#adminRoot').hidden,
+    txt: ((document.querySelector('#main')||{}).innerText || '').replace(/\s+/g,' '),
+  }));
+  R.note(!back.open, '손님 주소에서는 관리자 화면이 안 뜬다');
+  R.note(back.txt.indexOf('운영자 전용') < 0, '"운영자 전용" 안내도 안 뜬다',
+         back.txt.slice(0, 40));
+
+  await k.reload({waitUntil:'load'});          /* 새로고침은 손님 화면 그대로여야 한다 */
+  await L.wait(2400);
+  const re = await k.evaluate(() => !document.querySelector('#adminRoot').hidden);
+  R.note(!re, '새로고침해도 관리자 화면으로 안 끌려간다');
+  R.note(k.__errs.length === 0, 'JS 오류 0건', k.__errs[0] || '');
+  await k.close();
 
   await browser.close();
   R.done();

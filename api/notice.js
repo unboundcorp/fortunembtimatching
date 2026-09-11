@@ -1,11 +1,10 @@
 /* =====================================================================
    공지 · 배너 (2026-09-11 대표님 지시 "공지/배너는 나중을 위해서 구현은 해놔라")
    ---------------------------------------------------------------------
-   ★ 창구가 둘이다.
-     · action:'active'  — **아무나** 부를 수 있다. 지금 띄울 것만, 그것도 제목·본문만 준다.
-     · 나머지(list·save·delete) — 운영자만(adminAccessOf). 없으면 404 로 답한다.
-   ★ 'active' 가 내려주는 것에 관리용 값(만든 시각·기간·활성 여부)을 얹지 마라.
-     손님 화면이 쓰지도 않는 값을 내보내는 것이 곧 새는 것이다.
+   ★ **모든 창구가 운영자 전용이다**(adminAccessOf). 허가가 없으면 404 로 답한다.
+   ★ 2026-09-11 대표님 지시 "공지는 관리자 화면에만 할 거야 본 서비스에는 만들지 마" 로
+     손님용 창구(action:'active')를 없앴다. 읽는 데가 없는데 밖에서 부를 수 있는 문을
+     열어 둘 이유가 없다. **나중에 손님께 띄우기로 정하면 그때 다시 만든다.**
    ★ 기간은 비워 둘 수 있다. 시작이 없으면 '지금부터', 끝이 없으면 '계속'이다.
 ===================================================================== */
 import { readBody, json } from './_lib/http.js';
@@ -62,23 +61,6 @@ export default async function handler(req, res) {
   const body = readBody(req);
 
   try {
-    /* ── 손님이 부르는 창구 ─────────────────────────────────────── */
-    if (body.action === 'active') {
-      /* ★ 기간 판정을 PostgREST 질의로 쓰지 않는다. `or=` 를 두 번 적으면 뒤엣것이 앞엣것을
-         덮어써서 조용히 틀린 목록이 나간다(둘 다 걸리는 줄만 나와야 하는데 한쪽만 본다).
-         켜 둔 공지는 많아야 몇 줄이므로 받아서 여기서 거른다 — 눈으로 읽히는 쪽이 낫다. */
-      const rows = await rest('notices?active=eq.true&select=id,title,body,kind,starts_at,ends_at&order=id.desc&limit=50');
-      const now = Date.now();
-      const items = (rows || []).filter((r) => {
-        const s0 = r.starts_at ? new Date(r.starts_at).getTime() : null;
-        const e0 = r.ends_at ? new Date(r.ends_at).getTime() : null;
-        if (s0 !== null && isFinite(s0) && now < s0) return false;
-        if (e0 !== null && isFinite(e0) && now > e0) return false;
-        return true;
-      }).slice(0, 5).map((r) => ({ id: r.id, title: r.title, body: r.body, kind: r.kind }));
-      return json(res, 200, { items });
-    }
-
     /* ── 여기부터는 운영자만 ───────────────────────────────────── */
     const grant = await adminAccessOf(sessionId);
     if (!grant) return json(res, 404, { error: 'not_found', reason: '없는 주소예요.' });

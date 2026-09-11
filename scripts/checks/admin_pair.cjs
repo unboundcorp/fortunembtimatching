@@ -102,16 +102,20 @@ const rowsAt  = api.indexOf("body.action === 'rows'");
 R.note(grantAt > 0, 'stats 에 운영자 판정이 있다');
 R.note(rowsAt > grantAt, '원자료 창구가 운영자 판정 **뒤에** 있다', '판정 ' + grantAt + ' · 창구 ' + rowsAt);
 R.note(/if \(!grant\) return json\(res, 404/.test(api), '허가가 없으면 404 로 답한다');
-/* 공지 — 'active' 만 손님이 부를 수 있고 나머지는 관문 뒤여야 한다 */
-const nActive = notice.indexOf("body.action === 'active'");
+/* 공지 — 2026-09-11 대표님 지시로 **손님용 창구를 없앴다**. 전부 관문 뒤여야 한다. */
 const nGrant  = notice.indexOf('const grant = await adminAccessOf(sessionId)');
 const nList   = notice.indexOf("body.action === 'list'");
 const nSave   = notice.indexOf("body.action === 'save'");
-R.note(nActive > 0 && nGrant > nActive, "공지: 손님용 'active' 가 관문 앞에 있다");
-R.note(nList > nGrant && nSave > nGrant, '공지: list·save 는 관문 **뒤**에 있다');
-R.note(/select=id,title,body,kind,starts_at,ends_at/.test(notice) && /\{ id: r\.id, title: r\.title, body: r\.body, kind: r\.kind \}/.test(notice),
-       '손님에게는 제목·본문·종류만 준다 (관리용 값을 안 얹는다)');
-R.note(/action:'active'/.test(html), '화면이 손님용 창구를 부른다');
+const nDel    = notice.indexOf("body.action === 'delete'");
+R.note(nGrant > 0, '공지: 운영자 판정이 있다');
+R.note(nList > nGrant && nSave > nGrant && nDel > nGrant,
+       '공지: list·save·delete 가 전부 관문 **뒤**에 있다');
+R.note(!/body\.action === 'active'/.test(notice),
+       "공지: 손님용 창구('active')가 없다 — 읽는 데가 없는 문은 열어 두지 않는다");
+R.note(!/action:'active'/.test(codeOnly), '화면도 그 창구를 안 부른다');
+R.note(!/notice-bar|buildNoticeBar|NOTICE_BAR/.test(html),
+       '손님 화면에 공지 띠를 그리는 코드가 없다');
+R.note(/손님 화면에는 안 나갑니다/.test(html), '관리자 화면이 "손님에게는 안 나간다"고 적는다');
 
 R.head('── 시각·날짜');
 R.note(/second:'2-digit'/.test(html), '시각을 초까지 적는다');
@@ -153,12 +157,25 @@ R.note(/\.ad-drawer \.ad-scrim\{z-index:0;\}/.test(html),
        '서랍 안의 어두운 막이 패널보다 아래다 (안 그러면 단추가 하나도 안 눌린다)');
 
 R.head('── 주소에 화면이 적히는가 (새로고침해도 그 자리)');
-R.note(/function adminSyncHash/.test(html), '주소에 화면을 적는다');
-R.note(/function adminFromHash/.test(html), '주소를 읽어 화면을 맞춘다');
-R.note(/keepHash = \/\^#admin\(\\\/\|\$\)\/\.test/.test(html) || /#admin\(/.test(html),
-       '부팅 때 주소를 지우면서 #admin 은 남긴다');
-R.note(/history\.replaceState\(history\.state, '', location\.pathname \+ location\.search \+ want\)/.test(html),
-       'pushState 가 아니라 replaceState 다 (뒤로가기가 어드민 안에서 맴돌지 않게)');
+/* ★ 2026-09-11 대표님 영상 제보 — 주소에 `#admin` 을 남겨 두던 것이
+   방문 기록·즐겨찾기에 박혀서 손님 링크가 운영자 전용 화면을 열었다.
+   이제 주소에는 안 적고 그 탭의 쪽지에만 적는다. 되돌아가지 않게 여기서 지킨다. */
+R.note(/function adminSyncHash/.test(codeOnly), '지금 화면을 적어 둔다');
+R.note(/function adminFromHash/.test(codeOnly), '주소(#admin)를 읽어 화면을 맞춘다');
+R.note(/sessionStorage\.setItem\(ADMIN_SCREEN_KEY/.test(codeOnly),
+       '적는 곳이 주소가 아니라 그 탭의 쪽지다');
+R.note(/function adminDropHash/.test(codeOnly) && /function adminForgetScreen/.test(codeOnly),
+       '주소에서 해시를 걷어 내는 길이 있다');
+R.note(!/location\.search \+ want/.test(codeOnly) && !/keepHash/.test(codeOnly),
+       '주소에 #admin 을 도로 적어 넣지 않는다');
+R.note(/performance\.getEntriesByType\('navigation'\)/.test(codeOnly) && /'reload'/.test(codeOnly),
+       '쪽지로 되살리는 것은 새로고침일 때뿐이다');
+R.note(/adminForgetScreen\(\); ROUTE='today'/.test(codeOnly), '나갈 때 쪽지를 지운다');
+R.note(/history\.replaceState\(\{app:1, route:ROUTE\}, '', location\.pathname \+ location\.search\)/.test(codeOnly),
+       '부팅 때 주소에서 해시를 전부 걷어 낸다');
+R.note(!/history\.pushState/.test(codeOnly.split('function adminSyncHash')[1] || '') ||
+       /history\.replaceState\(history\.state/.test(codeOnly),
+       '어드민은 방문 기록을 쌓지 않는다(replaceState)');
 
 R.head('── 옛 화면을 지웠는가 (두 벌 두면 한쪽만 고치게 된다)');
 R.note(!/function renderStatsRows/.test(html), '옛 원자료 화면을 지웠다');
