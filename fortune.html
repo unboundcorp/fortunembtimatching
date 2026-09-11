@@ -6400,6 +6400,16 @@ function kakaoRefresh(){
     KAKAO.since  = d && d.since ? d.since : null;
     /* 한 번이라도 '돼 있다'를 받았으면 이 기기에 적어 둔다 */
     if(KAKAO.linked && !STATE.kakaoSeen){ STATE.kakaoSeen = true; saveState(); }
+    /* ★ 2026-09-11 대표님 제보 — "로그아웃했는데도 초기 화면 보여지다가 로그인 화면이 뜬다".
+       -------------------------------------------------------------------
+       `kakaoSeen` 은 켜기만 하고 **끄는 자리가 없었습니다.** 그래서 로그아웃한 뒤에도
+       이 기기는 "로그인된 기기"로 남았고, 다음에 열 때 부팅 절이 그 표식을 보고
+       **서비스 화면을 먼저 그렸다가** 서버 답(`linked:false`)을 받고 로그인 화면으로
+       바꿨습니다 — 그것이 대표님이 보신 깜빡임입니다.
+       ★ **서버가 분명히 '아니다'라고 답했을 때만 끕니다.** 통신이 안 돼서 못 물어본 것
+         (`KAKAO.err`)으로 끄면, 2026-09-09에 고친 "쓰고 계시던 분이 튕기던 것"이
+         그대로 되살아납니다. 그 구분이 이 표식의 존재 이유입니다. */
+    if(!KAKAO.linked && STATE.kakaoSeen){ STATE.kakaoSeen = false; saveState(); }
     return KAKAO;
   }).catch(function(){
     KAKAO.err   = true;
@@ -6846,7 +6856,12 @@ function kakaoUnlink(){
     method:'POST', headers:{'content-type':'application/json'},
     credentials:'include', body: JSON.stringify({action:'unlink'})
   }).then(function(r){ return r.json(); }).then(function(d){
-    if(d && d.ok){ KAKAO.linked = false; KAKAO.since = null; }
+    if(d && d.ok){
+      KAKAO.linked = false; KAKAO.since = null;
+      /* ★ 로그아웃했으면 이 기기의 '로그인된 적 있다' 표식도 함께 지웁니다.
+         안 지우면 다음에 열 때 서비스 화면을 먼저 그렸다가 로그인 화면으로 바뀝니다. */
+      if(STATE.kakaoSeen){ STATE.kakaoSeen = false; saveState(); }
+    }
     return d;
   });
 }

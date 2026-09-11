@@ -135,12 +135,42 @@ async function look(browser, site, seen){
        ★ 부팅 직후에는 로그인 여부를 모른다. 그때 서비스 화면을 그려 두었다가 동의 화면으로
          바뀌면 **남의 화면이 잠깐 떴다 사라지는 것**이라 고장으로 보인다.
          모르는 동안에는 아무 말도 안 하는 기다림 화면을 둔다. */
+    /* ⑤ 로그아웃한 뒤 표식이 꺼지는가 (2026-09-11 대표님 제보)
+       ★ 이 검사는 **표식이 켜져 있던 기기**에서 재야 뜻이 있습니다. 꺼진 적 없는 기기로
+         재면 '원래 꺼져 있음'을 확인하는 셈이라 고장을 내도 통과합니다 —
+         2026-09-09에 그 함정(한 명짜리 그룹)에 이미 한 번 걸렸습니다. */
+    R.head('── ⑤ 로그아웃하면 이 기기의 표식이 꺼지는가');
+    {
+      const site3 = await serveSlow({ready:true, linked:false}, 400);
+      const st3 = makeState({onboarded:true});
+      st3.kakaoSeen = true;                    /* 로그인해 뒀던 기기 */
+      const p3 = await openPage(browser, {width:390, height:900, state:st3});
+      await p3.goto(site3.base + '/fortune.html', {waitUntil:'load'});
+      await wait(2200);
+      const after = await p3.evaluate(function(){
+        try{ return JSON.parse(localStorage.getItem('inyeonjeom.v2') || '{}').kakaoSeen; }
+        catch(e){ return 'read-fail'; }
+      });
+      R.note(after === false || after === undefined,
+             '서버가 "로그인 안 돼 있다"고 답하면 표식을 끈다', '표식=' + String(after));
+      const txt3 = await p3.evaluate(function(){ return document.body.innerText; });
+      R.note(txt3.indexOf('만 14세 이상이에요') >= 0, '그리고 로그인 화면에 선다');
+      await p3.close();
+      if(site3.stop) site3.stop();
+    }
+
     R.head('── ④ 첫 그림이 깜빡이지 않는가');
     for(const c of [
       {name:'쓰던 기기인데 로그인이 안 돼 있음', seen:false, onboarded:true,
        kakao:{ready:true, linked:false}, must:'동의'},
       {name:'로그인해 둔 기기(표식 있음)',       seen:true,  onboarded:true,
        kakao:{ready:true, linked:true},  must:'서비스'},
+      /* ★ 2026-09-11 대표님 제보 — "로그아웃했는데도 초기 화면 보여지다가 로그인 화면이 뜬다".
+         `kakaoSeen` 은 켜기만 하고 **끄는 자리가 없었습니다.** 그래서 로그아웃한 뒤에도
+         이 기기는 '로그인된 기기'로 남아, 다음에 열 때 서비스 화면을 먼저 그렸다가
+         로그인 화면으로 바뀌었습니다. 표식을 끄면 기다림 화면으로 시작합니다. */
+      {name:'로그아웃한 기기(표식이 꺼져 있음)',  seen:false, onboarded:true,
+       kakao:{ready:true, linked:false}, must:'동의'},
     ]){
       const site2 = await serveSlow(c.kakao, 500);
       const st = makeState({onboarded:c.onboarded});
