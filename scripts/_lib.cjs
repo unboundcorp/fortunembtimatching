@@ -149,6 +149,20 @@ async function openPage(browser, opt){
   const page = await browser.newPage();
   await page.setViewport({width: opt.width||390, height: opt.height||900,
                           deviceScaleFactor: opt.scale||1});
+  /* ★ 2026-09-15 대표님 제보 "csv파일 왜 맨날 다운로드 받아?" — 제 검사기가 관리자 화면의
+     단추를 **전부** 눌러 보는데, 거기에 [CSV 내려받기] 가 들어 있었습니다. 진짜 다운로드가
+     일어나 대표님 [다운로드] 폴더에 **253개**가 쌓였습니다(실측).
+     ★ 단추를 안 누르는 쪽으로 피하지 않습니다 — 그러면 그 단추가 영영 안 검사됩니다.
+       대신 **브라우저가 파일을 안 받게** 막습니다. 눌리는 것·터지지 않는 것은 그대로 재고,
+       디스크에는 아무것도 안 남습니다.
+     ★ 검사기를 새로 만들 때 openPage 를 쓰면 이 막이가 저절로 걸립니다. 직접 newPage()
+       하지 마십시오. */
+  try{
+    const cdp = await page.createCDPSession();
+    await cdp.send('Browser.setDownloadBehavior', { behavior: 'deny' });
+  }catch(e){
+    try{ await page._client().send('Page.setDownloadBehavior', { behavior: 'deny' }); }catch(e2){}
+  }
   const errs = [];
   page.on('pageerror', function(e){ errs.push('JS: ' + String(e.message).slice(0,140)); });
   page.on('console', function(m){
