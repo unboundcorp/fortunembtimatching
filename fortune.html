@@ -588,6 +588,16 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
      밝게 올린 값이라, 그걸 면으로 깔면 그 위 흰 글자가 3.40:1로 무너진다. 흰 글자 5.66:1. */
 .btn-primary{background:var(--gold-fill);color:#FFFFFF;border-color:var(--gold-fill);font-weight:600;}
 .btn-primary:hover{background:var(--gold-fill-2);border-color:var(--gold-fill-2);}
+/* ★ 2026-09-16 대표님 지시 "카카오 로그인 버튼 우리도 이렇게 바꾸자" (레퍼런스 화면: 노란 단추).
+   카카오가 정한 색과 글자색입니다 — 노랑 #FEE500 · 글자 불투명도 85% 검정.
+   ★ 이 값을 우리 금색(--gold-fill)으로 바꾸지 마십시오. 남의 브랜드 색이고, 손님이
+     '카카오로 가는 단추'라고 알아보는 표식입니다. 말풍선도 같은 이유로 뺄 수 없습니다.
+   ★ 그림 파일을 받아 쓰지 않고 인라인 SVG 로 그립니다 — 이 파일은 바깥 의존 없이 혼자 열립니다. */
+.btn-kakao{background:#FEE500;border-color:#FEE500;color:rgba(0,0,0,0.85);font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;}
+.btn-kakao:hover{background:#F2DA00;border-color:#F2DA00;}
+.btn-kakao[disabled]{background:#F3EBBA;border-color:#F3EBBA;color:rgba(0,0,0,0.35);}
+.btn-kakao svg{flex:0 0 auto;}
 /* 보조 버튼은 테두리만으로는 컨트롤로 안 읽힌다(밝은 바탕에서 헤어라인이 1.4:1). 옅은 면을 깐다. */
 /* 아웃라인 버튼 — 옅은 면 대신 인주 선 1px. 두 종류(채움/아웃라인)로 끝낸다(지시서 5-3). */
 /* ★ 2026-09-02 대표님 지적 — 보조 버튼이 전부 붉은 테두리 + 붉은 글자였다.
@@ -3666,6 +3676,21 @@ function el(tag,attrs,children){
   (children||[]).forEach(function(c){ if(c) e.appendChild(typeof c==='string'?document.createTextNode(c):c); });
   return e;
 }
+/* 카카오 말풍선 표식. 노란 단추 안에 넣는다 (2026-09-16 대표님 지시).
+   ★ 색은 단추 글자색을 그대로 물려받습니다(currentColor) — 따로 적지 마십시오. */
+function kakaoMark(size){
+  var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 18 18');
+  svg.setAttribute('width', String(size || 17));
+  svg.setAttribute('height', String(size || 17));
+  svg.setAttribute('aria-hidden','true');
+  svg.setAttribute('focusable','false');
+  var pth = document.createElementNS('http://www.w3.org/2000/svg','path');
+  pth.setAttribute('fill','currentColor');
+  pth.setAttribute('d','M9 1.5C4.58 1.5 1 4.34 1 7.84c0 2.23 1.46 4.19 3.66 5.31-.16.58-.58 2.1-.66 2.43-.1.4.15.4.31.29.13-.09 2.06-1.4 2.9-1.97.58.08 1.17.13 1.79.13 4.42 0 8-2.84 8-6.19S13.42 1.5 9 1.5z');
+  svg.appendChild(pth);
+  return svg;
+}
 function escapeHtml(str){
   return String(str==null?'':str).replace(/[&<>"']/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -3993,9 +4018,11 @@ function openModal(title, bodyNode, actions, opts){
   box.appendChild(bodyNode);
   var row=el('div',{class:'modal-close-row'});
   (actions||[{label:'닫기',cls:'btn-ghost',onclick:closeModal}]).forEach(function(a){
+    /* kakao:true 를 주면 카카오 말풍선이 글자 앞에 붙는다 (2026-09-16). */
     row.appendChild(el('button',{class:'btn '+(a.cls||'btn-ghost'),
       disabled: a.disabled?'disabled':null,
-      onclick: a.disabled?null:a.onclick},[a.label]));
+      onclick: a.disabled?null:a.onclick},
+      a.kakao ? [kakaoMark(17), a.label] : [a.label]));
   });
   box.appendChild(row);
   backdrop.appendChild(box);
@@ -6681,7 +6708,7 @@ function offerAccountLoginIfStranded(kret){
     '그 아래에 있는 아이디·비밀번호 칸으로 로그인해 보세요. 카카오톡 앱으로 넘어가지 않아서 더 잘 됩니다.'
   ]));
   openModal('로그인이 안 끝났어요', body, [
-    {label:'다시 로그인하기', cls:'btn-primary', onclick:function(){ kakaoStart(pid, true); }},
+    {label:'다시 로그인하기', cls:'btn-kakao', kakao:true, onclick:function(){ kakaoStart(pid, true); }},
     {label:'닫기', cls:'btn-ghost', onclick:closeModal}
   ]);
 }
@@ -7458,7 +7485,7 @@ function openPayLoginModal(product){
     '카카오에서 받는 것은 회원번호 하나뿐입니다. 이름·이메일·전화번호는 받지 않습니다.'
   ]));
   openModal('카카오 로그인이 필요해요', body, [
-    {label:'카카오 계정으로 로그인', cls:'btn-primary', onclick:function(){ kakaoStart(product && product.id); }},
+    {label:'카카오 계정으로 로그인', cls:'btn-kakao', kakao:true, onclick:function(){ kakaoStart(product && product.id); }},
     {label:'닫기', cls:'btn-ghost', onclick:closeModal}
   ], {overlay:true});
 }
@@ -8159,7 +8186,7 @@ function openKakaoModal(){
     '로그인하시면 프로필과 기록이 회사 서버에 저장되고, 언제든 로그아웃하실 수 있습니다.'
   ]));
   openModal('카카오 로그인', body, [
-    {label:'카카오로 로그인', cls:'btn-primary', onclick:kakaoStart},
+    {label:'카카오로 로그인', cls:'btn-kakao', kakao:true, onclick:kakaoStart},
     {label:'닫기', cls:'btn-ghost', onclick:closeModal}
   ]);
 }
@@ -8206,7 +8233,7 @@ function offerLoginForInvite(){
     '카카오에서 받는 것은 회원번호 하나뿐입니다. 이름·이메일·전화번호는 받지 않습니다.'
   ]));
   openModal('카카오 로그인', body, [
-    {label:'카카오로 로그인', cls:'btn-primary', onclick:function(){ kakaoStart(); }},
+    {label:'카카오로 로그인', cls:'btn-kakao', kakao:true, onclick:function(){ kakaoStart(); }},
     {label:'나중에 하기', cls:'btn-ghost', onclick:closeModal}
   ]);
 }
@@ -16354,10 +16381,12 @@ function renderOnboarding(){
      ★ 무엇을 받는지 그 자리에 적습니다. '개인정보'라고만 적으면 고지가 아닙니다. */
   var ageOk = false, privOk = false;
   function consentOk(){ return ageOk && privOk; }
-  var startBtn = el('button',{class:'btn btn-primary', disabled:'disabled', onclick:function(){
+  /* ★ 2026-09-16 대표님 지시 — 이 단추를 누르면 곧바로 카카오로 갑니다. 그래서 카카오
+     노란 단추로 바꿨습니다. **글자는 대표님이 정하신 '동의하고 시작하기' 그대로입니다.** */
+  var startBtn = el('button',{class:'btn btn-kakao', disabled:'disabled', onclick:function(){
     if(!consentOk()) return;
     beginAfterConsent(invited ? 'invited' : null);
-  }},[invited ? '동의하고 시작하기' : '동의하고 시작하기']);
+  }},[kakaoMark(17), invited ? '동의하고 시작하기' : '동의하고 시작하기']);
   function syncConsentUi(){
     var ok = consentOk();
     if(ok) startBtn.removeAttribute('disabled'); else startBtn.setAttribute('disabled','disabled');
