@@ -211,8 +211,11 @@ const R = reporter('그룹 나가기(화면)');
     const ownerModal = await p.evaluate(function(){
       const m = document.querySelector('.modal-box'); return m ? m.innerText : '';
     });
-    R.note(/만드셨어요/.test(ownerModal),
-           '만드신 분에게는 "모임은 그대로 남는다"를 미리 말한다');
+    /* ★ 2026-09-17 — 낱말이 아니라 '무엇을 말하는가'로 봅니다. 예전에는 '만드셨어요'라는
+       높임 어미로 찾았는데, 말투를 손보느라 그 어미를 걷어내자 내용이 그대로인데도 실패로
+       잡혔습니다. 이 검사가 지키려는 것은 어미가 아니라 **모임이 남는다는 고지**입니다. */
+    R.note(/나가도 모임은 그대로 남/.test(ownerModal),
+           '만든 분에게는 "모임은 그대로 남는다"를 미리 말한다');
     await clickText(p, /^나가기$/);
     await wait(1200);
     const own = await p.evaluate(function(k){
@@ -223,7 +226,7 @@ const R = reporter('그룹 나가기(화면)');
                tomb: (st.deletedGroups || []).some(function(x){ return x && x.id === 'testgroup123'; }) };
     }, STORAGE_KEY);
     R.note(!!leaveBody, '서버에서 명단은 빠진다');
-    R.note(own.kept, '★ 만드신 모임은 저장 목록에 그대로 남는다');
+    R.note(own.kept, '★ 만든 모임은 저장 목록에 그대로 남는다');
     R.note(own.token === 'TOKEN-ABC',
            '★ 만든 사람의 열쇠가 살아 있다 (이름 바꾸기·지우기를 계속 할 수 있다)',
            String(own.token));
