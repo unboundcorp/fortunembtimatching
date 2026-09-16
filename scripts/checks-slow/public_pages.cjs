@@ -116,6 +116,20 @@ function pricesFromSource(){
   const dup = (src.match(/이용자는 결제일로부터 7일 이내에 청약철회를 할 수 있습니다/g) || []).length;
   R.note(dup === 1, '제8조 본문이 한 벌만 있다 (약관·환불 페이지가 같이 읽는다)', dup + '곳');
 
+  R.head('⑦ 서비스로 돌아가는 길이 있는가 (2026-09-16 대표님 지적)');
+  const btns = await p1.evaluate(() => [...document.querySelectorAll('#main button')]
+    .map(b => (b.textContent||'').trim()));
+  R.note(btns.some(t => /인연점 홈으로/.test(t)), '맨 위에 [← 인연점 홈으로] 가 있다');
+  R.note(btns.some(t => /^인연점 시작하기$/.test(t)), '맨 아래에 [인연점 시작하기] 가 있다');
+  R.note((await p1.evaluate(() => document.querySelectorAll('#main .scroll-card').length)) >= 5,
+         '상품마다 카드로 나뉘어 있다');
+  await L.clickText(p1, /인연점 홈으로/, {all:true});
+  await L.wait(900);
+  const back = await p1.evaluate(() => ({hash:location.hash,
+    consent:/만 14세 이상이에요/.test(document.body.innerText||'')}));
+  R.note(back.consent === true, '누르면 서비스 입구(동의·로그인 화면)로 간다');
+  R.note(back.hash === '', '서비스로 돌아가면 주소에서 해시가 빠진다', back.hash || '(없음)');
+
   R.note(p1.__errs.length === 0, '상품 화면 JS 오류 0건', p1.__errs[0] || '');
   R.note(p2.__errs.length === 0, '환불 화면 JS 오류 0건', p2.__errs[0] || '');
 

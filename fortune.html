@@ -865,6 +865,17 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .badge-chung{color:var(--red-hi);}
 .badge-hyeong{color:var(--ink-dim);}
 .badge-pa{color:var(--wx-5-text);}
+/* 공개 페이지(상품·환불) 전용 — 2026-09-16. 값과 이름을 한 줄에 놓고, 값은 오른쪽에 붙인다.
+   ★ 새 색을 만들지 않았습니다. 전부 이미 있는 변수입니다. */
+.pub-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.pub-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;}
+.pub-row h3{margin:0;font-size:1rem;}
+.pub-price{white-space:nowrap;font-weight:700;color:var(--gold);font-size:1.05rem;
+  font-variant-numeric:tabular-nums;}
+.pub-term{margin:10px 0 0;padding:9px 11px;border-radius:var(--r-md);
+  background:var(--gold-soft);font-size:.8rem;line-height:1.7;color:var(--ink-dim);}
+.pub-term b{color:var(--ink);font-weight:600;}
+.pub-cta{margin:18px 0 6px;}
 .warn-box{border:1px dashed rgba(221,138,120,.55);background:rgba(221,138,120,.06);border-radius:var(--r-md);padding:14px 16px;font-size:.85rem;color:#6E2314;margin:14px 0;line-height:1.75;}
 
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap-card);}
@@ -9335,73 +9346,98 @@ function productProvisionText(def){
   }
   return '결제하면 그 자리에서 만들어 드려요(1~2분). 만들어진 글은 기한 없이 다시 보실 수 있어요.';
 }
+/* 공개 페이지 맨 위의 [← 인연점 홈으로] — 심사하시는 분도, 주소로 들어온 손님도
+   여기서 막히면 안 됩니다. 누르면 해시를 걷어 내고 서비스 첫 화면으로 갑니다
+   (로그인 안 하신 분은 그 자리에서 동의·로그인 화면을 만납니다 — 그게 서비스 입구입니다). */
+function pubHomeRow(){
+  var row = el('div',{class:'pub-top'});
+  row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+    ROUTE = 'home'; render(); window.scrollTo(0,0);
+  }},['\u2190 인연점 홈으로']));
+  return row;
+}
+function pubStartRow(label){
+  var wrap = el('div',{class:'pub-cta'});
+  wrap.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
+    ROUTE = 'home'; render(); window.scrollTo(0,0);
+  }},[label || '인연점 시작하기']));
+  return wrap;
+}
 function renderPricing(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view'});
+  view.appendChild(pubHomeRow());
   view.appendChild(pageHead('상품 안내', '상품과 가격',
     '모두 한 번만 결제하는 단건 상품이에요. 자동으로 다시 결제되는 정기 결제는 없어요.'));
 
   ['saju_full','mbti_full','compat_full','premium_pass'].forEach(function(key){
     var d = PRODUCTS[key];
     if(!d) return;
-    var card = el('div',{class:'card'});
-    var top = el('div',{style:'display:flex;justify-content:space-between;align-items:baseline;gap:10px;'});
-    top.appendChild(el('h3',{class:'card-title', style:'margin:0;'},[d.name]));
-    top.appendChild(el('strong',{style:'white-space:nowrap;'},[formatWon(d.price)]));
-    card.appendChild(top);
+    var card = el('div',{class:'scroll-card'});
+    var row = el('div',{class:'pub-row'});
+    row.appendChild(el('h3',{},[d.name]));
+    row.appendChild(el('span',{class:'pub-price'},[formatWon(d.price)]));
+    card.appendChild(row);
     if(YEARLY_PRODUCTS[key]){
       card.appendChild(el('p',{class:'biz-hint', style:'margin:4px 0 0;'},
         ['해마다 내용이 달라서 연도별로 따로 결제하는 상품이에요 (예: ' + kstYearOf(Date.now()) + '년).']));
     }
-    card.appendChild(el('p',{style:'margin:8px 0 0;'},[d.desc]));
+    card.appendChild(el('p',{style:'margin:10px 0 0;'},[d.desc]));
     if(d.opens && d.opens.length){
-      var ulx = el('ul',{style:'margin:8px 0 0;padding-left:18px;'});
+      var ulx = el('ul',{style:'margin:10px 0 0;padding-left:18px;'});
       d.opens.forEach(function(line){ ulx.appendChild(el('li',{},[line])); });
       card.appendChild(ulx);
     }
-    card.appendChild(el('p',{class:'biz-hint', style:'margin:8px 0 0;'},
-      ['서비스 제공기간 — ' + productProvisionText(d)]));
+    /* ★ 토스 규정 — "구매자가 서비스제공기간을 인지할 수 있도록 상품페이지에 명확히 기재".
+       그래서 눈에 띄는 칸으로 따로 뺍니다. 지우지 마십시오. */
+    var term = el('p',{class:'pub-term'});
+    term.appendChild(el('b',{},['서비스 제공기간']));
+    term.appendChild(document.createTextNode(' \u2014 ' + productProvisionText(d)));
+    card.appendChild(term);
     view.appendChild(card);
   });
 
-  var note = el('div',{class:'card'});
-  note.appendChild(el('h3',{class:'card-title'},['결제하기 전에 알아두실 것']));
-  var ul2 = el('ul',{style:'margin:8px 0 0;padding-left:18px;'});
+  var note = el('div',{class:'scroll-card'});
+  note.appendChild(el('h3',{},['결제하기 전에 알아두실 것']));
+  var ul2 = el('ul',{style:'margin:10px 0 0;padding-left:18px;'});
   [ '모든 상품은 AI가 만드는 디지털 콘텐츠예요. 결제하면 그 자리에서 만들어져 화면에 나와요.',
     '결제일로부터 7일 이내에 청약철회하실 수 있어요. 다만 유료 콘텐츠를 한 번 열어 보신 경우에는 그 콘텐츠에 한해 청약철회가 제한돼요(전자상거래법 제17조 제2항).',
     '결제는 카카오 계정으로 로그인하신 뒤에 하실 수 있어요. 결제하신 것은 그 카카오 계정에 남아서 기기를 바꾸셔도 그대로 열려요.'
   ].forEach(function(t){ ul2.appendChild(el('li',{},[t])); });
   note.appendChild(ul2);
-  var row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;'});
-  row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='refund'; render(); }},['환불 정책 보기']));
-  row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ openTermsModal(); }},['이용약관']));
-  note.appendChild(row);
+  var row2 = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;'});
+  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='refund'; render(); window.scrollTo(0,0); }},['환불 정책 보기']));
+  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ openTermsModal(); }},['이용약관']));
+  note.appendChild(row2);
   view.appendChild(note);
 
+  view.appendChild(pubStartRow('인연점 시작하기'));
   main.appendChild(view);
 }
 function renderRefund(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view'});
+  view.appendChild(pubHomeRow());
   view.appendChild(pageHead('환불 정책', '청약철회 및 환불',
     '이용약관 제8조와 같은 내용이에요.'));
-  var card = el('div',{class:'card'});
-  var ul3 = el('ol',{style:'margin:0;padding-left:20px;'});
-  refundClauses().forEach(function(t){ ul3.appendChild(el('li',{style:'margin-bottom:8px;'},[t])); });
-  card.appendChild(ul3);
+  var card = el('div',{class:'scroll-card'});
+  var ol = el('ol',{style:'margin:0;padding-left:20px;'});
+  refundClauses().forEach(function(t){ ol.appendChild(el('li',{style:'margin-bottom:10px;'},[t])); });
+  card.appendChild(ol);
   view.appendChild(card);
 
-  var how = el('div',{class:'card'});
-  how.appendChild(el('h3',{class:'card-title'},['어디로 접수하나요']));
-  how.appendChild(el('p',{style:'margin:8px 0 0;'},
-    ['서비스 안의 [문의하기] → [환불 신청]에서 접수하시거나, ' + companyValue(COMPANY.supportEmail) + ' 로 영수증 번호와 함께 보내주셔도 돼요. 어느 쪽이든 같이 처리되고, 요청일부터 3영업일 이내에 처리해 알려드려요.']));
+  var how = el('div',{class:'scroll-card'});
+  how.appendChild(el('h3',{},['어디로 접수하나요']));
+  how.appendChild(el('p',{style:'margin:10px 0 0;'},
+    ['서비스 안의 [문의하기] \u2192 [환불 신청]에서 접수하시거나, ' + companyValue(COMPANY.supportEmail) + ' 로 영수증 번호와 함께 보내주셔도 돼요. 어느 쪽이든 같이 처리되고, 요청일부터 3영업일 이내에 처리해 알려드려요.']));
   var row2 = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;'});
-  row2.appendChild(el('button',{class:'btn btn-primary btn-sm', onclick:function(){ ROUTE='support'; render(); }},['문의하기']));
-  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='pricing'; render(); }},['상품과 가격']));
+  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='support'; render(); window.scrollTo(0,0); }},['문의하기']));
+  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='pricing'; render(); window.scrollTo(0,0); }},['상품과 가격']));
   row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ openTermsModal(); }},['이용약관 전문']));
   how.appendChild(row2);
   view.appendChild(how);
 
+  view.appendChild(pubStartRow('인연점 시작하기'));
   main.appendChild(view);
 }
 function renderSupportPay(){
