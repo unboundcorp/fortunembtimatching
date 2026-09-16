@@ -72,7 +72,7 @@ const APIS = [
     R.head('── 2. 손님이 들어올 수 있는가');
     const txt = await page.evaluate(function(){ return document.body.innerText; });
     R.note(txt.indexOf('만 14세 이상이에요') >= 0, '동의 화면이 뜬다 (관문이 살아 있다)');
-    R.note(txt.indexOf('동의하고 시작하기') >= 0, '[동의하고 시작하기] 단추가 있다');
+    R.note(txt.indexOf('카카오로 로그인하기') >= 0, '[카카오로 로그인하기] 단추가 있다');
 
     /* ── 3. 서버 창구 아홉 개 ──────────────────────────────────── */
     R.head('── 3. 서버 창구');

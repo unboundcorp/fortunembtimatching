@@ -103,16 +103,16 @@ const L = require('../_lib.cjs');
     R.note(both, '동의 칸이 두 개다 (나이 확인과 개인정보 동의는 별개다)');
 
     const off = await page.evaluate(() => {
-      const b = [...document.querySelectorAll('button')].find((x) => /동의하고 시작하기/.test(x.textContent||''));
+      const b = [...document.querySelectorAll('button')].find((x) => /카카오로 로그인하기/.test(x.textContent||''));
       return b ? b.disabled : null;
     });
-    R.note(off === true, '동의 전에는 [동의하고 시작하기]가 안 눌린다');
+    R.note(off === true, '동의 전에는 [카카오로 로그인하기]가 안 눌린다');
 
     /* 하나만 켜도 안 열려야 한다 */
     await page.evaluate(() => document.querySelector('#ageOk14').click());
     await L.wait(150);
     const half = await page.evaluate(() => {
-      const b = [...document.querySelectorAll('button')].find((x) => /동의하고 시작하기/.test(x.textContent||''));
+      const b = [...document.querySelectorAll('button')].find((x) => /카카오로 로그인하기/.test(x.textContent||''));
       return b ? b.disabled : null;
     });
     R.note(half === true, '나이만 체크해서는 안 열린다 (개인정보 동의가 따로 필요하다)');
@@ -123,7 +123,7 @@ const L = require('../_lib.cjs');
   {
     const page = await open('', true);
     await consent(page);
-    await L.clickText(page, /^동의하고 시작하기$/);
+    await L.clickText(page, /^카카오로 로그인하기$/);
     await page.waitForNavigation({waitUntil:'load', timeout:15000}).catch(() => {});
     await L.wait(3200);
     const t = await screen(page);
@@ -139,7 +139,7 @@ const L = require('../_lib.cjs');
   {
     const page = await open(INVITE, true);
     await consent(page);
-    await L.clickText(page, /^동의하고 시작하기$/);
+    await L.clickText(page, /^카카오로 로그인하기$/);
     await page.waitForNavigation({waitUntil:'load', timeout:15000}).catch(() => {});
     await L.wait(3200);
     const t = await screen(page);
@@ -155,7 +155,7 @@ const L = require('../_lib.cjs');
   {
     const page = await open('', false);
     await consent(page);
-    await L.clickText(page, /^동의하고 시작하기$/);
+    await L.clickText(page, /^카카오로 로그인하기$/);
     await L.wait(3000);   /* 지나가게 두기 전에 한 번 더 물어보므로 조금 더 기다린다 */
     const t = await screen(page);
     const m = await page.evaluate(() => {
@@ -270,7 +270,7 @@ const L = require('../_lib.cjs');
     await page.goto(APP, {waitUntil:'load'});
     await L.wait(2500);
     await consent(page);
-    await L.clickText(page, /^동의하고 시작하기$/);
+    await L.clickText(page, /^카카오로 로그인하기$/);
     await page.waitForNavigation({waitUntil:'load', timeout:15000}).catch(() => {});
     await L.wait(3000);
     R.note(page.__went === 1,

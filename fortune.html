@@ -8355,6 +8355,20 @@ function legalRow(k, v){
      휴대폰 번호 수집, 생성 실패 시 자동 재시도). 그대로 옮기면 약관이 거짓이 된다.
      우리가 실제로 하는 것만 적는다.
 ===================================================================== */
+/* 청약철회·환불 조항 — **한 벌만 둡니다.**
+   이용약관 제8조와 공개 환불정책 페이지(#refund)가 같은 것을 읽습니다.
+   ★ 2026-09-16 대표님 지시로 토스 심사에 낼 **공개 주소**가 필요해져 페이지를 만들었는데,
+     법 조항을 두 벌로 베껴 두면 한쪽만 고치게 됩니다. 그러면 화면과 약관이 다른 말을 합니다.
+   ★ 기간(7일)과 열람 제한은 전자상거래법 제17조에서 오는 값입니다. 줄이지 마십시오. */
+function refundClauses(){
+  return [
+    '이용자는 결제일로부터 7일 이내에 청약철회를 할 수 있습니다.',
+    '다만 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조 제2항에 따라, 유료 콘텐츠를 열람한 경우 그 콘텐츠에 한하여 청약철회가 제한됩니다. "열람"이란 결제로 열린 유료 콘텐츠의 내용을 처음으로 표시한 시점을 말합니다.',
+    '결제 오류·중복 결제·콘텐츠 미제공 등 회사의 귀책사유가 있는 경우에는 열람 여부와 관계없이 전액 환불합니다.',
+    '기간제 이용권을 이용하던 중 청약철회하는 경우, 이미 이용한 기간에 해당하는 금액과 이미 열람한 콘텐츠의 대금을 공제한 나머지를 환불합니다.',
+    '환불 요청은 서비스 내 [문의하기] → [환불 신청]에서 접수하시거나, ' + companyValue(COMPANY.supportEmail) + ' 로 영수증 번호와 함께 보내주셔도 됩니다. 어느 쪽으로 하셔도 같이 처리되며, 서비스 내에서 접수하신 경우 처리 상태와 답변을 [내 문의 내역]에서 확인하실 수 있습니다. 회사는 요청일부터 3영업일 이내에 처리하고 결과를 알려드리며, 환불은 결제하신 수단으로 합니다.'
+  ];
+}
 function openTermsModal(){
   var body = el('div',{class:'legal-body'});
   function h(t){ body.appendChild(el('h4',{},[t])); }
@@ -8416,13 +8430,7 @@ function openTermsModal(){
     '결제하신 이용권은 결제 시 로그인하신 카카오 회원번호에 연결됩니다. 다른 기기에서도 같은 카카오 계정으로 로그인하시면 그대로 열립니다. 결제 시 발급된 영수증 번호로도 복원하실 수 있습니다. 한 이용권은 한 번에 한 곳에서만 열리며, 새 기기에서 복원하면 이전 기기에서는 열리지 않습니다.']);
 
   h('제8조 (청약철회 및 환불)');
-  ul([
-    '이용자는 결제일로부터 7일 이내에 청약철회를 할 수 있습니다.',
-    '다만 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조 제2항에 따라, 유료 콘텐츠를 열람한 경우 그 콘텐츠에 한하여 청약철회가 제한됩니다. "열람"이란 결제로 열린 유료 콘텐츠의 내용을 처음으로 표시한 시점을 말합니다.',
-    '결제 오류·중복 결제·콘텐츠 미제공 등 회사의 귀책사유가 있는 경우에는 열람 여부와 관계없이 전액 환불합니다.',
-    '기간제 이용권을 이용하던 중 청약철회하는 경우, 이미 이용한 기간에 해당하는 금액과 이미 열람한 콘텐츠의 대금을 공제한 나머지를 환불합니다.',
-    '환불 요청은 서비스 내 [문의하기] → [환불 신청]에서 접수하시거나, ' + companyValue(COMPANY.supportEmail) + ' 로 영수증 번호와 함께 보내주셔도 됩니다. 어느 쪽으로 하셔도 같이 처리되며, 서비스 내에서 접수하신 경우 처리 상태와 답변을 [내 문의 내역]에서 확인하실 수 있습니다. 회사는 요청일부터 3영업일 이내에 처리하고 결과를 알려드리며, 환불은 결제하신 수단으로 합니다.'
-  ]);
+  ul(refundClauses());
 
   h('제9조 (금지 행위)');
   ul([
@@ -8591,7 +8599,9 @@ var FOOTER_PAGES = [
      한 번 누르면 그 자리에서 펼쳐지고, 내용은 그대로 문서 안에 있다.
    ★ 설정·서비스 소개처럼 실제로 그 정보를 찾으러 오는 화면에서는 펼친 채로 둔다. */
 var FOOTER_FULL_BIZ_ROUTES = { settings:1, about:1, faq:1, guideSaju:1, guideMbti:1, feedback:1,
-  support:1, supportPay:1, supportOrders:1, supportMine:1 };
+  support:1, supportPay:1, supportOrders:1, supportMine:1,
+  /* 공개 페이지라 사업자 정보가 펼쳐진 채로 보여야 한다(전자상거래법 표시사항). */
+  pricing:1, refund:1 };
 function appendFooterOnce(){
   var main = $('#main');
   if(!main) return;
@@ -8618,6 +8628,8 @@ function buildSiteFooter(fullBiz){
   row.appendChild(el('button',{class:'fl', type:'button', onclick:function(){
     openSupport();
   }},['문의하기']));
+  row.appendChild(el('button',{class:'fl', type:'button', onclick:function(){ ROUTE='pricing'; render(); }},['상품과 가격']));
+  row.appendChild(el('button',{class:'fl', type:'button', onclick:function(){ ROUTE='refund'; render(); }},['환불 정책']));
   row.appendChild(el('button',{class:'fl', type:'button', onclick:openTermsModal},['이용약관']));
   row.appendChild(el('button',{class:'fl', type:'button', onclick:openPrivacyModal},['개인정보처리방침']));
   /* R38 — '환불 · 청약철회' 별도 메뉴는 없앴다(대표님 지시). 내용은 사라지지 않았다 —
@@ -8926,7 +8938,8 @@ var ROUTE_LABEL = {
   guideSaju:'사주 가이드', guideMbti:'성격유형 가이드', faq:'자주 묻는 질문',
   feedback:'문의 접수',
   support:'문의하기', supportPay:'결제 문제 확인', supportOrders:'결제·이용권 확인',
-  supportMine:'내 문의 내역', csAdmin:'문의 관리(운영자)', stats:'운영 현황판(운영자)'
+  supportMine:'내 문의 내역', csAdmin:'문의 관리(운영자)', stats:'운영 현황판(운영자)',
+  pricing:'상품과 가격', refund:'환불 정책'
 };
 function feedbackScreenLabel(){
   var r = FEEDBACK_FROM;
@@ -9300,6 +9313,97 @@ function supportOrdersCard(title, note){
 }
 
 /* ── ② 결제했는데 결과가 안 보여요 ─────────────────────────────────── */
+/* =====================================================================
+   공개 페이지 둘 — 로그인 없이 주소로 바로 열립니다 (2026-09-16 대표님 지시)
+   ---------------------------------------------------------------------
+   토스페이먼츠 심사가 **"결제 상품/서비스 확인 가능한 URL"**과 **"환불정책 확인 가능한 URL"**
+   을 요구합니다. 그런데 우리 상품 안내와 환불 기준은 서비스 **안쪽 화면**에만 있었고,
+   게다가 카카오 로그인이 필수라 심사하시는 분은 로그인 없이 상품을 볼 수조차 없었습니다.
+
+   · https://www.inyeonjeom.kr/fortune.html#pricing
+   · https://www.inyeonjeom.kr/fortune.html#refund
+
+   ★ **`GATE_FREE_ROUTES` 와 `NO_PROFILE_OK` 에 함께 넣어야 합니다.** 하나만 열면 다음
+     관문에서 막힙니다 — 2026-09-09 [문의하기]에서 똑같이 당했습니다(눌렀더니 생년월일 입력).
+   ★ **값을 손으로 적지 마십시오.** 금액·기간·열리는 것은 `PRODUCTS` 에서 읽습니다.
+     여기에 숫자를 베껴 두면 값을 바꾼 날 이 페이지가 거짓말을 하고, 그건 표시광고 문제입니다.
+   ★ 토스 규정: "구매자가 서비스제공기간을 인지할 수 있도록 상품페이지에 명확히 기재" —
+     그래서 상품마다 **제공기간 줄**이 반드시 붙습니다. 지우지 마십시오. */
+function productProvisionText(def){
+  if(def.kind === 'pass'){
+    return '결제한 해의 12월 31일 24시(한국시각)까지 이용하실 수 있어요. 최대 ' + passPeriodText() + '이에요.';
+  }
+  return '결제하면 그 자리에서 만들어 드려요(1~2분). 만들어진 글은 기한 없이 다시 보실 수 있어요.';
+}
+function renderPricing(){
+  var main=$('#main'); main.innerHTML='';
+  var view=el('div',{class:'view'});
+  view.appendChild(pageHead('상품 안내', '상품과 가격',
+    '모두 한 번만 결제하는 단건 상품이에요. 자동으로 다시 결제되는 정기 결제는 없어요.'));
+
+  ['saju_full','mbti_full','compat_full','premium_pass'].forEach(function(key){
+    var d = PRODUCTS[key];
+    if(!d) return;
+    var card = el('div',{class:'card'});
+    var top = el('div',{style:'display:flex;justify-content:space-between;align-items:baseline;gap:10px;'});
+    top.appendChild(el('h3',{class:'card-title', style:'margin:0;'},[d.name]));
+    top.appendChild(el('strong',{style:'white-space:nowrap;'},[formatWon(d.price)]));
+    card.appendChild(top);
+    if(YEARLY_PRODUCTS[key]){
+      card.appendChild(el('p',{class:'biz-hint', style:'margin:4px 0 0;'},
+        ['해마다 내용이 달라서 연도별로 따로 결제하는 상품이에요 (예: ' + kstYearOf(Date.now()) + '년).']));
+    }
+    card.appendChild(el('p',{style:'margin:8px 0 0;'},[d.desc]));
+    if(d.opens && d.opens.length){
+      var ulx = el('ul',{style:'margin:8px 0 0;padding-left:18px;'});
+      d.opens.forEach(function(line){ ulx.appendChild(el('li',{},[line])); });
+      card.appendChild(ulx);
+    }
+    card.appendChild(el('p',{class:'biz-hint', style:'margin:8px 0 0;'},
+      ['서비스 제공기간 — ' + productProvisionText(d)]));
+    view.appendChild(card);
+  });
+
+  var note = el('div',{class:'card'});
+  note.appendChild(el('h3',{class:'card-title'},['결제하기 전에 알아두실 것']));
+  var ul2 = el('ul',{style:'margin:8px 0 0;padding-left:18px;'});
+  [ '모든 상품은 AI가 만드는 디지털 콘텐츠예요. 결제하면 그 자리에서 만들어져 화면에 나와요.',
+    '결제일로부터 7일 이내에 청약철회하실 수 있어요. 다만 유료 콘텐츠를 한 번 열어 보신 경우에는 그 콘텐츠에 한해 청약철회가 제한돼요(전자상거래법 제17조 제2항).',
+    '결제는 카카오 계정으로 로그인하신 뒤에 하실 수 있어요. 결제하신 것은 그 카카오 계정에 남아서 기기를 바꾸셔도 그대로 열려요.'
+  ].forEach(function(t){ ul2.appendChild(el('li',{},[t])); });
+  note.appendChild(ul2);
+  var row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;'});
+  row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='refund'; render(); }},['환불 정책 보기']));
+  row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ openTermsModal(); }},['이용약관']));
+  note.appendChild(row);
+  view.appendChild(note);
+
+  main.appendChild(view);
+}
+function renderRefund(){
+  var main=$('#main'); main.innerHTML='';
+  var view=el('div',{class:'view'});
+  view.appendChild(pageHead('환불 정책', '청약철회 및 환불',
+    '이용약관 제8조와 같은 내용이에요.'));
+  var card = el('div',{class:'card'});
+  var ul3 = el('ol',{style:'margin:0;padding-left:20px;'});
+  refundClauses().forEach(function(t){ ul3.appendChild(el('li',{style:'margin-bottom:8px;'},[t])); });
+  card.appendChild(ul3);
+  view.appendChild(card);
+
+  var how = el('div',{class:'card'});
+  how.appendChild(el('h3',{class:'card-title'},['어디로 접수하나요']));
+  how.appendChild(el('p',{style:'margin:8px 0 0;'},
+    ['서비스 안의 [문의하기] → [환불 신청]에서 접수하시거나, ' + companyValue(COMPANY.supportEmail) + ' 로 영수증 번호와 함께 보내주셔도 돼요. 어느 쪽이든 같이 처리되고, 요청일부터 3영업일 이내에 처리해 알려드려요.']));
+  var row2 = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;'});
+  row2.appendChild(el('button',{class:'btn btn-primary btn-sm', onclick:function(){ ROUTE='support'; render(); }},['문의하기']));
+  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='pricing'; render(); }},['상품과 가격']));
+  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ openTermsModal(); }},['이용약관 전문']));
+  how.appendChild(row2);
+  view.appendChild(how);
+
+  main.appendChild(view);
+}
 function renderSupportPay(){
   var main=$('#main'); main.innerHTML='';
   var view=el('div',{class:'view'});
@@ -15262,17 +15366,26 @@ var ADMIN_ROUTES = { stats:1, csAdmin:1 };
    ★ 문의 화면은 프로필도 로그인도 필요 없습니다(닉네임 없이 접수됩니다).
    ★ 여기에 화면을 늘릴 때는 **로그인 없이 봐도 되는 것인지** 먼저 보십시오. */
 var GATE_FREE_ROUTES = { support:1, supportPay:1, supportOrders:1, supportMine:1,
-                         feedback:1, faq:1 };
+                         feedback:1, faq:1,
+                         /* 2026-09-16 — 토스 심사에 낼 공개 주소. 로그인 없이 열려야 한다. */
+                         pricing:1, refund:1 };
 /* ★ 화면 전환은 setRoute() 말고도 코드 곳곳에서 ROUTE='...'; render(); 로 일어난다.
    setRoute 한 군데만 잡으면 절반은 놓친다. 그래서 실제로 그려지는 자리에서 잡는다. */
+/* ★ 2026-09-16 — **공개 페이지만 주소에 남깁니다.**
+   토스 심사에 내는 주소(#pricing · #refund)는 새로고침·즐겨찾기로 같은 화면이 나와야 합니다.
+   그래서 화면 이름에서 해시를 만들어 붙입니다 — 다른 화면으로 가면 저절로 빠집니다.
+   ★ `#admin` 처럼 **남기면 안 되는 해시를 여기에 더하지 마십시오.** 주소창에 남기는 것은
+     곧 손님 방문 기록에 남기는 것입니다(2026-09-11 영상 제보). 공개하라고 만든 주소만입니다. */
+var PUBLIC_HASH_ROUTES = { pricing:1, refund:1 };
+function routeHash(route){ return PUBLIC_HASH_ROUTES[route] ? '#' + route : ''; }
 function pushRouteHistory(route){
   if(!HISTORY_ON || POPPING) return;
   if(route === LAST_ROUTE) return;
-  try{ history.pushState({app:1, route:route}, '', location.pathname + location.search); }catch(e){}
+  try{ history.pushState({app:1, route:route}, '', location.pathname + location.search + routeHash(route)); }catch(e){}
 }
 function pushModalHistory(){
   if(!HISTORY_ON) return;
-  try{ history.pushState({app:1, modal:1, route:ROUTE}, '', location.pathname + location.search); }catch(e){}
+  try{ history.pushState({app:1, modal:1, route:ROUTE}, '', location.pathname + location.search + routeHash(ROUTE)); }catch(e){}
 }
 
 window.addEventListener('popstate', function(e){
@@ -16382,11 +16495,14 @@ function renderOnboarding(){
   var ageOk = false, privOk = false;
   function consentOk(){ return ageOk && privOk; }
   /* ★ 2026-09-16 대표님 지시 — 이 단추를 누르면 곧바로 카카오로 갑니다. 그래서 카카오
-     노란 단추로 바꿨습니다. **글자는 대표님이 정하신 '동의하고 시작하기' 그대로입니다.** */
+     노란 단추로 바꿨습니다.
+     ★ 2026-09-16 대표님 **"카카오로 로그인하기로 바꿔야지"** — 글자도 바꿨습니다.
+       동의는 **위 체크 칸 두 개**가 받습니다(개인정보 보호법 제15조). 단추 글자가
+       동의를 대신하던 것이 아니므로 이렇게 바꿔도 고지는 그대로입니다. */
   var startBtn = el('button',{class:'btn btn-kakao', disabled:'disabled', onclick:function(){
     if(!consentOk()) return;
     beginAfterConsent(invited ? 'invited' : null);
-  }},[kakaoMark(17), invited ? '동의하고 시작하기' : '동의하고 시작하기']);
+  }},[kakaoMark(17), '카카오로 로그인하기']);
   function syncConsentUi(){
     var ok = consentOk();
     if(ok) startBtn.removeAttribute('disabled'); else startBtn.setAttribute('disabled','disabled');
@@ -16427,7 +16543,7 @@ function renderOnboarding(){
      ★ 카카오톡 안에서 열었을 때만 적습니다 — 아닌 분에게는 틀린 말이 됩니다. */
   if(IN_KAKAO_BROWSER){
     wrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
-      '카카오톡에서 열어 주셨네요. 이미 로그인돼 있어서 [동의하고 시작하기]를 누르시면 '
+      '카카오톡에서 열어 주셨네요. 이미 로그인돼 있어서 [카카오로 로그인하기]를 누르시면 '
       + '따로 로그인 화면 없이 바로 넘어가요.'
     ]));
   }
@@ -16459,6 +16575,7 @@ function renderOnboarding(){
     '개인정보처리방침에 따라 개인정보가 수집·이용됩니다.'
   ]));
   var docRow = el('div',{style:'display:flex;gap:10px;justify-content:center;margin-top:4px;flex-wrap:wrap;'});
+  docRow.appendChild(el('button',{class:'fl', type:'button', onclick:function(){ ROUTE='pricing'; render(); }},['상품과 가격']));
   docRow.appendChild(el('button',{class:'fl', type:'button', onclick:openTermsModal},['이용약관']));
   docRow.appendChild(el('button',{class:'fl', type:'button', onclick:openPrivacyModal},['개인정보처리방침']));
   /* ★ 2026-09-09 — 로그인이 필수가 되면서 이 화면이 서비스의 문이 됐습니다.
@@ -26579,7 +26696,7 @@ function render(){
      마법사로 보내면 거기서 또 막힌다(실측으로 잡음 — 누르니 생년월일 입력이 떴다).
      `GATE_FREE_ROUTES` 와 짝이다. 한쪽만 열면 여기서 막힌다. */
   var NO_PROFILE_OK = {home:1, about:1, guideSaju:1, guideMbti:1, faq:1, glossary:1, settings:1, stats:1, csAdmin:1, feedback:1,
-                       support:1, supportPay:1, supportOrders:1, supportMine:1};
+                       support:1, supportPay:1, supportOrders:1, supportMine:1, pricing:1, refund:1};
   if(STATE.profiles.length===0 && !NO_PROFILE_OK[ROUTE]){ startSetupWizard(null); renderSetup(); return; }
   if(ROUTE==='groupJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderGroupJoin(); return; }
   if(ROUTE==='roomJoin'){ $('#appHeader').hidden=true; $('#tabbarWrap').hidden=true; renderRoomJoin(); return; }
@@ -26659,6 +26776,8 @@ function render(){
   else if(ROUTE==='faq') renderFaq();
   else if(ROUTE==='feedback') renderFeedback();
   else if(ROUTE==='support') renderSupport();
+  else if(ROUTE==='pricing') renderPricing();
+  else if(ROUTE==='refund') renderRefund();
   else if(ROUTE==='supportPay') renderSupportPay();
   else if(ROUTE==='supportOrders') renderSupportOrders();
   else if(ROUTE==='supportMine') renderSupportMine();
@@ -26940,6 +27059,8 @@ function grantAllForTest(){
 window.addEventListener('hashchange', function(){
   var h = String(location.hash || '').replace(/^#/, '');
   if(h === 'unlock'){ openTestUnlockModal(); return; }
+  /* 공개 페이지(2026-09-16) — 로그인 없이 주소로 바로 연다. 토스 심사에 내는 주소다. */
+  if(h === 'pricing' || h === 'refund'){ ROUTE = h; render(); return; }
   /* ★ 2026-09-08 대표님 지시 "#admin #stats 똑같은거지? 어드민만 남겨라"
      주소는 #admin 하나다. #stats 는 없앴다 — 같은 곳으로 가는 문이 둘이면
      하나만 고치게 되고, 어느 쪽이 진짜인지도 흐려진다. */
@@ -26950,6 +27071,13 @@ window.addEventListener('hashchange', function(){
 if(String(location.hash||'').replace(/^#/,'') === 'unlock'){
   setTimeout(function(){ openTestUnlockModal(); }, 0);
 }
+/* 공개 페이지는 **주소를 지우지 않습니다** — 심사하시는 분이 새로고침하거나 즐겨찾기에
+   담아도 같은 화면이 나와야 합니다. (관리자 화면의 #admin 을 지우는 것과는 반대 이유입니다:
+   그쪽은 손님 방문 기록을 더럽혀서 지웠고, 이쪽은 공개하라고 만든 주소입니다.) */
+(function(){
+  var hp = String(location.hash||'').replace(/^#/,'');
+  if(hp === 'pricing' || hp === 'refund'){ setTimeout(function(){ ROUTE = hp; render(); }, 0); }
+})();
 (function(){
   var h0 = String(location.hash||'').replace(/^#/,'');
   if(h0 === 'admin' || h0.indexOf('admin/') === 0){
@@ -27043,7 +27171,11 @@ render();
    뜹니다(대표님 영상 제보). 새로고침으로 되살리는 일은 위 쪽지가 맡습니다.
    손님용 해시(초대·모임)는 이미 각자 소비한 뒤라 여기서 지우는 것이 맞다. */
 try{
-  history.replaceState({app:1, route:ROUTE}, '', location.pathname + location.search);
+  /* ★ 2026-09-16 — **공개 페이지(#pricing · #refund)의 해시는 남깁니다.**
+     토스 심사에 내는 주소라 새로고침·즐겨찾기로 같은 화면이 나와야 합니다.
+     `#admin` 을 지우는 이유(손님 방문 기록 오염)와는 반대의 자리입니다 — 이쪽은
+     공개하라고 만든 주소입니다. 이 갈래를 지우면 심사 주소가 홈으로 떨어집니다. */
+  history.replaceState({app:1, route:ROUTE}, '', location.pathname + location.search + routeHash(ROUTE));
 }catch(e){}
 LAST_ROUTE = ROUTE;
 HISTORY_ON = true;

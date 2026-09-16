@@ -71,7 +71,7 @@ const L = require('../_lib.cjs');
     await L.wait(150);
     /* 누르기 직전에 읽을 수 없으니, 누른 뒤 이동이 끝나고 쪽지를 읽는다
        (restoreAfterKakao 가 지우기 전에 읽으려고 아주 짧게 기다린다) */
-    await L.clickText(page, /^동의하고 시작하기$/);
+    await L.clickText(page, /^카카오로 로그인하기$/);
     await page.waitForNavigation({waitUntil:'load', timeout:15000}).catch(() => {});
     /* ★ 쪽지를 이동 중에 읽으려 했더니 프레임이 갈아타는 중이라 못 읽었다. 쪽지가 적히는지는
        아래 소스 검사가 보고, **초대가 실제로 살아 오는지**는 ② 가 끝까지 밟아서 본다.

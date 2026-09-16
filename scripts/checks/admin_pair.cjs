@@ -171,8 +171,15 @@ R.note(!/location\.search \+ want/.test(codeOnly) && !/keepHash/.test(codeOnly),
 R.note(/performance\.getEntriesByType\('navigation'\)/.test(codeOnly) && /'reload'/.test(codeOnly),
        '쪽지로 되살리는 것은 새로고침일 때뿐이다');
 R.note(/adminForgetScreen\(\); ROUTE='today'/.test(codeOnly), '나갈 때 쪽지를 지운다');
-R.note(/history\.replaceState\(\{app:1, route:ROUTE\}, '', location\.pathname \+ location\.search\)/.test(codeOnly),
-       '부팅 때 주소에서 해시를 전부 걷어 낸다');
+/* ★ 2026-09-16 — 공개 페이지(#pricing · #refund)만 주소에 남깁니다(토스 심사 주소).
+   그래서 '전부 걷어 낸다'가 아니라 **'공개 페이지만 남기고 나머지는 걷어 낸다'**로 바뀌었습니다.
+   지키려던 것은 그대로입니다 — 관리자 해시가 주소에 남으면 안 됩니다(2026-09-11 영상 제보). */
+R.note(/history\.replaceState\(\{app:1, route:ROUTE\}, '', location\.pathname \+ location\.search \+ routeHash\(ROUTE\)\)/.test(codeOnly),
+       '부팅 때 공개 페이지 해시만 남기고 걷어 낸다');
+R.note(/var PUBLIC_HASH_ROUTES = \{ pricing:1, refund:1 \}/.test(codeOnly),
+       '주소에 남기는 화면은 공개 페이지 둘뿐이다');
+R.note(!/PUBLIC_HASH_ROUTES\s*=\s*\{[^}]*admin/.test(codeOnly),
+       '관리자 화면은 주소에 남기지 않는다');
 R.note(!/history\.pushState/.test(codeOnly.split('function adminSyncHash')[1] || '') ||
        /history\.replaceState\(history\.state/.test(codeOnly),
        '어드민은 방문 기록을 쌓지 않는다(replaceState)');
