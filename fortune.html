@@ -16794,6 +16794,37 @@ function renderSetupBirth(){
   box.appendChild(pageHead(SETUP.editId?'프로필 수정':'프로필 만들기', '언제 태어나셨어요?',
     '사주 여덟 글자를 계산하는 데 쓰여요.'));
 
+  /* =====================================================================
+     ★ 2026-09-19 대표님 지시 "정보 수정 할 때 이름도 수정할 수 있게 바꿔"
+     ---------------------------------------------------------------------
+     이름 칸은 원래도 있었는데 **3단계 맨 아래**에 있었다. 프로필 만들 때는 그 자리가
+     맞다 — 첫 화면이 "생년월일과 성격유형만 넣으면"이라고 약속하므로 1단계에서
+     이름부터 물으면 그 약속이 깨진다.
+     문제는 **고칠 때**다. [정보 수정]을 누르면 생년월일 화면이 뜨고, 이름 칸은
+     두 단계 더 가야 나온다. 그래서 "이름은 못 고치는구나"로 읽힌다(대표님 제보).
+     ★ 그래서 **수정할 때만** 이 칸을 맨 앞으로 올린다. 만들 때는 그대로 3단계다.
+     ★ 3단계의 이름 칸은 수정 모드에서 **지운다** — 같은 칸이 두 개면 어느 쪽이
+       진짜인지 알 수 없다. 대신 확인 카드에 이름을 적고 [고치기]가 여기로 온다.
+     ★ 입력 중에 render 를 부르지 않는다. 부르면 칸이 새로 만들어져 커서가 날아간다
+       (R103 에서 생년월일로 똑같이 겪었다). '지금 값' 딱지만 직접 갈아 끼운다.
+  ===================================================================== */
+  if(SETUP.editId){
+    var nameBody = el('div',{});
+    /* class 는 생년월일 칸과 같은 `biz-input` — 한 화면에서 칸 너비가 서로 다르면
+       같은 무게의 항목으로 안 읽힙니다(찍어서 보고 맞췄습니다). */
+    var nameInp = el('input',{type:'text', id:'profNameTop', maxlength:'20', class:'biz-input',
+      value:SETUP.name||'', placeholder:'예: 나, 민지 등',
+      oninput:function(e){
+        SETUP.name = e.target.value;
+        if(nameValSpan) nameValSpan.textContent = e.target.value.trim() || '(없음)';
+      }});
+    nameBody.appendChild(nameInp);
+    var nameField = setupField('프로필 이름 (닉네임)', (SETUP.name||'').trim() || '(없음)', nameBody,
+      '빈칸으로 두셔도 돼요. 그러면 화면에서 이름 없이 보여드려요.');
+    var nameValSpan = nameField.querySelector('.inline-pick-val');
+    box.appendChild(nameField);
+  }
+
   /* ── 양력 / 음력 ── 기본값(양력)이 대다수에게 맞아 막지 않는다 ── */
   var calSeg = el('div',{class:'seg-toggle'});
   [['solar','양력'],['lunar','음력']].forEach(function(pair){
@@ -17302,6 +17333,12 @@ function renderSetupStep3(){
   var dateLine = (SETUP.calendarType==='lunar'
       ? ('음력 '+SETUP.year+'. '+SETUP.month+'. '+SETUP.day+' (양력 '+computed.solarY+'. '+computed.solarM+'. '+computed.solarD+')')
       : ('양력 '+SETUP.year+'. '+SETUP.month+'. '+SETUP.day));
+  /* ★ 2026-09-19 — 수정할 때는 이름 칸이 1단계에 있으므로, 확인 화면에서 이름이
+     아예 안 보이면 "이름은 어떻게 됐지?"가 된다. 여기에 적고 [고치기]가 1단계로 간다. */
+  if(SETUP.editId){
+    card.appendChild(el('p',{class:'section-sub', style:'margin:0 0 4px;'},
+      ['이름 · ' + ((SETUP.name||'').trim() || '(없음)')]));
+  }
   card.appendChild(el('h3',{},[dateLine]));
   card.appendChild(el('p',{class:'section-sub', style:'margin-top:6px;'},[
     (SETUP.timeUnknown ? '시간 모름' : (pad2(SETUP.hour)+':'+pad2(SETUP.minute)))
@@ -17328,10 +17365,14 @@ function renderSetupStep3(){
   }
   box.appendChild(tsCard);
 
-  box.appendChild(el('div',{class:'field'},[
-    el('label',{for:'profName'},['프로필 이름 (닉네임)']),
-    el('input',{type:'text',id:'profName',maxlength:'20',value:SETUP.name||'', placeholder:'예: 나, 민지 등', oninput:function(e){ SETUP.name=e.target.value; }})
-  ]));
+  /* ★ 2026-09-19 — 수정할 때는 이름 칸이 1단계 맨 위에 있다(renderSetupBirth 주석).
+     여기에 또 두면 같은 칸이 두 개가 된다. 만들 때만 이 자리에 둔다. */
+  if(!SETUP.editId){
+    box.appendChild(el('div',{class:'field'},[
+      el('label',{for:'profName'},['프로필 이름 (닉네임)']),
+      el('input',{type:'text',id:'profName',maxlength:'20',value:SETUP.name||'', placeholder:'예: 나, 민지 등', oninput:function(e){ SETUP.name=e.target.value; }})
+    ]));
+  }
 
   box.appendChild(el('p',{class:'section-sub', style:'margin:12px 0 0;'},
     [setupSaveHint()]));
