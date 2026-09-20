@@ -8431,15 +8431,23 @@ function refundClauses(){
     '환불 요청은 서비스 내 [문의하기] → [환불 신청]에서 접수하시거나, ' + companyValue(COMPANY.supportEmail) + ' 로 영수증 번호와 함께 보내주셔도 됩니다. 어느 쪽으로 하셔도 같이 처리되며, 서비스 내에서 접수하신 경우 처리 상태와 답변을 [내 문의 내역]에서 확인하실 수 있습니다. 회사는 요청일부터 3영업일 이내에 처리하고 결과를 알려드리며, 환불은 결제하신 수단으로 합니다.'
   ];
 }
-function openTermsModal(){
+/* 약관·개인정보처리방침 창이 함께 쓰는 본문 짜기 — 소제목(h4) · 문단(p) · 목록(ul).
+   2026-09-21 리팩터: 두 창에 글자까지 같은 헬퍼 세 개가 두 벌 있던 것을 한 벌로. */
+function legalBody(){
   var body = el('div',{class:'legal-body'});
-  function h(t){ body.appendChild(el('h4',{},[t])); }
-  function p(t){ body.appendChild(el('p',{},[t])); }
-  function ul(items){
-    var u = el('ul',{});
-    items.forEach(function(t){ u.appendChild(el('li',{},[t])); });
-    body.appendChild(u);
-  }
+  return {
+    body: body,
+    h: function(t){ body.appendChild(el('h4',{},[t])); },
+    p: function(t){ body.appendChild(el('p',{},[t])); },
+    ul: function(items){
+      var u = el('ul',{});
+      items.forEach(function(t){ u.appendChild(el('li',{},[t])); });
+      body.appendChild(u);
+    }
+  };
+}
+function openTermsModal(){
+  var lb = legalBody(), body = lb.body, h = lb.h, p = lb.p, ul = lb.ul;
 
   h('제1조 (목적)');
   p('이 약관은 ' + companyValue(COMPANY.legalName) + '(이하 "회사")가 제공하는 ' + COMPANY.serviceName + ' 서비스(이하 "서비스")의 이용에 관하여 회사와 이용자의 권리·의무를 정합니다.');
@@ -8539,14 +8547,7 @@ function openTermsModal(){
      하지도 않는 수집에 동의를 받는 셈이 된다.
 ===================================================================== */
 function openPrivacyModal(){
-  var body = el('div',{class:'legal-body'});
-  function h(t){ body.appendChild(el('h4',{},[t])); }
-  function p2(t){ body.appendChild(el('p',{},[t])); }
-  function ul(items){
-    var u = el('ul',{});
-    items.forEach(function(t){ u.appendChild(el('li',{},[t])); });
-    body.appendChild(u);
-  }
+  var lb = legalBody(), body = lb.body, h = lb.h, p2 = lb.p, ul = lb.ul;
 
   p2(companyValue(COMPANY.legalName) + '(이하 "회사")는 「개인정보 보호법」 등 관련 법령을 지키며, 다음과 같이 개인정보를 처리합니다.');
 
