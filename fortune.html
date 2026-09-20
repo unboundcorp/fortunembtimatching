@@ -1456,20 +1456,18 @@ button.today-iljin:active{opacity:.7;}
      하나 더 늘어나고, 다음에 팔레트를 고칠 때 이 화면만 빠집니다.
    ★ 대비는 실측해서 맞췄습니다(아래 값들은 자기 틴트 면 위에서 4.5:1 위).
 ===================================================================== */
-/* ── 네 지표 — 글자 표식 + 왼쪽 색 기둥 + 옅은 색 면 ── */
-.ind-block{display:flex;gap:11px;align-items:flex-start;padding:11px 12px;border-radius:var(--r-md);
-  background:var(--ax-tint);border-left:3px solid var(--ax-line);}
+/* ── 네 지표 — 같은 색 글 상자 넷. 테두리·색 기둥·글자 배지 없음
+   (2026-09-21 대표님 지시 "그냥 같은 색깔 텍스트 박스로만 하자 테두리도 없애")
+   제목이 이미 '외향 (E)' 처럼 글자를 품고 있어 배지를 빼도 잃는 것이 없다. ── */
+.ind-block{padding:11px 13px;border-radius:var(--r-md);background:var(--panel-3);}
 .ind-block + .ind-block{margin-top:8px;}
-.ind-mark{flex:0 0 auto;width:29px;height:29px;border-radius:8px;display:flex;align-items:center;justify-content:center;
-  font-family:var(--sans);font-weight:800;font-size:.98rem;color:#fff;background:var(--ax-line);}
-.ind-body{min-width:0;}
-.ind-title{font-family:var(--sans);font-weight:700;font-size:.9rem;color:var(--ax-line);margin-bottom:3px;}
+.ind-title{font-family:var(--sans);font-weight:700;font-size:.9rem;color:var(--ink);margin-bottom:3px;}
 .ind-desc{font-size:.85rem;line-height:1.75;color:var(--ink);}
-/* 축마다 한 색. E/I=화 · S/N=목 · T/F=토 · J/P=수 (오행 색 그대로) */
-.ax-ei{--ax-line:#AC1B18;--ax-tint:rgba(172,27,24,.07);}
-.ax-sn{--ax-line:#286648;--ax-tint:rgba(40,102,72,.08);}
-.ax-tf{--ax-line:#8D622B;--ax-tint:rgba(141,98,43,.10);}
-.ax-jp{--ax-line:#214F7C;--ax-tint:rgba(33,79,124,.08);}
+/* 축마다 한 색 — 주의점·추천 행동의 글자 칩(.note-chip)이 쓴다. E/I=화 · S/N=목 · T/F=토 · J/P=수 */
+.ax-ei{--ax-line:#AC1B18;}
+.ax-sn{--ax-line:#286648;}
+.ax-tf{--ax-line:#8D622B;}
+.ax-jp{--ax-line:#214F7C;}
 
 /* ── 주의점 · 추천 행동 — 뭉친 문단을 줄로 끊고 어느 글자 이야기인지 붙인다 ── */
 .note-list{list-style:none;padding:0;margin:0;}
@@ -19879,18 +19877,14 @@ function renderReport(){
 
   var indCard=el('div',{class:'scroll-card'});
   indCard.appendChild(el('h3',{},['성격유형 4지표 해설']));
-  /* ★ 2026-09-19 — 예전에는 회색 글 네 덩이였다(대표님 지적 "단조롭다").
-     글자 표식 + 왼쪽 색 기둥 + 옅은 색 면으로 네 지표를 눈으로 가른다.
-     색은 axisClass()가 오행 색에서 가져온다 — 여기에 색값을 적지 마라. */
+  /* ★ 2026-09-21 — 같은 색 글 상자 넷(대표님 지시). 09-19에 넣었던 축별 색 면·
+     왼쪽 기둥·글자 배지는 뺐다. 축 색은 아래 주의점·추천 행동의 칩에만 남는다. */
   p.mbti.split('').forEach(function(letter){
     var info=INDICATOR[letter];
-    var blk=el('div',{class:'ind-block '+axisClass(letter)});
-    blk.appendChild(el('div',{class:'ind-mark','aria-hidden':'true'},[letter]));
-    blk.appendChild(el('div',{class:'ind-body'},[
+    indCard.appendChild(el('div',{class:'ind-block'},[
       el('div',{class:'ind-title'},[info.title]),
       el('div',{class:'ind-desc'},[info.strength])
     ]));
-    indCard.appendChild(blk);
   });
   view.appendChild(indCard);
 
