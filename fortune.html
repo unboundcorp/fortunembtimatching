@@ -8110,7 +8110,7 @@ function buildPurchasePanel(){
   }
 
   if(e.purchases.length){
-    card.appendChild(el('p',{class:'biz-hint'},['결제 내역 '+e.purchases.length+'건 · 마지막 '+new Date(e.purchases[e.purchases.length-1].at).toLocaleString('ko-KR')]));
+    card.appendChild(el('p',{class:'biz-hint'},['결제 내역 '+e.purchases.length+'건 · 마지막 '+fmtDateTime(e.purchases[e.purchases.length-1].at)]));
     /* 체험 모드로 연 이용권이 섞여 있으면 실제 결제로 오해할 수 있으므로 분리해서 알린다. */
     var trialCount = e.purchases.filter(function(x){ return x.provider==='trial' || x.provider==='demo'; }).length;
     if(trialCount){
@@ -8217,7 +8217,7 @@ function openKakaoModal(){
       '새 기기에서 열면 이전 기기에서는 닫힙니다.'
     ]));
     if(SYNC.at){
-      body.appendChild(el('p',{class:'biz-hint'},['마지막으로 맞춘 때 — ' + new Date(SYNC.at).toLocaleString('ko-KR')]));
+      body.appendChild(el('p',{class:'biz-hint'},['마지막으로 맞춘 때 — ' + fmtDateTime(SYNC.at)]));
     }
     if(SYNC.err){
       body.appendChild(el('p',{class:'biz-hint warn-text'},['지금은 기기 사이 맞추기가 안 되고 있어요 — ' + SYNC.err]));
@@ -9329,7 +9329,7 @@ function supportEntSummary(){
     /* ★ 연도가 붙은 이름('premium_pass:2026')도 찾아야 한다 — 안 그러면 산 분 화면에
        '전체 이용권'이라고만 떠서 어느 해 것인지 알 수 없다. */
     var pname = (productDef(e.pass.productId) && productDef(e.pass.productId).name) || '전체 이용권';
-    open.push(pname + ' — ' + new Date(e.pass.expiresAt).toLocaleString('ko-KR') + '까지');
+    open.push(pname + ' — ' + fmtDateTime(e.pass.expiresAt) + '까지');
   }
   Object.keys(e.items || {}).forEach(function(k){
     /* ★ PRODUCTS[k]로 보면 'saju_full:2026'이 통째로 빠져, 산 것이 목록에 안 뜬다. */
@@ -9363,9 +9363,9 @@ function supportOrdersCard(title, note){
     card.appendChild(el('div',{class:'sup-ord'},[
       el('span',{class:'sup-chip '+(st[1]==='ok'?'answered':(st[1]==='bad'?'received':'working'))},[st[0]]),
       el('div',{class:'sup-ord-m'},[
-        el('div',{class:'sup-ord-n'},[pname + (o.price ? ' · ' + Number(o.price).toLocaleString('ko-KR') + '원' : '')]),
+        el('div',{class:'sup-ord-n'},[pname + (o.price ? ' · ' + formatWon(o.price) : '')]),
         el('div',{class:'sup-ord-d'},[
-          (when ? new Date(when).toLocaleString('ko-KR') : '시각 모름') +
+          (when ? fmtDateTime(when) : '시각 모름') +
           (o.receiptId ? ' · 영수증 ' + o.receiptId : '')
         ])
       ])
@@ -9677,7 +9677,7 @@ function renderSupportMine(){
       top.appendChild(el('span',{class:'sup-chip '+(t.status||'received')},[t.statusLabel || '접수됨']));
       top.appendChild(el('span',{class:'sup-tk-kind'},[t.kindLabel || '문의']));
       top.appendChild(el('span',{class:'sup-tk-at'},[
-        (t.at ? new Date(t.at).toLocaleString('ko-KR') : '') + ' · ' + t.id + '번'
+        (t.at ? fmtDateTime(t.at) : '') + ' · ' + t.id + '번'
       ]));
       box.appendChild(top);
       if(t.screen || t.orderId){
@@ -9688,7 +9688,7 @@ function renderSupportMine(){
       box.appendChild(el('p',{class:'sup-tk-body'},[t.body || '']));
       if(t.reply){
         var rp = el('div',{class:'sup-tk-reply'});
-        rp.appendChild(el('strong',{},['답변' + (t.repliedAt ? ' · ' + new Date(t.repliedAt).toLocaleString('ko-KR') : '')]));
+        rp.appendChild(el('strong',{},['답변' + (t.repliedAt ? ' · ' + fmtDateTime(t.repliedAt) : '')]));
         rp.appendChild(el('p',{},[t.reply]));
         box.appendChild(rp);
       }
@@ -15979,6 +15979,9 @@ function fmtSignedMin(x){
 }
 function fmtHm(o){ return pad2(o.hour)+':'+pad2(o.minute); }
 function fmtYmd(o){ return o.y+'-'+pad2(o.m)+'-'+pad2(o.d); }
+/* ms·ISO 문자열 → 'YYYY. M. D. 오전 h:mm:ss' (ko-KR). 화면에 시각을 적는 자리는 전부 이것을 쓴다 —
+   2026-09-21 리팩터 전에는 fmtDateTime(x) 이 아홉 곳에 손으로 적혀 있었다. */
+function fmtDateTime(v){ return fmtDateTime(v); }
 function placeLabelOfKey(key, lon){
   if(key && key!=='custom'){
     for(var i=0;i<SajuEngine.BIRTH_PLACES.length;i++){ if(SajuEngine.BIRTH_PLACES[i].key===key) return SajuEngine.BIRTH_PLACES[i].label; }
@@ -18907,13 +18910,13 @@ function openOrderLookup(receiptId){
       row('금액', formatWon(o.amount));
       row('상태', {paid:'결제완료', created:'미완료', failed:'실패'}[o.status] || o.status);
       row('영수증 번호', o.receiptId);
-      row('결제 시각', o.paidAt ? new Date(o.paidAt).toLocaleString('ko-KR') : '—');
-      if(d.passUntil) row('이용권 만료', new Date(d.passUntil).toLocaleString('ko-KR'));
+      row('결제 시각', o.paidAt ? fmtDateTime(o.paidAt) : '—');
+      if(d.passUntil) row('이용권 만료', fmtDateTime(d.passUntil));
       body.appendChild(el('h4',{style:'margin-top:14px;'},['열람 여부']));
       if(d.aiUses > 0){
         body.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[
           'AI 해석을 '+d.aiUses+'회 만들었어요 (한도 '+d.aiQuota+'회). 처음 만든 때: '
-          + (d.firstAiAt ? new Date(d.firstAiAt).toLocaleString('ko-KR') : '—')
+          + (d.firstAiAt ? fmtDateTime(d.firstAiAt) : '—')
         ]));
         body.appendChild(el('p',{class:'biz-hint'},['약관 제8조에 따라 이미 열람한 콘텐츠는 청약철회가 제한됩니다. 다만 회사 귀책(결제 오류·콘텐츠 미제공)이면 열람 여부와 관계없이 전액 환불입니다.']));
       } else {
