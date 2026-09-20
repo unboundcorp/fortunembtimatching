@@ -7967,7 +7967,7 @@ function buildPayLegalLine(){
   ]));
   var links = el('div',{class:'legal-links'});
   links.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
-    closeModal(); ROUTE='faq'; render(); window.scrollTo(0,0);
+    closeModal(); setRoute('faq');
   }},['자주 묻는 질문']));
   links.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ openTermsModal(); }},['이용약관']));
   wrap.appendChild(links);
@@ -8676,7 +8676,7 @@ function buildSiteFooter(fullBiz){
   var row = el('div',{class:'fl-row'});
   FOOTER_PAGES.forEach(function(pair){
     row.appendChild(el('button',{class:'fl', type:'button', onclick:function(){
-      ROUTE = pair[0]; render(); window.scrollTo(0,0);
+      setRoute(pair[0]);
     }},[pair[1]]));
   });
   /* ★ R84 — 개선 의견은 이제 서비스 안에서 쓴다 (대표님 지시, 2026-08-14).
@@ -8735,7 +8735,7 @@ function buildInfoPage(title, sub, build){
   view.appendChild(pageHead(title, sub));
   build(view);
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:18px;', onclick:function(){
-    ROUTE='home'; render(); window.scrollTo(0,0);
+    setRoute('home');
   }},['홈으로 돌아가기']));
   /* 안내 페이지는 그 정보를 찾으러 오는 자리다 — 여기서는 펼쳐 둔다. */
   view.appendChild(buildSiteFooter(true));
@@ -9023,7 +9023,7 @@ function leaveFeedback(){
     : ((FEEDBACK_FROM && FEEDBACK_FROM !== 'feedback') ? FEEDBACK_FROM : 'home');
   FEEDBACK_DRAFT = null; FEEDBACK_STATE = 'writing'; FEEDBACK_ERR = null;
   FEEDBACK_FIXED_KIND = null; FEEDBACK_DONE_ID = null; FEEDBACK_FROM = null;
-  ROUTE = back; render(); window.scrollTo(0,0);
+  setRoute(back);
 }
 function sendFeedback(){
   var d = FEEDBACK_DRAFT || {};
@@ -9047,7 +9047,7 @@ function sendFeedback(){
       FEEDBACK_DONE_ID = (r.j && r.j.id) || null;
       /* 새 문의가 생겼으니 내 문의 내역은 다시 받아와야 한다. */
       SUPPORT_MINE.state = 'idle';
-      FEEDBACK_STATE = 'done'; render(); window.scrollTo(0,0);
+      FEEDBACK_STATE = 'done'; render(); scrollToTopNow();
     })
     .catch(function(e){
       /* ★ 실패해도 쓴 글을 지우지 않는다. 여기서 날리면 다시 쓰라는 말이 되고, 대부분 다시 안 쓴다. */
@@ -9083,13 +9083,13 @@ function renderFeedback(){
       /* 갈래를 고정해 들어오셨어도 '하나 더'는 처음 상태로 돌린다 —
          환불 신청 뒤에 또 환불 신청을 쓰실 이유는 거의 없다. */
       FEEDBACK_FIXED_KIND = null;
-      resetFeedback(); render(); window.scrollTo(0,0);
+      resetFeedback(); render(); scrollToTopNow();
     }},['하나 더 보내기']));
     view.appendChild(done);
     view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:14px;', onclick:function(){
       SUPPORT_MINE.state = 'idle';
       FEEDBACK_DRAFT = null; FEEDBACK_STATE = 'writing'; FEEDBACK_FIXED_KIND = null; FEEDBACK_DONE_ID = null;
-      ROUTE = 'supportMine'; render(); window.scrollTo(0,0);
+      setRoute('supportMine');
     }},['내 문의 내역 보기']));
     view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:leaveFeedback},
       [dirIcon('left'), '돌아가기']));
@@ -9249,7 +9249,7 @@ var ORDER_STATUS = {
 };
 
 function supportGo(route){
-  ROUTE = route; render(); window.scrollTo(0,0);
+  setRoute(route);
 }
 /* 문의하기 열기 — 어느 화면에서 눌렀는지 기억해 둔다(접수할 때 함께 보낸다). */
 function openSupport(){
@@ -9408,14 +9408,14 @@ function provisionLines(){
 function pubHomeRow(){
   var row = el('div',{class:'pub-top'});
   row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
-    ROUTE = 'home'; render(); window.scrollTo(0,0);
+    setRoute('home');
   }},['\u2190 인연점 홈으로']));
   return row;
 }
 function pubStartRow(label){
   var wrap = el('div',{class:'pub-cta'});
   wrap.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
-    ROUTE = 'home'; render(); window.scrollTo(0,0);
+    setRoute('home');
   }},[label || '인연점 시작하기']));
   return wrap;
 }
@@ -9463,7 +9463,7 @@ function renderPricing(){
   ].forEach(function(t){ ul2.appendChild(el('li',{},[t])); });
   note.appendChild(ul2);
   var row2 = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;'});
-  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='refund'; render(); window.scrollTo(0,0); }},['환불 정책 보기']));
+  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ setRoute('refund'); }},['환불 정책 보기']));
   row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ openTermsModal(); }},['이용약관']));
   note.appendChild(row2);
   view.appendChild(note);
@@ -9488,8 +9488,8 @@ function renderRefund(){
   how.appendChild(el('p',{style:'margin:10px 0 0;'},
     ['서비스 안의 [문의하기] \u2192 [환불 신청]에서 접수하거나, ' + companyValue(COMPANY.supportEmail) + ' 로 영수증 번호와 함께 보내도 돼요. 어느 쪽이든 같이 처리되고, 요청일부터 3영업일 안에 처리해서 알려줘요.']));
   var row2 = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;'});
-  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='support'; render(); window.scrollTo(0,0); }},['문의하기']));
-  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='pricing'; render(); window.scrollTo(0,0); }},['상품과 가격']));
+  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ setRoute('support'); }},['문의하기']));
+  row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ setRoute('pricing'); }},['상품과 가격']));
   row2.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ openTermsModal(); }},['이용약관 전문']));
   how.appendChild(row2);
   view.appendChild(how);
@@ -15459,7 +15459,7 @@ window.addEventListener('popstate', function(e){
     }
     /* 사람이 직접 뒤로가기를 눌렀다 — 모달이 떠 있으면 그것부터 닫는다. */
     else if($('#activeModal')){ closeModal(true); }
-    else if(st.route && st.route !== ROUTE){ ROUTE = st.route; render(); window.scrollTo(0,0); }
+    else if(st.route && st.route !== ROUTE){ ROUTE = st.route; render(); scrollToTopNow(); }
   } finally { POPPING = false; }
 });
 
@@ -19285,7 +19285,7 @@ function crossSell(kind){
   card.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
     if(toCompat){ setMode('compat'); ROUTE='compat'; }
     else { setMode('self'); ROUTE='saju'; }
-    render(); window.scrollTo(0,0);
+    render(); scrollToTopNow();
   }},[toCompat ? '궁합 보러 가기' : '내 사주 보러 가기', dirIcon('right')]));
   return card;
 }
@@ -20055,7 +20055,7 @@ function buildYearPicker(){
   years.forEach(function(y){
     var mine = hasAccess(productIdFor('saju_full', y));
     seg.appendChild(el('button',{type:'button','aria-pressed': VIEW_YEAR===y ? 'true':'false',
-      onclick:function(){ if(VIEW_YEAR===y) return; VIEW_YEAR=y; render(); window.scrollTo(0,0); }},
+      onclick:function(){ if(VIEW_YEAR===y) return; VIEW_YEAR=y; render(); scrollToTopNow(); }},
       [String(y)+'년' + (mine ? '' : ' 🔒')]));
   });
   wrap.appendChild(seg);
@@ -21274,7 +21274,7 @@ function renderCompatSummary(p, draft){
   storyCard.appendChild(el('h3',{},['두 분만을 위한 긴 풀이']));
   storyCard.appendChild(el('p',{class:'section-sub'},
     [COMPAT_SECTION_TITLES.length+'개 이야기로, 두 분의 사주 여덟 글자와 성격유형을 함께 읽어 새로 써요. 앞 '+FREE_SECTION_COUNT+'개는 그냥 볼 수 있어요.']));
-  storyCard.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ COMPAT_SUB='story'; render(); window.scrollTo(0,0); }},
+  storyCard.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ COMPAT_SUB='story'; render(); scrollToTopNow(); }},
     ['궁합 풀이 읽어보기', dirIcon('right')]));
   box.appendChild(storyCard);
 
@@ -21283,16 +21283,16 @@ function renderCompatSummary(p, draft){
   var sajuCol=el('div',{class:'scroll-card'});
   sajuCol.appendChild(el('h3',{},['타고난 기운으로 더 보기']));
   sajuCol.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['두 사람의 기운이 어떻게 맞물리는지, 어떤 자리에서 부딪히는지 문장으로 풀어드려요.']));
-  sajuCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='saju'; render(); window.scrollTo(0,0); }},[compatLockMark(), '사주 궁합 자세히 보기', dirIcon('right')]));
+  sajuCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='saju'; render(); scrollToTopNow(); }},[compatLockMark(), '사주 궁합 자세히 보기', dirIcon('right')]));
   var mbtiCol=el('div',{class:'scroll-card'});
   mbtiCol.appendChild(el('h3',{},['성격으로 더 보기']));
   mbtiCol.appendChild(el('p',{},[r.res.categories.chemistry]));
-  mbtiCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='mbti'; render(); window.scrollTo(0,0); }},[compatLockMark(), '성격유형 궁합 자세히 보기', dirIcon('right')]));
+  mbtiCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='mbti'; render(); scrollToTopNow(); }},[compatLockMark(), '성격유형 궁합 자세히 보기', dirIcon('right')]));
   sumGrid.appendChild(sajuCol); sumGrid.appendChild(mbtiCol);
   box.appendChild(sumGrid);
 
   /* 버튼 이름도 일상어로. '합충선' 같은 말은 이 화면(무료 요약)에 남기지 않는다. */
-  box.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ COMPAT_SUB='visual'; render(); window.scrollTo(0,0); }},[compatLockMark(), btnLines('그림으로 한눈에 보기','기운 균형 · 인연 매듭 · 연결선')]));
+  box.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ COMPAT_SUB='visual'; render(); scrollToTopNow(); }},[compatLockMark(), btnLines('그림으로 한눈에 보기','기운 균형 · 인연 매듭 · 연결선')]));
 
   if(!hasAccess(PRODUCTS.compat_full.id)){
     /* 무료로 어디까지 본 것인지, 결제하면 무엇이 더 열리는지 요약 화면에서 바로 알려준다.
@@ -22965,7 +22965,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
       /* ★ R99 — 쌍마다 '심층 궁합 분석'을 바로 아래 붙인다. 예전에는 카드 맨 아래에
          '쌍별 상세 이어보기' 하나로 뭉쳐 있어서, 어느 쌍의 이야기인지도 흐릿했다. */
       blk.appendChild(buildDeepCompatCard(pr.a.person, pr.b.person, pr.res, unlocked, other.name,
-        (function(ai, bi){ return function(){ PAIR_DEEP = {ai:ai, bi:bi}; ROUTE='pairDeep'; render(); window.scrollTo(0,0); }; })(pr.ai, pr.bi)));
+        (function(ai, bi){ return function(){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }; })(pr.ai, pr.bi)));
       card.appendChild(blk);
     });
 
@@ -23266,7 +23266,7 @@ function confirmLeaveGroup(){
           GC_SEL=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0};
           showToast(keepAsOwner ? '이 그룹에서 나왔어요. 만든 모임이라 목록에는 그대로 있어요.'
                                 : '이 그룹에서 나왔어요.');
-          ROUTE='compat'; render(); scrollToTopNow();
+          setRoute('compat');
         })
         .catch(function(err){ showToast(String(err && err.message || '지금은 나갈 수 없어요.')); });
     },
@@ -23436,7 +23436,7 @@ function openSavedGroup(id){
       GC_RELATION = COMPAT_RELATION_DEFAULT; GC_RELATION_SET = false;
     } else if(savedRel){ GC_RELATION = savedRel; GC_RELATION_SET = true; }
     else { GC_RELATION = COMPAT_RELATION_DEFAULT; GC_RELATION_SET = false; }
-    ROUTE='groupCompat'; render(); window.scrollTo(0,0);
+    setRoute('groupCompat');
   }).catch(function(err){
     var st = err && err.status;
     if(st===404){ forgetGroup(id); showToast('이 그룹은 없거나 보관 기간이 지났어요.'); }
@@ -24126,7 +24126,7 @@ function renderGroupCompat(){
     GROUP_VIEW=null; GC_RELATION=COMPAT_RELATION_DEFAULT; GC_RELATION_SET=false;
     GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0};
     GC_AUTOSAVE={sig:null, busy:false};   /* 다음 모임은 다시 판정한다 */
-    ROUTE='compat'; render(); window.scrollTo(0,0);
+    setRoute('compat');
   }},[dirIcon('left'), '궁합 보기로 돌아가기']));
   view.appendChild(pageHead('궁합 보기 · 그룹',
     (GROUP_VIEW && GROUP_VIEW.name) ? GROUP_VIEW.name : (fromLink ? '받은 그룹 궁합' : '모두의 궁합 보기'),
@@ -24221,7 +24221,7 @@ function renderGroupCompat(){
           '새 사이의 유료 풀이는 새로 만들어야 해요. 만들 횟수가 남아 있지 않으면 한 쌍을 더 여셔야 나와요('+formatWon(PRODUCTS.compat_full.price)+').'
         ],
           function(){ GC_RELATION_SET=false; GC_SEL=null;
-            GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); window.scrollTo(0,0); },
+            GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0}; render(); scrollToTopNow(); },
           '바꾸기');
       }},['바꾸기']));
     view.appendChild(relRowG);
