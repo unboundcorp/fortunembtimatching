@@ -3351,6 +3351,7 @@ var INDICATOR = {
   P:{title:'인식 (P)', strength:'상황 변화에 유연하고 즉흥적인 기회를 잘 살려요.', caution:'마감이나 체계가 느슨해져 마무리가 늦어질 수 있어요.'}
 };
 
+var HOURS = ['자시(23~01)','축시(01~03)','인시(03~05)','묘시(05~07)','진시(07~09)','사시(09~11)','오시(11~13)','미시(13~15)','신시(15~17)','유시(17~19)','술시(19~21)','해시(21~23)'];
 
 var MBTI_TEST_Q = [
   {q:'주말에 에너지를 얻는 방법은?', a:['친구들과 어울려 논다','혼자 조용히 쉰다'], dim:0},
@@ -5979,6 +5980,10 @@ var PENDING_GROUP = PENDING_GROUP_JOIN ? null
 if(/[#&](invite|i1|r|g|gj)=/.test(INVITE_HASH_RAW)){
   try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
 }
+/* 링크를 받고 들어오셨는가. 초대(#i1=)·모임(#meet=)·방(#r=)·그룹(/g/ · #g=)·접수(/j/ · #gj=)
+   ★ 주소를 지우기 **전에** 정해 둔다. 바로 아래에서 history.replaceState 로 지운다. */
+var ARRIVED_BY_LINK = !!(PATH_GROUP || PATH_GROUP_JOIN || PENDING_ROOM || PENDING_GROUP
+                      || PENDING_GROUP_JOIN || /[#&](invite|i1|meet)=/.test(INVITE_HASH_RAW));
 var INVITE_CONSUMED = false;
 /* 그룹 링크(#meet=)로 받은 명단. 여기서 바로 읽지 않고 맨 아래 부팅 절에서 채운다 —
    decodeMeetFromHash()는 INVITE_FIELDS 표를 읽는데, 그 표가 이 줄보다 아래에서 만들어지기 때문이다.
@@ -8406,6 +8411,13 @@ function openRestoreModal(){
    화면에 찍히는 사업자 정보는 전부 COMPANY 객체에서 꺼낸다(하드코딩 0건).
    아직 못 받은 값은 지어내지 않고 "확인 중"으로 표시한다.
 ===================================================================== */
+function legalRow(k, v){
+  var missing = companyMissing(v);
+  return el('div',{class:'biz-row'},[
+    el('span',{class:'k'},[k]),
+    el('span',{class:'v', style: missing ? 'color:var(--red-hi);font-weight:400;' : ''},[companyValue(v)])
+  ]);
+}
 /* =====================================================================
    이용약관 — R64에서 간소화 (대표님 지시)
    ---------------------------------------------------------------------
@@ -9784,6 +9796,19 @@ function saveCsReply(row, reply, status){
    손님이 쓰는 화면에 운영자 입구가 섞여 있을 이유가 없다.
    ★ 들어가는 길은 주소 뒤 `#admin` 하나다.
 ===================================================================== */
+function buildAdminNav(cur){
+  var wrap = el('div',{class:'seg-toggle', style:'margin-bottom:16px;'});
+  [['stats','현황'], ['csAdmin','문의']].forEach(function(pair){
+    wrap.appendChild(el('button',{type:'button', 'aria-pressed': cur===pair[0] ? 'true':'false',
+      onclick:(function(r){ return function(){
+        if(ROUTE === r) return;
+        ROUTE = r;
+        if(r === 'stats') loadStats();
+        render();
+      }; })(pair[0])},[pair[1]]));
+  });
+  return wrap;
+}
 /* 운영자가 아닐 때 두 화면이 함께 쓰는 안내. 무엇을 하면 되는지까지 적는다 —
    "볼 수 없어요"만 적으면 대표님도 들어갈 길을 못 찾는다. */
 function buildAdminLocked(){
@@ -11564,6 +11589,14 @@ var Interpreter = {
    계산 로직: 사주(v1 간이) / MBTI — 홈 오늘의 운세·MBTI 리포트에서 계속 사용
 ===================================================================== */
 var ZODIAC = ['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
+var ZODIAC_TRAIT = {
+  쥐:'기민하고 눈치가 빨라 기회를 놓치지 않아요.', 소:'묵묵하고 끈기 있게 목표를 이뤄내요.',
+  호랑이:'추진력이 강하고 자존심이 뚜렷해요.', 토끼:'섬세하고 평화를 중시해요.',
+  용:'포부가 크고 존재감이 뚜렷해요.', 뱀:'통찰력이 깊고 신중해요.',
+  말:'자유롭고 활동적이며 변화를 즐겨요.', 양:'온화하고 정이 많아요.',
+  원숭이:'재치있고 응용력이 뛰어나요.', 닭:'꼼꼼하고 계획적이에요.',
+  개:'의리 있고 신뢰를 중시해요.', 돼지:'너그럽고 낙천적이에요.'
+};
 var ELEMENTS = ['목','화','토','금','수'];
 /* 시안은 오행을 늘 '목(木)'처럼 한글 앞·한자 괄호로 적는다. 계산에는 쓰지 않는다. */
 var ELEMENTS_H = ['木','火','土','金','水'];
@@ -11605,6 +11638,7 @@ var ELEMENT_TRAIT = {
    왜 바꿨나: 예전 금(金) #cfd3d8은 은색이라 어두운 배경에서만 보였고, 밝은 종이 위에서는
    배경 대비 1.3:1로 막대도 캐릭터도 사라졌다. 다섯 색 전부 채도를 낮추고 명도를 내려
    밝은 바탕 대비 4.4~5.5:1(그림 요소 기준 3:1 이상)로 맞췄다. */
+var ELEMENT_COLOR = {목:'#439987',화:'#D76C59',토:'#C9A227',금:'#A8AFC4',수:'#6E8ACB'};
 var ELEMENT_COLOR_ARR = ['#439987','#D76C59','#C9A227','#A8AFC4','#6E8ACB'];
 
 /* =====================================================================
@@ -11642,6 +11676,13 @@ var ELEMENT_COLOR_ARR = ['#439987','#D76C59','#C9A227','#A8AFC4','#6E8ACB'];
 ===================================================================== */
 /* 원을 path로 적는다 — <circle>과 <path>를 섞으면 캔버스(Path2D) 쪽에서 분기가 두 배가 된다. */
 function chC(cx,cy,r){ return 'M'+(cx-r)+' '+cy+' a'+r+' '+r+' 0 1 0 '+(r*2)+' 0 a'+r+' '+r+' 0 1 0 '+(-r*2)+' 0 Z'; }
+function chTint(hex,a){
+  var h=String(hex||'').replace('#','');
+  if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  var n=parseInt(h,16);
+  if(isNaN(n)) return 'rgba(212,175,55,'+a+')';
+  return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+}
 /* 21종이 공유하는 몸. 여기 숫자를 바꾸면 21종이 함께 바뀐다 — 그게 목적이다. */
 var CH_BASE = {
   ring: chC(50,50,45.5),
@@ -11671,8 +11712,25 @@ var CH_MOUTH = {
   cat:   [['strokeInk','M45 51 Q47.5 54.2 50 51 Q52.5 54.2 55 51']],
   wave:  [['strokeInk','M45 52 Q47.5 49.5 50 52 Q52.5 54.5 55 52']]
 };
+/* 부품의 역할 → 칠/선 규칙. SVG와 캔버스가 같은 표를 읽으므로 두 그림이 어긋나지 않는다. */
+var CH_STYLE = {
+  ring:        {stroke:'color', alpha:.40, w:1.6, dash:'3 5'},
+  aura:        {stroke:'color', alpha:.62, w:2.0},
+  crown:       {stroke:'color', w:2.4},
+  crownFill:   {stroke:'color', w:2.2, fill:'tint', fillAlpha:.34},
+  outline:     {stroke:'ink',   w:2.2, fill:'tint', fillAlpha:.18},
+  outlineDeep: {stroke:'ink',   w:2.2, fill:'tint', fillAlpha:.30},
+  strokeInk:   {stroke:'ink',   w:2.2},
+  strokeColor: {stroke:'color', w:2.4},
+  fillInk:     {fill:'ink'},
+  fillColor:   {fill:'color'}
+};
 /* R29 — 네 그룹 색도 밝은 바탕용으로 내렸다. 매핑(NT=금박 / NF=주색 / SJ=수 / SP=목)은 그대로다. */
 var CH_GROUP_COLOR = { NT:'#C9A227', NF:'#D76C59', SJ:'#6E8ACB', SP:'#439987' };
+function mbtiGroupOf(t){
+  if(t[1]==='N') return t[2]==='T' ? 'NT' : 'NF';
+  return t[3]==='J' ? 'SJ' : 'SP';
+}
 /* ---- 오행 5종 ----
    knowledge_saju_mbti.md의 오행 성질(목=뻗음/생장, 화=발산, 토=중재/안정, 금=결단/수렴, 수=흐름/지혜)을
    머리 위 상징과 표정으로 옮겼다. 한 줄 설명은 이 서비스의 반말 다정체를 따르고,
@@ -16636,6 +16694,26 @@ function renderOnboarding(){
   wrap.appendChild(docRow);
   main.appendChild(autoTermify(wrap));
 }
+function buildConstellationSvg(){
+  var pts=[[30,110],[70,40],[140,25],[200,60],[230,130],[180,190],[100,180]];
+  var ns='http://www.w3.org/2000/svg';
+  var svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox','0 0 260 220'); svg.setAttribute('class','constellation'); svg.setAttribute('aria-hidden','true');
+  for(var i=0;i<pts.length-1;i++){
+    var line=document.createElementNS(ns,'line');
+    line.setAttribute('x1',pts[i][0]); line.setAttribute('y1',pts[i][1]);
+    line.setAttribute('x2',pts[i+1][0]); line.setAttribute('y2',pts[i+1][1]);
+    line.style.animationDelay=(i*0.18)+'s';
+    svg.appendChild(line);
+  }
+  pts.forEach(function(p,i){
+    var c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',p[0]); c.setAttribute('cy',p[1]); c.setAttribute('r',4);
+    c.style.animationDelay=(i*0.18+0.15)+'s';
+    svg.appendChild(c);
+  });
+  return svg;
+}
 
 /* =====================================================================
    렌더: 프로필 설정 마법사 (MBTI + 사주 입력 — v2 확장)
@@ -17052,6 +17130,216 @@ function renderSetupMbti(){
   box.appendChild(setupExitRow());
   return box;
 }
+/* ★ R94 — 예전 2단계(창 다섯 개로 값을 고르던 화면)다. 지금은 renderSetupBirth가 대신하며
+   아무도 부르지 않는다. 되돌릴 일이 생길 수 있어 한동안 남겨 둔다 —
+   지울 때는 openValueSheet 쪽 주석(R20)에서 이 함수를 가리키는 설명도 함께 볼 것. */
+function renderSetupStep2_legacy(){
+  var box=el('div',{});
+  box.appendChild(pageHead(SETUP.editId?'프로필 수정 · 2/3':'프로필 만들기 · 2/3', '2. 사주 정보',
+    '태어난 시각을 모르면 "시간 모름"을 골라주세요.'));
+
+  function clampDay(o){ var maxD=o.calendarType==='lunar'?30:daysInMonth(o.year,o.month); if(o.day>maxD) o.day=maxD; }
+
+  /* ★ R20 — 아래 다섯 줄은 전부 "시트에서 고르고 [확인]을 눌러야 반영"되는 구조다.
+     예전에는 고르는 순간 SETUP이 곧바로 바뀌었다. openValueSheet가 편집용 사본을 만들어 주므로
+     여기 있는 콜백은 사본(d)만 만지고, commit에서 한 번에 SETUP으로 옮긴다. */
+
+  /* row 1: 양력/음력 */
+  /* R33 — 고르기 전에는 값을 보여주지 않는다. 기본값이 내가 고른 값처럼 보이면 안 된다. */
+  var calValue = SETUP._set.cal
+    ? ((SETUP.calendarType==='lunar'?'음력':'양력') + (SETUP.calendarType==='lunar' && SETUP.lunarLeap ? ' · 윤달' : ''))
+    : '눌러서 고르기';
+  box.appendChild(settingsRow('양력 / 음력', calValue, function(){
+    openValueSheet('양력 / 음력',
+      function(){ return {calendarType:SETUP.calendarType, lunarLeap:SETUP.lunarLeap}; },
+      function(d, redraw){
+        var body=el('div',{});
+        var seg=el('div',{class:'seg-toggle'});
+        ['solar','lunar'].forEach(function(ct){
+          seg.appendChild(el('button',{type:'button', 'aria-pressed': d.calendarType===ct?'true':'false',
+            onclick:function(){ d.calendarType=ct; redraw(); }},[ct==='solar'?'양력':'음력']));
+        });
+        body.appendChild(seg);
+        if(d.calendarType==='lunar'){
+          body.appendChild(el('div',{class:'chk-row', style:'margin-top:10px;'},[
+            el('input',{type:'checkbox',id:'leapChk', checked: d.lunarLeap?'checked':null,
+              onchange:function(e){ d.lunarLeap=e.target.checked; redraw(); }}),
+            el('label',{for:'leapChk'},['윤달이에요'])
+          ]));
+        }
+        return body;
+      },
+      function(d){ SETUP.calendarType=d.calendarType; SETUP.lunarLeap=d.lunarLeap; clampDay(SETUP); SETUP._set.cal=true; },
+      {savedToast:'달력 종류를 저장했어요.', alwaysConfirm:true});
+  }));
+  if(SETUP.calendarType==='lunar' && (SETUP.year<1900||SETUP.year>2100)){
+    box.appendChild(el('p',{class:'warn-box'},['1900~2100년 범위 밖의 음력 생년월일은 지원하지 않아요. 범위 안의 날짜를 선택하거나 양력으로 입력해야 다음 단계로 진행할 수 있어요.']));
+  }
+
+  /* row 2: 생년월일 */
+  var dateValue = SETUP._set.date ? (SETUP.year+'-'+pad2(SETUP.month)+'-'+pad2(SETUP.day)) : '눌러서 고르기';
+  box.appendChild(settingsRow('생년월일', dateValue, function(){
+    openValueSheet('생년월일',
+      function(){ return {year:SETUP.year, month:SETUP.month, day:SETUP.day, _ok:!!SETUP._set.date}; },
+      function(d, redraw){
+        var body=el('div',{});
+        var f = buildTypedDateInput({
+          year:d.year, month:d.month, day:d.day, isSet:!!SETUP._set.date,
+          isLunar:function(){ return SETUP.calendarType==='lunar'; },
+          onValid:function(y,m,dd){ d.year=y; d.month=m; d.day=dd; d._ok=true; },
+          onInvalid:function(){ d._ok=false; }
+        });
+        body.appendChild(el('p',{class:'section-sub', style:'margin-top:0;'},
+          ['숫자만 치시면 돼요. 1990년 1월 1일이면 19900101.']));
+        body.appendChild(f.node);
+        return body;
+      },
+      function(d){
+        /* 여덟 자리를 다 안 넣었으면 예전 값을 그대로 둔다 — 반쯤 친 값으로 사주를 계산하면 안 된다. */
+        if(!d._ok && !SETUP._set.date){ showToast('생년월일을 여덟 자리로 넣어주세요.'); return; }
+        if(!d._ok){ showToast('생년월일이 여덟 자리가 아니라 이전 값을 그대로 뒀어요.'); return; }
+        SETUP.year=d.year; SETUP.month=d.month; SETUP.day=d.day; clampDay(SETUP); SETUP._set.date=true;
+      },
+      {savedToast:'생년월일을 저장했어요.', alwaysConfirm:true});
+  }));
+
+  /* row 3: 태어난 시각 — R20에서 분(分)까지 받는다(0~59분) */
+  var timeValue = SETUP._set.time ? (SETUP.timeUnknown ? '시간 모름' : (pad2(SETUP.hour)+':'+pad2(SETUP.minute))) : '눌러서 고르기';
+  box.appendChild(settingsRow('태어난 시각', timeValue, function(){
+    openValueSheet('태어난 시각',
+      /* ★ R87 (2026-08-18, 외부 자문 지적) — 고른 적이 있는지(touched)를 함께 들고 다닌다.
+         예전에는 시트를 열자마자 "입력하신 12:00을 … 이 시각으로 계산했습니다"가 떠 있었다.
+         12:00은 손님이 넣은 값이 아니라 셀렉트의 초깃값인데, 화면은 손님이 넣었다고 말하고
+         계산까지 끝난 것처럼 말한다. 아직 아무것도 안 골랐는데 그렇다.
+         한 번이라도 고른 뒤에만 그 안내를 그린다. */
+      function(){ return {timeUnknown:SETUP.timeUnknown, hour:SETUP.hour, minute:SETUP.minute,
+                          touched: !!SETUP._set.time}; },
+      function(d, redraw){
+        var body=el('div',{});
+        if(!d.timeUnknown){
+          var trow=el('div',{class:'row2'});
+          var hSel=el('select',{'aria-label':'태어난 시'});
+          for(var h=0;h<24;h++){ var oh=el('option',{value:h},[pad2(h)+'시']); if(h===d.hour) oh.setAttribute('selected','selected'); hSel.appendChild(oh); }
+          hSel.addEventListener('change', function(e){ d.hour=parseInt(e.target.value,10); d.touched=true; redraw(); });
+          var minSel=el('select',{'aria-label':'태어난 분'});
+          for(var mm=0;mm<60;mm++){ var om2=el('option',{value:mm},[pad2(mm)+'분']); if(mm===d.minute) om2.setAttribute('selected','selected'); minSel.appendChild(om2); }
+          minSel.addEventListener('change', function(e){ d.minute=parseInt(e.target.value,10); d.touched=true; redraw(); });
+          trow.appendChild(el('div',{},[hSel])); trow.appendChild(el('div',{},[minSel]));
+          body.appendChild(el('div',{class:'field'},[trow]));
+        }
+        body.appendChild(el('div',{class:'chk-row'},[
+          el('input',{type:'checkbox',id:'timeUnknownChk', checked: d.timeUnknown?'checked':null,
+            onchange:function(e){ d.timeUnknown=e.target.checked; d.touched=true; redraw(); }}),
+          el('label',{for:'timeUnknownChk'},['시간을 몰라요 (시주는 계산에서 제외돼요)'])
+        ]));
+        if(!d.timeUnknown){
+          if(!d.touched){
+            /* 아직 안 고른 상태 — "계산했습니다"라고 말하지 않는다.
+               고르면 무엇을 보여줄지만 알린다. */
+            body.appendChild(el('p',{class:'ts-note'},[
+              '시각을 고르시면, 그날 태어난 곳에서 해가 떠 있던 위치에 맞춘 시각을 함께 보여드릴게요.'
+            ]));
+          } else {
+            var solar = setupSolarDate({calendarType:SETUP.calendarType, lunarLeap:SETUP.lunarLeap, year:SETUP.year, month:SETUP.month, day:SETUP.day});
+            if(solar){
+              body.appendChild(buildTimeAdjustTable({y:solar.year, m:solar.month, d:solar.day,
+                timeUnknown:false, hour:d.hour, minute:d.minute,
+                lon:SETUP.birthLon, lonKey:SETUP.birthLonKey, adjust:SETUP.solarTimeAdjust,
+                noTerms:true   /* 값 편집 시트 안 */}));
+            }
+          }
+        }
+        return body;
+      },
+      function(d){ SETUP.timeUnknown=d.timeUnknown; SETUP.hour=d.hour; SETUP.minute=d.minute; SETUP._set.time=true; },
+      {savedToast:'태어난 시각을 저장했어요.', alwaysConfirm:true});
+  }));
+
+  /* row 4: 출생지 · 진태양시 보정 (R20 신규) */
+  /* ★ R71 — 안 골랐으면 '눌러서 고르기'이라고 적는다. 예전에는 '서울·경기 (기본)'이라고 적었는데,
+     그러면 이미 정해진 값처럼 보여 그냥 지나친다. 성별·태어난 시각과 같은 방식으로 맞췄다.
+     태어난 시각을 모르면 보정할 시각 자체가 없으므로 '해당 없음'이다. */
+  var placeValue = SETUP.timeUnknown ? '해당 없음'
+    : (SETUP._set.place ? placeLabelOfKey(SETUP.birthLonKey, SETUP.birthLon) : '눌러서 고르기');
+  box.appendChild(settingsRow('출생지', placeValue, function(){
+    var solar = setupSolarDate(SETUP);
+    openValueSheet('출생지 · 태어난 시각 보정(진태양시)',
+      /* ★ R71 — 아직 안 골랐으면 시트 안에서는 서울에서 시작한다. 어딘가에 서 있어야
+         "부산으로 바꾸면 시각이 이렇게 달라진다"는 미리보기를 보여줄 수 있다(경도가 없으면
+         계산이 NaN이 된다). 시트에서 [확인]을 눌러야 비로소 고른 것으로 친다 —
+         화면의 '눌러서 고르기'은 그때 바뀐다. */
+      function(){ return {
+        birthLonKey: SETUP.birthLonKey || 'seoul',
+        birthLon: (typeof SETUP.birthLon === 'number' && isFinite(SETUP.birthLon))
+                    ? SETUP.birthLon : SajuEngine.LON_DEFAULT,
+        solarTimeAdjust: SETUP.solarTimeAdjust }; },
+      function(d, redraw){
+        return buildPlaceAdjustSheetBody(d, redraw, solar ? {
+          y:solar.year, m:solar.month, d:solar.day,
+          timeUnknown:SETUP.timeUnknown, hour:SETUP.hour, minute:SETUP.minute
+        } : null);
+      },
+      function(d){ SETUP.birthLonKey=d.birthLonKey; SETUP.birthLon=d.birthLon; SETUP.solarTimeAdjust=d.solarTimeAdjust; SETUP._set.place=true; },
+      {savedToast:'출생지·보정 설정을 저장했어요.', alwaysConfirm:true});
+  }));
+
+  /* row 5: 성별 — 카드 안에서 바로 고른다 (R79, 외부 실사 지적)
+     ---------------------------------------------------------------------
+     예전에는 이것도 시트를 열어 고르고 [확인]을 눌러야 했다. 프로필 하나 만드는 데
+     최소 열다섯 번을 눌러야 했고, 그것도 아직 아무 결과를 못 본 상태에서였다.
+     고를 것이 둘뿐인 값을 시트에 넣을 이유가 없다 — 여기서 한 번에 고르게 한다.
+     (생년월일·태어난 시각·출생지는 고를 것이 많고 미리보기가 붙어 시트가 맞다.) */
+  var gWrap = el('div',{class:'inline-pick'});
+  gWrap.appendChild(el('div',{class:'inline-pick-head'},[
+    el('span',{class:'inline-pick-label'},['성별']),
+    el('span',{class:'inline-pick-val'},[SETUP._set.gender ? (SETUP.gender==='F'?'여자':'남자') : '눌러서 고르기'])
+  ]));
+  var gseg = el('div',{class:'seg-toggle'});
+  [['F','여자'],['M','남자']].forEach(function(pair){
+    gseg.appendChild(el('button',{type:'button',
+      'aria-pressed': (SETUP._set.gender && SETUP.gender===pair[0]) ? 'true' : 'false',
+      onclick:function(){ SETUP.gender=pair[0]; SETUP._set.gender=true; renderKeepScroll(); }},[pair[1]]));
+  });
+  gWrap.appendChild(gseg);
+  gWrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},
+    ['10년 단위 흐름(대운)이 어느 방향으로 도는지를 정할 때 쓰여요. 잘못 고르면 흐름이 반대로 나와요.']));
+  box.appendChild(gWrap);
+
+  /* =====================================================================
+     R33 — 안 고른 채로 넘어가지 못하게 한다.
+     ---------------------------------------------------------------------
+     예전에는 아무것도 안 만지고 [다음]을 눌러도 넘어갔고, 그러면 2000-01-01 정오생 여자의
+     사주가 조용히 만들어졌다. 화면에는 그 값이 내가 고른 것처럼 보이므로 틀린 줄도 모른다.
+     ★ 네 가지를 막는다 — 생년월일 · 태어난 시각 · 성별 · 출생지.
+       안 고르면 결과가 통째로 달라지고, "그럴듯한 기본값"이라는 게 존재할 수 없는 값들이다.
+       양력/음력(양력)은 대다수에게 맞는 기본값이라 막지 않는다 —
+       모두를 막으면 안전해지는 게 아니라 아무도 끝까지 못 가게 된다.
+
+     ★ R71 — 출생지를 여기 넣었다(대표님 지시). 예전에는 "서울은 대다수에게 맞는 기본값"이라며
+       막지 않았는데, 지방에서 태어난 분에게는 맞지 않는 값이었다. 서울과 부산은 약 8분 차이라
+       시주 경계 근처면 시주가 통째로 달라진다. 대략 열두 명에 한 명꼴이다.
+       태어난 시각을 모르면 보정할 시각이 없으므로 그때는 묻지 않는다.
+  ===================================================================== */
+  var missing = [];
+  if(!SETUP._set.date)   missing.push('생년월일');
+  if(!SETUP._set.time)   missing.push('태어난 시각');
+  if(!SETUP._set.gender) missing.push('성별');
+  if(!SETUP.timeUnknown && !SETUP._set.place) missing.push('출생지');
+  var lunarOut = SETUP.calendarType==='lunar' && (SETUP.year<1900||SETUP.year>2100);
+  var blocked = lunarOut || missing.length>0;
+
+  if(missing.length){
+    box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin-top:16px;'},
+      [missing.join(' · ')+josaOnly(missing[missing.length-1],'을','를')+' 눌러서 골라주세요.']));
+  }
+
+  var nav=el('div',{style:'display:flex;justify-content:space-between;margin-top:20px;'});
+  nav.appendChild(el('button',{class:'btn btn-ghost', onclick:function(){ gotoSetupStep(1); }},['이전']));
+  nav.appendChild(el('button',{class:'btn btn-primary', disabled: blocked?'disabled':null, onclick:function(){ gotoSetupStep(3); }},['다음']));
+  box.appendChild(nav);
+  box.appendChild(setupExitRow());
+  return box;
+}
 /* ★ 2026-09-07 (대표님 제보: "생년월일 입력하고 성격유형 가니깐 맨 위로 안 가고
    아래로 내려진 채라 위가 잘려 보인다" / "다음 페이지 갈 때는 스크롤 다 올려야 하는 거 아니냐")
    마법사 단계는 ROUTE가 안 바뀐다. render()는 ROUTE가 바뀔 때만 스크롤을 올리므로,
@@ -17371,6 +17659,7 @@ var REL_LABEL_BRANCH = SajuEngine.BRANCHES;
    무엇이 부딪히는지 알 수가 없고, 아랫줄은 사주를 아는 사람만 읽을 수 있는 말이다.
    그래서 윗줄에 띠 이름을 넣는다 — 열두 글자는 전부 띠 이름이 있고, 그건 누구나 안다.
    아랫줄(원래 용어)은 그대로 둔다. 다른 서비스와 대조할 방법을 지우지 않는다는 이 화면의 규칙이다. */
+var BRANCH_SEASON = ['겨울','환절기','봄','봄','환절기','여름','여름','환절기','가을','가을','환절기','겨울'];
 var ELEM_SEASON = {'목':'봄','화':'여름','토':'환절기','금':'가을','수':'겨울'};
 /* ★ 2026-08-27 대표님: "가을 글자끼리 뭉쳤다는 말이 도대체 무슨 의미인데?"
    맞는 지적이다. '가을 기운'은 사주를 아는 사람에게만 뜻이 있는 말이라,
@@ -17617,6 +17906,10 @@ function statsDelta(now, before, won){
           + (won ? formatWon(before) : before) + ')',
           cls: pct > 0 ? 'dash-up' : pct < 0 ? 'dash-down' : ''};
 }
+var STATS_ROW_KINDS = {
+  rooms:'궁합 링크', groups:'그룹', orders:'결제',
+  ai:'AI 해석', kakao:'회원', sync:'이어보기'
+};
 /* 사람 한 명을 한 줄로 — 서버 decodePerson 이 준 값을 그대로 잇는다. */
 /* =====================================================================
    관리자 화면 — 사이드바형 셸 (2026-09-11 대표님 지시)
@@ -18869,7 +19162,71 @@ function renderStats(){
   main.appendChild(buildAdminLocked());
 }
 
+/* 받은 개선 의견 — 최근 100건. 화면을 다시 그려도 다시 불러오지 않게 밖에 담는다. */
+var FB_INBOX = null;      /* null = 아직 안 불러옴 */
+var FB_INBOX_ERR = null;
+var FB_INBOX_LOADING = false;
+/* ★ 2026-08-24 — 유형이 다섯으로 늘었는데 여기는 셋만 알고 있어서 결제·환불 문의가
+   내부 이름('paid','refund') 그대로 찍혔다. 화면 쪽 이름표 한 곳에서 가져오게 바꾼다. */
+var FB_KIND_LABEL = FEEDBACK_KIND_LABEL;
 
+function loadFeedbackInbox(){
+  if(FB_INBOX_LOADING) return;
+  FB_INBOX_LOADING = true; FB_INBOX_ERR = null; render();
+  fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},
+    credentials:'include', body:JSON.stringify({action:'list'})})
+    .then(function(r){ return r.json().catch(function(){ return null; }).then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(r){
+      if(!r.ok || !r.d || !r.d.items) throw new Error((r.d && r.d.reason) || '불러오지 못했어요.');
+      FB_INBOX = r.d.items; FB_INBOX_LOADING = false; render();
+    })
+    .catch(function(e){
+      FB_INBOX_ERR = (e && e.message) || '불러오지 못했어요.'; FB_INBOX_LOADING = false; render();
+    });
+}
+function buildFeedbackInbox(){
+  var c = el('div',{class:'scroll-card'});
+  c.appendChild(el('h3',{},['받은 개선 의견']));
+
+  if(FB_INBOX === null && !FB_INBOX_LOADING && !FB_INBOX_ERR){
+    c.appendChild(el('p',{class:'biz-hint'},['손님이 서비스 안에서 보낸 의견이에요. 최근 100건까지 보여드려요.']));
+    c.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:10px;', onclick:loadFeedbackInbox},['불러오기']));
+    return c;
+  }
+  if(FB_INBOX_LOADING){ c.appendChild(el('p',{class:'biz-hint'},['불러오는 중이에요…'])); return c; }
+  if(FB_INBOX_ERR){
+    c.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[FB_INBOX_ERR]));
+    c.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:10px;', onclick:function(){
+      FB_INBOX_ERR=null; loadFeedbackInbox();
+    }},['다시 시도']));
+    return c;
+  }
+  if(!FB_INBOX.length){
+    c.appendChild(el('p',{class:'biz-hint'},['아직 받은 의견이 없어요.']));
+    return c;
+  }
+
+  c.appendChild(el('p',{class:'biz-hint'},[FB_INBOX.length+'건 (최근 순)']));
+  FB_INBOX.forEach(function(f){
+    var item = el('div',{class:'fb-item'});
+    var meta = [new Date(f.created_at).toLocaleString('ko-KR')];
+    if(f.kind) meta.push(FB_KIND_LABEL[f.kind] || f.kind);
+    if(f.screen) meta.push(f.screen);
+    item.appendChild(el('p',{class:'fb-item-meta'},[meta.join(' · ')]));
+    /* ★ 손님이 쓴 글은 el()의 텍스트 노드로만 넣는다. innerHTML로 넣으면 남이 쓴 글이
+       우리 화면에서 태그로 살아난다 — 읽는 사람이 대표님 한 분이라도 규칙은 같다. */
+    item.appendChild(el('p',{class:'fb-item-body'},[f.body]));
+    item.appendChild(el('p',{class:'fb-item-meta'},[
+      f.contact ? ('연락처 — '+f.contact) : '연락처를 적지 않으셨어요 (답을 드릴 길이 없어요)'
+    ]));
+    if(f.mail_error) item.appendChild(el('p',{class:'fb-item-meta', style:'color:var(--red-hi);'},['메일 발송 실패 — '+f.mail_error]));
+    c.appendChild(item);
+  });
+  c.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:12px;', onclick:function(){
+    FB_INBOX=null; loadFeedbackInbox();
+  }},['새로고침']));
+  return c;
+}
 
 /* ★ STATS_LOADING 이 없으면 무한 재귀가 난다 — loadStats 가 맨 앞에서 render() 를 부르고,
    render() 는 자료가 없으면 loadStats() 를 부르기 때문이다. 실제로 그렇게 만들어
@@ -18890,6 +19247,41 @@ function loadStats(){
 }
 
 /* 주문 하나 — 환불 판단용 */
+/* 문의를 보낸 분의 주문 목록 (2026-09-08). 줄을 누르면 그 주문 상세로 이어진다. */
+function openCustomerOrders(feedbackId){
+  var body=el('div',{class:'sheet-body'});
+  body.appendChild(el('p',{class:'biz-hint'},['찾는 중이에요…']));
+  openModal('이 손님의 주문', body, [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
+  fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'},
+    credentials:'include', body:JSON.stringify({action:'customerOrders', feedbackId:feedbackId})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      body.innerHTML='';
+      if(!d || !d.found){
+        body.appendChild(el('p',{class:'biz-hint'},[(d && d.reason) || '찾지 못했어요.']));
+        return;
+      }
+      if(!d.orders || !d.orders.length){
+        body.appendChild(el('p',{class:'biz-hint'},['이 분 이름으로 된 주문이 없어요.']));
+        /* 카카오로 로그인하지 않고 보내셨으면 기기를 바꾸신 경우를 못 짚는다. 그 사실을 적는다. */
+        body.appendChild(el('p',{class:'biz-hint'},[d.hasKakao
+          ? '카카오 계정으로 로그인하신 분인데도 주문이 없어요 — 결제를 안 하신 것으로 보입니다.'
+          : '이 분은 카카오 계정으로 로그인하지 않고 문의를 보내셨어요. 다른 기기에서 결제했다면 여기서는 안 보일 수 있어요.']));
+        return;
+      }
+      body.appendChild(el('p',{class:'biz-hint'},['줄을 누르면 그 주문의 결제·열람 내역이 열려요.']));
+      d.orders.forEach(function(o){
+        body.appendChild(settingsRow(
+          o.name+' · '+({paid:'결제완료',created:'승인 전에 멈춤',failed:'실패'}[o.status]||o.status),
+          formatWon(o.amount) + ' · ' + (o.at ? new Date(o.at).toLocaleDateString('ko-KR') : ''),
+          (function(id){ return function(){ openOrderLookup(id); }; })(o.receiptId)));
+      });
+    })
+    .catch(function(){
+      body.innerHTML='';
+      body.appendChild(el('p',{class:'biz-hint'},['지금은 불러올 수 없어요.']));
+    });
+}
 function openOrderLookup(receiptId){
   var body=el('div',{class:'sheet-body'});
   var status=el('p',{class:'biz-hint'},['찾는 중이에요…']);
@@ -22355,6 +22747,7 @@ var COMPAT_WHY_ITEMS = [
            '특별히 좋지도 나쁘지도 않은 짝이에요',
            '예로부터 부딪힌다고 보는 짝이에요'] }
 ];
+var KO_COUNT = ['','한','두','세','네'];
 var COMPAT_AXIS_NAMES = ['에너지를 얻는 곳(E/I)','정보를 보는 눈(S/N)','판단하는 기준(T/F)','일을 매듭짓는 방식(J/P)'];
 /* ★ R98 (2026-08-19 대표님 지시: "그 사람과 왜 그 점수인지, 그 근거는 무엇인지 써준다며?")
    항목마다 "이 두 사람이라서 이 점수"인 근거를 만든다.
@@ -22787,6 +23180,7 @@ function inlineCharAvatar(m, size){
   box.appendChild(buildCharSvg(ck, size || 34, {mini:true, gender: m && m.gender}));
   return box;
 }
+var DEEP_UID = 0;
 function buildDeepCompatCard(pA, pB, res, unlocked, titleName, onOpen){
   var card = el('div',{class:'deep-card'});
   var headRow = el('div',{class:'deep-card-head'});
@@ -23290,6 +23684,14 @@ function forgetGroup(id){
    ★ 이름이 붙은 주소도 계속 받는다(/g/<번호>/이름). 이미 그렇게 보낸 링크가 있을 수 있다. */
 function groupLink(id){ return location.origin + '/g/' + id; }
 
+/* 궁합 입력의 상대 정보를 링크 한 줄로 만든다(그룹에 넣을 때 쓴다). */
+function compatDraftRow(d){
+  return inviteObjToRow({
+    n:d.name||'', m:d.mbti, y:d.year, mo:d.month, d:d.day,
+    h:d.timeUnknown?null:d.hour, mi:d.timeUnknown?null:(d.minute||0),
+    g:d.gender||'F', lo:d.birthLon, ts:d.solarTimeAdjust?1:0
+  });
+}
 
 /* 값 객체를 다시 한 줄로 되돌린다(inviteRowToObj의 반대). 받은 명단을 다시 저장할 때 쓴다. */
 function inviteObjToRow(o){
@@ -24586,6 +24988,8 @@ var GROUP_TTL_TEXT = '1년';
    서버에도 그 모임이 없으므로 표식도 들고 있을 이유가 없습니다. */
 var GROUP_TTL_MS = 365 * 24 * 60 * 60 * 1000;
 var GROUP_TTL_PHRASE = '그룹을 처음 만든 날로부터 '+GROUP_TTL_TEXT;
+var ROOM_TTL_HOURS_TEXT = ROOM_TTL_TEXT;   /* 옛 이름 — 문구에서 '...시간'으로 쓰던 자리를 함께 정리한다 */
+var ROOM_ENDPOINT = '/api/room';
 var ROOM_POLL_MS = 3000;      /* 몇 초마다 방을 들여다볼지 */
 var ROOM_POLL_MAX_MIN = 10;   /* 이 시간이 지나면 그만 본다 — 배터리를 계속 쓰지 않는다 */
 var ROOM_WAIT = null;         /* {roomId, link, timer, startedAt, ttlHours} — 기다리는 중일 때만 값이 있다 */
@@ -25919,6 +26323,7 @@ var CARD_SERIF = "'Nanum Myeongjo','AppleMyungjo','Batang',serif";
    예전에는 캐릭터를 카드 **맨 아래에 크게** 앉혔다. 그래서 본문이 길어지면 남는 높이가
    150 미만이 되어 **그림을 통째로 안 그렸다 — 오류도 없이 조용히.** 위에 붙박이로 두면
    그 일이 아예 안 생기고, 아래에 생긴 자리를 글로 채울 수 있다. */
+function cardBottomY(h){ return h - 78; }   /* 고지문 위까지가 본문 자리 */
 /* 캐릭터 하나 + 그 옆 글줄. lines = [{t, f(폰트), c(색), dy(직전 줄에서 내려올 만큼)}] */
 function drawCharBeside(ctx, key, gender, x, y, size, lines){
   if(key) drawCharOnCanvas(ctx, key, x, y, size, CARD_INK, gender);
