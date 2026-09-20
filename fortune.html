@@ -15981,7 +15981,7 @@ function fmtHm(o){ return pad2(o.hour)+':'+pad2(o.minute); }
 function fmtYmd(o){ return o.y+'-'+pad2(o.m)+'-'+pad2(o.d); }
 /* ms·ISO 문자열 → 'YYYY. M. D. 오전 h:mm:ss' (ko-KR). 화면에 시각을 적는 자리는 전부 이것을 쓴다 —
    2026-09-21 리팩터 전에는 fmtDateTime(x) 이 아홉 곳에 손으로 적혀 있었다. */
-function fmtDateTime(v){ return fmtDateTime(v); }
+function fmtDateTime(v){ return new Date(v).toLocaleString('ko-KR'); }
 function placeLabelOfKey(key, lon){
   if(key && key!=='custom'){
     for(var i=0;i<SajuEngine.BIRTH_PLACES.length;i++){ if(SajuEngine.BIRTH_PLACES[i].key===key) return SajuEngine.BIRTH_PLACES[i].label; }
