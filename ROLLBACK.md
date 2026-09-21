@@ -125,3 +125,8 @@ GIT_TERMINAL_PROMPT=0 git push
   단 그 뒤에 올라간 다른 수정까지 같이 사라지니 `git log` 를 먼저 보십시오)
 - 되돌린 뒤 `bash verify.sh --full` 을 한 번 더 돌리십시오. `checks/fmt_helpers.cjs` 는 되돌리면 `fmtDateTime` 이
   없어 실패하니, 통째로 되돌릴 때는 그 검사기 파일도 함께 되돌아갑니다(a290c97 안에 있음).
+
+**같은 날 2차(R5~R7 + 칩 정렬 + 오늘 히어로 한 줄 삭제)** — 커밋: `935c93a`(히어로 줄) · `8f47955`(칩 정렬) ·
+`035b13a`(R5) · `e7bf400`(R6) · `b75f8a8`(R7 CSS). 되돌릴 때는 역시 최신 것부터 `git revert`.
+R5 를 되돌리면 `checks/report_kit.cjs` 가 실패하니 그 검사기도 같은 커밋 안에서 함께 돌아갑니다.
+
