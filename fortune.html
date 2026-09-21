@@ -1085,12 +1085,19 @@ button.today-iljin:active{opacity:.7;}
   font-family:var(--sans);font-weight:800;font-size:.68rem;letter-spacing:.02em;color:var(--gold);
   background:var(--gold-soft);vertical-align:1px;}
 /* 오늘의 총평 — 줄마다 어디서 온 말인지 칩(2026-09-21). 색은 성격유형 화면의 잘 맞는 편/맞춰가야(.fit-head)와 같은 값 */
-.tsum-list{list-style:none;padding:0;margin:0;}
-.tsum-row{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--gold-line);}
-.tsum-row:first-child{border-top:0;padding-top:0;}
-.tsum-row:last-child{padding-bottom:0;}
-.tsum-chip{flex:0 0 auto;margin-top:3px;padding:2px 7px;border-radius:999px;font-family:var(--sans);font-weight:800;
-  font-size:.7rem;white-space:nowrap;color:var(--ink-dim);background:rgba(31,28,23,.07);}
+/* ★ 2026-09-21 대표님 지적 "가장 큰 때 이거 4글자라 아래 단락들이랑 문단 너비가 안 맞는다" —
+   칩 칸 폭을 줄마다 따로 잡으면 글 시작선이 어긋난다. 목록 하나를 표(grid)로 짜서 칩 칸을 가장 넓은
+   칩에 맞춰 **모든 줄이 공유**하게 한다. li 는 display:contents 라 칸 둘이 표에 직접 놓인다.
+   같은 규칙을 대운 상자(.dw-list)·궁합 출처 칩(.reason-list.tagged)에도 건다. */
+.tsum-list{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:max-content 1fr;column-gap:9px;}
+.tsum-row{display:contents;}
+.tsum-row > span{padding:8px 0;border-top:1px solid var(--gold-line);}
+.tsum-row:first-child > span{border-top:0;padding-top:0;}
+.tsum-row:last-child > span{padding-bottom:0;}
+.tsum-row > .tsum-txt:only-child{grid-column:1 / -1;}
+.tsum-cell{justify-self:start;}
+.tsum-chip{display:inline-block;margin-top:3px;padding:2px 7px;border-radius:999px;font-family:var(--sans);font-weight:800;
+  font-size:.7rem;line-height:1.4;white-space:nowrap;color:var(--ink-dim);background:rgba(31,28,23,.07);}
 .tsum-row.good .tsum-chip{color:#fff;background:#286648;}
 .tsum-row.care .tsum-chip{color:#fff;background:#9B1A15;}
 .tsum-row.end .tsum-chip{color:var(--gold);background:var(--gold-soft);}
@@ -1185,11 +1192,16 @@ button.today-iljin:active{opacity:.7;}
 .reason-list li{position:relative;padding:6px 0 6px 16px;font-size:.88rem;line-height:1.7;color:var(--ink);}
 .reason-list li::before{content:'';position:absolute;left:2px;top:15px;width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.65;}
 /* 출처 칩이 붙는 목록(궁합 '두 분은 이런 사이예요' · 2026-09-21) — 점 대신 칩이 자리를 가른다 */
-.reason-list.tagged li{display:flex;gap:8px;align-items:flex-start;padding:7px 0;}
+.reason-list.tagged{display:grid;grid-template-columns:max-content 1fr;column-gap:8px;}
+.reason-list.tagged li{display:contents;}
 .reason-list.tagged li::before{display:none;}
-.reason-list.tagged li + li{border-top:1px solid var(--gold-line);}
-.reason-src{flex:0 0 auto;margin-top:3px;padding:2px 7px;border-radius:999px;font-family:var(--sans);font-weight:800;
-  font-size:.68rem;white-space:nowrap;color:var(--ink-dim);background:rgba(31,28,23,.07);}
+.reason-list.tagged li > span{padding:7px 0;}
+.reason-list.tagged li + li > span{border-top:1px solid var(--gold-line);}
+.reason-list.tagged li:first-child > span{padding-top:0;}
+.reason-list.tagged li > .reason-txt:only-child{grid-column:1 / -1;}
+.reason-cell{justify-self:start;}
+.reason-src{display:inline-block;margin-top:3px;padding:2px 7px;border-radius:999px;font-family:var(--sans);font-weight:800;
+  font-size:.68rem;line-height:1.4;white-space:nowrap;color:var(--ink-dim);background:rgba(31,28,23,.07);}
 .reason-src.sj{color:var(--gold);background:var(--gold-soft);}
 .reason-src.mb{color:#214F7C;background:rgba(33,79,124,.1);}
 .reason-txt{min-width:0;word-break:keep-all;}
@@ -2159,12 +2171,14 @@ body.admin-on .mode-fab, body.admin-on .admin-flag{display:none !important;}
    R21에 따로 만들었던 밝은 회색(#b7ada0)은 이유가 사라졌으므로 변수로 되돌린다. */
 .dw-now{font-size:.82rem;color:var(--ink-dim);line-height:1.7;margin-top:6px;}
 /* 대운 상자 줄 — 칩 색은 오늘 총평(.tsum-chip)과 같은 값 (2026-09-21) */
-.dw-list{list-style:none;padding:0;margin:0;}
-.dw-row{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-top:1px solid rgba(31,28,23,.1);}
-.dw-row:first-child{border-top:0;padding-top:0;}
-.dw-row:last-child{padding-bottom:0;}
-.dw-chip{flex:0 0 auto;margin-top:4px;padding:2px 7px;border-radius:999px;font-family:var(--sans);font-weight:800;
-  font-size:.7rem;white-space:nowrap;color:var(--ink-dim);background:rgba(31,28,23,.07);}
+.dw-list{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:max-content 1fr;column-gap:9px;}
+.dw-row{display:contents;}
+.dw-row > span{padding:8px 0;border-top:1px solid rgba(31,28,23,.1);}
+.dw-row:first-child > span{border-top:0;padding-top:0;}
+.dw-row:last-child > span{padding-bottom:0;}
+.dw-cell{justify-self:start;}
+.dw-chip{display:inline-block;margin-top:4px;padding:2px 7px;border-radius:999px;font-family:var(--sans);font-weight:800;
+  font-size:.7rem;line-height:1.4;white-space:nowrap;color:var(--ink-dim);background:rgba(31,28,23,.07);}
 .dw-row.best .dw-chip{color:#fff;background:var(--gold);}
 .dw-row.now .dw-chip{color:#fff;background:var(--ink);}
 .dw-row.next .dw-chip{color:#286648;background:rgba(40,102,72,.12);}
@@ -14904,7 +14918,7 @@ function buildPairReasonBlock(pA, pB, res, compact){
     items.slice(0, max).forEach(function(t, i){
       var li = el('li',{});
       var src = srcs && srcs[i];
-      if(src) li.appendChild(el('span',{class:'reason-src '+(src==='성격'?'mb':src==='사주'?'sj':'zd')},[src]));
+      if(src) li.appendChild(el('span',{class:'reason-cell'},[el('span',{class:'reason-src '+(src==='성격'?'mb':src==='사주'?'sj':'zd')},[src])]));
       li.appendChild(el('span',{class:'reason-txt'},[t]));
       ul.appendChild(li);
     });
@@ -19438,7 +19452,7 @@ function renderHome(){
     var ul = el('ul',{class:'tsum-list'});
     lines.forEach(function(r){
       var li = el('li',{class:'tsum-row '+r.kind});
-      if(r.tag) li.appendChild(el('span',{class:'tsum-chip'},[r.tag]));
+      if(r.tag) li.appendChild(el('span',{class:'tsum-cell'},[el('span',{class:'tsum-chip'},[r.tag])]));
       li.appendChild(el('span',{class:'tsum-txt'},[r.text]));
       ul.appendChild(li);
     });
@@ -19796,7 +19810,7 @@ function renderSaju(){
   var peakList = el('ul',{class:'dw-list'}); peakBox.appendChild(peakList);
   function dwRow(kind, tag, body){
     var li = el('li',{class:'dw-row '+kind});
-    li.appendChild(el('span',{class:'dw-chip'},[tag]));
+    li.appendChild(el('span',{class:'dw-cell'},[el('span',{class:'dw-chip'},[tag])]));
     li.appendChild(Array.isArray(body) ? el('span',{class:'dw-txt'},body) : el('span',Object.assign({class:'dw-txt'},body)));
     peakList.appendChild(li);
   }
