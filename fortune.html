@@ -1185,6 +1185,15 @@ button.today-iljin:active{opacity:.7;}
 .reason-list{margin:0;padding:0;list-style:none;}
 .reason-list li{position:relative;padding:6px 0 6px 16px;font-size:.88rem;line-height:1.7;color:var(--ink);}
 .reason-list li::before{content:'';position:absolute;left:2px;top:15px;width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.65;}
+/* 출처 칩이 붙는 목록(궁합 '두 분은 이런 사이예요' · 2026-09-21) — 점 대신 칩이 자리를 가른다 */
+.reason-list.tagged li{display:flex;gap:8px;align-items:flex-start;padding:7px 0;}
+.reason-list.tagged li::before{display:none;}
+.reason-list.tagged li + li{border-top:1px solid var(--gold-line);}
+.reason-src{flex:0 0 auto;margin-top:3px;padding:2px 7px;border-radius:999px;font-family:var(--sans);font-weight:800;
+  font-size:.68rem;white-space:nowrap;color:var(--ink-dim);background:rgba(31,28,23,.07);}
+.reason-src.sj{color:var(--gold);background:var(--gold-soft);}
+.reason-src.mb{color:#214F7C;background:rgba(33,79,124,.1);}
+.reason-txt{min-width:0;word-break:keep-all;}
 .share-preview{display:flex;justify-content:center;margin:18px 0;}
 .share-preview canvas{border:1px solid rgba(31,28,23,0.144);border-radius:var(--r-md);max-width:100%;height:auto;box-shadow:var(--shadow-soft);}
 
@@ -14816,24 +14825,30 @@ function mbtiAxisLines(a, b){
 /* 궁합 결과 하나를 받아 "잘 맞는 점 / 조심할 점"을 만든다. 근거는 전부 이미 계산된 값이다. */
 function buildPairReasons(pA, pB, res){
   var good = [], care = [];
+  /* ★ 2026-09-21 — 문장마다 어디서 온 말인지(성격·사주·띠)를 나란히 적어 둔다(goodSrc·careSrc).
+     화면이 칩을 달기 위해서이고, good·care 문자열 배열은 그대로라 공유 카드·모임 화면은 안 바뀐다. */
+  var goodSrc = [], careSrc = [];
+  function pushGood(src, t){ good.push(t); goodSrc.push(src); }
+  function pushCare(src, t){ care.push(t); careSrc.push(src); }
+  function unshiftGood(src, t){ good.unshift(t); goodSrc.unshift(src); }
   var A = pA.name || '이쪽', B = pB.name || '상대방';
 
   /* ① MBTI 네 축 */
   var ax = mbtiAxisLines(pA.mbti, pB.mbti);
-  good = good.concat(ax.good);
-  care = care.concat(ax.care);
+  ax.good.forEach(function(t){ pushGood('성격', t); });
+  ax.care.forEach(function(t){ pushCare('성격', t); });
   if(pA.mbti && pA.mbti === pB.mbti){
-    good.unshift('둘 다 '+pA.mbti+'예요. 말하지 않아도 통하는 대목이 많은 대신, 같은 약점도 함께 가지고 있으니 서로가 서로의 거울이 되기 쉬워요.');
+    unshiftGood('성격', '둘 다 '+pA.mbti+'예요. 말하지 않아도 통하는 대목이 많은 대신, 같은 약점도 함께 가지고 있으니 서로가 서로의 거울이 되기 쉬워요.');
   }
 
   /* ② 오행 — 사주에서 두 사람의 일간이 어떤 관계인지 */
   var st = res.saju && res.saju.elemTerm ? res.saju.elemTerm : '';
   if(/상생/.test(st)){
-    good.push(res.saju.elemRel + ' 한쪽이 애쓰지 않아도 기운이 흐르는 방향이라, 오래 볼수록 편해지는 조합이에요.');
+    pushGood('사주', res.saju.elemRel + ' 한쪽이 애쓰지 않아도 기운이 흐르는 방향이라, 오래 볼수록 편해지는 조합이에요.');
   } else if(/비화/.test(st)){
-    good.push(res.saju.elemRel + ' 결이 닮아 처음부터 말이 잘 통하는 대신, 부족한 부분도 같이 비어 있을 수 있어요.');
+    pushGood('사주', res.saju.elemRel + ' 결이 닮아 처음부터 말이 잘 통하는 대신, 부족한 부분도 같이 비어 있을 수 있어요.');
   } else if(/상극/.test(st)){
-    care.push(res.saju.elemRel + ' 서로를 자극하는 기운이라 짧게는 재밌고 길게는 지칠 수 있어요. 다툰 날은 결론을 미루고 하루 자고 이야기하는 편이 좋아요.');
+    pushCare('사주', res.saju.elemRel + ' 서로를 자극하는 기운이라 짧게는 재밌고 길게는 지칠 수 있어요. 다툰 날은 결론을 미루고 하루 자고 이야기하는 편이 좋아요.');
   }
 
   /* ③ 일지 — 태어난 날의 아래 글자끼리 맺는 관계.
@@ -14844,33 +14859,33 @@ function buildPairReasons(pA, pB, res){
        값을 그대로 비교한다. 갈래를 늘릴 때도 반드시 === 로 비교할 것. */
   var bt = res.saju && res.saju.branchTerm ? res.saju.branchTerm : '';
   if(bt === '육합'){
-    good.push('태어난 날의 아래 글자끼리 짝을 이루는 관계(육합)예요. 가까이 지낼수록 편해지고, 사소한 일에도 손발이 맞는 편이에요.');
+    pushGood('사주', '태어난 날의 아래 글자끼리 짝을 이루는 관계(육합)예요. 가까이 지낼수록 편해지고, 사소한 일에도 손발이 맞는 편이에요.');
   } else if(bt === '삼합(반합)'){
-    good.push('태어난 날의 아래 글자끼리 같은 방향으로 묶이는 관계(삼합)예요. 함께 뭘 하기로 정하고 나면 각자 맡는 몫이 자연스럽게 갈려요.')
+    pushGood('사주', '태어난 날의 아래 글자끼리 같은 방향으로 묶이는 관계(삼합)예요. 함께 뭘 하기로 정하고 나면 각자 맡는 몫이 자연스럽게 갈려요.')
   } else if(bt === '방합(반합)'){
-    good.push('태어난 날의 아래 글자끼리 같은 계절 기운을 나눈 관계(방합)예요. 분위기가 닮아서 처음부터 낯을 덜 가리는 편이에요.')
+    pushGood('사주', '태어난 날의 아래 글자끼리 같은 계절 기운을 나눈 관계(방합)예요. 분위기가 닮아서 처음부터 낯을 덜 가리는 편이에요.')
   } else if(bt === '같은 글자'){
-    good.push('태어난 날의 아래 글자가 서로 같아요. 사는 방식이 닮아서 말이 짧아도 통하는 편이에요.');
-    care.push('대신 약한 부분도 똑같이 약해요. 중요한 결정을 둘이서만 정하지 말고 바깥 이야기를 한 번 들어보시면 좋아요.')
+    pushGood('사주', '태어난 날의 아래 글자가 서로 같아요. 사는 방식이 닮아서 말이 짧아도 통하는 편이에요.');
+    pushCare('사주', '대신 약한 부분도 똑같이 약해요. 중요한 결정을 둘이서만 정하지 말고 바깥 이야기를 한 번 들어보시면 좋아요.')
   } else if(bt === '파'){
-    care.push('태어난 날의 아래 글자끼리 조금씩 어긋나는 관계(파)예요. 크게 부딪히진 않아도 자잘하게 틀어지니, 사소할 때 짚고 넘어가는 편이 좋아요.')
+    pushCare('사주', '태어난 날의 아래 글자끼리 조금씩 어긋나는 관계(파)예요. 크게 부딪히진 않아도 자잘하게 틀어지니, 사소할 때 짚고 넘어가는 편이 좋아요.')
   } else if(bt === '형'){
-    care.push('태어난 날의 아래 글자끼리 서로를 긁는 관계(형)예요. 가까워질수록 예민해지는 대목이 생기니, 각자의 영역을 분명히 해 두면 편해져요.')
+    pushCare('사주', '태어난 날의 아래 글자끼리 서로를 긁는 관계(형)예요. 가까워질수록 예민해지는 대목이 생기니, 각자의 영역을 분명히 해 두면 편해져요.')
   } else if(bt === '충'){
-    care.push('태어난 날의 아래 글자끼리 정면으로 부딪히는 관계(충)예요. 생활 리듬이나 속도가 어긋나기 쉬우니, 함께 지내는 시간을 미리 정해두면 훨씬 나아요.');
+    pushCare('사주', '태어난 날의 아래 글자끼리 정면으로 부딪히는 관계(충)예요. 생활 리듬이나 속도가 어긋나기 쉬우니, 함께 지내는 시간을 미리 정해두면 훨씬 나아요.');
   }
 
   /* ④ 띠 — 점수대만 말한다. 근거가 얕은 항목이라 강하게 말하지 않는다. */
   if(typeof res.zodScore === 'number'){
-    if(res.zodScore >= 85) good.push('띠로 봐도 서로 받쳐주는 자리예요.');
-    else if(res.zodScore <= 40) care.push('띠로 보면 결이 어긋나는 자리예요. 다만 이건 참고 정도로만 봐주세요.');
+    if(res.zodScore >= 85) pushGood('띠', '띠로 봐도 서로 받쳐주는 자리예요.');
+    else if(res.zodScore <= 40) pushCare('띠', '띠로 보면 결이 어긋나는 자리예요. 다만 이건 참고 정도로만 봐주세요.');
   }
 
   /* ⑤ 아무것도 안 걸렸을 때 — 빈칸으로 두지 않는다 */
-  if(!good.length) good.push('크게 튀는 자리는 없지만, 그만큼 부딪힐 일도 적은 무던한 조합이에요.');
-  if(!care.length) care.push('눈에 띄는 갈등 요소는 없어요. 다만 사소한 습관 차이는 미리 이야기해두면 좋아요.');
+  if(!good.length) pushGood('', '크게 튀는 자리는 없지만, 그만큼 부딪힐 일도 적은 무던한 조합이에요.');
+  if(!care.length) pushCare('', '눈에 띄는 갈등 요소는 없어요. 다만 사소한 습관 차이는 미리 이야기해두면 좋아요.');
 
-  return {good:good, care:care, A:A, B:B};
+  return {good:good, care:care, goodSrc:goodSrc, careSrc:careSrc, A:A, B:B};
 }
 
 /* 화면에 그린다. 1:1 결과와 그룹 쌍별 상세가 같은 함수를 쓴다 —
@@ -14883,17 +14898,26 @@ function buildPairReasonBlock(pA, pB, res, compact){
      점수의 출처가 아니라 "그래서 우리는 어떤 사이인가"다. 항목 이름도 명사('잘 맞는 점')에서
      문장('이런 점이 잘 맞아요')으로 바꿨다 — 명사만 얹힌 목록은 눈으로 훑고 지나가게 된다. */
   if(!compact) box.appendChild(el('h3',{},['두 분은 이런 사이예요']));
+  /* ★ 2026-09-21 — 성격유형 화면과 같은 결: 머리는 초록/빨강 알약, 문장마다 출처 칩(성격·사주·띠).
+     문장은 그대로다. 칩 값은 buildPairReasons 가 문장과 나란히 돌려주는 goodSrc·careSrc 에서 온다. */
+  function reasonList(items, srcs, max){
+    var ul = el('ul',{class:'reason-list tagged'});
+    items.slice(0, max).forEach(function(t, i){
+      var li = el('li',{});
+      var src = srcs && srcs[i];
+      if(src) li.appendChild(el('span',{class:'reason-src '+(src==='성격'?'mb':src==='사주'?'sj':'zd')},[src]));
+      li.appendChild(el('span',{class:'reason-txt'},[t]));
+      ul.appendChild(li);
+    });
+    return ul;
+  }
   var g = el('div',{style:'margin-top:6px;'});
-  g.appendChild(el('p',{class:'cm-label', style:'margin:0 0 4px;'},['이런 점이 잘 맞아요']));
-  var gu = el('ul',{class:'reason-list'});
-  r.good.slice(0,4).forEach(function(t){ gu.appendChild(el('li',{},[t])); });
-  g.appendChild(gu);
+  g.appendChild(el('div',{class:'fit-head good', style:'margin:0 0 6px;'},['이런 점이 잘 맞아요']));
+  g.appendChild(reasonList(r.good, r.goodSrc, 4));
   box.appendChild(g);
-  var c = el('div',{style:'margin-top:12px;'});
-  c.appendChild(el('p',{class:'cm-label', style:'margin:0 0 4px;'},['이런 점은 조심해 주세요']));
-  var cu = el('ul',{class:'reason-list'});
-  r.care.slice(0,3).forEach(function(t){ cu.appendChild(el('li',{},[t])); });
-  c.appendChild(cu);
+  var c = el('div',{style:'margin-top:14px;'});
+  c.appendChild(el('div',{class:'fit-head care', style:'margin:0 0 6px;'},['이런 점은 조심해 주세요']));
+  c.appendChild(reasonList(r.care, r.careSrc, 3));
   box.appendChild(c);
   return box;
 }
