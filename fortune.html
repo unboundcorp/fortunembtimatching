@@ -1929,7 +1929,8 @@ body.has-fab main{padding-bottom:110px;}
 .ad-card{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:8px;
   background:var(--paper-raised);box-shadow:0 0 0 1px rgba(31,28,23,0.10);}
 .ad-grid{display:grid;gap:12px;}
-.ad-kpi{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));}
+/* 2026-09-21 — KPI 가 여섯 장이라 auto-fit 이면 5+1 로 갈라져 한 장이 둘째 줄에 혼자 남는다. 3열 두 줄로 못 박는다. */
+.ad-kpi{grid-template-columns:repeat(3,minmax(0,1fr));}
 .ad-two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));}
 .ad-three{grid-template-columns:repeat(auto-fit,minmax(260px,1fr));}
 .ad-mini{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));}
@@ -1962,6 +1963,9 @@ body.has-fab main{padding-bottom:110px;}
 .ad-table th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink-faint);padding:8px;border-bottom:1px solid rgba(31,28,23,0.14);white-space:nowrap;}
 .ad-table td{padding:9px 8px;border-bottom:1px solid rgba(31,28,23,0.08);vertical-align:top;}
+/* 2026-09-21 — 폰에서는 표가 옆으로 굴러가 오른쪽 끝의 [상세]·[열람 여부] 가 화면 밖이다. 줄 자체를 누르면 열린다. */
+.ad-table tr.ad-rowlink{cursor:pointer;}
+.ad-table tr.ad-rowlink:hover td{background:rgba(31,28,23,0.035);}
 .ad-table td.ad-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
 .ad-table td.ad-nowrap{white-space:nowrap;}
 .ad-sub2{font-size:11px;color:var(--ink-faint);}
@@ -9747,7 +9751,7 @@ function buildAdminLocked(){
   view.appendChild(pageHead('관리자', '운영자 전용'));
   view.appendChild(el('div',{class:'scroll-card'},[
     el('p',{class:'biz-hint'},['이 화면은 운영자만 볼 수 있어요.']),
-    el('p',{class:'biz-hint', style:'margin-top:8px;'},['운영자 코드를 넣으시면 열려요.'])
+    el('p',{class:'biz-hint', style:'margin-top:8px;'},['운영자 코드를 넣으면 열려요.'])
   ]));
   view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:14px;', onclick:function(){
     openAdminUnlockModal();
@@ -9758,11 +9762,7 @@ function buildAdminLocked(){
   return view;
 }
 /* ★ 2026-09-11 — 운영자에게는 안 불립니다(어드민 셸의 [문의 · CS] 가 그 일을 합니다).
-   여기 남은 것은 운영자가 아닐 때의 잠김 안내뿐입니다. */
-function renderCsAdmin(){
-  var main=$('#main'); main.innerHTML='';
-  main.appendChild(buildAdminLocked());
-}
+   운영자가 아닐 때의 잠김 안내는 renderStats 한 벌이다 — 2026-09-21 에 같은 내용이던 renderCsAdmin 을 지웠다. */
 
 /* =====================================================================
    AI 해석 연결 — 운영자용. 관리자 테스트 콘솔 안에만 있다.
@@ -17673,7 +17673,7 @@ var ADMIN_META = {
   payments: {title:'결제',        sub:'주문 원장과 열람 여부'},
   compat:   {title:'궁합 · 모임', sub:'초대 링크와 모임 명단'},
   ai:       {title:'AI 해석',     sub:'만든 글 · 쓴 토큰 · 비용'},
-  notices:  {title:'공지 · 배너', sub:'적어 두는 알림 (지금은 손님 화면에 안 나감)'},
+  notices:  {title:'공지 · 배너', sub:'알림 초안 · 손님 화면엔 안 나감'},
   export:   {title:'데이터 내보내기', sub:'지금 화면의 자료를 CSV 로'}
 };
 /* 어느 화면이 어떤 원자료를 쓰나 — 들어갈 때 그것만 불러온다(다 부르지 않는다) */
@@ -17805,6 +17805,16 @@ function adTable(head, rows, minWidth){
   return wrap;
 }
 function adTd(children, cls){ return el('td', cls ? {class:cls} : {}, children); }
+/* 줄 전체를 누르면 여는 손잡이. 줄 안의 단추·링크를 눌렀을 때는 그쪽이 맡는다(두 번 열리지 않게).
+   ★ 폰에서 표가 옆으로 굴러가 오른쪽 끝 단추가 화면 밖에 있던 것(2026-09-21 점검)을 이것으로 푼다.
+     단추는 그대로 둔다 — 키보드로 닿는 길이고 PC 에서는 눈에 보이는 손잡이다. */
+function adRowOpen(fn){
+  return function(ev){
+    var t = ev && ev.target;
+    if(t && t.closest && t.closest('button,a,input,select,textarea')) return;
+    fn();
+  };
+}
 function adTag(text, kind){
   return el('span',{class:'ad-badge' + (kind === 'out' ? ' ad-badge-out' : '')},[text]);
 }
@@ -18226,7 +18236,7 @@ function adminMembers(body){
   if(!rows.length){ card.appendChild(adEmpty(all.length ? '찾는 조건에 맞는 분이 없어요.' : '아직 로그인한 분이 없어요.')); body.appendChild(card); return; }
   var trs = adSlice('members', rows).map(function(r){
     var p0 = (r.profiles || [])[0] || null;
-    var tr = el('tr',{});
+    var tr = el('tr',{class:'ad-rowlink', onclick:adRowOpen(function(){ ADMIN_MEMBER = r; render(); })});
     var who = el('div',{});
     who.appendChild(el('div',{},[p0 ? (p0.name || '(이름 없음)') : '(사주 없음)']));
     who.appendChild(el('div',{class:'ad-sub2'},['카카오 ' + r.id]));
@@ -18446,7 +18456,7 @@ function adminPayments(body){
     body.appendChild(card); return;
   }
   var trs = adSlice('payments', rows).map(function(o){
-    var tr = el('tr',{});
+    var tr = el('tr',{class:'ad-rowlink', onclick:adRowOpen(function(){ openOrderLookup(o.id); })});
     tr.appendChild(adTd([el('span',{style:'font-variant-numeric:tabular-nums;'},[o.id])],'ad-nowrap'));
     tr.appendChild(adTd([o.name]));
     tr.appendChild(adTd([formatWon(o.amount)],'ad-num'));
@@ -26588,7 +26598,7 @@ function render(){
   else if(ROUTE==='supportPay') renderSupportPay();
   else if(ROUTE==='supportOrders') renderSupportOrders();
   else if(ROUTE==='supportMine') renderSupportMine();
-  else if(ROUTE==='csAdmin') renderCsAdmin();
+  else if(ROUTE==='csAdmin') renderStats();   /* 잠김 안내 한 벌 */
   else renderHome();
   /* R34 — 모든 화면 맨 아래에 공통 하단을 붙인다.
      각 render 함수를 일일이 고치지 않고 여기서 한 번에 처리한다 —
@@ -27244,7 +27254,10 @@ try{
       activeProfile: activeProfile, gcMeetRow: gcMeetRow,
       openSavedGroup: openSavedGroup, groupMyMemberRow: groupMyMemberRow,
       /* 2026-09-21 R5 — 유료 빌더 전후 대조 검사(checks/report_kit.cjs)가 쓴다 */
-      buildReport13: buildReport13, buildMbtiReport16: buildMbtiReport16, reportNameKit: reportNameKit
+      buildReport13: buildReport13, buildMbtiReport16: buildMbtiReport16, reportNameKit: reportNameKit,
+      /* 2026-09-21 — 권한 판정 전후 대조 검사(checks/access_matrix.cjs)가 쓴다. ENT.data 를 갈아 끼우고 판정을 읽는다 */
+      ENT: ENT, hasAccess: hasAccess, passActive: passActive, realPassActive: realPassActive,
+      passRemainingDays: passRemainingDays, paywallGate: paywallGate, buildPurchasePanel: buildPurchasePanel
     };
   }
 }catch(e){}
