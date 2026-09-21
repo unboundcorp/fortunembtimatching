@@ -1080,8 +1080,23 @@ button.today-iljin:active{opacity:.7;}
 .today-cat-num{font-size:.9rem;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap;}
 .today-cat-none{font-size:.78rem;color:var(--ink-faint);white-space:nowrap;flex-shrink:0;}
 /* 왜 이 점수인지 */
-.today-why{font-size:.78rem;color:var(--ink-dim);line-height:1.7;margin-top:10px;
-  padding-top:10px;border-top:1px dashed var(--gold-line);}
+.today-why{font-size:.78rem;color:var(--ink-dim);line-height:1.7;margin-top:12px;
+  padding:9px 11px;border-radius:var(--r-md);background:var(--panel-3);word-break:keep-all;}
+.why-chip{display:inline-flex;align-items:center;height:18px;padding:0 6px;margin-right:2px;border-radius:5px;
+  font-family:var(--sans);font-weight:800;font-size:.68rem;letter-spacing:.02em;color:var(--gold);
+  background:var(--gold-soft);vertical-align:1px;}
+/* 오늘의 총평 — 줄마다 어디서 온 말인지 칩(2026-09-21). 색은 성격유형 화면의 잘 맞는 편/맞춰가야(.fit-head)와 같은 값 */
+.tsum-list{list-style:none;padding:0;margin:0;}
+.tsum-row{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--gold-line);}
+.tsum-row:first-child{border-top:0;padding-top:0;}
+.tsum-row:last-child{padding-bottom:0;}
+.tsum-chip{flex:0 0 auto;margin-top:3px;padding:2px 7px;border-radius:999px;font-family:var(--sans);font-weight:800;
+  font-size:.7rem;white-space:nowrap;color:var(--ink-dim);background:rgba(31,28,23,.07);}
+.tsum-row.good .tsum-chip{color:#fff;background:#286648;}
+.tsum-row.care .tsum-chip{color:#fff;background:#9B1A15;}
+.tsum-row.end .tsum-chip{color:var(--gold);background:var(--gold-soft);}
+.tsum-txt{font-size:.9rem;line-height:1.8;color:var(--ink);min-width:0;word-break:keep-all;}
+.tsum-row.good .tsum-txt,.tsum-row.care .tsum-txt{font-weight:600;}
 @media (max-width:360px){
   /* 좁은 화면에서는 제목과 점수가 한 줄에 안 들어간다. 점수를 아래로 내린다. */
   .today-cat-num{font-size:.82rem;}
@@ -14169,7 +14184,15 @@ function todayStagePlain(b){
                           : '내 기운은 오늘 ';
   return head + word + (rank ? ' (열두 단계로 보면 ' + rank + '번째 · ' + b.stageName + ')' : '');
 }
+/* 옛 이름 — 문자열 배열. 공유 카드(마지막 줄)가 쓴다. 화면은 아래 buildTodaySummaryRows 를 쓴다. */
 function buildTodaySummary(fortune){
+  var rows = buildTodaySummaryRows(fortune);
+  return rows ? rows.map(function(r){ return r.text; }) : null;
+}
+/* ★ 2026-09-21 — 문장은 그대로, 문장마다 **어디서 온 말인지**(tag)와 결(kind)을 함께 돌려준다.
+   화면이 줄마다 칩을 달아 가르기 위해서다("읽어야 하는 글에는 블럭·색·굵기" 방침).
+   kind: head(오늘이 어떤 날) · good(잘 풀리는 항목) · care(걸리는 항목) · even(고른 날) · end(마무리) */
+function buildTodaySummaryRows(fortune){
   if(!fortune || fortune.overall == null || !fortune.scores || !fortune.basis) return null;
   var b = fortune.basis, sc = fortune.scores;
   var labelOf = {};
@@ -14204,18 +14227,18 @@ function buildTodaySummary(fortune){
      ===================================================================== */
 
   /* ① 오늘은 어떤 날인가 */
-  out.push('오늘은 ' + todayOverallWord(fortune.overall) + '예요. ' + fortune.overall + '점.');
+  out.push({kind:'head', tag:null, text:'오늘은 ' + todayOverallWord(fortune.overall) + '예요. ' + fortune.overall + '점.'});
 
   /* ② 잘 풀리는 쪽. 최고점이 60을 못 넘으면 "잘 풀린다"고 말하지 않는다. */
-  if(best !== worst && sc[best] >= 60) out.push(TODAY_CAT_HIGH[best]);
+  if(best !== worst && sc[best] >= 60) out.push({kind:'good', tag:labelOf[best], text:TODAY_CAT_HIGH[best]});
 
   /* ③ 걸리는 쪽. 최저점이 60을 넘으면 겁주지 않는다 — 낮다는 사실만 짧게 적는다. */
   if(best === worst){
-    out.push('다섯 항목이 고르게 나온 날이라 어느 한쪽도 특별히 튀지 않아요. 평소 리듬대로 움직이면 무난해요.');
+    out.push({kind:'even', tag:'고른 날', text:'다섯 항목이 고르게 나온 날이라 어느 한쪽도 특별히 튀지 않아요. 평소 리듬대로 움직이면 무난해요.'});
   } else if(sc[worst] < 60){
-    out.push('대신 ' + TODAY_CAT_LOW[worst]);
+    out.push({kind:'care', tag:labelOf[worst], text:'대신 ' + TODAY_CAT_LOW[worst]});
   } else {
-    out.push('다섯 중에서는 ' + labelOf[worst] + '이 상대적으로 낮은데, 낮다고 해도 나쁘다는 뜻은 아니에요.');
+    out.push({kind:'care', tag:labelOf[worst], text:'다섯 중에서는 ' + labelOf[worst] + '이 상대적으로 낮은데, 낮다고 해도 나쁘다는 뜻은 아니에요.'});
   }
 
   /* ④ 마무리 — 오늘 기운이 내게 어떻게 닿는지(앞)와 그래서 뭘 하면 좋은지(뒤)를 한 문장으로.
@@ -14224,7 +14247,7 @@ function buildTodaySummary(fortune){
               : (b.healthTier === 'most')  ? '한쪽으로 쏠리기 쉬운 날'
               :                              '판단력은 평소만큼 좋은 날';
   var act = TODAY_STAGE_ACT[b.stageName];
-  out.push(act ? (dayWord + '이니, ' + act) : (dayWord + '이에요.'));
+  out.push({kind:'end', tag:'한마디', text: act ? (dayWord + '이니, ' + act) : (dayWord + '이에요.')});
 
   return out;
 }
@@ -19356,17 +19379,26 @@ function renderHome(){
   }
 
   /* 총평 — 시안의 왼쪽 선 블록으로 올린다. 예전에는 점수 카드 맨 아래에 묻혀 있었다. */
-  var topSum = (fortune.overall != null && fortune.scores) ? buildTodaySummary(fortune) : null;
+  var topSum = (fortune.overall != null && fortune.scores) ? buildTodaySummaryRows(fortune) : null;
   if(topSum && topSum.length){
     /* ★ 총평 첫 줄은 "오늘은 ○○한 하루예요. NN점."이다. 바로 위 히어로가 그 말과 그 점수를
        이미 크게 적고 있어서, 그대로 두면 2cm 사이에 같은 문장을 두 번 읽게 된다.
        히어로가 실제로 그 말을 적었을 때만 뺀다 — 문구가 바뀌면 저절로 다시 나온다. */
     var lines = topSum.slice();
     var word = todayOverallWord(fortune.overall);
-    if(lines.length > 1 && word && lines[0].indexOf(word) >= 0) lines = lines.slice(1);
+    if(lines.length > 1 && word && lines[0].text.indexOf(word) >= 0) lines = lines.slice(1);
     var nb = el('div',{class:'note-block'});
     nb.appendChild(el('div',{class:'nb-head'},['오늘의 총평']));
-    lines.forEach(function(line){ nb.appendChild(el('p',{},[line])); });
+    /* ★ 2026-09-21 — 회색 문단 셋을 줄로 끊고 어디서 온 말인지 칩을 단다(문장은 그대로).
+       ul/li 로 짜야 [이 화면 글 전체 복사]가 줄마다 가운뎃점을 붙인다. */
+    var ul = el('ul',{class:'tsum-list'});
+    lines.forEach(function(r){
+      var li = el('li',{class:'tsum-row '+r.kind});
+      if(r.tag) li.appendChild(el('span',{class:'tsum-chip'},[r.tag]));
+      li.appendChild(el('span',{class:'tsum-txt'},[r.text]));
+      ul.appendChild(li);
+    });
+    nb.appendChild(ul);
     view.appendChild(nb);
   }
 
@@ -19431,9 +19463,9 @@ function renderHome(){
     card.appendChild(head);
     card.appendChild(el('p',{style:'margin-top:12px;'},[item.text]));
     /* 왜 이 점수인지. 근거를 안 적으면 숫자만 커져서 더 그럴듯해 보이기만 한다. */
-    if(item.why) card.appendChild(el('p',{class:'today-why'},['근거 — '+item.why]));
-    else if(item.stars == null) card.appendChild(el('p',{class:'today-why'},[
-      '근거 — 생년월일시 정보가 모자라 오늘 일진과 맞대어 볼 수 없었어요. 설정에서 태어난 정보를 채우면 점수가 계산돼요.'
+    if(item.why) card.appendChild(el('p',{class:'today-why'},[el('span',{class:'why-chip'},['근거']),' — '+item.why]));
+    else if(item.stars == null) card.appendChild(el('p',{class:'today-why'},[el('span',{class:'why-chip'},['근거']),
+      ' — 생년월일시 정보가 모자라 오늘 일진과 맞대어 볼 수 없었어요. 설정에서 태어난 정보를 채우면 점수가 계산돼요.'
     ]));
     view.appendChild(card);
   });
