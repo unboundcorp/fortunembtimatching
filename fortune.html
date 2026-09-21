@@ -8026,8 +8026,7 @@ function buildPayLegalLine(){
 
 /* 설정: 지금 무엇이 열려 있는지. 결제한 사람이 "내가 뭘 샀더라"를 확인하는 자리다. */
 function buildPurchasePanel(){
-  var card = el('div',{class:'scroll-card'});
-  card.appendChild(el('h3',{},['이용권']));
+  var card = sectionCard(['이용권']);
   var e = entitlements();
 
   /* 지금 이 화면의 이용권이 "서버가 확인해 준 것"인지 "이 기기에만 있는 체험분"인지 정직하게 먼저 알린다. */
@@ -8792,6 +8791,20 @@ function buildInfoPage(title, sub, build){
   view.appendChild(buildSiteFooter(true));
   main.appendChild(autoTermify(view));
 }
+/* =====================================================================
+   카드 한 장 — scroll-card + 제목(h3) + (선택) 소제목(section-sub)  (2026-09-21 리팩터 R6)
+   ---------------------------------------------------------------------
+   예전에는 화면 30곳이 `var x = el('div',{class:'scroll-card'}); x.appendChild(el('h3',{},[...]))`
+   두 줄을 손으로 쌓았다. 카드 머리 모양을 바꾸려면 30곳을 찾아다녀야 했다. 이제 여기 한 곳이다.
+   ★ 이름을 `card` 로 두지 않는다 — 화면 함수 스무 곳이 지역 변수 `card` 를 쓰고 있어서
+     `var card = card(...)` 가 되면 호이스팅 때문에 자기 자신(undefined)을 부른다.
+   ★ 만드는 DOM 은 예전 두 줄과 **완전히 같다**(전후 화면 innerHTML 대조로 확인). */
+function sectionCard(titleKids, subKids, attrs){
+  var c = el('div', Object.assign({class:'scroll-card'}, attrs || {}));
+  if(titleKids != null) c.appendChild(el('h3', {}, titleKids));
+  if(subKids != null) c.appendChild(el('p', {class:'section-sub'}, subKids));
+  return c;
+}
 function infoCard(view, title, paras){
   var c = el('div',{class:'scroll-card'});
   if(title) c.appendChild(el('h3',{},[title]));
@@ -8970,8 +8983,7 @@ function renderFaq(){
     GROUPS.forEach(function(g){
       view.appendChild(el('p',{class:'section-title', style:'margin:22px 0 6px;'},[g[0]]));
       g[1].forEach(function(qa){
-        var c = el('div',{class:'scroll-card'});
-        c.appendChild(el('h3',{},[qa[0]]));
+        var c = sectionCard([qa[0]]);
         /* ★ 답이 길면 문단을 더 붙인다 — qa[2] 뒤로도 전부 그린다 (2026-09-08).
            예전에는 qa[1] 하나만 그려서, 문단을 더 적어도 **화면에서 조용히 사라졌다.**
            실제로 그렇게 적었다가 화면에서 글자를 뽑아 보고 잡았다. */
@@ -9505,8 +9517,7 @@ function renderPricing(){
   });
   view.appendChild(term);
 
-  var note = el('div',{class:'scroll-card'});
-  note.appendChild(el('h3',{},['결제하기 전에 알아둘 것']));
+  var note = sectionCard(['결제하기 전에 알아둘 것']);
   var ul2 = el('ul',{style:'margin:10px 0 0;padding-left:18px;'});
   [ '모든 상품은 AI가 만드는 디지털 콘텐츠예요. 결제하면 그 자리에서 만들어져 화면에 나와요.',
     '결제일로부터 7일 이내에 청약철회할 수 있어요. 다만 유료 콘텐츠를 한 번 열어 본 경우에는 그 콘텐츠에 한해 청약철회가 제한돼요(전자상거래법 제17조 제2항).',
@@ -9534,8 +9545,7 @@ function renderRefund(){
   card.appendChild(ol);
   view.appendChild(card);
 
-  var how = el('div',{class:'scroll-card'});
-  how.appendChild(el('h3',{},['어디로 접수하나요']));
+  var how = sectionCard(['어디로 접수하나요']);
   how.appendChild(el('p',{style:'margin:10px 0 0;'},
     ['서비스 안의 [문의하기] \u2192 [환불 신청]에서 접수하거나, ' + companyValue(COMPANY.supportEmail) + ' 로 영수증 번호와 함께 보내도 돼요. 어느 쪽이든 같이 처리되고, 요청일부터 3영업일 안에 처리해서 알려줘요.']));
   var row2 = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;'});
@@ -9583,8 +9593,7 @@ function renderSupportPay(){
   view.appendChild(v);
 
   /* 지금 열려 있는 것 */
-  var openCard = el('div',{class:'scroll-card'});
-  openCard.appendChild(el('h3',{},['지금 열려 있는 것']));
+  var openCard = sectionCard(['지금 열려 있는 것']);
   if(!ENT.ready){
     openCard.appendChild(el('p',{class:'biz-hint'},['확인하고 있어요…']));
   } else if(ENT.error){
@@ -9602,8 +9611,7 @@ function renderSupportPay(){
     '카카오 계정으로 로그인했으면 다른 기기에서 결제한 것도 함께 보여드려요. 승인까지 못 간 주문도 나오는데, "승인 전에 멈춤"은 돈이 나가지 않은 상태예요.'));
 
   /* 할 수 있는 것들 */
-  var act = el('div',{class:'scroll-card'});
-  act.appendChild(el('h3',{},['해보실 수 있는 것']));
+  var act = sectionCard(['해보실 수 있는 것']);
   act.appendChild(el('p',{class:'biz-hint', style:'margin-bottom:12px;'},
     ['★ 무엇보다, 다시 결제하지 마세요. 같은 내용을 두 번 결제하시면 되돌리는 데 시간이 더 걸려요.']));
   act.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-bottom:8px;', onclick:function(){
@@ -9638,8 +9646,7 @@ function renderSupportOrders(){
 
   var sum = supportEntSummary();
 
-  var c1 = el('div',{class:'scroll-card'});
-  c1.appendChild(el('h3',{},['열려 있는 이용권']));
+  var c1 = sectionCard(['열려 있는 이용권']);
   if(!ENT.ready){
     c1.appendChild(el('p',{class:'biz-hint'},['확인하고 있어요…']));
   } else if(ENT.error){
@@ -9992,8 +9999,7 @@ function showInterpreterContract(){
      결제한 것이 어디에 남는지가 그것이고, 서버 주소가 몇 개 채워졌는지는 아니다.
 ===================================================================== */
 function buildPaymentStatusPanel(){
-  var card = el('div',{class:'scroll-card'});
-  card.appendChild(el('h3',{},['결제']));
+  var card = sectionCard(['결제']);
   var gate = paywallGate();
 
   if(gate.live){
@@ -17109,8 +17115,7 @@ function renderSetupMbti(){
     var q=MBTI_TEST_Q[qi];
     box.appendChild(el('div',{class:'progress-track'},[el('div',{class:'progress-fill',style:'width:'+Math.round(((qi)/MBTI_TEST_Q.length)*100)+'%'})]));
     box.appendChild(el('p',{class:'section-sub'},['질문 '+(qi+1)+' / '+MBTI_TEST_Q.length]));
-    var qcard=el('div',{class:'scroll-card'});
-    qcard.appendChild(el('h3',{},[q.q]));
+    var qcard = sectionCard([q.q]);
     q.a.forEach(function(optText, optIdx){
       qcard.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;text-align:left;', onclick:function(){
         SETUP.testAnswers[qi]=optIdx;
@@ -19583,8 +19588,7 @@ function renderReport(){
   var mbtiCharKey = charKeyForMbti(p.mbti);
   if(mbtiCharKey){ view.appendChild(buildCharHero(mbtiCharKey, 118, '전체는 캐릭터 도감에서 볼 수 있어요.', p.gender)); }
 
-  var indCard=el('div',{class:'scroll-card'});
-  indCard.appendChild(el('h3',{},['성격유형 4지표 해설']));
+  var indCard = sectionCard(['성격유형 4지표 해설']);
   /* ★ 2026-09-21 — 같은 색 글 상자 넷(대표님 지시). 09-19에 넣었던 축별 색 면·
      왼쪽 기둥·글자 배지는 뺐다. 축 색은 아래 주의점·추천 행동의 칩에만 남는다. */
   p.mbti.split('').forEach(function(letter){
@@ -19624,8 +19628,7 @@ function renderReport(){
     var list = MBTI_TYPES.filter(function(t){ return t !== p.mbti; })
       .map(function(t){ return {t:t, v:row[t]}; })
       .sort(function(x,y){ return y.v - x.v; });
-    var fitCard = el('div',{class:'scroll-card'});
-    fitCard.appendChild(el('h3',{},['어떤 유형과 잘 맞나요']));
+    var fitCard = sectionCard(['어떤 유형과 잘 맞나요']);
     fitCard.appendChild(el('p',{class:'section-sub', style:'margin-bottom:8px;'},
       ['궁합 화면에서 쓰는 표를 그대로 본 값이에요. 사주까지 함께 보면 점수가 달라져요.']));
     /* ★ 칸(grid3)으로 두면 폭 390에서 한 줄에 하나씩 떨어져 여섯 덩이가 세로로 길게 늘어난다
@@ -19654,8 +19657,7 @@ function renderReport(){
     view.appendChild(fitCard);
 
     var stack = MBTI_STACK[p.mbti]; if(!stack) return;
-    var stCard = el('div',{class:'scroll-card'});
-    stCard.appendChild(el('h3',{},['생각이 흘러가는 순서']));
+    var stCard = sectionCard(['생각이 흘러가는 순서']);
     stCard.appendChild(el('p',{class:'section-sub', style:'margin-bottom:8px;'},
       ['앞에 있는 것일수록 힘들이지 않고 쓰는 힘이에요. 뒤에 있는 것은 지칠 때 어긋나기 쉬운 자리예요.']));
     var ORDER = ['주로 쓰는 힘','받쳐 주는 힘','자라는 중인 힘','서툰 힘'];
@@ -19692,8 +19694,7 @@ function axisClass(letter){
    ★ <ul><li> 로 짠다 — [이 화면 글 전체 복사]가 li 마다 가운뎃점을 붙여 주므로
      복사본에서도 줄이 살아 있다(copyPackRows). <div> 로 짜면 줄글로 뭉쳐 나간다. */
 function noteListCard(title, items){
-  var c=el('div',{class:'scroll-card'});
-  c.appendChild(el('h3',{},[title]));
+  var c = sectionCard([title]);
   var ul=el('ul',{class:'note-list'});
   items.forEach(function(it){
     ul.appendChild(el('li',{},[
@@ -20248,8 +20249,7 @@ function renderMbtiReport13(){
                  namePlaceholders:'이 사람을 가리킬 때는 {{name}} 을 그대로 쓰세요. 실제 이름은 서비스가 채워요.'} }; }, p.name,
     function(id){ return id==='m5' ? buildLoveLensTables(mbtiLoveCounts, p.mbti) : ''; });
 
-  var badgeCard=el('div',{class:'scroll-card'});
-  badgeCard.appendChild(el('h3',{},['4지표 요약']));
+  var badgeCard = sectionCard(['4지표 요약']);
   var badgeRow=el('div',{class:'badge-row'});
   p.mbti.split('').forEach(function(letter){
     badgeRow.appendChild(el('span',{class:'badge'},[letter+' · '+INDICATOR[letter].title.replace(/\s*\([A-Z]\)/,'')]));
@@ -20363,9 +20363,7 @@ function renderCharDex(){
     sub:'하나를 누르면 크게 보면서 자세한 설명까지 읽을 수 있어요.'}));
 
   if(myKeys.length){
-    var mineCard=el('div',{class:'scroll-card'});
-    mineCard.appendChild(el('h3',{},['내 캐릭터']));
-    mineCard.appendChild(el('p',{class:'section-sub'},[ownerLabel(p.name)+' 태어난 날 글자(일간)의 기운과 성격유형에 해당하는 두 종이에요.']));
+    var mineCard = sectionCard(['내 캐릭터'], [ownerLabel(p.name)+' 태어난 날 글자(일간)의 기운과 성격유형에 해당하는 두 종이에요.']);
     var mineRow=el('div',{class:'char-pair'});
     myKeys.forEach(function(k){
       var s=CHARACTERS[k];
@@ -20381,15 +20379,13 @@ function renderCharDex(){
     view.appendChild(el('p',{class:'section-sub'},['프로필을 만들면 그 가운데 내 것이 어떤 건지 표시해 드려요.']));
   }
 
-  var elemCard=el('div',{class:'scroll-card'});
-  elemCard.appendChild(el('h3',{},['오행 5종']));
+  var elemCard = sectionCard(['오행 5종']);
   elemCard.appendChild(buildNoteFold('이 다섯은 무엇인가요?',
     '목·화·토·금·수. 태어난 날의 글자(일간)가 어떤 기운(오행)인지에 따라 만나는 캐릭터예요.'));
   elemCard.appendChild(buildElemDexRow(['e0','e1','e2','e3','e4'], myKeys));
   view.appendChild(elemCard);
 
-  var mbtiCard=el('div',{class:'scroll-card'});
-  mbtiCard.appendChild(el('h3',{},['성격유형 16종']));
+  var mbtiCard = sectionCard(['성격유형 16종']);
   mbtiCard.appendChild(buildNoteFold('이 열여섯은 무엇인가요?',
     '16유형 각각의 캐릭터예요. 남·여 두 컷씩 있고, 옷차림과 손에 든 것이 유형마다 달라요.'));
   mbtiCard.appendChild(buildCharDexGrid(MBTI_TYPES.map(function(t){ return 'm'+t; }), myKeys));
@@ -20630,8 +20626,7 @@ function buildRecentCompatCard(p){
     return c && c.inputs && c.inputs.b && (!p || c.profileId === p.id);
   });
   if(!list.length) return null;
-  var card = el('div',{class:'scroll-card'});
-  card.appendChild(el('h3',{},['전에 본 궁합']));
+  var card = sectionCard(['전에 본 궁합']);
   card.appendChild(el('p',{class:'section-sub', style:'margin-bottom:8px;'},
     ['누르면 그때 본 결과가 그대로 다시 열려요.']));
   list.slice(0,5).forEach(function(c){
@@ -21286,8 +21281,7 @@ function renderCompatSummary(p, draft){
   /* R34 — 이 궁합의 주소. 저장해 두면 새로고침하거나 다른 기기에서도 다시 열 수 있다.
      방을 거쳐 온 결과일 때만 주소가 있다(직접 입력한 궁합은 서버에 없다). */
   if(CURRENT_ROOM_ID){
-    var linkCard = el('div',{class:'scroll-card'});
-    linkCard.appendChild(el('h3',{},['이 궁합 결과 주소']));
+    var linkCard = sectionCard(['이 궁합 결과 주소']);
     linkCard.appendChild(el('p',{class:'biz-hint'},['이 주소를 저장해 두면 이 결과를 다시 볼 수 있어요. '+ROOM_TTL_PHRASE+' 동안 열려요.']));
     linkCard.appendChild(el('div',{class:'field'},[
       el('input',{type:'text', value:currentRoomLink(), readOnly:'readonly', id:'compatResultLink'})
@@ -21368,8 +21362,7 @@ function renderCompatSummary(p, draft){
   box.appendChild(mixCard);
 
   /* ③ 일상어 항목별 지표 — 용어 없이, 그 사람이 겪을 일로 */
-  var metricCard=el('div',{class:'scroll-card'});
-  metricCard.appendChild(el('h3',{},['어떤 점이 잘 맞나요']));
+  var metricCard = sectionCard(['어떤 점이 잘 맞나요']);
   metricCard.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['막대가 길수록 그 부분이 잘 맞는다는 뜻이에요.']));
   metricCard.appendChild(buildCompatMetricBars(r.res));
   /* ④ 용어는 여기 접어 둔다 */
@@ -21378,8 +21371,7 @@ function renderCompatSummary(p, draft){
 
   /* ★ R98 — 궁합 풀이(AI가 쓰는 13섹션)로 들어가는 문. 상세 버튼 세 개보다 위에 둔다.
      이게 이 상품의 본체이고, 아래 세 개는 그림·표로 보는 곁가지다. */
-  var storyCard = el('div',{class:'scroll-card'});
-  storyCard.appendChild(el('h3',{},['두 분만을 위한 긴 풀이']));
+  var storyCard = sectionCard(['두 분만을 위한 긴 풀이']);
   storyCard.appendChild(el('p',{class:'section-sub'},
     [COMPAT_SECTION_TITLES.length+'개 이야기로, 두 분의 사주 여덟 글자와 성격유형을 함께 읽어 새로 써요. 앞 '+FREE_SECTION_COUNT+'개는 그냥 볼 수 있어요.']));
   storyCard.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ COMPAT_SUB='story'; render(); scrollToTopNow(); }},
@@ -21388,12 +21380,10 @@ function renderCompatSummary(p, draft){
 
   /* ⑤ 상세(유료) — 무료/유료 경계는 예전과 같다. 버튼 두 개도 그대로 둔다. */
   var sumGrid=el('div',{class:'compat-summary-grid'});
-  var sajuCol=el('div',{class:'scroll-card'});
-  sajuCol.appendChild(el('h3',{},['타고난 기운으로 더 보기']));
+  var sajuCol = sectionCard(['타고난 기운으로 더 보기']);
   sajuCol.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['두 사람의 기운이 어떻게 맞물리는지, 어떤 자리에서 부딪히는지 문장으로 풀어드려요.']));
   sajuCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='saju'; render(); scrollToTopNow(); }},[compatLockMark(), '사주 궁합 자세히 보기', dirIcon('right')]));
-  var mbtiCol=el('div',{class:'scroll-card'});
-  mbtiCol.appendChild(el('h3',{},['성격으로 더 보기']));
+  var mbtiCol = sectionCard(['성격으로 더 보기']);
   mbtiCol.appendChild(el('p',{},[r.res.categories.chemistry]));
   mbtiCol.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='mbti'; render(); scrollToTopNow(); }},[compatLockMark(), '성격유형 궁합 자세히 보기', dirIcon('right')]));
   sumGrid.appendChild(sajuCol); sumGrid.appendChild(mbtiCol);
@@ -21455,8 +21445,7 @@ function renderCompatSajuDetail(p, draft){
     var loveReport = buildReport13({name:p.name, gender:p.gender||'F'}, r.pA.saju);
     var loveSec = loveReport.sections.filter(function(s){return s.id==='s5';})[0];
     if(loveSec){
-      var c4=el('div',{class:'scroll-card'});
-      c4.appendChild(el('h3',{},[ownerLabel(p.name)+' 연애 성향 (사주로 본 결)']));
+      var c4 = sectionCard([ownerLabel(p.name)+' 연애 성향 (사주로 본 결)']);
       c4.appendChild(el('div',{html:loveSec.body}));
       box.appendChild(c4);
     }
@@ -21480,8 +21469,7 @@ function renderCompatMbtiDetail(p, draft){
   box.appendChild(scoreGrid);
   ['love','friend','chemistry','conflict'].forEach(function(key){
     var labelMap={love:'연애',friend:'우정',chemistry:'함께 있을 때의 결',conflict:'갈등 요소'};
-    var card=el('div',{class:'scroll-card'});
-    card.appendChild(el('h3',{},[labelMap[key]]));
+    var card = sectionCard([labelMap[key]]);
     card.appendChild(el('p',{},[r.res.categories[key]]));
     box.appendChild(card);
   });
@@ -22368,8 +22356,7 @@ function buildGroupCompatGraph(members, pairs, onSelect){
 var GC_RANK_STEP = 10;
 var GC_RANK = {order:'best', shown:GC_RANK_STEP};
 function buildGroupRankPanel(pairs){
-  var card = el('div',{class:'scroll-card'});
-  card.appendChild(el('h3',{},['전체 순위']));
+  var card = sectionCard(['전체 순위']);
   card.appendChild(el('p',{class:'section-sub'},
     [pairs.length+'쌍을 모두 견줘 봤어요. 점수와 등급까지는 무료로 보여드려요.']));
   var tabs = el('div',{class:'gc-members', role:'group', 'aria-label':'순위 정렬 방식'});
@@ -23754,8 +23741,7 @@ function doGroupJoin(){
 /* 그룹 화면에 두는 접수 주소 카드 */
 function buildGroupJoinCard(){
   if(!GROUP_VIEW) return null;
-  var card = el('div',{class:'scroll-card'});
-  card.appendChild(el('h3',{},['사람 더 받기 (접수 주소)']));
+  var card = sectionCard(['사람 더 받기 (접수 주소)']);
   card.appendChild(el('p',{class:'biz-hint'},[
     '이 주소를 보내면 받은 분이 자기 정보를 직접 넣고 이 그룹에 들어와요. 최대 '+GC_MAX+'명까지 받을 수 있어요.'
   ]));
@@ -24013,8 +23999,7 @@ function buildSavedGroupsCard(){
   /* 다시 그리면 밀려 있던 줄은 사라진다. 가리키던 것을 안 놓으면 화면에 없는 줄을
      계속 붙들고 있게 된다. */
   SWIPE_OPEN = null;
-  var card = el('div',{class:'scroll-card'});
-  card.appendChild(el('h3',{},['저장한 그룹']));
+  var card = sectionCard(['저장한 그룹']);
   card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 열 수 있어요. 왼쪽으로 밀면 지울 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관돼요.']));
   list.forEach(function(g){
     var row = settingsRow(
@@ -24147,8 +24132,7 @@ function renderPairDeep(){
     pr.res.combined+'점 · '+pr.res.combinedTier, {marginTop:'10px'}));
   view.appendChild(buildDeepCompatBlock(pr.a.person, pr.b.person, pr.res));
 
-  var storyCard = el('div',{class:'scroll-card'});
-  storyCard.appendChild(el('h3',{},['두 분만을 위한 긴 풀이']));
+  var storyCard = sectionCard(['두 분만을 위한 긴 풀이']);
   storyCard.appendChild(el('p',{class:'section-sub'},
     [COMPAT_SECTION_TITLES.length+'개 이야기로, 두 분의 사주 여덟 글자와 성격유형을 함께 읽어 새로 써요.']));
   storyCard.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ PAIR_DEEP.story=true; render(); }},
@@ -24804,8 +24788,7 @@ function reopenRoom(roomId){
 function buildRecentRoomsCard(){
   var list = recentRooms();
   if(!list.length) return null;
-  var card = el('div',{class:'scroll-card'});
-  card.appendChild(el('h3',{},['최근에 본 궁합']));
+  var card = sectionCard(['최근에 본 궁합']);
   card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 볼 수 있어요. '+ROOM_TTL_PHRASE+' 동안 열 수 있어요.']));
   list.forEach(function(x){
     var who = personLabel(x.name, '이름 없는 상대')+' 궁합';
