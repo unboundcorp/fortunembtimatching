@@ -1064,7 +1064,6 @@ button.today-iljin:active{opacity:.7;}
 .today-hero-score b{font-size:1.86rem;font-weight:700;font-variant-numeric:tabular-nums;}
 .today-hero-score span{font-size:.9rem;color:var(--ink-dim);margin-left:3px;}
 .today-hero-sub{font-size:.9rem;line-height:1.8;color:var(--ink-dim);margin-top:12px;word-break:keep-all;}
-.today-hero-meta{font-size:.78rem;line-height:1.7;color:var(--ink-faint);margin-top:10px;word-break:keep-all;}
 /* 시안의 왼쪽 선 블록 — 상자를 하나 더 만들지 않고 글에 무게만 준다. */
 .note-block{background:var(--panel-2);border-left:2px solid var(--gold);padding:14px 16px;margin-top:16px;
   border-radius:0 var(--r-md) var(--r-md) 0;}
@@ -19404,9 +19403,9 @@ function renderHome(){
        세 화면에 같은 투로 "무엇은 안 쓴다"가 적혀 있었고, 읽는 분께는 필요 없는 말이었다.
        ★ 되살릴 생각이면 세 화면을 함께 되살려라(내 사주 · 성격유형 · 여기). 한 곳만 되살리면
          어떤 화면은 밝히고 어떤 화면은 안 밝히는 상태가 된다. */
-  hero.appendChild(el('p',{class:'today-hero-meta'},[
-    '사주에서 '+p.element+' 기운이 가장 많아요 · 오늘의 일진과 맞대어 본 결과예요'
-  ]));
+  /* ★ 2026-09-21 대표님 지시 "이 말 필요없어서 지워라" — 히어로 밑의
+     '사주에서 ○ 기운이 가장 많아요 · 오늘의 일진과 맞대어 본 결과예요' 한 줄을 뺐다.
+     대표 오행은 내 사주 화면에, 근거는 다섯 운 카드의 [근거] 줄에 그대로 있다. 되살리지 마라. */
   view.appendChild(hero);
 
   /* 다섯 칸 점수 — 홈과 같은 띠를 쓴다. 두 화면이 다른 모양으로 같은 값을 보이지 않게. */
