@@ -75,12 +75,17 @@ function page({ body, title }) {
 </style></head><body><div class="card">${body}</div></body></html>`;
 }
 
-/* 앱 로고와 같은 하트 모양. 파일을 부르지 않고 그려 넣는다 — 결제 페이지가 바깥 요청을
-   하나라도 더 하면 그만큼 느려지고, 막히면 브랜드가 통째로 사라진다. */
-const LOGO = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">'
-  + '<path d="M12 21s-7.5-4.7-9.3-9.2C1.2 8.1 3.4 4.5 7 4.5c2 0 3.7 1.1 5 2.8 1.3-1.7 3-2.8 5-2.8'
-  + ' 3.6 0 5.8 3.6 4.3 7.3C19.5 16.3 12 21 12 21z" stroke="#98003C" stroke-width="1.7"'
-  + ' stroke-linejoin="round"/></svg>';
+/* ★ 2026-09-22 대표님 지시 "결제페이지에서 로고가 하트만 있다 공식 로고로 바꿔 넣어라".
+   서비스 머리글의 `.brand-seal` SVG(하트 + 체크 + 반짝이 · viewBox 0 0 48 48)와 **같은 path** 다.
+   fortune.html 의 `LOGO_PATH`(공유 카드)와 함께 세 곳이 한 벌이다 — 로고를 바꾸면 셋을 함께 고쳐라.
+   파일을 부르지 않고 그려 넣는다 — 결제 페이지가 바깥 요청을 하나라도 더 하면 그만큼 느려지고,
+   막히면 브랜드가 통째로 사라진다. */
+const LOGO_COLOR = '#98003C';
+const LOGO = '<svg width="28" height="28" viewBox="0 0 48 48" fill="none" aria-hidden="true">'
+  + '<path d="M24 40.5C24 40.5 6.5 30.2 6.5 18.8c0-5.4 4.2-9.3 9-9.3 3.4 0 6.4 1.9 8.5 5 2.1-3.1 5.1-5 8.5-5 4.8 0 9 3.9 9 9.3 0 4.2-2.4 8.2-5.4 11.5"'
+  + ' stroke="' + LOGO_COLOR + '" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>'
+  + '<path d="M16.5 23.5 22 29l10.5-10.5" stroke="' + LOGO_COLOR + '" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>'
+  + '<path d="M40.5 6.5c.4 2.1.9 2.6 3 3-2.1.4-2.6.9-3 3-.4-2.1-.9-2.6-3-3 2.1-.4 2.6-.9 3-3Z" fill="' + LOGO_COLOR + '"/></svg>';
 
 const BRAND = '<div class="brand">' + LOGO + '<span>' + COMPANY.serviceName + '</span></div>';
 

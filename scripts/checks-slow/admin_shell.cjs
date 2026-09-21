@@ -12,8 +12,12 @@
      (예전에 이 사실을 잊고 "48건 통과"를 근거로 서버가 멀쩡하다고 여긴 적이 있다.)
 ===================================================================== */
 const L = require('../_lib.cjs');
-const BASE = (process.argv[2] || 'http://127.0.0.1:8899').replace(/\/+$/, '');
-const APP = BASE + '/fortune.html';
+/* ★ 2026-09-22 — 주소를 안 주면 **스스로 띄운다**. 예전에는 8899 를 그냥 믿었는데, 8/30 부터 떠 있던 낡은
+   python 서버가 그 포트에서 남의 폴더를 404 로 답해 "셸이 안 선다"로 두 번 헛짚었다(verify.sh 는 주소를
+   넘겨 주므로 그때만 통과했다). 남이 든 포트를 믿지 마라. */
+let BASE = (process.argv[2] || '').replace(/\/+$/, '');
+let APP = BASE + '/fortune.html';
+let SELF_SRV = null;
 
 const day = (i) => new Date(Date.now() + 9*3600*1000 - i*86400000).toISOString().slice(0,10);
 const blank = (d, o) => Object.assign({d, rooms:{made:0,joined:0}, groups:{made:0,people:0,max:0},
@@ -53,7 +57,7 @@ const ROWS = {
      synced:false,rev:null,syncedAt:null,history:0,groups:0,paidCount:0,revenue:0,profiles:[],orders:[]}],
   orders:[
     {id:'ORD-1',productId:'compat_full',name:'궁합 심층 해석',amount:990,status:'paid',
-     sessionId:'sess-abc',paymentKey:'있음',at:'2026-09-10T02:03:04Z',paidAt:'2026-09-10T02:03:44Z'},
+     sessionId:'sess-abc',paymentKey:'있음',at:'2026-09-10T02:03:04Z',paidAt:'2026-09-10T02:03:44Z',kakaoId:'5079990001'},
     {id:'ORD-3',productId:'compat_full',name:'궁합 심층 해석',amount:990,status:'failed',
      sessionId:'sess-zzz',paymentKey:'없음',at:'2026-09-10T03:00:00Z',paidAt:null}],
   rooms:[{id:'RM-001',a:P_A,b:P_B,at:'2026-09-10T01:02:03Z',joinedAt:'2026-09-10T01:09:08Z',expiresAt:'2026-10-10T01:02:03Z'},
@@ -95,6 +99,14 @@ function wire(page, opt){
     if(u.indexOf('/api/stats') >= 0){
       let b = {}; try{ b = JSON.parse(r.postData() || '{}'); }catch(e){}
       if(b.action === 'rows') return r.respond(j({kind:b.kind, rows:ROWS[b.kind] || []}));
+      /* ★ 2026-09-21 — 주문 확인 창: 누구의 결제인지(카카오 회원번호·프로필·결제키)를 내려준다 */
+      if(b.action === 'order') return r.respond(j({found:true,
+        order:{receiptId:'ORD-1', productId:'compat_full', productName:'궁합 심층 해석', amount:990, status:'paid',
+               createdAt:'2026-09-10T02:03:04Z', paidAt:'2026-09-10T02:03:44Z', paymentKey:'있음',
+               paymentKeyFull:'tviva20260910', sessionId:'sess-abc'},
+        who:{kakaoId:'5079990001', linkedAt:'2026-09-09T01:00:00Z',
+             profiles:[{name:'검사', mbti:'ENFP', gender:'여', birth:'1990-01-02', time:'10:00', lon:126.97, solarTime:'진태양시'}]},
+        aiUses:1, aiQuota:1, firstAiAt:'2026-09-10T02:04:05Z', passUntil:null, note:'테스트'}));
       return r.respond(j(SUMMARY));
     }
     if(u.indexOf('/api/feedback') >= 0) return r.respond(j({items:TICKETS}));
@@ -113,6 +125,7 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
 
 (async () => {
   const R = L.reporter('어드민 셸');
+  if(!process.argv[2]){ SELF_SRV = await L.serve(L.ROOT, 0); BASE = SELF_SRV.url.replace(/\/+$/, ''); APP = BASE + '/fortune.html'; }
   const exe = L.chromePath(), pp = L.puppeteer();
   if(!exe || !pp){ console.error('크롬 또는 puppeteer-core 를 못 찾았습니다.'); process.exit(2); }
   const browser = await pp.launch({executablePath:exe, headless:'new', args:['--no-sandbox']});
@@ -283,6 +296,13 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   o = await go('payments');
   ['ORD-1','궁합 심층 해석','결제완료','실패','열람 여부','환불 처리 단추는 아직 없어요']
     .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "결제 — '" + w + "' 가 보인다"); });
+  /* ★ 2026-09-21 대표님 지시 — 환불 때 누구 결제인지 맞출 정보가 표와 창에 있는가 */
+  R.note(o.text.indexOf('회원번호') >= 0 && o.text.indexOf('5079990001') >= 0, '결제 표에 카카오 회원번호 칸이 있다');
+  await L.clickText(page, /열람 여부/); await L.wait(900);
+  const om = await page.evaluate(() => ((document.querySelector('#activeModal .modal-box')||{}).innerText || '').replace(/\s+/g,' '));
+  ['누구의 결제인가','카카오 회원번호','5079990001','검사','ENFP','1990-01-02','tviva20260910','영수증 번호가 같은지']
+    .forEach(function(w){ R.note(om.indexOf(w) >= 0, "주문 확인 창 — '" + w + "' 가 보인다"); });
+  await page.evaluate(() => { const b = document.querySelector('#activeModal .modal-close-row .btn'); if(b) b.click(); }); await L.wait(300);
 
   o = await go('compat');
   ['RM-001','회사 모임','아직 안 들어옴','PIN 없음','만든 분이 관리','열쇠가 저장돼 있어요']

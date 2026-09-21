@@ -405,13 +405,23 @@ export async function aiAlreadyUsed(sessionId, cacheKey) {
      그때 그 주소를 아는 사람은 누구나 유료 기능을 전부 열 수 있었다. 같은 실수를 반복하지 않는다. */
 export async function grantTestAccess(sessionId, hours, role) {
   const expires = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+  let finalRole = role === 'admin' ? 'admin' : 'tester';
+  /* ★ 2026-09-22 — 세션당 허가가 한 줄이라, 운영자 허가가 있는 브라우저에서 #unlock 테스트 코드를 넣으면
+     운영자 허가가 테스터로 **내려앉았다**(대표님이 실제로 겪음 · 관리자 화면이 잠김). 이미 운영자면 유지한다.
+     테스터 코드는 운영자 권한을 새로 주지 않는다 — 있는 것을 깎지만 않을 뿐이다. */
+  if (finalRole !== 'admin') {
+    try {
+      const prev = await testAccessOf(sessionId);
+      if (prev && prev.role === 'admin') finalRole = 'admin';
+    } catch (e) { /* 못 읽으면 요청한 역할 그대로 */ }
+  }
   await rest('test_grants?on_conflict=session_id', {
     method: 'POST',
     headers: { Prefer: 'return=minimal,resolution=merge-duplicates' },
     body: JSON.stringify({
       session_id: sessionId,
       expires_at: expires,
-      role: role === 'admin' ? 'admin' : 'tester',
+      role: finalRole,
     }),
   });
   return expires;

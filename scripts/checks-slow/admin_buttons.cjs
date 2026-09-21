@@ -15,8 +15,12 @@
      여기서 잡는 것은 "못 누른다 · 누르면 터진다 · 누르면 화면이 죽는다" 셋이다.
 ===================================================================== */
 const L = require('../_lib.cjs');
-const BASE = (process.argv[2] || 'http://127.0.0.1:8899').replace(/\/+$/, '');
-const APP = BASE + '/fortune.html';
+/* ★ 2026-09-22 — 주소를 안 주면 **스스로 띄운다**. 예전에는 8899 를 그냥 믿었는데, 8/30 부터 떠 있던 낡은
+   python 서버가 그 포트에서 남의 폴더를 404 로 답해 "셸이 안 선다"로 두 번 헛짚었다(verify.sh 는 주소를
+   넘겨 주므로 그때만 통과했다). 남이 든 포트를 믿지 마라. */
+let BASE = (process.argv[2] || '').replace(/\/+$/, '');
+let APP = BASE + '/fortune.html';
+let SELF_SRV = null;
 
 const day = (i) => new Date(Date.now() + 9*3600*1000 - i*86400000).toISOString().slice(0,10);
 const blank = (d, o) => Object.assign({d, rooms:{made:0,joined:0}, groups:{made:0,people:0,max:0},
@@ -71,7 +75,8 @@ function wire(page){
       if(b.action === 'rows') return r.respond(j({kind:b.kind, rows:ROWS[b.kind] || []}));
       if(b.action === 'order') return r.respond(j({found:true,
         order:{receiptId:'ORD-1', productId:'compat_full', productName:'궁합 심층 해석', amount:990,
-               status:'paid', createdAt:'2026-09-10T02:03:04Z', paidAt:'2026-09-10T02:03:44Z', paymentKey:'있음'},
+               status:'paid', createdAt:'2026-09-10T02:03:04Z', paidAt:'2026-09-10T02:03:44Z', paymentKey:'있음', paymentKeyFull:'tviva20260910', sessionId:'sessABCDEFGH1234'},
+        who:{kakaoId:'5079990001', linkedAt:'2026-09-09T01:00:00Z', profiles:[{name:'검사', mbti:'ENFP', gender:'여', birth:'1990-01-02', time:'10:00', lon:126.97, solarTime:'진태양시'}]},
         aiUses:1, aiQuota:1, firstAiAt:'2026-09-10T02:04:05Z', lastAiAt:'2026-09-10T02:04:05Z',
         passUntil:null, note:'테스트'}));
       return r.respond(j(SUMMARY));
@@ -99,6 +104,7 @@ const SKIP = ['서비스 화면으로'];
 
 (async () => {
   const R = L.reporter('어드민 QA (모든 단추)');
+  if(!process.argv[2]){ SELF_SRV = await L.serve(L.ROOT, 0); BASE = SELF_SRV.url.replace(/\/+$/, ''); APP = BASE + '/fortune.html'; }
   const exe = L.chromePath(), pp = L.puppeteer();
   if(!exe || !pp){ console.error('크롬 또는 puppeteer-core 를 못 찾았습니다.'); process.exit(2); }
   const browser = await pp.launch({executablePath:exe, headless:'new', args:['--no-sandbox']});

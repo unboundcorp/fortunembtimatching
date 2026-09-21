@@ -126,6 +126,25 @@ export default async function handler(req, res) {
       const ent = buildEntitlements(allOrders || []);
       const quota = ent.pass ? aiQuotaOf('pass') : aiQuotaOf(p ? p.kind : 'once');
 
+      /* ★ 2026-09-21 대표님 지시 — "해당 고객이 맞는지 확인할 수 있는 요소가 있어야 환불할 때 수월하지".
+         결제 세션 → kakao_links(카카오 회원번호) → user_sync(그 계정이 넣어 둔 프로필)을 맞대어 내려준다.
+         ★ kakao_links 는 회원당 최신 세션 하나만 가리킨다. 결제는 로그인 때 최신 세션으로 옮겨지므로
+           (moveOrdersToSession) 대개 잡히지만, 못 찾으면 '연결 안 됨'으로 내려보낸다 — 지어내지 않는다.
+         ★ 사주 여덟 글자 등은 describeProfile 이 프로필의 sajuCache 를 읽는다(서버에서 계산하지 않는다). */
+      let who = { kakaoId: null, linkedAt: null, profiles: [] };
+      try {
+        const link = await rest(
+          `kakao_links?session_id=eq.${encodeURIComponent(order.session_id)}&select=kakao_id,created_at&limit=1`
+        );
+        if (link && link[0] && link[0].kakao_id) {
+          who.kakaoId = link[0].kakao_id;
+          who.linkedAt = link[0].created_at || null;
+          const sy = await rest(`user_sync?kakao_id=eq.${encodeURIComponent(link[0].kakao_id)}&select=data&limit=1`);
+          const d = (sy && sy[0] && sy[0].data) || {};
+          who.profiles = (Array.isArray(d.profiles) ? d.profiles : []).map(describeProfile).filter(Boolean);
+        }
+      } catch (e) { who.error = true; }
+
       return json(res, 200, {
         found: true,
         order: {
@@ -137,7 +156,10 @@ export default async function handler(req, res) {
           createdAt: order.created_at,
           paidAt: order.paid_at,
           paymentKey: order.payment_key ? '있음' : '없음',
+          paymentKeyFull: order.payment_key || '',   /* 토스 콘솔에서 이 건을 찾는 열쇠 (운영자 화면 전용) */
+          sessionId: order.session_id || '',
         },
+        who,
         aiUses: (uses || []).length,
         aiQuota: quota,
         firstAiAt: uses && uses[0] ? uses[0].created_at : null,
@@ -247,6 +269,16 @@ export default async function handler(req, res) {
         const rows = await rest(
           `orders?select=order_id,session_id,product_id,amount,status,payment_key,created_at,paid_at&order=created_at.desc&limit=${N}`
         );
+        /* ★ 2026-09-21 — 결제 표에 카카오 회원번호를 함께 싣는다(환불 때 누구 결제인지 맞추려고). */
+        const kakaoBySid = {};
+        try {
+          const sids = [...new Set((rows || []).map((o) => o.session_id).filter(Boolean))];
+          if (sids.length) {
+            const inL = encodeURIComponent(sids.map((v) => '"' + String(v).replace(/"/g, '') + '"').join(','));
+            const links = await rest(`kakao_links?session_id=in.(${inL})&select=kakao_id,session_id`);
+            (links || []).forEach((l) => { if (l.session_id) kakaoBySid[l.session_id] = l.kakao_id; });
+          }
+        } catch (e) { /* 못 맞대도 표는 나간다 — 회원번호 칸만 빈다 */ }
         return json(res, 200, { kind, rows: (rows || []).map((o) => {
           const p = productOf(o.product_id);
           return {
@@ -256,6 +288,7 @@ export default async function handler(req, res) {
             amount: o.amount,
             status: o.status,
             sessionId: o.session_id || '',
+            kakaoId: kakaoBySid[o.session_id] || null,
             paymentKey: o.payment_key ? '있음' : '없음',
             at: o.created_at,
             paidAt: o.paid_at || null,
