@@ -6467,6 +6467,13 @@ function kakaoRefresh(){
    ★ 이용권은 보내지도, 받지도 않는다. 권한의 근거는 서버의 주문 기록뿐이다.
 ===================================================================== */
 var SYNC = { on:false, busy:false, err:null, at:null, pulled:false };
+/* ★ 2026-09-21 대표님 제보 — "다른 PC에서 카카오 로그인 했는데 데이터는 있는데도 초기화면이
+   뜨면서 사주 입력하라네?" 부팅 때 **카카오 조회 → 동기화** 한 줄을 여기에 붙들어 둔다.
+   동의 마무리(finishConsent)는 "프로필이 있나"로 마법사·홈을 가르는데, 그 판단을 동기화가
+   끝나기 **전에** 하면 새 기기는 언제나 '프로필 없음'이라 마법사로 간다. 그래서 이 약속이
+   끝난 뒤에 판단한다. 기다리는 동안은 CONSENT_WAIT 로 기다림 화면만 보인다. */
+var SYNC_FIRST = null;
+var CONSENT_WAIT = false;
 /* ★ 2026-09-08 대표님 지시 — "그룹 목록도 카카오 계정에 실어 보내고, 그 그룹에 속한
    모든 사람들 카카오 계정에도 보내야 된다."
    savedGroups를 넣었다. 각자의 브라우저에 이미 자기 몫의 줄이 쌓이므로(링크로 들어간
@@ -6845,8 +6852,11 @@ function restoreAfterKakao(){
      ★ 동의는 `localStorage`(`STATE.consentAt`)에 남아 있다 — 탭이 바뀌어도 살아 있다.
        그래서 쪽지가 없어도 그것으로 이어 간다. `consentAt` 을 로그인보다 **먼저** 저장해 둔
        이유가 바로 이것이다(beginAfterConsent). 그 순서를 바꾸지 마십시오. */
+  /* ★ 2026-09-21 — 동기화를 기다리는 중이면 아무것도 안 한다. 부팅이 이 함수를 두 번 부르는데
+     (이용권 조회 뒤 · 전부 끝난 뒤) 두 번째가 아래 갈래로 들어와 먼저 판단해 버리면 안 된다. */
+  if(CONSENT_WAIT) return;
   if(!saved || !saved.at || Date.now() - saved.at > 10 * 60 * 1000){
-    if(STATE.consentAt && !STATE.onboarded && KAKAO.linked){ finishConsent(null); }
+    if(STATE.consentAt && !STATE.onboarded && KAKAO.linked){ finishConsentAfterSync(null); }
     return;
   }
   try{
@@ -6862,7 +6872,7 @@ function restoreAfterKakao(){
     /* ★ 2026-09-09 — 동의 화면에서 로그인하러 갔던 경우. 이제 사주 정보를 받는다.
        여기서 끝내고 돌아간다 — 아래 결제창 되살리기는 이 갈래와 상관이 없다
        (동의 화면에서는 결제하러 간 것이 아니다). */
-    if(saved.startMode){ finishConsent(saved.startMode); return; }
+    if(saved.startMode){ finishConsentAfterSync(saved.startMode); return; }
     render();
     /* 결제하려다 로그인하러 갔던 경우 — 아직 안 열렸으면 결제창을 다시 띄운다. */
     /* ★ 2026-09-07 (대표님 제보: "결제버튼 누르고 카카오 로그인 했는데 다시 이 화면이 뜬다")
@@ -19236,12 +19246,37 @@ function kakaoUnavailableModal(mode){
   ]);
 }
 /* 로그인까지 끝났다. 이제 사주 정보를 받는다. */
+/* ★ 2026-09-21 대표님 제보 — 새 기기에서 로그인하면 **서버에 프로필이 있는데도** 마법사가 떴다.
+   이용권 조회(왕복 1번)가 카카오 조회→동기화(왕복 2번)보다 먼저 끝나 finishConsent 가
+   '프로필 없음'으로 먼저 판단했고, 뒤늦게 프로필이 내려와도 이미 마법사 안이었다.
+   그래서 동기화(SYNC_FIRST)가 끝난 뒤에 판단한다. 실패해도(`.catch`) 판단은 한다 —
+   서버가 안 되는 날에도 손님이 멈춰 서면 안 된다. 기다리는 동안은 기다림 화면이다
+   (render 가 CONSENT_WAIT 를 본다). 동기화가 이미 끝났으면 바로 판단한다.
+   ★ 이 함수를 건너뛰고 finishConsent 를 직접 부르지 마십시오 — 그 순간 이 제보가 돌아옵니다. */
+function finishConsentAfterSync(mode){
+  if(!SYNC_FIRST){ finishConsent(mode); return; }
+  CONSENT_WAIT = true; render();
+  var go = function(){ CONSENT_WAIT = false; finishConsent(mode); };
+  SYNC_FIRST.then(go, go);
+}
 function finishConsent(mode){
   STATE.onboarded = true; saveState();
   if(mode === 'invited'){
     /* 초대를 들고 온 분은 고를 것이 이미 정해져 있다. 저장이 끝나면 마법사가 알아서
-       초대 화면으로 이어준다(goGroupJoin 등). */
-    setMode('compat'); startSetupWizard(null); render(); return;
+       초대 화면으로 이어준다(goGroupJoin 등).
+       ★ 2026-09-21 — 동기화로 프로필이 이미 내려왔으면 마법사를 건너뛰고 초대 화면으로 간다.
+         마법사 끝(저장 처리)이 하는 갈래와 같은 순서다. */
+    setMode('compat');
+    if(activeProfile()){
+      if(PENDING_GROUP_JOIN){ ROUTE='groupJoin'; }
+      else if(PENDING_GROUP){ var gid = PENDING_GROUP; PENDING_GROUP=null; ROUTE='compat'; render(); openSavedGroup(gid); return; }
+      else if(PENDING_ROOM){ ROUTE='roomJoin'; }
+      else if(PENDING_MEET){ GC_SOURCE='link'; ROUTE='groupCompat'; }
+      else if(PENDING_INVITE && !INVITE_CONSUMED){ ROUTE='inviteAccept'; }
+      else { ROUTE='compat'; }
+      render(); return;
+    }
+    startSetupWizard(null); render(); return;
   }
   if(mode === 'self' || mode === 'compat'){ startService(mode); return; }
   /* ★ 2026-09-09 대표님 지시 — "동의 버튼 누르고 바로 카카오 로그인되게 해라
@@ -26336,6 +26371,7 @@ try{
 function loginGateBlocks(){
   if(ADMIN_ROUTES[ROUTE] || GATE_FREE_ROUTES[ROUTE]) return false;
   /* 아직 모르는 동안(기다림 화면)도 막는 것으로 본다 — 그 화면에도 단추를 띄우지 않는다. */
+  if(CONSENT_WAIT) return true;
   if(!KAKAO.loaded && !STATE.kakaoSeen) return true;
   var kakaoOk = KAKAO.loaded ? KAKAO.linked : true;
   if(KAKAO.err && STATE.kakaoSeen) kakaoOk = true;
@@ -26440,7 +26476,9 @@ function render(){
   /* ★ 아직 모르면 **아무 화면도 보여주지 않는다.** 모르는 채로 찍으면 반드시 한쪽이 틀리고,
      틀린 화면이 0.3초 떴다가 바뀌는 것이 대표님이 보신 그 깜빡임이다.
      이 기기에서 로그인이 확인된 적이 있으면(kakaoSeen) 찍지 않고 바로 서비스로 간다. */
-  if(!KAKAO.loaded && !STATE.kakaoSeen && !ADMIN_ROUTES[ROUTE] && !GATE_FREE_ROUTES[ROUTE]){
+  /* ★ 2026-09-21 — 로그인하고 돌아와 동기화를 기다리는 동안(CONSENT_WAIT)도 같은 기다림 화면이다.
+     이때 관문을 그리면 동의 화면이 번쩍이고, 서비스를 그리면 마법사가 번쩍인다. */
+  if((!KAKAO.loaded && !STATE.kakaoSeen && !ADMIN_ROUTES[ROUTE] && !GATE_FREE_ROUTES[ROUTE]) || CONSENT_WAIT){
     $('#appHeader').hidden = true; $('#tabbarWrap').hidden = true;
     renderBootWait(); return;
   }
@@ -27084,6 +27122,7 @@ scheduleCharWarm();
         .catch(function(){})
         /* ★ R104 — 로그인해 두셨으면 다른 기기에서 만든 것을 받아 와 합친다. */
         .then(function(){ return syncPull().catch(function(){ return false; }); });
+      SYNC_FIRST = linkThenSync;   /* ★ 2026-09-21 — finishConsentAfterSync 가 이것을 기다린다 */
 
       /* ★ 2026-09-07 (대표님 지시: "로그인 누르면 이 화면이 뜨긴 뜨는데 3초 정도 기다려야 하네?
          이거 단축시켜라 무조건")
