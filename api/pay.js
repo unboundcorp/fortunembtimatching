@@ -178,7 +178,7 @@ export default async function handler(req, res) {
       ${methodSlots}
 
       <button id="payBtn" disabled>${amount.toLocaleString('ko-KR')}원 결제하기</button>
-      <button class="ghost" onclick="location.href='/fortune.html'">취소하고 돌아가기</button>
+      <button class="ghost" onclick="location.href='/fortune.html?pay=cancel'">취소하고 돌아가기</button>
       <p class="err" id="err" hidden></p>
       ${LEGAL}
       <script src="https://js.tosspayments.com/v2/standard"></script>
