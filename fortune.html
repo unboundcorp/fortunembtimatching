@@ -4594,7 +4594,9 @@ function termAutoRegex(){
   }
   return TERM_AUTO_RE;
 }
-var TERM_SKIP_SEL = 'button,a,input,select,textarea,.no-term,.term-lite,.term-chip,.pillar-seal,.gl-item';
+/* svg·title — 2026-09-21 손님 단추 검사가 잡음: 대운 그래프의 <title>(읽기 도우미용 이름) 안 '대운'을
+   용어 단추로 감싸 <title> 속에 <button> 이 들어갔다. 그림 안은 어디든 안 건드린다. */
+var TERM_SKIP_SEL = 'button,a,input,select,textarea,svg,title,.no-term,.term-lite,.term-chip,.pillar-seal,.gl-item';
 function autoTermify(root){
   if(!root || !root.querySelectorAll || typeof document.createTreeWalker !== 'function') return root;
   var re = termAutoRegex();
