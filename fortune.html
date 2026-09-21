@@ -1037,11 +1037,6 @@ button.today-iljin:active{opacity:.7;}
 .today-cat-num{font-size:.9rem;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap;}
 .today-cat-none{font-size:.78rem;color:var(--ink-faint);white-space:nowrap;flex-shrink:0;}
 /* 왜 이 점수인지 */
-.today-why{font-size:.78rem;color:var(--ink-dim);line-height:1.7;margin-top:12px;
-  padding:9px 11px;border-radius:var(--r-md);background:var(--panel-3);word-break:keep-all;}
-.why-chip{display:inline-flex;align-items:center;height:18px;padding:0 6px;margin-right:2px;border-radius:5px;
-  font-family:var(--sans);font-weight:800;font-size:.68rem;letter-spacing:.02em;color:var(--gold);
-  background:var(--gold-soft);vertical-align:1px;}
 /* 오늘의 총평 — 줄마다 어디서 온 말인지 칩(2026-09-21). 색은 성격유형 화면의 잘 맞는 편/맞춰가야(.fit-head)와 같은 값 */
 /* ★ 2026-09-21 대표님 지적 "가장 큰 때 이거 4글자라 아래 단락들이랑 문단 너비가 안 맞는다" —
    칩 칸 폭을 줄마다 따로 잡으면 글 시작선이 어긋난다. 목록 하나를 표(grid)로 짜서 칩 칸을 가장 넓은
@@ -4488,7 +4483,7 @@ function openIljinModal(gz, profile, fortune){
     iljinRow(t2, '아랫글자끼리 · 오늘 ' + b.todayBranchWord + ' × 태어난 날 ' + b.dayBranchWord,
       TODAY_LOVE_VERB[b.loveTier] || '특별히 엮이지 않아요');
     /* 기운의 세기 — 십이운성. 이미 사람 말로 풀어 둔 함수가 있다. */
-    iljinRow(t2, '기운의 세기', todayStagePlain(b));
+    iljinRow(t2, '기운의 세기', todayStagePlain(b, true));
     body.appendChild(t2);
 
     if(ft && ft.overall != null){
@@ -14002,38 +13997,42 @@ function computeTodayScores(profile, todayGz){
    예전: "오늘 날짜의 아랫글자가 타고난 여덟 글자와 정면으로 부딪혀요(충)"
    지금: "오늘은 범(寅)의 날인데, 태어난 해의 원숭이(申)와 정면으로 맞서는 짝이에요"
    ★ 무엇이 · 무엇과 · 어떻게 — 셋이 다 들어가야 사람이 알아듣는다. */
-var TODAY_TOTAL_VERB = { hap:'서로 끌어당기는 짝이에요', chung:'정면으로 맞서는 짝이에요' };
+/* ★ 2026-09-21 대표님 지시 "근거 말을 … 쉽게 쓰든가" → "2로 가라"(쉬운 말 + 접기).
+   다섯 운의 근거 문장을 전부 "오늘 날짜의 기운인 ○는 내 사주와 …" 투로 다시 썼다.
+   계산(basis)은 그대로이고 말만 바꿨다. 옛 투('특별히 엮이지 않아요 · 열두 단계로 보면 5번째')는
+   일진 설명 창(iljinRow)에만 원래 용어와 함께 남아 있다. */
+var TODAY_TOTAL_VERB = { hap:'서로 끌어당겨 잘 어우러져요', chung:'정면으로 부딪혀요' };
 function todayTotalWhy(b){
   var verb = TODAY_TOTAL_VERB[b.totalTier];
-  if(verb && b.totalWithWord){
-    return '오늘은 ' + b.todayBranchWord + '의 날인데, ' + b.totalWithPos + '의 ' + b.totalWithWord
-         + josaOnlyText(b.totalWithWord,'과','와') + ' ' + verb;
+  if(verb && b.totalWithWord && b.todayBranchWord){
+    return '오늘 날짜의 기운인 ' + b.todayBranchWord + josaOnlyText(b.todayBranchWord,'은','는')
+         + ' 내 사주의 ' + b.totalWithWord + josaOnlyText(b.totalWithWord,'과','와') + ' ' + verb + '.';
   }
-  if(!b.todayBranchWord) return '오늘 들어오는 기운은 타고난 사주와 특별히 엮이지 않아요';
-  return '오늘의 ' + b.todayBranchWord + josaOnlyText(b.todayBranchWord,'은','는')
-       + ' 타고난 사주와 특별히 엮이지 않아요';
+  if(!b.todayBranchWord) return '오늘 들어오는 기운은 내 사주와 특별히 부딪히지도 끌어당기지도 않아 무난하게 어우러져요.';
+  return '오늘 날짜의 기운인 ' + b.todayBranchWord + josaOnlyText(b.todayBranchWord,'은','는')
+       + ' 내 사주와 특별히 부딪히지도 끌어당기지도 않아 무난하게 어우러져요.';
 }
 var TODAY_LOVE_VERB = { hap:'서로 끌어당기는 짝이에요', samhap:'한 갈래로 묶이는 짝이에요',
                         same:'같은 기운이에요', pa:'서로 흔드는 짝이에요', chung:'정면으로 맞서는 짝이에요' };
+var TODAY_LOVE_VERB_EASY = { hap:'서로 끌어당겨 잘 어우러져요', samhap:'한 갈래로 묶여 잘 어우러져요',
+                             same:'같은 기운이라 편안해요', pa:'서로 흔들어 조금 어긋나요', chung:'정면으로 부딪혀요' };
 function todayLoveWhy(b){
-  var verb = TODAY_LOVE_VERB[b.loveTier];
+  var lead = '애정운은 태어난 날의 기운으로 봐요(곁에 있는 사람을 나타내는 자리예요). ';
   /* ★ 값이 없으면(옛 기록) 짧게 끝낸다 — undefined를 화면에 내보내지 않는다. */
-  if(!b.todayBranchWord || !b.dayBranchWord) return '오늘 들어오는 기운과 태어난 날의 기운을 맞대어 봤어요';
-  var head = '오늘의 ' + b.todayBranchWord + josaOnlyText(b.todayBranchWord,'이','가')
-           + ' 태어난 날의 ' + b.dayBranchWord;
-  var tail = ' — 태어난 날은 곁에 있는 사람을 보는 대목이에요';
-  if(!verb) return head + josaOnlyText(b.dayBranchWord,'과','와') + ' 특별히 엮이지 않아요' + tail;
-  return head + josaOnlyText(b.dayBranchWord,'과','와') + ' ' + verb + tail;
+  if(!b.todayBranchWord || !b.dayBranchWord) return lead + '오늘 날짜의 기운과 태어난 날의 기운을 맞대어 봤어요.';
+  var verb = TODAY_LOVE_VERB_EASY[b.loveTier] || '특별히 엮이지 않아 평소와 비슷해요';
+  return lead + '오늘 날짜의 기운인 ' + b.todayBranchWord + josaOnlyText(b.todayBranchWord,'과','와')
+       + ' 태어난 날의 기운인 ' + b.dayBranchWord + josaOnlyText(b.dayBranchWord,'은','는') + ' ' + verb + '.';
 }
 function todayHealthWhy(b){
+  var lead = '오늘 들어오는 기운은 ' + b.todayElemName + ' 기운이에요. ';
   if(b.healthTier==='weak')
     /* ★ 2026-09-01 — 0일 때 '0개뿐이라'로 나갔다. 없으면 없다고 쓴다. */
-    return '오늘 들어오는 ' + b.todayElemName + ' 기운은 '
-         + (b.weakestCount ? ('내 사주에 ' + b.weakestCount + '개뿐이라') : '내 사주에 하나도 없어서')
-         + ' 모자란 쪽을 채워 줘요';
+    return lead + '내 사주에 ' + (b.weakestCount ? (b.weakestCount + '개뿐인') : '하나도 없는')
+         + ' 기운이라 오늘 그 빈자리를 채워 줘요.';
   if(b.healthTier==='most')
-    return '오늘 들어오는 ' + b.todayElemName + ' 기운은 이미 ' + b.mostCount + '개로 가장 많은데 거기에 더 얹혀요';
-  return '오늘 들어오는 ' + b.todayElemName + ' 기운은 내 사주에서 넘치지도 모자라지도 않은 쪽이에요';
+    return lead + '내 사주에 이미 가장 많은 기운(' + b.mostCount + '개)이라 오늘 한쪽으로 더 쏠려요. 몸의 균형을 챙기면 좋아요.';
+  return lead + '내 사주에서 넘치지도 모자라지도 않는 기운이라 몸의 흐름이 평소와 비슷해요.';
 }
 /* =====================================================================
    R85-b (2026-08-18) — 오늘의 총평 (대표님 지시: "총평 좀 더 디테일하게")
@@ -14110,17 +14109,17 @@ function branchWord(idx){
 }
 function stemWord(idx){ return SajuEngine.STEMS[idx]+'('+SajuEngine.STEMS_H[idx]+')'; }
 /* 십이운성을 사람 말로. 센지 약한지를 먼저 말하고, 원래 이름은 괄호에 남긴다. */
-function todayStagePlain(b){
+function todayStagePlain(b, withRank){
   var rank = TWELVE_STAGE_RANK[b.stageName];
-  var word = !rank ? '보통쯤이에요'
-           : (rank<=4 ? '가장 세지는 쪽이에요'
-           : (rank<=8 ? '보통쯤이에요' : '옅어지는 쪽이에요'));
+  var word = !rank ? '힘이 보통이에요'
+           : (rank<=4 ? '힘이 가장 세지는 쪽이에요'
+           : (rank<=8 ? '힘이 보통이에요' : '힘이 옅어지는 쪽이에요'));
   /* ★ 2026-09-01 대표님 지시 — 풀이에 '글자'·'자리'를 쓰지 않는다.
      '내 글자 경(庚)' → '나를 나타내는 기운 경(庚)'.
      ★ 값이 없으면 그 대목을 통째로 뺀다. 예전에는 'undefined의 힘은'이 그대로 찍혔다. */
-  var head = b.myStemWord ? ('나를 나타내는 기운 ' + b.myStemWord + josaOnlyText(b.myStemWord,'은','는') + ' 오늘 ')
-                          : '내 기운은 오늘 ';
-  return head + word + (rank ? ' (열두 단계로 보면 ' + rank + '번째 · ' + b.stageName + ')' : '');
+  var head = b.myStemWord ? ('나를 나타내는 기운인 ' + b.myStemWord + josaOnlyText(b.myStemWord,'은','는') + ' 오늘 ')
+                          : '나를 나타내는 기운은 오늘 ';
+  return head + word + ((withRank && rank) ? ' (열두 단계로 보면 ' + rank + '번째 · ' + b.stageName + ')' : '') + '.';
 }
 /* 옛 이름 — 문자열 배열. 공유 카드(마지막 줄)가 쓴다. 화면은 아래 buildTodaySummaryRows 를 쓴다. */
 function buildTodaySummary(fortune){
@@ -14192,6 +14191,14 @@ function buildTodaySummaryRows(fortune){
 
 /* 십성 다섯 갈래를 사주 모르는 사람이 읽을 수 있는 말로. 뜻은 명리 통설 그대로다.
    쉬운 말을 앞에, 원래 용어는 괄호에 — 이 서비스가 다른 화면에서 쓰는 방식과 같다. */
+/* 금전운 근거의 꼬리 — 십성 갈래마다 "그래서 오늘 돈 쪽은 어떤가" 한 마디 (2026-09-21) */
+var TODAY_MONEY_WHY_TAIL = {
+  '비겁':'나눠 쓰거나 경쟁이 붙는 쪽으로 돈이 움직여요',
+  '식상':'쓰고 벌이는 쪽이 활발해져요',
+  '재성':'돈 흐름이 움직이는 날이에요',
+  '관성':'규칙과 책임 쪽에서 돈을 보게 돼요',
+  '인성':'들어오는 도움이나 배움이 있어요'
+};
 var SIP_GROUP_PLAIN = {
   '비겁':'나와 나란히 서는 기운',
   '식상':'내가 밖으로 내보내는 기운',
@@ -14212,7 +14219,7 @@ function todayWhy(key, b){
   /* short=true 면 십이운성 꼬리표를 뗀다. 총평 안에서는 그 얘기를 따로 한 문단 쓰기 때문에
      여기까지 붙으면 같은 말을 두 번 하게 된다(실측으로 봤다). */
   var short = arguments[2] === true;
-  if(key==='total')  return todayTotalWhy(b) + (short ? '' : ' · ' + todayStagePlain(b));
+  if(key==='total')  return todayTotalWhy(b) + (short ? '' : ' ' + todayStagePlain(b));
   if(key==='love')   return todayLoveWhy(b);
   /* ★ 2026-08-31 — '오늘 날짜의 윗글자'가 무엇인지 안 밝히고 있었다. 실제 글자를 적는다.
      ★ 조사는 josaOnlyText로 갈라 붙인다(R24에서 같은 실수를 한 번 잡았다). */
@@ -14225,11 +14232,12 @@ function todayWhy(key, b){
     var role = SIP_GROUP_PLAIN[b.sipGroup] || b.sipGroup;
     /* ★ 2026-09-01 — '내 글자 X 기준으로 보면'을 뺐다. 읽는 사람에게 보태는 것이 없고
        '글자'를 쓰지 말라는 지시에도 걸린다. 값이 없으면 오늘 기운만 말한다. */
-    if(!b.todayStemWord) return '오늘 들어오는 기운은 ' + role + josaOnlyText(role,'이에요','예요');
-    return '오늘 들어오는 ' + b.todayStemWord
-         + josaOnlyText(b.todayStemWord,'은','는') + ' ' + role + josaOnlyText(role,'이에요','예요');
+    var tail = TODAY_MONEY_WHY_TAIL[b.sipGroup] || '돈의 흐름을 여기서 읽어요';
+    if(!b.todayStemWord) return '오늘 들어오는 기운은 \u2018' + role + '\u2019이라, 오늘은 ' + tail + '.';
+    return '오늘 들어오는 기운인 ' + b.todayStemWord + josaOnlyText(b.todayStemWord,'은','는')
+         + ' \u2018' + role + '\u2019이라, 오늘은 ' + tail + '.';
   }
-  if(key==='work') return '금전운과 같은 기운을 맡은 일 쪽에서 읽은 값이에요.';
+  if(key==='work') return '금전운을 정한 그 기운을 일과 공부 쪽에서 다시 읽은 값이에요. 그래서 금전운과 비슷하게 움직여요.';
   if(key==='health') return todayHealthWhy(b);
   return null;
 }
@@ -19423,10 +19431,10 @@ function renderHome(){
     card.appendChild(head);
     card.appendChild(el('p',{style:'margin-top:12px;'},[item.text]));
     /* 왜 이 점수인지. 근거를 안 적으면 숫자만 커져서 더 그럴듯해 보이기만 한다. */
-    if(item.why) card.appendChild(el('p',{class:'today-why'},[el('span',{class:'why-chip'},['근거']),' — '+item.why]));
-    else if(item.stars == null) card.appendChild(el('p',{class:'today-why'},[el('span',{class:'why-chip'},['근거']),
-      ' — 생년월일시 정보가 모자라 오늘 일진과 맞대어 볼 수 없었어요. 설정에서 태어난 정보를 채우면 점수가 계산돼요.'
-    ]));
+    /* ★ 2026-09-21 대표님 "2로 가라" — 쉬운 말로 다시 쓰고, 처음엔 접어 둔다('근거 보기 ▾'). */
+    if(item.why) card.appendChild(buildNoteFold('근거 보기', [item.why]));
+    else if(item.stars == null) card.appendChild(buildNoteFold('근거 보기',
+      ['생년월일시 정보가 모자라 오늘 일진과 맞대어 볼 수 없었어요. 설정에서 태어난 정보를 채우면 점수가 계산돼요.']));
     view.appendChild(card);
   });
 
