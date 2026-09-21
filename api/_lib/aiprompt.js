@@ -10,7 +10,7 @@
    ★ 이 파일은 열쇠를 직접 쓰지 않는다. 부르는 쪽에서 process.env로 꺼내 넘긴다.
 ===================================================================== */
 import crypto from 'node:crypto';
-import { testAccessOf, paidOrdersOf } from './store.js';
+import { testAccessOf, paidOrdersOf, aiAlreadyUsed, getAiCache, latestAiForSubject } from './store.js';
 import { splitProductId, aiQuotaOf } from './products.js';
 import { buildEntitlements } from './entitlements.js';
 
@@ -370,15 +370,45 @@ export async function hasAiAccess(sessionId, productId) {
   return { ok: false, reason: '이 해석은 결제하신 뒤에 보실 수 있어요.' };
 }
 
+/* =====================================================================
+   ★ 2026-09-21 — 권한이 끝나도 **이 세션이 만들어 둔 글**은 다시 연다 (R76 의 짝)
+   ---------------------------------------------------------------------
+   api/entitlements.js(R76)는 "한 번 만든 글은 이용권이 끝나도 영구"라고 화면에 내려준다.
+   그런데 글을 실제로 주는 두 창구(interpret·content)는 hasAiAccess 만 봤다 — 결제·이용권·
+   테스트 허가가 없으면 **캐시에 있는 글도** 402 로 거절했다. 그래서 화면은 열림으로 그리고
+   서버는 거절하는 모순이 났다(2026-09-21 대표님 영상 · 테스트 허가가 끝난 세션에서
+   9/16 에 만든 성격유형 풀이가 '결제하신 뒤에 보실 수 있어요'로 막힘).
+   손님 쪽으로는 **1년 이용권이 끝난 뒤 만들어 둔 글을 다시 여는 자리**가 정확히 이것이다.
+
+   여기서 돌려주는 것은 이 세션이 만든 글뿐이다 — ① 같은 열쇠(cacheKey)로 만든 적이 있으면
+   그 글 ② 열쇠는 달라졌지만(점수·문구 변경) 같은 상품·같은 대상으로 만든 적이 있으면
+   가장 나중 글(recovered). 둘 다 ai_usage(이 세션이 만든 기록)를 거치므로 남의 글은 안 열린다.
+   ★ 새로 만드는 것은 여전히 hasAiAccess 가 막는다. 여기는 **다시 여는 것**만 허락한다.
+   ★ 두 창구가 이 함수 하나를 쓴다. 각자 판정하게 되돌리지 마라 — 그게 이번 결함의 원인이다. */
+export async function ownAiOf(sessionId, productId, cacheKey, subjectKey) {
+  if (!sessionId || !productId || !cacheKey) return null;
+  if (await aiAlreadyUsed(sessionId, cacheKey)) {
+    const cached = await getAiCache(cacheKey);
+    if (cached && cached.body) return { body: cached.body, recovered: false };
+  }
+  if (!subjectKey) return null;
+  const back = await latestAiForSubject(sessionId, productId, subjectKey);
+  if (back && back.body) return { body: back.body, recovered: true };
+  return null;
+}
+
 /* 지식 문서를 시스템 프롬프트 앞에 둔다.
    ★ 앞에 두고 cache_control을 걸면 그 부분이 캐시된다 — 같은 지식을 매번 새로 읽히면
      그만큼 돈이 나간다. 캐시에서 읽으면 입력값의 10분의 1이다.
      (지식이 없으면 그 블록 자체를 넣지 않는다.) */
+/* ★ 2026-09-21 — 캐시 표식을 **마지막** 블록에 둔다. 캐시는 앞부분 일치라, 첫 블록(지식)에만
+   표식을 두면 지식만 캐시되고 지침(SYSTEM)은 덩이마다 제값을 낸다. 둘 다 고정 글이므로
+   맨 뒤에 표식을 두면 둘 다 캐시된다. (대표님 제보 — 궁합 한 건 679원 · 입력 12만 토큰) */
 export function systemFor(knowledge) {
   return knowledge
     ? [
-        { type: 'text', text: knowledge, cache_control: { type: 'ephemeral' } },
-        { type: 'text', text: SYSTEM },
+        { type: 'text', text: knowledge },
+        { type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } },
       ]
     : SYSTEM;
 }
@@ -483,15 +513,17 @@ export function userPromptChunk(payload, allTitles, chunk) {
   const to = chunk.from + chunk.titles.length;
   const mine = chunk.titles.map((t, i) => `${chunk.from + i + 1}. ${t}`).join('\n');
   const range = from === to ? `${from}장` : `${from}~${to}장`;
-  return `아래는 앱이 계산해 둔 결과입니다. 이 값만 사용하세요.
+  /* ★ 2026-09-21 — 두 블록으로 나눈다. 앞 블록(계산 결과 + 전체 목차)은 다섯 덩이가 **똑같이** 보내는
+     부분이라 캐시 표식을 붙인다. 뒤 블록만 덩이마다 다르다. 이렇게 하면 2~5번째 덩이는 앞 블록을
+     캐시(1/10 값)로 읽는다. 표식은 요청당 4개까지인데 여기서 둘(지침·계산 결과)만 쓴다. */
+  const head = `아래는 앱이 계산해 둔 결과입니다. 이 값만 사용하세요.
 
 ${JSON.stringify(payload, null, 2)}
 
 이 풀이는 모두 ${all.length}장이고, 전체 목차는 다음과 같습니다.
 
-${outline}
-
-이번에 쓰실 것은 그중 ${range}뿐입니다. 나머지 장은 다른 사람이 나눠 쓰고 있습니다.
+${outline}`;
+  const tail = `이번에 쓰실 것은 그중 ${range}뿐입니다. 나머지 장은 다른 사람이 나눠 쓰고 있습니다.
 
 - 아래 제목만, 이 순서 그대로 써 주세요. 다른 장은 쓰지 마세요.
 - 다른 장이 맡은 이야기를 여기서 미리 하거나 요약하지 마세요. 그 장에서 다시 나옵니다.
@@ -501,4 +533,8 @@ ${outline}
   분량을 채우려고 같은 말을 다시 하지는 마세요 — 할 말이 끝났으면 짧게 끝내는 편이 낫습니다.
 
 ${mine}`;
+  return [
+    { type: 'text', text: head, cache_control: { type: 'ephemeral' } },
+    { type: 'text', text: tail },
+  ];
 }

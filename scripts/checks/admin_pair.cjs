@@ -143,6 +143,14 @@ R.note(/row\.in_tokens = Math\.round/.test(store) && /row\.out_tokens = Math\.ro
        '토큰을 표에 적는다');
 R.note(/in_tokens,out_tokens/.test(api), '현황이 토큰 칸을 읽는다');
 R.note(/const AI_PRICE = \{/.test(api), '값이 서버 한 곳에 있다');
+/* ★ 2026-09-21 — 원가 절감(대표님 제보 "궁합 하나에 679원이면 비싼데?") */
+R.note(/thinking: \{ type: 'disabled' \}/.test(aigen), '추론(thinking)을 끈다 — 기본값이 켜짐이라 출력 요금에 붙는다');
+R.note(/CACHE_WAIT_MS/.test(aigen) && /Promise\.race\(\[firstStarted/.test(aigen), '첫 덩이가 시작된 뒤에 나머지를 보낸다 (캐시를 읽게)');
+const aiprompt = fs.readFileSync(path.join(ROOT, 'api/_lib/aiprompt.js'), 'utf8');
+R.note(/text: SYSTEM, cache_control: \{ type: 'ephemeral' \}/.test(aiprompt), '지침 블록(마지막)에 캐시 표식이 있다 — 지식·지침이 함께 캐시된다');
+R.note(/text: head, cache_control: \{ type: 'ephemeral' \}/.test(aiprompt), '계산 결과 블록에 캐시 표식이 있다 — 덩이 다섯이 같은 값을 읽는다');
+R.note(/st\.cacheRead\s*\+= \(u\.cache_read_input_tokens/.test(aigen) && /cache_read_tokens = Math\.round/.test(store), '캐시 읽기 토큰을 따로 적는다');
+R.note(/cacheReadPerMTokUsd: 0\.2/.test(api) && /tokenCostKrw\(u\.in_tokens, u\.out_tokens, u\.cache_read_tokens, u\.cache_write_tokens\)/.test(api), '현황이 캐시 읽기를 1/10 값으로 센다');
 R.note(/x\.ai\.estimated \+= 1/.test(api), '토큰이 없는 옛 줄은 추정으로 세고 그 수를 따로 센다');
 R.note(/function adminTokenText/.test(html), '화면이 토큰을 사람 말로 적는다');
 R.note(/건은 토큰 기록이 없어/.test(html), '몇 건이 추정인지 화면에 적는다');

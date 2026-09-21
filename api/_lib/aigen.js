@@ -34,7 +34,13 @@ const JOIN = '\n\n';
 
 /* 한 덩이를 Anthropic에 맡기고, 오는 대로 통(st.text)에 담는다. 던지지 않는다 —
    실패도 통에 적어 두고 끝낸다. 그래야 다른 덩이가 도중에 버려지지 않는다. */
-async function drainChunk({ key, payload, allTitles, chunk, st }) {
+/* ★ 2026-09-21 — 뒤 덩이들이 앞 덩이가 써 둔 캐시를 읽으려면, 앞 덩이의 응답이 **시작된 뒤**에
+   출발해야 한다(캐시는 첫 응답이 시작되면 쓸 수 있다). 그래서 첫 덩이의 message_start 를 기다렸다가
+   나머지를 보낸다. 무한정 기다리지는 않는다 — 이 시간이 지나면 그냥 보낸다(캐시를 못 읽을 뿐). */
+const CACHE_WAIT_MS = 20000;
+
+async function drainChunk({ key, payload, allTitles, chunk, st, onStart }) {
+  const started = () => { if (onStart) { const f = onStart; onStart = null; f(); } };
   try {
     const upstream = await fetch(ANTHROPIC_URL, {
       method: 'POST',
@@ -47,6 +53,10 @@ async function drainChunk({ key, payload, allTitles, chunk, st }) {
         model: MODEL,
         max_tokens: MAX_TOKENS,
         stream: true,
+        /* ★ 2026-09-21 — Sonnet 5 는 thinking 을 안 적으면 **기본으로 켜져** 그 추론 토큰이 출력 요금에
+           들어간다. 궁합 한 건에 출력 25,059 토큰이 찍혔는데 글은 6,459자였다(약 1.6만 토큰이 추론).
+           풀이 글쓰기는 계산 결과를 문장으로 옮기는 일이라 깊은 추론이 필요 없다. 끈다. */
+        thinking: { type: 'disabled' },
         system: systemFor(KNOWLEDGE),
         messages: [{ role: 'user', content: userPromptChunk(payload, allTitles, chunk) }],
       }),
@@ -89,8 +99,13 @@ async function drainChunk({ key, payload, allTitles, chunk, st }) {
               st.inTok += (u.input_tokens || 0)
                         + (u.cache_read_input_tokens || 0)
                         + (u.cache_creation_input_tokens || 0);
+              /* ★ 2026-09-21 — 캐시로 읽은 것과 캐시에 쓴 것을 따로 센다. 값이 다르다(읽기 1/10 · 쓰기 1.25배).
+                 inTok 은 예전처럼 **전체** 입력이다 — 옛 줄과 뜻이 같아야 현황판이 섞어 셀 수 있다. */
+              st.cacheRead  += (u.cache_read_input_tokens || 0);
+              st.cacheWrite += (u.cache_creation_input_tokens || 0);
               if (u.output_tokens) st.outTok += u.output_tokens;
             }
+            started();
           } else if (ev.type === 'message_delta') {
             if (ev.delta?.stop_reason) st.stop = ev.delta.stop_reason;
             /* message_delta 의 output_tokens 는 **누적값**이다. 더하지 말고 갈아 끼운다 —
@@ -107,7 +122,10 @@ async function drainChunk({ key, payload, allTitles, chunk, st }) {
   } catch (e) {
     st.err = e instanceof Error ? e : new Error(String(e));
   } finally {
+    /* thinking 을 껐을 때 드물게 추론 태그가 본문에 새어 나올 수 있다 — 손님 글에 남기지 않는다. */
+    st.text = st.text.replace(/<thinking>[\s\S]*?<\/thinking>\s*/g, '').replace(/<\/?thinking>/g, '');
     st.done = true;
+    started();
   }
 }
 
@@ -121,11 +139,22 @@ export async function generateChunked({ key, payload, allTitles, onDelta }) {
   const chunks = splitTitles(allTitles);
   if (!chunks.length) throw new Error('no_titles');
 
-  const states = chunks.map(() => ({ text: '', done: false, err: null, stop: null, flushed: 0, inTok: 0, outTok: 0 }));
+  const states = chunks.map(() => ({ text: '', done: false, err: null, stop: null, flushed: 0,
+                                     inTok: 0, outTok: 0, cacheRead: 0, cacheWrite: 0 }));
 
-  /* 모든 덩이를 한꺼번에 출발시킨다. 여기가 시간을 줄이는 자리다. */
-  const drains = chunks.map((chunk, i) =>
-    drainChunk({ key, payload, allTitles, chunk, st: states[i] }));
+  /* 첫 덩이를 먼저 보내고, 그 응답이 시작되면(캐시가 써진 뒤) 나머지를 한꺼번에 출발시킨다.
+     ★ 2026-09-21 — 예전에는 다섯을 동시에 보냈다. 그러면 뒤 덩이들이 캐시를 못 읽고 지침·지식·계산
+       결과를 전부 제값으로 다시 낸다. 기다리는 시간은 첫 글자가 올 때까지(몇 초)뿐이고, 전체 시간은
+       제일 큰 덩이가 정하므로 거의 안 늘어난다. */
+  let markStart;
+  const firstStarted = new Promise((r) => { markStart = r; });
+  const drains = [drainChunk({ key, payload, allTitles, chunk: chunks[0], st: states[0], onStart: markStart })];
+  if (chunks.length > 1) {
+    await Promise.race([firstStarted, new Promise((r) => setTimeout(r, CACHE_WAIT_MS))]);
+    for (let i = 1; i < chunks.length; i++) {
+      drains.push(drainChunk({ key, payload, allTitles, chunk: chunks[i], st: states[i] }));
+    }
+  }
 
   /* 내보내기는 앞에서부터 차례로. 앞 덩이가 끝나야 다음 덩이로 넘어간다. */
   const emit = (async () => {
@@ -159,6 +188,8 @@ export async function generateChunked({ key, payload, allTitles, onDelta }) {
     usage: {
       in: states.reduce((a, s) => a + (s.inTok || 0), 0),
       out: states.reduce((a, s) => a + (s.outTok || 0), 0),
+      cacheRead: states.reduce((a, s) => a + (s.cacheRead || 0), 0),
+      cacheWrite: states.reduce((a, s) => a + (s.cacheWrite || 0), 0),
     },
   };
 }

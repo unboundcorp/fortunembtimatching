@@ -37,11 +37,20 @@ const AI_COST_KRW = 101;
 const AI_PRICE = {
   inPerMTokUsd: 2,     /* Claude Sonnet 5 입력  $2 / 100만 토큰 */
   outPerMTokUsd: 10,   /* 출력 $10 / 100만 토큰 */
+  cacheReadPerMTokUsd: 0.2,   /* 캐시 읽기 = 입력의 1/10 (2026-09-21) */
+  cacheWritePerMTokUsd: 2.5,  /* 캐시 쓰기 = 입력의 1.25배 */
   usdKrw: 1380,        /* 환율은 고정값입니다 — 정확한 청구액은 Anthropic 콘솔이 정본입니다 */
 };
-const tokenCostKrw = (inTok, outTok) =>
-  ((inTok || 0) / 1e6) * AI_PRICE.inPerMTokUsd * AI_PRICE.usdKrw
-  + ((outTok || 0) / 1e6) * AI_PRICE.outPerMTokUsd * AI_PRICE.usdKrw;
+/* ★ in_tokens 는 캐시 읽기·쓰기를 **포함한 전체** 입력이다. 캐시 칸이 있는 줄은 그만큼 값을 갈라 센다.
+   옛 줄(캐시 칸 없음)은 전부 제값으로 센다 — 실제보다 많게 잡힐 수 있지만 지어내지는 않는다. */
+const tokenCostKrw = (inTok, outTok, cacheRead, cacheWrite) => {
+  const read = cacheRead || 0, write = cacheWrite || 0;
+  const plain = Math.max(0, (inTok || 0) - read - write);
+  return (plain / 1e6) * AI_PRICE.inPerMTokUsd * AI_PRICE.usdKrw
+    + (read / 1e6) * AI_PRICE.cacheReadPerMTokUsd * AI_PRICE.usdKrw
+    + (write / 1e6) * AI_PRICE.cacheWritePerMTokUsd * AI_PRICE.usdKrw
+    + ((outTok || 0) / 1e6) * AI_PRICE.outPerMTokUsd * AI_PRICE.usdKrw;
+};
 
 function conf() {
   const url = process.env.SUPABASE_URL;
@@ -257,7 +266,7 @@ export default async function handler(req, res) {
       if (kind === 'ai') {
         /* ai_usage 는 '언제 만들었나'만 알고, 무슨 글인지는 ai_cache 에 있다. 열쇠로 맞댄다. */
         const [uses, cache] = await Promise.all([
-          rest(`ai_usage?select=session_id,cache_key,created_at,in_tokens,out_tokens&order=created_at.desc&limit=${N}`),
+          rest(`ai_usage?select=session_id,cache_key,created_at,in_tokens,out_tokens,cache_read_tokens,cache_write_tokens&order=created_at.desc&limit=${N}`),
           rest('ai_cache?select=cache_key,product_id,model,body&order=created_at.desc&limit=2000'),
         ]);
         const by = {};
@@ -274,8 +283,10 @@ export default async function handler(req, res) {
             at: u.created_at,
             inTok: u.in_tokens || null,
             outTok: u.out_tokens || null,
+            cacheRead: u.cache_read_tokens || null,
+            cacheWrite: u.cache_write_tokens || null,
             costKrw: (u.in_tokens || u.out_tokens)
-              ? Math.round(tokenCostKrw(u.in_tokens, u.out_tokens))
+              ? Math.round(tokenCostKrw(u.in_tokens, u.out_tokens, u.cache_read_tokens, u.cache_write_tokens))
               : AI_COST_KRW,
             estimated: !(u.in_tokens || u.out_tokens),
           };
@@ -374,7 +385,7 @@ export default async function handler(req, res) {
       rest('orders?select=order_id,product_id,amount,status,created_at,paid_at&order=created_at.desc&limit=2000'),
       rest('rooms?select=room_id,created_at,joined_at&order=created_at.desc&limit=2000'),
       rest('groups?select=group_id,members,created_at&order=created_at.desc&limit=2000'),
-      rest('ai_usage?select=cache_key,created_at,in_tokens,out_tokens&order=created_at.desc&limit=2000'),
+      rest('ai_usage?select=cache_key,created_at,in_tokens,out_tokens,cache_read_tokens,cache_write_tokens&order=created_at.desc&limit=2000'),
       rest('ai_cache?select=cache_key,product_id,created_at&order=created_at.desc&limit=2000'),
       soft('kakao_links?select=kakao_id,created_at&order=created_at.desc&limit=2000'),
       soft('user_sync?select=kakao_id,rev,updated_at&order=updated_at.desc&limit=2000'),
@@ -444,7 +455,7 @@ export default async function handler(req, res) {
       rooms: { made: 0, joined: 0 },
       groups: { made: 0, people: 0, max: 0 },
       orders: { created: 0, paid: 0, failed: 0, revenue: 0, byProduct: {} },
-      ai: { generated: 0, inTok: 0, outTok: 0, costKrw: 0, estimated: 0 },
+      ai: { generated: 0, inTok: 0, outTok: 0, cacheRead: 0, costKrw: 0, estimated: 0 },
       kakao: { linked: 0 },
       feedback: { created: 0 },
     });
@@ -490,7 +501,8 @@ export default async function handler(req, res) {
       if (u.in_tokens || u.out_tokens) {
         x.ai.inTok += u.in_tokens || 0;
         x.ai.outTok += u.out_tokens || 0;
-        x.ai.costKrw += tokenCostKrw(u.in_tokens, u.out_tokens);
+        x.ai.cacheRead += u.cache_read_tokens || 0;
+        x.ai.costKrw += tokenCostKrw(u.in_tokens, u.out_tokens, u.cache_read_tokens, u.cache_write_tokens);
       } else {
         x.ai.costKrw += AI_COST_KRW;
         x.ai.estimated += 1;

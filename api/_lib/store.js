@@ -380,6 +380,9 @@ export async function noteAiUse(sessionId, cacheKey, usage) {
   const row = { session_id: sessionId, cache_key: cacheKey };
   if (usage && Number.isFinite(usage.in) && usage.in > 0) row.in_tokens = Math.round(usage.in);
   if (usage && Number.isFinite(usage.out) && usage.out > 0) row.out_tokens = Math.round(usage.out);
+  /* ★ 2026-09-21 — 캐시로 읽은 것·캐시에 쓴 것 (in_tokens 안에 포함된 부분). 값이 달라 따로 적는다. */
+  if (usage && Number.isFinite(usage.cacheRead) && usage.cacheRead > 0) row.cache_read_tokens = Math.round(usage.cacheRead);
+  if (usage && Number.isFinite(usage.cacheWrite) && usage.cacheWrite > 0) row.cache_write_tokens = Math.round(usage.cacheWrite);
   await rest('ai_usage?on_conflict=session_id,cache_key', {
     method: 'POST',
     headers: { Prefer: 'return=minimal,resolution=ignore-duplicates' },

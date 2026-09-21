@@ -27,7 +27,7 @@ import { KNOWLEDGE_CHARS } from './_lib/knowledge.js';
 /* ★ 2026-09-02 — 프롬프트를 짜고 Anthropic을 부르는 일은 전부 _lib/aigen.js 로 옮겼다.
    여기서는 열쇠 계산·권한·저장만 한다. 그래서 MAX_TOKENS·ANTHROPIC_URL·systemFor·userPrompt를
    더는 안 가져온다 — 안 쓰는 이름을 남겨 두면 "여기서도 부르는구나"로 읽힌다. */
-import { MODEL, aiKindOf, cacheKeyOf, subjectKeyOf, hasAiAccess } from './_lib/aiprompt.js';
+import { MODEL, aiKindOf, cacheKeyOf, subjectKeyOf, hasAiAccess, ownAiOf } from './_lib/aiprompt.js';
 /* ★ 2026-09-02 — 장을 몇 덩이로 나눠 동시에 쓰게 한다. 통짜 창구(api/content.js)와 같은 것을 쓴다. */
 import { generateChunked } from './_lib/aigen.js';
 import {
@@ -103,20 +103,27 @@ export default async function handler(req, res) {
   try {
     /* ── 1. 이미 만들어 둔 글이 있으면 그대로 준다 (돈도 횟수도 안 쓴다) ── */
     const cached = await getAiCache(cacheKey);
+
+    /* ── 2. 권한 ──
+       ★ 캐시가 있어도 권한은 본다. 남의 해석을 열쇠만 알면 볼 수 있으면 안 된다.
+         다만 열쇠는 payload에서 뽑히므로, 열쇠를 안다는 건 그 사람의 생년월일을 안다는 뜻이다.
+       ★ 2026-09-21 — 권한이 없어도 **이 세션이 만들어 둔 글**은 돌려준다(ownAiOf · R76 의 짝).
+         새로 만드는 것은 여전히 막힌다. */
+    const allowed = await hasAiAccess(sessionId, productId);
+    if (!allowed.ok) {
+      const own = await ownAiOf(sessionId, productId, cacheKey, subjectKey);
+      if (!own) return json(res, 402, { error: 'no_access', reason: allowed.reason });
+      sseHead(res);
+      send(res, { type: 'delta', text: own.body });
+      send(res, { type: 'done', cached: true, recovered: !!own.recovered });
+      return res.end();
+    }
     if (cached) {
-      /* 캐시가 있어도 권한은 본다. 남의 해석을 열쇠만 알면 볼 수 있으면 안 된다.
-         다만 열쇠는 payload에서 뽑히므로, 열쇠를 안다는 건 그 사람의 생년월일을 안다는 뜻이다. */
-      const allowed = await hasAiAccess(sessionId, productId);
-      if (!allowed.ok) return json(res, 402, { error: 'no_access', reason: allowed.reason });
       sseHead(res);
       send(res, { type: 'delta', text: cached.body });
       send(res, { type: 'done', cached: true });
       return res.end();
     }
-
-    /* ── 2. 권한 ── */
-    const allowed = await hasAiAccess(sessionId, productId);
-    if (!allowed.ok) return json(res, 402, { error: 'no_access', reason: allowed.reason });
 
     /* ── 3. 횟수 ── */
     const already = await aiAlreadyUsed(sessionId, cacheKey);

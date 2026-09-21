@@ -215,6 +215,32 @@ export async function leaveGroup(groupId, memberRow) {
   return { ok: true, name: row.name, members: next };
 }
 
+/* =====================================================================
+   ★ 2026-09-21 — 내 줄만 지금 프로필로 갈아 끼운다 (대표님 지시 "엉 바꿔야할 거 같다")
+   ---------------------------------------------------------------------
+   명단은 링크로 들어온 순간의 값을 그대로 저장한다. 그 뒤 프로필(이름·성격유형·시각)을 고쳐도
+   모임에는 안 따라갔다 — 대표님 화면에서 TEST(ENTJ) 프로필이 모임에는 '테스트(ENFP)'로 남아 있었다.
+   ★ leaveGroup 과 같은 규칙이다 — PIN 없이, **정확히 그 한 줄**만, 호출 쪽에서 횟수 제한.
+     남의 줄을 고치는 길이 되지 않게 옛 줄이 정확히 있어야만 바꾼다(문자열 일치).
+   ★ 새 줄이 이미 다른 자리에 있으면 안 바꾼다(duplicate) — 같은 사람이 둘이 되면 안 된다. */
+export async function replaceMember(groupId, oldRow, newRow) {
+  const row = await getGroupWithPin(groupId);
+  if (!row) return { ok: false, reason: 'not_found' };
+  const rows = String(row.members || '').split(';').filter(Boolean);
+  const idx = rows.indexOf(oldRow);
+  if (idx < 0) return { ok: false, reason: 'not_member' };
+  if (oldRow === newRow) return { ok: true, same: true, name: row.name, members: row.members };
+  if (rows.indexOf(newRow) >= 0) return { ok: false, reason: 'duplicate' };
+  rows[idx] = newRow;
+  const next = rows.join(';');
+  await rest(`groups?group_id=eq.${encodeURIComponent(groupId)}`, {
+    method: 'PATCH', headers: { Prefer: 'return=minimal' },
+    /* ★ 기한은 안 민다. 기준은 어디까지나 '만든 날'이다(joinGroup·leaveGroup 과 같다). */
+    body: JSON.stringify({ members: next, updated_at: new Date().toISOString() }),
+  });
+  return { ok: true, name: row.name, members: next };
+}
+
 export async function updateGroup(groupId, pin, patch, ownerToken) {
   const row = await getGroupWithPin(groupId);
   if (!row) return { ok: false, reason: 'not_found' };

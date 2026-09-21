@@ -26,7 +26,7 @@ import { productOf } from './_lib/products.js';
 /* ★ 2026-09-02 — 프롬프트를 짜고 Anthropic을 부르는 일은 _lib/aigen.js 로 옮겼다.
    흘려받기 창구(api/interpret.js)와 **같은 것**을 쓴다. 복사해 두면 언젠가 둘이 달라지고,
    그때는 같은 상품인데 창구에 따라 글이 다른 이유를 아무도 못 찾는다. */
-import { MODEL, aiKindOf, cacheKeyOf, subjectKeyOf, hasAiAccess, parseSections } from './_lib/aiprompt.js';
+import { MODEL, aiKindOf, cacheKeyOf, subjectKeyOf, hasAiAccess, ownAiOf, parseSections } from './_lib/aiprompt.js';
 import { generateChunked } from './_lib/aigen.js';
 import {
   getAiCache, putAiCache, aiUsedCount, aiAlreadyUsed, noteAiUse, sweepAiOld,
@@ -90,18 +90,25 @@ export default async function handler(req, res) {
   try {
     /* ── 1. 이미 만들어 둔 글이 있으면 그대로 준다 (돈도 횟수도 안 쓴다) ── */
     const cached = await getAiCache(cacheKey);
+
+    /* ── 2. 권한 ──
+       ★ 2026-09-21 — 권한이 없어도 **이 세션이 만들어 둔 글**은 돌려준다(ownAiOf · R76 의 짝).
+         흘려받기 창구(interpret.js)와 같은 함수다. 새로 만드는 것은 여전히 막힌다. */
+    const allowed = await hasAiAccess(sessionId, productId);
+    if (!allowed.ok) {
+      const own = await ownAiOf(sessionId, productId, cacheKey, subjectKey);
+      if (own) {
+        const secs = toSections(own.body, paidTitles, from);
+        if (secs.length) return json(res, 200, { sections: secs, cached: true, recovered: !!own.recovered });
+      }
+      return json(res, 402, { error: 'no_access', reason: allowed.reason });
+    }
     if (cached) {
-      const allowed = await hasAiAccess(sessionId, productId);
-      if (!allowed.ok) return json(res, 402, { error: 'no_access', reason: allowed.reason });
       const secs = toSections(cached.body, paidTitles, from);
       if (secs.length) return json(res, 200, { sections: secs, cached: true });
       /* 저장해 둔 글이 형식이 깨졌다면 캐시를 믿지 않고 새로 만든다. */
       console.warn('캐시된 유료 본문의 형식이 깨져 새로 만듭니다', cacheKey);
     }
-
-    /* ── 2. 권한 ── */
-    const allowed = await hasAiAccess(sessionId, productId);
-    if (!allowed.ok) return json(res, 402, { error: 'no_access', reason: allowed.reason });
 
     /* ── 3. 횟수 ── */
     const already = await aiAlreadyUsed(sessionId, cacheKey);

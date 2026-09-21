@@ -82,7 +82,10 @@ const R = reporter('그룹 나가기(화면)');
       const me = T.activeProfile();
       if(!me) return null;
       return { mine: T.gcMeetRow(me),
-               other: T.gcMeetRow(Object.assign({}, me, {name:'다른사람', mbti:'ISTJ'})),
+               /* ★ 2026-09-21 — '다른 사람'은 태어난 날도 다르게 둔다. 이름·성격유형만 다르고 태어난 정보가
+                  전부 같은 줄은 이제 '프로필을 고친 나'로 본다(groupMyMemberIdx 의 되짚기) — 그 규칙이 맞다.
+                  여기서 보려는 것은 생판 남의 모임이므로 태어난 날을 하루 다르게 한다. */
+               other: T.gcMeetRow(Object.assign({}, me, {name:'다른사람', mbti:'ISTJ', day: (me.day === 1 ? 2 : 1)})),
                third: T.gcMeetRow(Object.assign({}, me, {name:'또다른분', mbti:'INFJ', year:1988})) };
     });
     R.head('── 준비');

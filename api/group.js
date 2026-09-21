@@ -12,7 +12,7 @@
    ★ PIN은 서버도 모른다(해시만 보관). 잊으면 복구할 수 없고, 그건 설계된 결과다.
 ===================================================================== */
 import { json, methodGuard, readBody } from './_lib/http.js';
-import { createGroup, getGroup, joinGroup, leaveGroup, updateGroup, deleteGroup, tooManyPinTries, notePinTry, GROUP_TTL_DAYS, GROUP_MAX_MEMBERS } from './_lib/groups.js';
+import { createGroup, getGroup, joinGroup, leaveGroup, replaceMember, updateGroup, deleteGroup, tooManyPinTries, notePinTry, GROUP_TTL_DAYS, GROUP_MAX_MEMBERS } from './_lib/groups.js';
 
 const MAX_MEMBERS_TEXT = 8000;   /* 30명 × 한 줄 여유 */
 const DENY = '그룹을 찾을 수 없거나 PIN이 맞지 않아요.';
@@ -79,6 +79,30 @@ export default async function handler(req, res) {
         return json(res, 404, { ok: false, reason: '그룹을 찾을 수 없거나 기간이 지났어요.' });
       }
       return json(res, 200, { ok: true, emptied: !!r.emptied, members: r.members || '' });
+    }
+
+    /* ★ 2026-09-21 — 내 줄만 지금 프로필로 갈아 끼운다. 나가기와 같은 규칙(PIN 없음 · 한 줄만 ·
+       한 그룹에서 10분에 10번). 옛 줄(member)이 정확히 있어야 하고, 새 줄(newMember)로 바꾼다. */
+    if (body.action === 'refresh') {
+      if (typeof body.groupId !== 'string' || !body.groupId) return json(res, 400, { error: 'bad_group' });
+      const okRow = (v) => typeof v === 'string' && v && v.length <= 400 && v.indexOf(';') < 0;
+      if (!okRow(body.member) || !okRow(body.newMember)) return json(res, 400, { error: 'bad_member' });
+      const limitKey = 'refresh:' + body.groupId;
+      if (await tooManyPinTries(limitKey)) {
+        return json(res, 429, { ok: false, reason: '잠시 뒤에 다시 해주세요.' });
+      }
+      await notePinTry(limitKey);
+      const r = await replaceMember(body.groupId, body.member, body.newMember);
+      if (!r.ok) {
+        if (r.reason === 'not_member') {
+          return json(res, 404, { ok: false, reason: '이 그룹 명단에서 회원님을 찾지 못했어요.' });
+        }
+        if (r.reason === 'duplicate') {
+          return json(res, 409, { ok: false, reason: '같은 정보가 이미 명단에 있어요.' });
+        }
+        return json(res, 404, { ok: false, reason: '그룹을 찾을 수 없거나 기간이 지났어요.' });
+      }
+      return json(res, 200, { ok: true, same: !!r.same, members: r.members || '' });
     }
 
     if (body.action === 'update' || body.action === 'delete') {
