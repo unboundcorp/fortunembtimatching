@@ -13294,14 +13294,42 @@ PB.closingTail = '오늘을 만든 것도, 앞날을 만들어갈 것도 결국 
 
 /* ---- 13섹션 리포트 조립 (기능6) ----
    각 섹션은 "서로 다른 문구 배열"에서 골라 조합하므로 실제 체감 변주 수는 조합 곱으로 커진다(SPEC 설계 의도). */
+/* =====================================================================
+   유료 13장·16장 빌더가 함께 쓰는 부품 (2026-09-21 리팩터 R5)
+   ---------------------------------------------------------------------
+   예전에는 buildReport13 과 buildMbtiReport16 안에 이름 전처리 세 줄 · 조사 치환기 T() ·
+   장 추가기 add() 가 글자까지 같은 두 벌로 있었다. 코드 주석에 "한쪽만 고치면 또 갈라진다"고
+   적혀 있었고, 실제로 8월에 호칭 '님'이 한쪽만 붙는 사고가 났다. 이제 한 벌이다.
+   ★ 규칙(2026-08-31): 이름은 '가영님', 없으면 '이분'. 조사는 받침으로 가른다.
+   ★ safeName 은 escapeHtml 을 지난 값이다 — 리포트 본문은 el({html:...}) 로 그려지므로
+     손님이 넣은 이름은 반드시 이스케이프 뒤에 문장에 넣는다. */
+function reportNameKit(profile){
+  var rawName = (profile.name||'').trim();
+  var name = rawName ? (rawName + '님') : '이분';
+  var safeName = escapeHtml(name);
+  function T(s){
+    return s
+      .replace(/\{n\}(은|는)/g, josa(safeName,'은','는'))
+      .replace(/\{n\}(을|를)/g, josa(safeName,'을','를'))
+      .replace(/\{n\}(이|가)/g, josa(safeName,'이','가'))
+      .replace(/\{n\}(과|와)/g, josa(safeName,'과','와'))
+      .replace(/\{n\}(이랑|랑)/g, josa(safeName,'이랑','랑'))
+      .replace(/\{n\}/g, safeName);
+  }
+  return {rawName:rawName, name:name, safeName:safeName, T:T};
+}
+/* 장(section)을 순서대로 모은다. add(id, title, iconPath, bodyHtml) */
+function sectionCollector(){
+  var sections = [];
+  function add(id, title, iconPath, bodyHtml){ sections.push({id:id, title:title, icon:iconPath, body:bodyHtml}); }
+  return {sections:sections, add:add};
+}
 function buildReport13(profile, saju){
   /* ★ 2026-08-31 점검 — 여기만 이름을 '님' 없이 불렀다. 다른 화면은 전부 '가영님'인데
      정작 돈 내고 읽는 13장에서만 "가영은 두드릴수록…"으로 이름을 툭 불렀다.
      ★ 이름이 없을 때의 기본값도 '너'였다 — 반말이다. '이분'으로 바꿨다.
      ★ 조사는 T()가 받침으로 갈라 붙인다. '님'과 '이분' 둘 다 받침이 있어 그대로 맞는다. */
-  var rawName = (profile.name||'').trim();
-  var name = rawName ? (rawName + '님') : '이분';
-  var safeName = escapeHtml(name); // 리포트 문구는 el({html:...})로 렌더되므로 사용자 입력(이름)은 반드시 이스케이프 후 삽입(XSS 방지)
+  var kit = reportNameKit(profile), rawName = kit.rawName, name = kit.name, safeName = kit.safeName, T = kit.T; // 삽입(XSS 방지)
   var dayStemIdx = saju.day.stemIdx;
   var dayStemName = SajuEngine.STEMS[dayStemIdx];
   var elemInfo = dominantElementIdx(saju);
@@ -13331,17 +13359,7 @@ function buildReport13(profile, saju){
   var shinsal = shinsalTags(saju); // v4-B: 신살 존재 여부 태그(고정 룩업, 새 계산 없음)
   var gyeok = gyeokOf(saju); // v4-B: 월지 십성 → 격국 이름(고정 룩업)
 
-  var sections = [];
-  function add(id, title, iconPath, bodyHtml){ sections.push({id:id, title:title, icon:iconPath, body:bodyHtml}); }
-  function T(s){
-    return s
-      .replace(/\{n\}(은|는)/g, josa(safeName,'은','는'))
-      .replace(/\{n\}(을|를)/g, josa(safeName,'을','를'))
-      .replace(/\{n\}(이|가)/g, josa(safeName,'이','가'))
-      .replace(/\{n\}(과|와)/g, josa(safeName,'과','와'))
-      .replace(/\{n\}(이랑|랑)/g, josa(safeName,'이랑','랑'))
-      .replace(/\{n\}/g, safeName);
-  }
+  var col = sectionCollector(), sections = col.sections, add = col.add;
 
   // 1. 오프닝
   add('s1','오프닝 · 한 문장 요약','M4 18 L10 6 L16 18',
@@ -13827,25 +13845,13 @@ function buildMbtiCompatTrend(mbti){
 function buildMbtiReport16(profile){
   var mbti = profile.mbti;
   /* ★ 사주 풀이와 같은 규칙(위 buildReport13 주석 참고). 한쪽만 고치면 또 갈라진다. */
-  var rawName = (profile.name||'').trim();
-  var name = rawName ? (rawName + '님') : '이분';
-  var safeName = escapeHtml(name);
+  var kit = reportNameKit(profile), rawName = kit.rawName, name = kit.name, safeName = kit.safeName, T = kit.T;
   var sym = MBTI_SYMBOL[mbti];
   var pb = MBTI_PB[mbti];
-  function T(s){
-    return s
-      .replace(/\{n\}(은|는)/g, josa(safeName,'은','는'))
-      .replace(/\{n\}(을|를)/g, josa(safeName,'을','를'))
-      .replace(/\{n\}(이|가)/g, josa(safeName,'이','가'))
-      .replace(/\{n\}(과|와)/g, josa(safeName,'과','와'))
-      .replace(/\{n\}(이랑|랑)/g, josa(safeName,'이랑','랑'))
-      .replace(/\{n\}/g, safeName);
-  }
   function pick(sectionKey){ return MBTI_SUFFIX[sectionKey][djb2(name+mbti+sectionKey) % MBTI_SUFFIX[sectionKey].length]; }
   var intensity = (djb2(name+mbti+'opening')%2===0) ? 'typical' : 'mild';
 
-  var sections=[];
-  function add(id,title,iconPath,bodyHtml){ sections.push({id:id, title:title, icon:iconPath, body:bodyHtml}); }
+  var col = sectionCollector(), sections = col.sections, add = col.add;
 
   // 1. 오프닝
   add('m1','오프닝 · 한 문장 요약', MBTI_ICONS.star,
@@ -27313,7 +27319,9 @@ try{
       dominantElementIdx: dominantElementIdx, calcZodiac: calcZodiac, ELEMENTS: ELEMENTS,
       COMBINED_TIERS: COMBINED_TIERS, combinedTierRange: combinedTierRange,
       activeProfile: activeProfile, gcMeetRow: gcMeetRow,
-      openSavedGroup: openSavedGroup, groupMyMemberRow: groupMyMemberRow
+      openSavedGroup: openSavedGroup, groupMyMemberRow: groupMyMemberRow,
+      /* 2026-09-21 R5 — 유료 빌더 전후 대조 검사(checks/report_kit.cjs)가 쓴다 */
+      buildReport13: buildReport13, buildMbtiReport16: buildMbtiReport16, reportNameKit: reportNameKit
     };
   }
 }catch(e){}
