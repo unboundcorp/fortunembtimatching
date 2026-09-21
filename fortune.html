@@ -12184,10 +12184,13 @@ PB.lovePattern = { // 연애운 5패턴
   pyeonjae:'넓게 벌리는 기운(편재)이 자리 잡고 있어서, 다양한 인연에 마음이 열려 있고 <strong>새로운 만남</strong> 자체를 즐기는 편이에요. 한 사람에게만 시야를 좁히기보다 여러 인연을 폭넓게 만나보는 걸 즐기는 타입이라, 정착보다 탐색의 시기를 더 오래 즐기는 경우가 많아요.',
   weak:'나를 다잡는 기운(관성)도 손에 쥐는 기운(재성)도 뚜렷하게 드러나지 않아서, 연애보다 <strong>스스로의 중심</strong>을 먼저 챙기는 시기를 지나고 있을 수 있어요. 억지로 연애를 서두르기보다 지금은 나 자신을 다지는 시간으로 받아들이는 편이 오히려 자연스러운 흐름일 수 있어요.'
 };
+/* 2026-09-22 대표님 방침 "모든 풀이가 이렇게 알기 쉬워야한다" — 십성 다섯 무리를 화면에 적을 때 쓰는 쉬운 이름.
+   뜻을 먼저 적고 용어는 괄호로 뒤따른다. 월별 운세 첫 문장들과 같은 말이다. */
+var SIPSEONG_GROUP_PLAIN = { 비겁:'내 힘으로 밀고 나가는', 식상:'표현하고 만들어내는', 재성:'돈과 결실의', 관성:'책임과 규칙의', 인성:'배우고 도움받는' };
 PB.dohwaExtra = [ // 홍염/도화 유무 관련 8종
-  '거기에 도화 기운까지 겹쳐 있어서, 본인 의도와 상관없이 유독 시선을 끄는 매력이 있었을 거예요.',
-  '도화 기운이 있어서 인연이 끊이지 않는 편이지만, 그만큼 마음을 정하는 데는 더 신중해야 해요.',
-  '주변에서 "인기 많겠다"는 말을 종종 들었을 텐데, 그게 다 이 도화 기운 때문이에요.',
+  '거기에 사람을 끄는 기운(도화)까지 겹쳐 있어서, 본인 의도와 상관없이 유독 시선을 끄는 매력이 있었을 거예요.',
+  '사람을 끄는 기운(도화)이 있어서 인연이 끊이지 않는 편이지만, 그만큼 마음을 정하는 데는 더 신중해야 해요.',
+  '주변에서 "인기 많겠다"는 말을 종종 들었을 텐데, 그게 다 이 사람을 끄는 기운(도화) 때문이에요.',
   '매력이 자연스럽게 흘러나오는 편이라, 원치 않는 오해를 사는 것도 조심해야 해요.',
   '이 기운은 사람을 끄는 힘인 동시에, 관계를 오래 붙잡아두는 힘은 아닐 수 있다는 것도 함께 기억해줘요.',
   '누군가를 볼 때 첫인상만으로 마음을 정하기 쉬우니, 한 박자 천천히 알아가는 연습도 필요해요.',
@@ -12206,9 +12209,9 @@ PB.careerPattern = { // 일/커리어운 4패턴 x 신강신약 2
   gwan_weak:'관성(체계의 기운)이 발달했지만 아직 힘이 부족한 시기라, 규칙과 책임이 버겁게 느껴질 때가 있을 거예요. 천천히 적응하면 돼요. 지금 당장 큰 책임을 떠맡기보다 단계적으로 역할을 늘려가는 편이 잘 맞으니, 조급해하지 말고 경험을 쌓아가는 데 집중해봐요.'
 };
 PB.moneyType = { // 재성 3유형 — v5-A: 정재(안정형)·편재(유동형) 명리학 구분을 실제 서술에 반영(신규 계산 없음, sipCounts 재사용)
-  jeongjae:'정재가 뚜렷해서, 한 방을 노리기보다 <strong>차곡차곡 모으는 방식</strong>이 체질적으로 잘 맞는 사람이에요. 정재는 명리학에서 "몸에 지닌 재물"이라 불리는 <strong>안정형 재물운</strong>이라, 매달 꾸준히 들어오는 수입을 착실히 불려나가는 쪽이 화려한 한탕보다 훨씬 유리해요.',
-  pyeonjae:'편재가 뚜렷해서, 들어오고 나가는 돈의 흐름이 큰 편이에요. 기회를 잘 잡지만 그만큼 씀씀이도 커질 수 있어요. 편재는 "몸에 지니지 않은 재물" 즉 <strong>유동형 재물운</strong>이라 불리는데, 예상 밖의 기회나 목돈이 스쳐 지나가듯 들어오는 대신 붙잡아두기가 쉽지 않으니 들어온 돈의 일부는 무조건 떼어 저축하는 습관을 만들어두는 게 좋아요.',
-  none:'재성이 뚜렷하게 드러나지 않아서, 돈을 좇기보다 <strong>다른 가치를 좇다가 돈이 따라오는</strong> 유형에 가까워요. 재물 자체를 목표로 삼기보다 좋아하는 일이나 의미 있는 목표를 먼저 좇는 편이 오히려 결과적으로 돈이 따라붙는 흐름을 만들어줄 가능성이 커요.'
+  jeongjae:'꾸준히 모이는 돈의 기운(정재)이 뚜렷해서, 한 방을 노리기보다 <strong>차곡차곡 모으는 방식</strong>이 체질적으로 잘 맞는 사람이에요. 정재는 명리학에서 "몸에 지닌 재물"이라 불리는 <strong>안정형 재물운</strong>이라, 매달 꾸준히 들어오는 수입을 착실히 불려나가는 쪽이 화려한 한탕보다 훨씬 유리해요.',
+  pyeonjae:'들어오는 만큼 나가기도 하는 돈의 기운(편재)이 뚜렷해서, 돈의 흐름이 큰 편이에요. 기회를 잘 잡지만 그만큼 씀씀이도 커질 수 있어요. 편재는 "몸에 지니지 않은 재물" 즉 <strong>유동형 재물운</strong>이라 불리는데, 예상 밖의 기회나 목돈이 스쳐 지나가듯 들어오는 대신 붙잡아두기가 쉽지 않으니 들어온 돈의 일부는 무조건 떼어 저축하는 습관을 만들어두는 게 좋아요.',
+  none:'돈의 기운(재성)이 뚜렷하게 드러나지 않아서, 돈을 좇기보다 <strong>다른 가치를 좇다가 돈이 따라오는</strong> 유형에 가까워요. 재물 자체를 목표로 삼기보다 좋아하는 일이나 의미 있는 목표를 먼저 좇는 편이 오히려 결과적으로 돈이 따라붙는 흐름을 만들어줄 가능성이 커요.'
 };
 PB.jaegoText = {
   yes:'게다가 재고(재물을 담는 창고)의 기운도 있어서, 당장은 안 보여도 차곡차곡 쌓이고 있을 가능성이 커요. 눈에 보이는 속도는 더뎌도, 시간이 지나 돌아보면 어느새 제법 든든한 곳간이 채워져 있는 걸 발견하게 될 거예요.',
@@ -12384,13 +12387,13 @@ function buildReport13(profile, saju){
   add('s2','타고난 기질 · 나를 가리키는 글자(일간)','M4 18 L10 6 L16 18',
     /* 조사는 바로 앞 한글 음절(천간 이름)의 받침으로 정한다. 괄호 안 한자는 판정 대상이 아니다.
        무/기/계 일간은 받침이 없어 '이'가 아니라 '가'가 맞다. */
-    '<p><strong>일간 '+dayStemName+'('+saju.day.stemH+')</strong>'+josaOnly(dayStemName,'이','가')+' '+safeName+' 사주의 뿌리예요. '+PB.shingangTrait[sg][dayStemName]+'</p>'+
+    '<p>태어난 날의 윗글자 <strong>'+dayStemName+'('+saju.day.stemH+')</strong>'+josaOnly(dayStemName,'이','가')+' 나를 가리키는 글자(일간)이고, '+safeName+' 사주의 뿌리예요. '+PB.shingangTrait[sg][dayStemName]+'</p>'+
     '<p>일간은 사주에서 \''+safeName+' 자신\'을 나타내는 글자예요. 이 글자 하나를 기준으로 나머지 일곱(또는 다섯) 글자와의 관계를 읽는 게 사주풀이의 핵심이에요.</p>');
 
   // 3. 사회적 인상
   var seasonKey = counts[SajuEngine.BRANCH_ELEM[saju.month.branchIdx]] >= 3 ? 'strong' : (counts[SajuEngine.BRANCH_ELEM[saju.month.branchIdx]]<=1?'weak':'mid');
   /* 12지 중 자·묘·사·오·미·유·해는 받침이 없어 '이'가 아니라 '가'가 맞다. josa()가 앞 음절 받침으로 판정한다. */
-  var s3Html = '<p><strong>월지 '+saju.month.branch+'('+saju.month.branchH+')</strong>'+josaOnly(saju.month.branch,'이','가')+' 밖으로 드러나는 인상을 정해요. '+PB.monthImpression[saju.month.branchIdx]+' '+PB.seasonStrength[seasonKey]+'</p>';
+  var s3Html = '<p>태어난 달의 글자 <strong>'+saju.month.branch+'('+saju.month.branchH+')</strong>(월지)'+josaOnly(saju.month.branch,'이','가')+' 밖으로 드러나는 인상을 정해요. '+PB.monthImpression[saju.month.branchIdx]+' '+PB.seasonStrength[seasonKey]+'</p>';
   // v4-B: 신살(고정 룩업) 존재 여부를 자연스러운 문장 1회로 — 역마살>화개살>도화살 순으로 하나만(도화살은 연애운 섹션에서 이미 별도로 다룸)
   if(shinsal['역마살']){
     s3Html += '<p>거기다 지지에 <strong>역마살</strong>이 껴 있어서, 한자리에 오래 머무르기보다 옮겨 다니거나 변화가 잦은 흐름 속에서 더 활기를 띠는 인상을 주기도 해요.</p>';
@@ -12404,7 +12407,7 @@ function buildReport13(profile, saju){
   // 4. 내면
   add('s4','내면 · 겉과 속의 차이','M10 3 C4 3 4 10 10 17 C16 10 16 3 10 3 Z',
     /* "일지 해(亥) 은" → "일지 해(亥)는". 자·묘·사·오·미·유·해는 받침이 없다. */
-    '<p><strong>일지 '+saju.day.branch+'('+saju.day.branchH+')</strong>'+josaOnly(saju.day.branch,'은','는')+' 가까운 사람만 아는 속마음이에요. '+PB.iljiInner[saju.day.branchIdx]+'</p><p>'+PB.hourKnown[saju.hour?'yes':'no']+'</p>');
+    '<p>태어난 날의 아랫글자 <strong>'+saju.day.branch+'('+saju.day.branchH+')</strong>(일지)'+josaOnly(saju.day.branch,'은','는')+' 가까운 사람만 아는 속마음이에요. '+PB.iljiInner[saju.day.branchIdx]+'</p><p>'+PB.hourKnown[saju.hour?'yes':'no']+'</p>');
 
   // 5. 사랑/연애운
   var loveKey = (sipCounts.정관>=sipCounts.편관 && sipCounts.정관>0) ? 'jeonggwan'
@@ -12479,7 +12482,7 @@ function buildReport13(profile, saju){
   // 9. 반복 패턴/고민
   var strongestElem = counts.indexOf(maxCount);
   add('s9','반복되는 패턴 · 고민','M4 10 C4 6 7 3 10 3 C13 3 16 6 16 10 C16 14 13 17 10 17 C7 17 4 14 4 10 Z',
-    '<p>'+PB.patternElem[strongestElem]+'</p><p><strong>'+domGroup+'</strong> 기운이 두드러진 사주라 반복되는 고민도 이 쪽에서 나오는 경우가 많아요. '+PB.patternSipseong[domGroup]+'</p>');
+    '<p>'+PB.patternElem[strongestElem]+'</p><p><strong>'+(SIPSEONG_GROUP_PLAIN[domGroup]||domGroup)+'</strong>('+domGroup+') 기운이 두드러진 사주라 반복되는 고민도 이 쪽에서 나오는 경우가 많아요. '+PB.patternSipseong[domGroup]+'</p>');
 
   /* v5-A: 대운=계절 비유. R14에서 이 함수의 사본을 없애고 모듈 최상단의 daeunSeasonLine(sipName)으로 합쳤다.
      같은 판정을 두 벌 두면 문구뱅크를 넓힐 때 한쪽만 넓어져 두 화면이 서로 다른 말을 하게 된다. */
