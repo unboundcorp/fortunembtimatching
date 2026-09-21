@@ -2150,6 +2150,19 @@ body.admin-on .mode-fab, body.admin-on .admin-flag{display:none !important;}
 /* R29 — 밝은 바탕에서 --gold-soft는 아주 옅은 미색이라 --ink-dim이 그 위에서 8.4:1이다.
    R21에 따로 만들었던 밝은 회색(#b7ada0)은 이유가 사라졌으므로 변수로 되돌린다. */
 .dw-now{font-size:.82rem;color:var(--ink-dim);line-height:1.7;margin-top:6px;}
+/* 대운 상자 줄 — 칩 색은 오늘 총평(.tsum-chip)과 같은 값 (2026-09-21) */
+.dw-list{list-style:none;padding:0;margin:0;}
+.dw-row{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-top:1px solid rgba(31,28,23,.1);}
+.dw-row:first-child{border-top:0;padding-top:0;}
+.dw-row:last-child{padding-bottom:0;}
+.dw-chip{flex:0 0 auto;margin-top:4px;padding:2px 7px;border-radius:999px;font-family:var(--sans);font-weight:800;
+  font-size:.7rem;white-space:nowrap;color:var(--ink-dim);background:rgba(31,28,23,.07);}
+.dw-row.best .dw-chip{color:#fff;background:var(--gold);}
+.dw-row.now .dw-chip{color:#fff;background:var(--ink);}
+.dw-row.next .dw-chip{color:#286648;background:rgba(40,102,72,.12);}
+.dw-txt{min-width:0;word-break:keep-all;}
+.dw-row.best .dw-txt{font-size:.9rem;line-height:1.85;color:var(--ink);}
+.dw-row.now .dw-txt,.dw-row.next .dw-txt{font-size:.84rem;line-height:1.75;color:var(--ink-dim);}
 .daewoon-item .dw-str{height:4px;border-radius:3px;background:var(--track);overflow:hidden;margin:7px 2px 3px;}
 .daewoon-item .dw-str i{display:block;height:100%;border-radius:3px;background:var(--gold);}
 .daewoon-item .dw-strnum{font-size:.64rem;color:var(--ink-dim);}
@@ -16002,6 +16015,13 @@ function fmtSignedMin(x){
   return (r>0?'+':'')+body+'분';
 }
 function fmtHm(o){ return pad2(o.hour)+':'+pad2(o.minute); }
+/* 'HH:MM' 모양만 <b>로 감싼 노드 배열. 문장은 한 글자도 안 바꾼다 (2026-09-21 내 사주 진태양시 줄) */
+function boldTimes(str){
+  var out = [], re = /\b\d{2}:\d{2}\b/g, last = 0, m;
+  while((m = re.exec(str))){ if(m.index > last) out.push(str.slice(last, m.index)); out.push(el('b',{},[m[0]])); last = m.index + m[0].length; }
+  if(last < str.length) out.push(str.slice(last));
+  return out;
+}
 function fmtYmd(o){ return o.y+'-'+pad2(o.m)+'-'+pad2(o.d); }
 /* ms·ISO 문자열 → 'YYYY. M. D. 오전 h:mm:ss' (ko-KR). 화면에 시각을 적는 자리는 전부 이것을 쓴다 —
    2026-09-21 리팩터 전에는 fmtDateTime(x) 이 아홉 곳에 손으로 적혀 있었다. */
@@ -16128,7 +16148,8 @@ function buildTimeAdjustTable(spec){
     plain = '지금은 맞추기를 꺼 두셔서, 입력하신 '+pad2(spec.hour)+':'+pad2(spec.minute)+'을 그대로 써서 계산했어요.';
     plain += changeWord ? (' 맞추기를 켜면 '+changeWord) : ' 맞추기를 켜도 결과는 같아요.';
   }
-  wrap.appendChild(el('p',{class:'ts-note', style:'color:var(--ink);'},[plain]));
+  /* ★ 2026-09-21 — 문장 속 시각(09:00 · 08:19)만 굵게. 글자는 그대로, 시각 모양(HH:MM)만 찾아 감싼다 */
+  wrap.appendChild(el('p',{class:'ts-note', style:'color:var(--ink);'},boldTimes(plain)));
   wrap.appendChild(buildFoldPanel({
     label:'어떻게 맞췄는지 자세히 보기', openLabel:'자세한 설명 접기',
     regionLabel:'태어난 시각을 해의 위치에 맞추는 계산 자세히', btnStyle:'margin-top:10px;',
@@ -19748,16 +19769,24 @@ function renderSaju(){
   var dwStr = daeunStrengthList(saju, dw.list, elemInfo.counts, sinGangJak(saju));
   var dwBest = dwStr.list[dwStr.bestIdx], dwCur = dwStr.list[curIdx];
   var peakBox = el('div',{class:'dw-peak'});
-  peakBox.appendChild(el('p',{html:'지금 계산으로는 <strong>'+dwBest.startAge+'세~'+dwBest.endAge+'세</strong>가 기운이 가장 크게 열리는 구간이에요. 정해진 결과가 아니라, 아래 네 가지만 놓고 봤을 때 상대적으로 높다는 뜻이에요.'}));
-  peakBox.appendChild(el('p',{class:'dw-now'},['지금은 '+ageNow+'세 · '+dwCur.startAge+'세~'+dwCur.endAge+'세 구간(강도 '+dwCur.total+')을 지나고 있어요.'+
-    (dwStr.bestIdx===curIdx ? ' 지금 지나는 구간이 그 구간이에요.' : (dwStr.bestIdx>curIdx ? ' 가장 큰 구간은 아직 앞에 있어요.' : ' 가장 큰 구간은 이미 지나온 자리예요.'))]));
+  /* ★ 2026-09-21 — 문단 셋을 줄로 끊고 [가장 큰 때]·[지금]·[다음] 칩을 단다(문장은 그대로). ul/li 는 복사본 때문 */
+  var peakList = el('ul',{class:'dw-list'}); peakBox.appendChild(peakList);
+  function dwRow(kind, tag, body){
+    var li = el('li',{class:'dw-row '+kind});
+    li.appendChild(el('span',{class:'dw-chip'},[tag]));
+    li.appendChild(Array.isArray(body) ? el('span',{class:'dw-txt'},body) : el('span',Object.assign({class:'dw-txt'},body)));
+    peakList.appendChild(li);
+  }
+  dwRow('best','가장 큰 때',{html:'지금 계산으로는 <strong>'+dwBest.startAge+'세~'+dwBest.endAge+'세</strong>가 기운이 가장 크게 열리는 구간이에요. 정해진 결과가 아니라, 아래 네 가지만 놓고 봤을 때 상대적으로 높다는 뜻이에요.'});
+  dwRow('now','지금',['지금은 '+ageNow+'세 · '+dwCur.startAge+'세~'+dwCur.endAge+'세 구간(강도 '+dwCur.total+')을 지나고 있어요.'+
+    (dwStr.bestIdx===curIdx ? ' 지금 지나는 구간이 그 구간이에요.' : (dwStr.bestIdx>curIdx ? ' 가장 큰 구간은 아직 앞에 있어요.' : ' 가장 큰 구간은 이미 지나온 자리예요.'))]);
   /* 전체 최고 구간이 이미 지나갔거나 지금이면, 앞으로 남은 구간 중 가장 큰 곳도 함께 알려준다.
      "가장 컸던 때는 이미 지났다"만 남기면 정작 알고 싶은 다음 자리가 안 보인다. */
   if(dwStr.bestIdx <= curIdx && curIdx < dwStr.list.length-1){
     var aheadIdx = curIdx+1;
     for(var ai=curIdx+2; ai<dwStr.list.length; ai++){ if(dwStr.list[ai].total > dwStr.list[aheadIdx].total) aheadIdx = ai; }
     var ah = dwStr.list[aheadIdx];
-    peakBox.appendChild(el('p',{class:'dw-now'},['앞으로 남은 구간 중에서는 '+ah.startAge+'세~'+ah.endAge+'세(강도 '+ah.total+')가 가장 크게 열리는 편이에요.']));
+    dwRow('next','다음',['앞으로 남은 구간 중에서는 '+ah.startAge+'세~'+ah.endAge+'세(강도 '+ah.total+')가 가장 크게 열리는 편이에요.']);
   }
   dwCard.appendChild(peakBox);
   dwCard.appendChild(buildDaeunFlowSvg(dwStr, curIdx, ageNow));
