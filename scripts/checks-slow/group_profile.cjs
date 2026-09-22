@@ -92,6 +92,10 @@ const R = L.reporter('저장한 그룹 프로필별');
       return { title: h ? h.textContent.trim() : '', hints: hints.length, below: hints.every(function(x){ return !!(row.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING); }) }; });
     R.note(lay && lay.title === '저장된 모임', '카드 제목이 「저장된 모임」', JSON.stringify(lay));
     R.note(lay && lay.hints === 2 && lay.below, '안내 두 줄이 목록 아래에 있다', JSON.stringify(lay));
+    /* 2026-09-22 대표님 지시 "아무도 안들어온 링크 정리하기는 맨 밑을 내려" */
+    const lastIsTidy = await p.evaluate(function(){ const card = document.querySelector('[data-gid]').closest('.scroll-card'); const last = card && card.lastElementChild;
+      return !!(last && last.tagName === 'BUTTON' && /링크 정리하기/.test(last.textContent)); });
+    R.note(lastIsTidy, '[아무도 안 들어온 링크 정리하기]가 카드의 맨 마지막이다', String(lastIsTidy));
 
     /* ④ 첫째 프로필로 둘째의 모임(gB)을 열어 봐도 적힌 프로필은 그대로 */
     await p.evaluate(function(){ window.__INYEON_TEST__.openSavedGroup('gB'); }); await L.wait(1200);
