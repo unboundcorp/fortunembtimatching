@@ -20,6 +20,7 @@ import { adminAccessOf } from './_lib/store.js';
 import { productOf, aiQuotaOf } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import { decodePersonRow, describeProfile } from './_lib/person.js';
+import { lookupPaymentByOrder } from './_lib/toss.js';
 
 /* AI 해석 1건당 대략 얼마가 나가는지 — 원가 감을 잡기 위한 값이다.
    Sonnet 5 기준 입력 $2 / 출력 $10 per MTok, 유료 10섹션 ≈ 7천 토큰으로 잡았다.
@@ -145,8 +146,15 @@ export default async function handler(req, res) {
         }
       } catch (e) { who.error = true; }
 
+      /* ★ 2026-09-22 대표님 승인 "그래 관리자 페이지 펼쳐라" — 토스에 이 주문의 결제 기록을 물어
+         결제수단·카드사·승인/실패 사유를 함께 내려준다(읽기만). 못 물으면 못 물었다고 적는다. */
+      let toss = null;
+      try { toss = await lookupPaymentByOrder(order.order_id); }
+      catch (e) { toss = { found: false, code: 'lookup_error', message: String(e && e.message || '').slice(0, 120) }; }
+
       return json(res, 200, {
         found: true,
+        toss,
         order: {
           receiptId: order.order_id,
           productId: order.product_id,

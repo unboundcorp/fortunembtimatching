@@ -77,6 +77,10 @@ function wire(page){
         order:{receiptId:'ORD-1', productId:'compat_full', productName:'궁합 심층 해석', amount:990,
                status:'paid', createdAt:'2026-09-10T02:03:04Z', paidAt:'2026-09-10T02:03:44Z', paymentKey:'있음', paymentKeyFull:'tviva20260910', sessionId:'sessABCDEFGH1234'},
         who:{kakaoId:'5079990001', linkedAt:'2026-09-09T01:00:00Z', profiles:[{name:'검사', mbti:'ENFP', gender:'여', birth:'1990-01-02', time:'10:00', lon:126.97, solarTime:'진태양시'}]},
+        toss:{found:true, payment:{mId:'inyeon_mid_1', status:'DONE', method:'카드', easyPay:{provider:'토스페이', amount:0},
+          card:{issuerCode:'41', issuer:'신한카드(41)', acquirerCode:'41', acquirer:'신한카드(41)', number:'4518****0002', cardType:'신용', ownerType:'개인', approveNo:'01234567'},
+          transferBank:'', requestedAt:'2026-09-10T02:03:10Z', approvedAt:'2026-09-10T02:03:44Z', totalAmount:990, failure:null,
+          receiptUrl:'https://dashboard.tosspayments.com/receipt/x'}},
         aiUses:1, aiQuota:1, firstAiAt:'2026-09-10T02:04:05Z', lastAiAt:'2026-09-10T02:04:05Z',
         passUntil:null, note:'테스트'}));
       return r.respond(j(SUMMARY));

@@ -18121,6 +18121,44 @@ function openOrderLookup(receiptId){
         row('프로필', who.kakaoId ? '동기화된 프로필이 없어요' : '—');
       }
       body.appendChild(el('p',{class:'biz-hint'},['환불 요청이 오면 손님이 말한 이름·생년월일이 위 프로필과 맞는지, 영수증 번호가 같은지 두 가지를 맞춰 보세요. 토스 콘솔에서는 영수증 번호(주문번호)나 결제키로 찾습니다.']));
+      /* ★ 2026-09-22 대표님 승인 "그래 관리자 페이지 펼쳐라" — 서버가 토스에 물어 온 그 건의 결제 기록.
+         첫 실결제가 INVALID_UNREGISTERED_SUBMALL 로 거절됐을 때 결제수단·카드사가 우리 기록에 없어
+         토스 상점관리자를 열어야만 보였다. 값이 없으면 없다고 적는다 — 지어내지 않는다. */
+      body.appendChild(el('h4',{style:'margin-top:14px;'},['토스 결제 조회']));
+      var tz = d.toss;
+      if(!tz){
+        row('조회', '이 배포본은 토스 조회를 안 내려줘요');
+      } else if(!tz.found){
+        row('조회', '토스에 이 주문번호로 조회된 결제가 없어요'+(tz.code ? ' ('+tz.code+(tz.message ? ' — '+tz.message : '')+')' : ''));
+        body.appendChild(el('p',{class:'biz-hint'},['결제창에서 승인 요청까지 가지 않았거나(창만 열고 닫음), 토스가 조회를 막은 건이에요.']));
+      } else {
+        var pm = tz.payment || {};
+        var TOSS_STATUS = {DONE:'승인 완료', ABORTED:'승인 실패', CANCELED:'취소됨', PARTIAL_CANCELED:'부분 취소', READY:'승인 전',
+                           IN_PROGRESS:'인증 끝 · 승인 전', WAITING_FOR_DEPOSIT:'입금 대기', EXPIRED:'만료'};
+        if(pm.mId) row('상점아이디(MID)', pm.mId);
+        row('토스 상태', (TOSS_STATUS[pm.status] || pm.status || '—')+(pm.status ? ' ('+pm.status+')' : ''));
+        row('결제수단', (pm.method || '—')+(pm.easyPay && pm.easyPay.provider ? ' · 간편결제 '+pm.easyPay.provider : ''));
+        if(pm.card){
+          row('카드사', pm.card.issuer || '—');
+          if(pm.card.acquirerCode && pm.card.acquirerCode !== pm.card.issuerCode) row('매입사', pm.card.acquirer);
+          if(pm.card.number) row('카드 번호', pm.card.number);
+          var kind = [pm.card.cardType, pm.card.ownerType].filter(Boolean).join(' · ');
+          if(kind) row('카드 종류', kind);
+          if(pm.card.approveNo) row('승인번호', pm.card.approveNo);
+        }
+        if(pm.transferBank) row('이체 은행 코드', pm.transferBank);
+        if(pm.totalAmount != null) row('토스 금액', formatWon(pm.totalAmount));
+        if(pm.requestedAt) row('요청 시각', fmtDateTime(pm.requestedAt));
+        if(pm.approvedAt) row('승인 시각', fmtDateTime(pm.approvedAt));
+        if(pm.failure){
+          body.appendChild(el('p',{class:'legal-row', style:'color:var(--red-hi);'},[el('strong',{},['실패 사유']),' — ',
+            (pm.failure.code || '')+(pm.failure.message ? ' · '+pm.failure.message : '')]));
+        }
+        if(pm.receiptUrl){
+          body.appendChild(el('p',{class:'legal-row'},[el('strong',{},['영수증']),' — ',
+            el('a',{href:pm.receiptUrl, target:'_blank', rel:'noopener'},['토스 영수증 열기'])]));
+        }
+      }
       body.appendChild(el('h4',{style:'margin-top:14px;'},['열람 여부']));
       if(d.aiUses > 0){
         body.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[

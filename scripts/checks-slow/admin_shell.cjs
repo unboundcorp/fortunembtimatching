@@ -106,6 +106,10 @@ function wire(page, opt){
                paymentKeyFull:'tviva20260910', sessionId:'sess-abc'},
         who:{kakaoId:'5079990001', linkedAt:'2026-09-09T01:00:00Z',
              profiles:[{name:'검사', mbti:'ENFP', gender:'여', birth:'1990-01-02', time:'10:00', lon:126.97, solarTime:'진태양시'}]},
+        toss:{found:true, payment:{mId:'inyeon_mid_1', status:'ABORTED', method:'카드', easyPay:null,
+          card:{issuerCode:'11', issuer:'KB국민카드(11)', acquirerCode:'11', acquirer:'KB국민카드(11)', number:'9410****0001', cardType:'신용', ownerType:'개인', approveNo:''},
+          transferBank:'', requestedAt:'2026-09-22T20:33:50+09:00', approvedAt:null, totalAmount:990,
+          failure:{code:'INVALID_UNREGISTERED_SUBMALL', message:'등록되지 않은 서브몰입니다.'}, receiptUrl:''}},
         aiUses:1, aiQuota:1, firstAiAt:'2026-09-10T02:04:05Z', passUntil:null, note:'테스트'}));
       return r.respond(j(SUMMARY));
     }
@@ -302,6 +306,9 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   const om = await page.evaluate(() => ((document.querySelector('#activeModal .modal-box')||{}).innerText || '').replace(/\s+/g,' '));
   ['누구의 결제인가','카카오 회원번호','5079990001','검사','ENFP','1990-01-02','tviva20260910','영수증 번호가 같은지']
     .forEach(function(w){ R.note(om.indexOf(w) >= 0, "주문 확인 창 — '" + w + "' 가 보인다"); });
+  /* ★ 2026-09-22 — 토스 결제 조회 절: 어느 MID 로 나갔는지 · 상태 · 카드사 · 실패 사유가 실제로 찍히는가 */
+  ['토스 결제 조회','inyeon_mid_1','승인 실패','KB국민카드(11)','9410****0001','INVALID_UNREGISTERED_SUBMALL','등록되지 않은 서브몰']
+    .forEach(function(w){ R.note(om.indexOf(w) >= 0, "주문 확인 창 · 토스 조회 — '" + w + "' 가 보인다"); });
   await page.evaluate(() => { const b = document.querySelector('#activeModal .modal-close-row .btn'); if(b) b.click(); }); await L.wait(300);
 
   o = await go('compat');
