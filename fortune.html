@@ -2354,6 +2354,7 @@ body.admin-on .mode-fab{display:none !important;}
 .invite-link-row input{flex:1;min-width:0;border:1px solid var(--field-line);border-radius:var(--r-md);
   background:var(--panel-2);color:var(--ink-dim);padding:12px 14px;font-size:.86rem;
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-overflow:ellipsis;}
+.invite-name-row input{font-family:inherit;}  /* 이름 칸은 주소 칸과 달리 본문 글꼴 */
 .invite-link-row button{flex:none;min-height:46px;padding:0 16px;border-radius:var(--r-md);
   border:1px solid var(--gold);background:var(--gold-soft);color:var(--gold);
   font-weight:700;font-size:.86rem;white-space:nowrap;}
@@ -2884,7 +2885,7 @@ var PROCESSORS = [
   { name:'Vercel Inc.',        task:'서비스 화면과 서버 기능의 호스팅',        region:'미국',    items:'접속 요청 정보' },
   /* 대표님이 프로젝트를 서울(ap-northeast-2) 지역으로 만드셨다고 확인해 주셨다(2026-08-11). */
   /* ★ R48 — 맡긴 일이 늘었는데 문구가 그대로였다. 그룹·AI 해석 글·이용 기록도 여기 저장된다. */
-  { name:'Supabase Inc.',      task:'궁합 방·그룹·AI 해석 글·결제 기록·로그인 저장', region:'대한민국', items:'닉네임·성격유형·생년월일·태어난 시각·성별·출생지, 서비스 안의 기록, 생성된 해석 글, 주문·결제 기록' },
+  { name:'Supabase Inc.',      task:'궁합 방·모임·AI 해석 글·결제 기록·로그인 저장', region:'대한민국', items:'닉네임·성격유형·생년월일·태어난 시각·성별·출생지, 서비스 안의 기록, 생성된 해석 글, 주문·결제 기록' },
   { name:'토스페이먼츠 주식회사', task:'결제 처리 및 결제수단 인증',         region:'대한민국', items:'주문번호·결제금액·결제수단 정보' },
   /* ★ 2026-08-22 — 고객 문의를 구글 스프레드시트에 모아 보기로 했다(대표님 지시).
      그러면 손님이 쓴 글과 적어주신 카카오톡 아이디가 구글 서버로 나간다. 그건 처리위탁이고,
@@ -6993,6 +6994,9 @@ function hasAccess(productId){
      ★ 산 시각조차 모르면 가리지 않습니다. 알 수 없는 것을 근거로 손님을 막지 않습니다.
      ★ 서버 api/_lib/entitlements.js 의 hasAccess와 한 쌍이다. 한쪽만 고치지 마라. */
   if(passActive()){
+    /* ★ 2026-09-22 대표님 지시 — 테스트 허가(서버가 allYears 를 붙여 내려줌)는 모든 해를 연다.
+       손님 이용권에는 이 표식이 없다. 서버 api/_lib/entitlements.js 의 hasAccess 와 한 쌍. */
+    if(entitlements().pass && entitlements().pass.allYears) return true;
     var py = passYearOf(entitlements().pass);
     var wy = splitProductId(productId).year;
     if(py === null || wy === null || py === wy) return true;
@@ -8271,7 +8275,7 @@ function openTermsModal(){
     '만 14세 미만은 서비스를 이용할 수 없습니다.',
     '이용자는 정확한 정보를 입력해야 하며, 부정확한 입력으로 인한 결과의 오류는 이용자가 부담합니다.',
     '타인의 개인정보를 그 사람의 동의 없이 입력하거나 링크로 내보내서는 안 됩니다.',
-    '그룹 관리용 PIN은 이용자가 직접 관리하며, 회사는 복원할 수 없는 형태로만 보관하므로 분실 시 알려드릴 수 없습니다. 다만 개인정보의 열람·삭제 등 법령이 보장한 권리는 PIN 없이도 본인 확인을 거쳐 행사할 수 있습니다.'
+    '모임 관리용 PIN은 이용자가 직접 관리하며, 회사는 복원할 수 없는 형태로만 보관하므로 분실 시 알려드릴 수 없습니다. 다만 개인정보의 열람·삭제 등 법령이 보장한 권리는 PIN 없이도 본인 확인을 거쳐 행사할 수 있습니다.'
   ]);
 
   h('제7조 (유료 서비스 및 결제)');
@@ -8340,7 +8344,7 @@ function openPrivacyModal(){
   ul([
     '필수 — 닉네임, 생년월일, 성별. 사주 계산과 결과 제공에 씁니다.',
     '선택 (없어도 이용에 불이익 없음) — 태어난 시각, 출생지와 태어난 시각 보정 사용 여부, 성격유형. 더 정확한 계산과 궁합에 씁니다.',
-    '그룹을 쓰실 때 — 그룹 이름, 관리용 PIN(설정하신 경우).',
+    '모임을 쓰실 때 — 모임 이름, 관리용 PIN(설정하신 경우).',
     '결제하실 때 — 주문·결제 기록. 카드번호 등 결제수단 정보는 결제대행사가 직접 처리하며 회사는 받지도, 보관하지도 않습니다. 휴대폰 번호는 수집하지 않습니다.',
     '"카카오 로그인"을 하신 경우 (2026-09-09부터 서비스 이용에 필요합니다) — 카카오 회원번호. 여러 기기에서 같은 내용을 보시고, 결제하신 이용권을 되찾는 데에 씁니다. 카카오 로그인으로 이름·이메일·전화번호·프로필 사진은 받지 않으며, 이 번호는 회사 서비스 전용 식별자라 그 값만으로는 개인을 알아볼 수 없습니다.',
     '카카오로 로그인하신 경우 함께 저장되는 것 — 프로필(닉네임·생년월일·태어난 시각·출생지·성별·성격유형), 서비스 안에 쌓인 기록(오늘의 운세·궁합·풀이 열람 기록), 그리고 참여하신 모임 목록(모임 번호·이름·인원·고르신 사이와, 만드신 모임이면 그 모임의 관리 권한 표시). 다른 기기에서 그대로 보시고 관리하시게 하는 데에만 씁니다. 로그인하지 않으시면 이 항목은 회사 서버로 전송되지 않습니다.',
@@ -8349,13 +8353,13 @@ function openPrivacyModal(){
        받는 것을 만들었으면 여기에도 반드시 적어야 한다 — 화면과 방침이 어긋나면 그게 문제다. */
     '문의를 보내실 때 (연락처는 선택 · 안 적으셔도 접수됨) — 보내주신 내용과 어느 화면에서 겪으셨는지, 결제·환불 문의에서 적어주신 경우에 한해 주문번호, 그리고 적어주신 경우에 한해 연락처(카카오톡 아이디·메일주소·전화번호 중 적으신 것). 문의에 답을 드리는 데에만 씁니다. 접수한 문의의 처리 상태와 답변은 이용자가 서비스의 [내 문의 내역]에서 다시 보실 수 있도록 함께 보관합니다.'
   ]);
-  p2('입력하신 정보는 기본적으로 이용자의 브라우저에만 저장되고 회사 서버로 보내지 않습니다. 궁합 링크·그룹·유료 AI 해석·결제를 이용하실 때, 그리고 카카오로 로그인하신 경우에만 서버에 저장됩니다.');
+  p2('입력하신 정보는 기본적으로 이용자의 브라우저에만 저장되고 회사 서버로 보내지 않습니다. 궁합 링크·모임·유료 AI 해석·결제를 이용하실 때, 그리고 카카오로 로그인하신 경우에만 서버에 저장됩니다.');
 
   h('제2조 (보유 및 이용 기간)');
   p2('서버에 저장되는 정보의 보유 기간은 모두 처음 만들어진 날부터 셉니다. 이용 여부에 따라 늘어나지 않습니다.');
   ul([
     '궁합 링크 — ' + ROOM_TTL_TEXT,
-    '그룹 — ' + GROUP_TTL_TEXT + ' (관리용 PIN은 복원할 수 없는 형태로만 보관해 회사도 알 수 없습니다)',
+    '모임 — ' + GROUP_TTL_TEXT + ' (관리용 PIN은 복원할 수 없는 형태로만 보관해 회사도 알 수 없습니다)',
     '유료 AI 해석 글과 이용 횟수 기록 — 1년. 삭제된 뒤 다시 여시면 새로 만들어 드리며 생성 횟수는 차감되지 않습니다.',
     '카카오 연결 (카카오 회원번호) — 이용자가 로그아웃하실 때까지. 설정 → 이용권 → "카카오 로그인"에서 언제든 로그아웃하실 수 있고, 그러면 즉시 지웁니다.',
     '카카오 로그인으로 저장된 프로필·기록 — 이용자가 로그아웃하실 때까지. 로그아웃하시면 서버에 올려둔 사본을 지웁니다. 이용자의 브라우저에 있는 것은 그대로 남습니다.',
@@ -8393,7 +8397,7 @@ function openPrivacyModal(){
   ul([
     '열람·정정·삭제·처리정지를 요구하실 수 있습니다.',
     '브라우저에 저장된 정보는 설정과 히스토리 화면에서 직접 지우실 수 있고, 지운 값은 복구되지 않습니다.',
-    '그룹은 만드신 기기에서 바로, 다른 기기에서는 설정해 두신 관리용 PIN으로 지우실 수 있습니다.',
+    '모임은 만드신 기기에서 바로, 다른 기기에서는 설정해 두신 관리용 PIN으로 지우실 수 있습니다.',
     '그 밖의 요청은 아래 연락처로 주시면 10일 이내에 처리하고 알려드립니다. PIN이 없거나 기기를 바꾸셨더라도 본인 확인을 거쳐 행사하실 수 있으며, 만 14세 미만 아동의 법정대리인도 같은 권리를 행사하실 수 있습니다.'
   ]);
 
@@ -8560,7 +8564,7 @@ function renderAbout(){
       '내 사주 — 태어난 날과 시각으로 여덟 글자(사주팔자)를 계산하고, 오행과 십성, 10년 단위 흐름(대운)까지 보여드려요.',
       '오늘의 운세 — 그날의 기운과 내 사주를 견주어 총운·금전운·애정운·건강운·학업직장운을 짚어드려요.',
       '궁합 — 두 사람의 성격유형과 사주를 함께 봐요. 링크를 보내면 상대방 화면과 내 화면에 같은 결과가 나타나요.',
-      '그룹 궁합 — 최대 '+GC_MAX+'명까지 한 그림으로 모아 서로의 결을 한눈에 볼 수 있어요.'
+      '모임 궁합 — 최대 '+GC_MAX+'명까지 한 그림으로 모아 서로의 결을 한눈에 볼 수 있어요.'
     ]);
     infoCard(view, '이런 점이 달라요', [
       '카카오 계정으로 로그인하고 생년월일과 성격유형만 넣으면 바로 시작할 수 있어요. 따로 만드는 아이디나 비밀번호는 없어요.',
@@ -8647,7 +8651,7 @@ function renderFaq(){
     var GROUPS = [
       ['서비스', [
         ['둘이서 보는 궁합과 여럿이 보는 궁합은 뭐가 다른가요?',
-         '궁합 보기 맨 위에서 [둘이서 보기 / 여럿이서 보기]를 고를 수 있어요. 둘이서 보기는 두 분의 점수와 13개 이야기를 자세히 풀어드리고, 여럿이서 보기는 모인 사람들 사이의 인연을 한 그림에 함께 보여드려요. 한 그룹에 최대 '+GC_MAX+'명까지 들어가요.',
+         '궁합 보기 맨 위에서 [둘이서 보기 / 여럿이서 보기]를 고를 수 있어요. 둘이서 보기는 두 분의 점수와 13개 이야기를 자세히 풀어드리고, 여럿이서 보기는 모인 사람들 사이의 인연을 한 그림에 함께 보여드려요. 링크 하나로 최대 '+GC_MAX+'명까지 궁합을 확인할 수 있어요.',
          '모으는 방법이 달라요. 둘이서 보기는 상대방 정보를 직접 넣으셔도 되고 초대 링크를 보내셔도 돼요. 여럿이서 보기는 초대 링크로만 모아요 — 각자 본인이 넣은 값으로 봐야 정확하기 때문이에요.',
          '고르실 수 있는 사이도 달라요. 둘이서는 친구·연인·직장 동료·가족 네 가지가 다 되고, 여럿이서는 연인을 뺀 세 가지예요. 연인은 두 분 사이를 가리키는 말이라 여러 명이 모인 자리에는 맞지 않아서예요.'],
         ['친구·연인·직장 동료·가족은 왜 고르나요?',
@@ -8663,19 +8667,19 @@ function renderFaq(){
         ['사주 결과가 다른 곳과 달라요',
          '절기 시각을 계산하는 방법과 진태양시를 쓰는지에 따라 결과가 달라질 수 있어요. '+COMPANY.serviceName+'이 어떻게 계산했는지는 내 사주 화면에서 펼쳐 볼 수 있어요.']
       ]],
-      ['링크와 그룹', [
-        ['다른 사람이 우리 그룹을 볼 수 있나요?',
-         '그룹 주소를 아는 사람만 볼 수 있어요. 주소는 뜻 없는 무작위 번호라 찍어서 맞힐 수 없어요. 다만 주소를 받은 사람은 누구나 열 수 있으니, 보내실 분을 정해서 보내주세요.'],
+      ['링크와 모임', [
+        ['다른 사람이 우리 모임을 볼 수 있나요?',
+         '모임 주소를 아는 사람만 볼 수 있어요. 주소는 뜻 없는 무작위 번호라 찍어서 맞힐 수 없어요. 다만 주소를 받은 사람은 누구나 열 수 있으니, 보내실 분을 정해서 보내주세요.'],
         ['1:1 궁합에서 친구가 볼 수 있는 정보는?',
          '링크에 담긴 사람의 닉네임·성격유형·생년월일·태어난 시각·성별·출생지가 상대방 화면에 나타나요. 궁합을 계산하는 데 필요한 값이에요. 링크를 만들기 전에 화면에서 같은 내용을 알려드려요.'],
-        ['그룹이나 멤버를 삭제·수정하고 싶어요',
-         '그룹 화면 아래 [그룹 관리]를 눌러주세요. 그룹을 만든 기기에서는 PIN 없이 바로 이름을 바꾸거나, 지금 화면에 있는 사람들로 명단을 다시 저장하거나, 그룹을 지울 수 있어요. 다른 기기에서도 관리하시려면 [그룹 관리]에서 관리용 PIN을 정해 두시면 돼요.',
-         '내 정보만 빼고 싶으시면 PIN 없이 [이 그룹에서 나가기]를 누르시면 돼요. 회원님 줄만 명단에서 빠지고 그룹은 그대로 남아요. 마지막 한 분이 나가시면 그룹도 함께 사라져요.'],
-        ['그룹 PIN을 잊어버렸어요',
-         'PIN은 되돌릴 수 없는 형태로만 보관해서 저희도 알 수 없어요. 알려드릴 방법이 원리적으로 없어요. 새로 그룹을 만들어 링크를 다시 보내주시는 편이 빨라요. 다만 그룹을 지우고 싶으신 경우에는 그룹 주소와 함께 '+companyValue(COMPANY.supportEmail)+' 로 알려주시면 확인 후 지워드려요.'],
-        ['그룹에 사람을 더 받고 싶어요',
-         '그룹 화면의 [접수 주소 보내기]를 쓰시면 돼요. 그룹 주소와는 다른 주소인데, 이 주소를 받은 분은 자기 정보를 직접 넣고 그룹에 들어와요. 최대 '+GC_MAX+'명까지 받을 수 있어요.'],
-        ['저장한 그룹은 얼마나 남아 있나요?',
+        ['모임이나 멤버를 삭제·수정하고 싶어요',
+         '모임 화면 아래 [모임 관리]를 눌러주세요. 모임을 만든 기기에서는 PIN 없이 바로 이름을 바꾸거나, 지금 화면에 있는 사람들로 명단을 다시 저장하거나, 모임을 지울 수 있어요. 다른 기기에서도 관리하시려면 [모임 관리]에서 관리용 PIN을 정해 두시면 돼요.',
+         '내 정보만 빼고 싶으시면 PIN 없이 [이 모임에서 나가기]를 누르시면 돼요. 회원님 줄만 명단에서 빠지고 모임은 그대로 남아요. 마지막 한 분이 나가시면 모임도 함께 사라져요.'],
+        ['모임 PIN을 잊어버렸어요',
+         'PIN은 되돌릴 수 없는 형태로만 보관해서 저희도 알 수 없어요. 알려드릴 방법이 원리적으로 없어요. 새로 모임을 만들어 링크를 다시 보내주시는 편이 빨라요. 다만 모임을 지우고 싶으신 경우에는 모임 주소와 함께 '+companyValue(COMPANY.supportEmail)+' 로 알려주시면 확인 후 지워드려요.'],
+        ['모임에 사람을 더 받고 싶어요',
+         '모임 화면의 [접수 주소 보내기]를 쓰시면 돼요. 모임 주소와는 다른 주소인데, 이 주소를 받은 분은 자기 정보를 직접 넣고 모임에 들어와요. 최대 '+GC_MAX+'명까지 받을 수 있어요.'],
+        ['저장한 모임은 얼마나 남아 있나요?',
          GROUP_TTL_PHRASE+' 동안 남아 있어요. 자주 여시든 안 여시든 이 기간은 달라지지 않고, 지나면 지워져요. 1:1 궁합은 '+ROOM_TTL_PHRASE+'이에요.'],
         ['누가 먼저 보든 점수가 같나요?',
          '같아요. 네 항목(성격유형·사주·오행·띠)과 종합 점수 모두 두 분 화면에서 같은 값이 나와요. 사주에서 서로를 북돋는 관계는 방향이 있지만, 그건 설명 문장에서만 갈리고 점수는 두 분 공통값으로 봐요.']
@@ -8684,7 +8688,7 @@ function renderFaq(){
         ['회원가입을 해야 하나요?',
          '따로 만드는 아이디나 비밀번호는 없어요. 대신 카카오 계정으로 로그인하고 시작해요. 만들어 둔 것과 결제한 것이 카카오 계정에 남아서, 폰에서 만든 것을 노트북에서도 보고 브라우저 기록을 지워도 그대로 열려요. 카카오에서 받는 것은 회원번호 하나뿐이고 이름·이메일·전화번호는 받지 않아요.'],
         ['다른 기기에서도 볼 수 있나요?',
-         '같은 카카오 계정으로 로그인하시면 프로필과 지난 기록, 저장한 그룹이 그대로 따라와요. 결제하신 것도 함께 열려요.'],
+         '같은 카카오 계정으로 로그인하시면 프로필과 지난 기록, 저장한 모임이 그대로 따라와요. 결제하신 것도 함께 열려요.'],
         ['기록을 지우려면요?',
          '히스토리 화면에서 하나씩 또는 전체를 지울 수 있고, 설정에서 프로필을 지울 수 있어요. 브라우저의 사이트 데이터를 지워도 돼요.']
       ]],
@@ -8791,7 +8795,7 @@ var FEEDBACK_KIND_LABEL = {
 var ROUTE_LABEL = {
   home:'홈', today:'오늘 운세', saju:'내 사주', monthlyFortune:'월별 운세',
   report13:'사주 풀이', mbtiReport:'성격유형 풀이', report:'성향 리포트',
-  compat:'궁합', groupCompat:'그룹 궁합', chars:'캐릭터', history:'기록',
+  compat:'궁합', groupCompat:'모임 궁합', chars:'캐릭터', history:'기록',
   settings:'설정', glossary:'용어 사전', about:'서비스 소개',
   /* ★ R102 — 새로 만든 화면을 여기 안 적으면 개선 의견 기록에 'pairDeep' 같은
      내부 이름이 그대로 찍힌다. 손님 제보를 읽는 사람이 못 알아본다. */
@@ -13587,7 +13591,7 @@ function buildMonthlyFortune(profile, year, isOpen){
     var newChung = monthRel.chung.length>baseRel.chung.length;
     var newHap = monthRel.hap.length>baseRel.hap.length || monthRel.samhap.length>baseRel.samhap.length;
 
-    // (b) 월간-일간 십성 → 금전운(재성이면 정재/편재로 갈라 보고, 그 외는 십성 그룹으로 본다) · 학업/직장운(십성 그룹)
+    // (b) 월간-일간 십성 → 금전운(재성이면 정재/편재로 갈라 보고, 그 외는 십성 모임으로 본다) · 학업/직장운(십성 모임)
     var monthSip = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[mStemIdx], SajuEngine.STEM_YY[mStemIdx]);
     var sipGroup = groupCategory(monthSip);
 
@@ -15414,7 +15418,7 @@ function buildMigrateNotice(p){
     if(elemOff !== elemOn){
       box.appendChild(el('p',{style:'margin-top:6px;'},[
         '보정을 켜면 '+charCountWord(p)+' 글자 중 가장 많은 기운(대표 오행)도 '+ELEMENTS[elemOff]+'에서 '+ELEMENTS[elemOn]+
-        josaOnlyText(ELEMENTS[elemOn],'으로','로')+' 바뀌어요. 이 값은 궁합의 오행 점수와 그룹 궁합 그림에도 쓰여요.'
+        josaOnlyText(ELEMENTS[elemOn],'으로','로')+' 바뀌어요. 이 값은 궁합의 오행 점수와 모임 궁합 그림에도 쓰여요.'
       ]));
     }
   }
@@ -15480,7 +15484,7 @@ function buildTermFixNotice(p){
   if(elemNow !== elemOld){
     row(charCountWord(p)+' 글자 중 가장 많은 기운(대표 오행)',
         ELEMENTS[elemOld]+'에서 '+ELEMENTS[elemNow]+josaOnly(ELEMENTS[elemNow],'으로','로')+
-        ' 바뀌었어요. 이 값은 궁합의 오행 점수와 그룹 궁합 그림에도 쓰여서, 예전에 보신 궁합 점수와 달라질 수 있어요');
+        ' 바뀌었어요. 이 값은 궁합의 오행 점수와 모임 궁합 그림에도 쓰여서, 예전에 보신 궁합 점수와 달라질 수 있어요');
     /* 이 상자가 대표 오행 변화를 이미 설명했으니, 아래 buildElementFixNotice가 같은 말을 또 하지 않게 한다.
        (원인이 절기 보정인 경우는 여기서 끝난다. 다른 이유로 어긋난 경우는 표식을 그대로 두어
         buildElementFixNotice가 따로 알린다.) */
@@ -15526,7 +15530,7 @@ function buildElementFixNotice(p){
   ]));
   box.appendChild(list);
   box.appendChild(el('p',{style:'margin-top:8px;'},[
-    '바뀐 쪽이 지금 이 화면의 '+charCountWord(p)+' 글자에서 실제로 센 값이에요. 이 값은 궁합의 오행 점수와 그룹 궁합 그림에도 쓰이니, 예전에 보신 궁합 점수와 달라질 수 있어요.'
+    '바뀐 쪽이 지금 이 화면의 '+charCountWord(p)+' 글자에서 실제로 센 값이에요. 이 값은 궁합의 오행 점수와 모임 궁합 그림에도 쓰이니, 예전에 보신 궁합 점수와 달라질 수 있어요.'
   ]));
   box.appendChild(el('div',{style:'margin-top:10px;'},[
     el('button',{class:'btn btn-primary btn-sm', onclick:function(){
@@ -16401,13 +16405,13 @@ function renderSetupStep3(){
     var goGroup  = !wasEdit && PENDING_GROUP;
     if(goGroupJoin){
       ROUTE='groupJoin';
-      showToast('프로필을 저장했어요. 그룹 참여를 이어갈게요.');
+      showToast('프로필을 저장했어요. 모임 참여를 이어갈게요.');
       render();
       return;
     }
     if(goGroup){
       var gid = PENDING_GROUP; PENDING_GROUP=null;
-      showToast('프로필을 저장했어요. 받은 그룹을 열어볼게요.');
+      showToast('프로필을 저장했어요. 받은 모임을 열어볼게요.');
       ROUTE='compat'; render();
       openSavedGroup(gid);
       return;
@@ -16417,7 +16421,7 @@ function renderSetupStep3(){
       showToast('프로필을 저장했어요. 받은 초대장을 열어볼게요.');
     } else if(goMeet){
       GC_SOURCE='link'; ROUTE='groupCompat';
-      showToast('프로필을 저장했어요. 받은 그룹을 보여드릴게요.');
+      showToast('프로필을 저장했어요. 받은 모임을 보여드릴게요.');
     } else if(goInvite){
       ROUTE='inviteAccept';
       showToast('프로필을 저장했어요. 받은 초대장을 보여드릴게요.');
@@ -18479,7 +18483,12 @@ function finishConsent(mode){
     }
     startSetupWizard(null); render(); return;
   }
-  if(mode === 'self' || mode === 'compat'){ startService(mode); return; }
+  /* ★ 2026-09-22 대표님 지시("1,2,3 다해라" ③) — 프로필이 이미 있으면(다른 기기에서 로그인) 어느 카드를 골랐든
+     **홈**에 선다. 프로필이 없으면 예전대로 고른 쪽으로 가는 마법사(PENDING_SERVICE)다. */
+  if(mode === 'self' || mode === 'compat'){
+    if(!activeProfile()){ startService(mode); return; }
+    setMode(mode); ROUTE='home'; render(); return;
+  }
   /* ★ 2026-09-09 대표님 지시 — "동의 버튼 누르고 바로 카카오 로그인되게 해라
      **그리고 사주정보 입력하게 해라**". 그래서 아직 프로필이 없으면 곧장 마법사로 보낸다.
      ★ 예전에는 홈으로 보내 무엇을 볼지 먼저 고르게 했다(R50 — "무엇을 받는지 모른 채
@@ -19820,7 +19829,7 @@ function renderCompat(){
        그래서 그 경우에는 누구 정보가 채워졌는지와 다음에 누를 것을 그대로 적는다. */
     view.appendChild(screenHead('궁합 보기', {seal:'緣', sub:
       isGroupView
-        ? ('모인 사람들이 서로 어떻게 맞는지 한 그림에 함께 봐요. 한 그룹에 최대 '+GC_MAX+'명까지 들어가요.')
+        ? ('모인 사람들이 서로 어떻게 맞는지 한 그림에 함께 봐요. 링크 하나로 최대 '+GC_MAX+'명까지 궁합을 확인할 수 있어요.')
         : ((COMPAT_DRAFT.fromInvite && COMPAT_DRAFT.name)
           ? (nameOr(COMPAT_DRAFT.name,'상대방')+'님이 보낸 정보는 링크에 담겨 와서 이미 채워져 있어요. 아래 [궁합 풀어보기]를 누르면 '+p.name+'님과의 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.')
           : ('상대방의 정보를 입력하면 '+personLabel(p.name, '나')+' 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.'))}));
@@ -19873,7 +19882,7 @@ function renderCompat(){
         onclick:function(){ if(!GC_RELATION_SET) return; openInviteLinkModal(p, GC_RELATION); }},
         [svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('상대방에게 궁합 링크 보내기','받은 분이 자기 정보를 넣어요')]));
       view.appendChild(el('p',{class:'biz-hint'},
-        ['같은 링크 하나로 여러 분을 부를 수 있어요. 넣은 분부터 차례로 그룹에 들어와요.']));
+        ['같은 링크 하나로 여러 분을 부를 수 있어요. 넣은 분부터 차례로 모임에 들어와요.']));
       /* ★ 2026-09-07 대표님 지시 — "저장한 그룹이랑 링크 보내는 버튼이랑 순서 바꿔".
          새 모임을 만드는 것이 이 화면에 처음 온 분의 볼일이고, 저장한 그룹은 다시 오신 분의 볼일이다.
          카드가 길어서(그룹 목록 + 정리 버튼) 그것부터 나오면 링크 버튼이 화면 밖으로 밀렸다. */
@@ -21223,7 +21232,7 @@ function buildGroupCompatGraph(members, pairs, onSelect){
   /* 선 그림 자체에 이름을 붙인다. 사람 버튼은 아래에 진짜 버튼으로 따로 있으므로,
      여기 role='img'가 버튼을 삼키지 않는다(형제 관계다). */
   svg.setAttribute('role','img');
-  svg.setAttribute('aria-label','그룹 궁합 그림');
+  svg.setAttribute('aria-label','모임 궁합 그림');
   stage.appendChild(svg);
   var tagLayer = el('div',{class:'gc-tags','aria-hidden':'true'});
   stage.appendChild(tagLayer);
@@ -22167,7 +22176,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
     var titleRow = el('h3',{class:'gc-person-title', style:'margin-bottom:2px;'});
     var av = inlineCharAvatar(m, 34);
     if(av) titleRow.appendChild(av);
-    titleRow.appendChild(el('span',{},[m.name+'님과 그룹 구성원과의 궁합']));
+    titleRow.appendChild(el('span',{},[m.name+'님과 모임 구성원과의 궁합']));
     card.appendChild(titleRow);
     card.appendChild(el('p',{class:'section-sub', style:'margin-top:0;'},
       [related.length>1 ? ('다른 '+related.length+'명과 하나씩 짚었어요.')
@@ -22281,7 +22290,7 @@ function decodeMeetFromHash(hash){
 function openMeetLinkModal(profiles){
   var made = buildMeetLink(profiles);
   var body = el('div',{});
-  body.appendChild(el('p',{},['이 링크를 보내면, 링크를 연 사람 화면에 지금 이 그룹 그림이 그대로 떠요. 받는 사람이 정보를 따로 입력하지 않아도 돼요.']));
+  body.appendChild(el('p',{},['이 링크를 보내면, 링크를 연 사람 화면에 지금 이 모임 그림이 그대로 떠요. 받는 사람이 정보를 따로 입력하지 않아도 돼요.']));
   body.appendChild(el('div',{class:'field'},[ el('input',{type:'text', value:made.url, readOnly:'readonly', id:'meetLinkInput'}) ]));
   body.appendChild(el('p',{class:'biz-hint'},[
     '주소 길이는 '+made.len+'자예요. 브라우저 자체 한계는 이보다 훨씬 크지만(크롬 약 2MB), 메신저·QR·문서를 거치며 잘리는 일이 있어 '+
@@ -22289,19 +22298,19 @@ function openMeetLinkModal(profiles){
   ]));
   if(made.count < made.total){
     body.appendChild(el('p',{class:'biz-hint'},[
-      '지금 그룹 '+made.total+'명 가운데 앞에서부터 '+made.count+'명까지만 링크에 담겼어요. 이름이 길수록 한 사람이 차지하는 주소 길이가 늘어나서, 담기는 인원은 그때그때 달라져요. 나머지는 링크를 나눠 보내주세요.'
+      '지금 모임 '+made.total+'명 가운데 앞에서부터 '+made.count+'명까지만 링크에 담겼어요. 이름이 길수록 한 사람이 차지하는 주소 길이가 늘어나서, 담기는 인원은 그때그때 달라져요. 나머지는 링크를 나눠 보내주세요.'
     ]));
   }
   /* 링크에 무엇이 들어가는지 만들기 전에 알린다. 개인정보처리방침에도 같은 표(INVITE_FIELDS)로 적혀 있다. */
   body.appendChild(el('p',{class:'biz-hint'},[
-    '이 링크 주소 안에는 그룹에 담긴 '+made.count+'명의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+
-    ' 암호화 없이 그대로 담겨요. 내 정보만이 아니라 다른 사람의 정보까지 함께 나가는 링크예요. 받는 사람의 대화 기록과 브라우저 방문 기록에도 남으니, 그룹에 있는 사람들에게만 보내주세요.'
+    '이 링크 주소 안에는 모임에 담긴 '+made.count+'명의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+
+    ' 암호화 없이 그대로 담겨요. 내 정보만이 아니라 다른 사람의 정보까지 함께 나가는 링크예요. 받는 사람의 대화 기록과 브라우저 방문 기록에도 남으니, 모임에 있는 사람들에게만 보내주세요.'
   ]));
-  openModal('그룹 링크', body, [
+  openModal('모임 링크', body, [
     {label:'닫기', cls:'btn-ghost', onclick:closeModal},
     {label:'공유하기', cls:'btn-primary', onclick:function(){
       if(navigator.share){
-        navigator.share({title:COMPANY.serviceName+' 그룹 궁합', text:'우리 그룹 궁합을 한 그림으로 봤어요.', url:made.url}).catch(function(){});
+        navigator.share({title:COMPANY.serviceName+' 모임 궁합', text:'우리 모임 궁합을 한 그림으로 봤어요.', url:made.url}).catch(function(){});
       } else {
         copyText(made.url);
       }
@@ -22521,7 +22530,7 @@ function groupProfileWord(g){
   return g.pchk ? '지금 없는 프로필' : '어느 프로필인지 확인 중';
 }
 function savedGroupLabel(g){
-  return groupProfileWord(g) + ' · ' + (g.name || '이름 없는 그룹') + (g.n > 1 ? ' · ' + g.n + '명' : ' · 아직 나 혼자')
+  return groupProfileWord(g) + ' · ' + (g.name || '이름 없는 모임') + (g.n > 1 ? ' · ' + g.n + '명' : ' · 아직 나 혼자')
     + ' · ' + (groupRelation(g.id) ? relationLabel(groupRelation(g.id)) : '사이 미정');
 }
 /* 지금 고른 프로필로 본 모임만. 어느 프로필인지 모르는 것(아직 확인 전 · 지운 프로필)은 누구에게나 보인다 —
@@ -22560,7 +22569,7 @@ function groupMyRowDiff(){
 function confirmRefreshMyRow(){
   if(!GROUP_VIEW) return;
   var i = groupMyMemberIdx();
-  if(i < 0){ showToast('이 그룹 명단에서 회원님을 찾지 못했어요.'); return; }
+  if(i < 0){ showToast('이 모임 명단에서 회원님을 찾지 못했어요.'); return; }
   var me = activeProfile(); if(!me) return;
   var mine = gcMeetRow(me);
   var oldRaw = (GROUP_VIEW.rows && GROUP_VIEW.rows[i]) ? GROUP_VIEW.rows[i] : inviteObjToRow(PENDING_MEET[i]);
@@ -22585,8 +22594,8 @@ function confirmRefreshMyRow(){
 function confirmLeaveGroup(){
   if(!GROUP_VIEW) return;
   var row = groupMyMemberRow();
-  if(!row){ showToast('이 그룹 명단에서 회원님을 찾지 못했어요.'); return; }
-  var gid = GROUP_VIEW.id, gname = GROUP_VIEW.name || '이 그룹';
+  if(!row){ showToast('이 모임 명단에서 회원님을 찾지 못했어요.'); return; }
+  var gid = GROUP_VIEW.id, gname = GROUP_VIEW.name || '이 모임';
   var last = (PENDING_MEET || []).length <= 1;
   /* =====================================================================
      ★ 2026-09-10 대표님 질문 — "모임장이 실수로 나가기하면 모임 지워지나?"
@@ -22606,14 +22615,14 @@ function confirmLeaveGroup(){
   var isOwner = !!groupToken(gid);
   var keepAsOwner = isOwner && !last;
   confirmModal(
-    '"'+gname+'"에서 나갈까요? 회원님 정보가 이 그룹 명단에서 빠지고, 남은 분들 화면에서도 안 보이게 돼요.'
+    '"'+gname+'"에서 나갈까요? 회원님 정보가 이 모임 명단에서 빠지고, 남은 분들 화면에서도 안 보이게 돼요.'
     /* ★ 2026-09-10 — '같은 주소로 참여하시면 돼요'는 정확하지 않았습니다. 그룹 주소(/g/…)는
        **보는 주소**라 그것만으로는 명단에 다시 안 들어갑니다. 다시 들어가려면 그룹 화면의
        [사람 더 받기]에 있는 접수 주소(/j/…)가 필요합니다 — 실측으로 확인하고 고쳤습니다. */
-    + (last ? ' 마지막 한 분이라 그룹도 함께 사라져요.'
-            : ' 다시 들어오시려면 그룹 화면의 [사람 더 받기] 주소로 참여하시면 돼요.')
+    + (last ? ' 마지막 한 분이라 모임도 함께 사라져요.'
+            : ' 다시 들어오시려면 모임 화면의 [사람 더 받기] 주소로 참여하시면 돼요.')
     + (keepAsOwner
-        ? ' 이 모임은 회원님이 만들었어요 — 나가도 모임은 그대로 남고, 저장한 그룹 목록에도 남아서 이름 바꾸기·지우기를 계속 할 수 있어요.'
+        ? ' 이 모임은 회원님이 만들었어요 — 나가도 모임은 그대로 남고, 저장한 모임 목록에도 남아서 이름 바꾸기·지우기를 계속 할 수 있어요.'
         : ''),
     function(){
       groupFetch({action:'leave', groupId:gid, member:row})
@@ -22628,8 +22637,8 @@ function confirmLeaveGroup(){
           }
           GROUP_VIEW=null; PENDING_MEET=null; GC_SOURCE='profiles';
           GC_SEL=null; GC_PAIRS_CACHE={key:null,pairs:null,ms:0,computed:0};
-          showToast(keepAsOwner ? '이 그룹에서 나왔어요. 만든 모임이라 목록에는 그대로 있어요.'
-                                : '이 그룹에서 나왔어요.');
+          showToast(keepAsOwner ? '이 모임에서 나왔어요. 만든 모임이라 목록에는 그대로 있어요.'
+                                : '이 모임에서 나왔어요.');
           setRoute('compat');
         })
         .catch(function(err){ showToast(String(err && err.message || '지금은 나갈 수 없어요.')); });
@@ -22695,31 +22704,31 @@ function currentGroupMembersText(){
 function openGroupSaveModal(){
   var body = el('div',{});
   var nameInput = el('input',{type:'text', maxLength:'40', placeholder:'예: 우리 동아리', id:'grpName'});
-  body.appendChild(el('div',{class:'field'},[ el('label',{for:'grpName'},['그룹 이름']), nameInput ]));
+  body.appendChild(el('div',{class:'field'},[ el('label',{for:'grpName'},['모임 이름']), nameInput ]));
   var pinInput = el('input',{type:'text', inputMode:'numeric', maxLength:'8', placeholder:'숫자 4~8자리', id:'grpPin'});
   body.appendChild(el('div',{class:'field'},[ el('label',{for:'grpPin'},['관리용 PIN']), pinInput ]));
   body.appendChild(el('p',{class:'biz-hint'},[
-    '이름을 바꾸거나 사람을 더하고 빼거나 그룹을 지울 때 이 PIN이 필요해요.'
+    '이름을 바꾸거나 사람을 더하고 빼거나 모임을 지울 때 이 PIN이 필요해요.'
   ]));
   /* ★ 잊으면 못 연다는 사실을 만들기 "전에" 말한다. 나중에 알면 늦다. */
   body.appendChild(el('p',{class:'warn-box'},[
-    'PIN은 저희도 알 수 없는 형태로 보관돼요. 잊으시면 알려드릴 방법이 없으니 꼭 기억해 두세요. (그룹을 지우는 것만은 문의 주시면 도와드려요.)'
+    'PIN은 저희도 알 수 없는 형태로 보관돼요. 잊으시면 알려드릴 방법이 없으니 꼭 기억해 두세요. (모임을 지우는 것만은 문의 주시면 도와드려요.)'
   ]));
   body.appendChild(el('p',{class:'biz-hint'},[
-    '그룹에는 담긴 분들의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 함께 저장돼요. 그분들의 동의를 받고 저장해 주세요. '+GROUP_TTL_PHRASE+' 동안 보관돼요.'
+    '모임에는 담긴 분들의 '+inviteFieldsText()+josaOnly(inviteFieldsText(),'이','가')+' 함께 저장돼요. 그분들의 동의를 받고 저장해 주세요. '+GROUP_TTL_PHRASE+' 동안 보관돼요.'
   ]));
 
-  openModal('그룹 저장하기', body, [
+  openModal('모임 저장하기', body, [
     {label:'취소', cls:'btn-ghost', onclick:function(){ PENDING_GROUP_SEED=null; closeModal(); }},
     {label:'저장', cls:'btn-primary', onclick:function(){
       var name = (nameInput.value||'').trim();
       var pin  = (pinInput.value||'').trim();
-      if(!name){ showToast('그룹 이름을 적어주세요.'); return; }
+      if(!name){ showToast('모임 이름을 적어주세요.'); return; }
       if(!/^\d{4,8}$/.test(pin)){ showToast('PIN은 숫자 4~8자리로 정해주세요.'); return; }
       var members = currentGroupMembersText();
       if(!members){ showToast('저장할 사람이 없어요.'); return; }
       closeModal();
-      showToast('그룹을 저장하는 중이에요…');
+      showToast('모임을 저장하는 중이에요…');
       groupFetch({action:'create', name:name, pin:pin, members:members})
         .then(function(d){
           if(!d || !d.groupId) throw new Error('저장에 실패했어요.');
@@ -22744,13 +22753,13 @@ function openGroupSaveModal(){
 function openGroupSavedModal(id, name){
   var link = groupLink(id);
   var body = el('div',{});
-  body.appendChild(el('p',{},['"'+name+'" 그룹을 저장했어요. 아래 주소로 언제든 다시 열 수 있어요.']));
+  body.appendChild(el('p',{},['"'+name+'" 모임을 저장했어요. 아래 주소로 언제든 다시 열 수 있어요.']));
   body.appendChild(el('div',{class:'field'},[ el('input',{type:'text', value:link, readOnly:'readonly', id:'grpLink'}) ]));
-  body.appendChild(el('p',{class:'biz-hint'},['이 주소를 아는 사람은 그룹을 볼 수 있어요. 이름을 바꾸거나 지우려면 PIN이 필요해요.']));
-  openModal('그룹을 저장했어요', body, [
+  body.appendChild(el('p',{class:'biz-hint'},['이 주소를 아는 사람은 모임을 볼 수 있어요. 이름을 바꾸거나 지우려면 PIN이 필요해요.']));
+  openModal('모임을 저장했어요', body, [
     {label:'닫기', cls:'btn-ghost', onclick:function(){ closeModal(); render(); }},
     {label:'주소 공유', cls:'btn-primary', onclick:function(){
-      if(navigator.share){ navigator.share({title:COMPANY.serviceName+' 그룹 · '+name, url:link}).catch(function(){}); }
+      if(navigator.share){ navigator.share({title:COMPANY.serviceName+' 모임 · '+name, url:link}).catch(function(){}); }
       else { copyText(link); }
     }}
   ]);
@@ -22765,9 +22774,9 @@ function clearPendingInviteIfJoined(id, memberCount){
   }
 }
 function openSavedGroup(id, after){
-  showToast('그룹을 불러오는 중이에요…');
+  showToast('모임을 불러오는 중이에요…');
   groupFetch({action:'get', groupId:id}).then(function(d){
-    if(!d || !d.members) throw new Error('그룹을 찾을 수 없어요.');
+    if(!d || !d.members) throw new Error('모임을 찾을 수 없어요.');
     var rows = String(d.members).split(';').filter(Boolean);
     /* ★ 2026-09-09 — 읽어들인 값(objs)과 **서버가 준 줄 그대로**(raw)를 자리를 맞춰 함께 든다.
        나가기는 서버 명단에서 **정확히 같은 문자열**을 찾아 지운다. 다시 만들어 낸 줄은
@@ -22807,7 +22816,7 @@ function openSavedGroup(id, after){
     if(typeof after === 'function'){ try{ after(); render(); }catch(e){ console.warn('모임 연 뒤 처리 실패', e); } }
   }).catch(function(err){
     var st = err && err.status;
-    if(st===404){ forgetGroup(id); showToast('이 그룹은 없거나 보관 기간이 지났어요.'); }
+    if(st===404){ forgetGroup(id); showToast('이 모임은 없거나 보관 기간이 지났어요.'); }
     else showToast(String(err && err.message || '지금은 불러올 수 없어요.'));
     render();
   });
@@ -22819,7 +22828,7 @@ function openGroupManageModal(){
   var mine = !!groupToken(GROUP_VIEW.id);   /* 이 기기에서 만든 그룹인가 */
   var body = el('div',{});
   var nameInput = el('input',{type:'text', maxLength:'40', value:GROUP_VIEW.name||'', id:'mgName'});
-  body.appendChild(el('div',{class:'field'},[ el('label',{for:'mgName'},['그룹 이름']), nameInput ]));
+  body.appendChild(el('div',{class:'field'},[ el('label',{for:'mgName'},['모임 이름']), nameInput ]));
 
   /* ★ R39 — 이 기기에서 만든 그룹이면 PIN을 묻지 않는다. 만든 사람이 자기 그룹을 만지는 것이라
      매번 PIN을 요구하면 그게 더 이상하다. 대신 "다른 기기에서도 관리하려면" PIN을 정할 수 있게 한다. */
@@ -22829,11 +22838,11 @@ function openGroupManageModal(){
     el('label',{for:'mgPin'},[mine ? '관리용 PIN 정하기 (선택)' : '관리용 PIN']), pinInput
   ]));
   body.appendChild(el('p',{class:'biz-hint'},[ mine
-    ? '이 그룹은 이 기기에서 만들었어요. 여기서는 PIN 없이 바로 고칠 수 있어요. 다른 기기나 다른 분도 관리하게 하려면 PIN을 정해 알려주세요. 한 번 정한 PIN은 저희도 알 수 없으니 꼭 기억해 두세요.'
+    ? '이 모임은 이 기기에서 만들었어요. 여기서는 PIN 없이 바로 고칠 수 있어요. 다른 기기나 다른 분도 관리하게 하려면 PIN을 정해 알려주세요. 한 번 정한 PIN은 저희도 알 수 없으니 꼭 기억해 두세요.'
     : '저장할 때 정한 PIN을 넣어주세요.' ]));
   body.appendChild(el('p',{class:'biz-hint'},['이름을 바꾸거나, 지금 화면에 있는 사람들로 명단을 다시 저장할 수 있어요.']));
 
-  openModal('그룹 관리', body, [
+  openModal('모임 관리', body, [
     {label:'닫기', cls:'btn-ghost', onclick:closeModal},
     {label:'저장', cls:'btn-primary', onclick:function(){
       var pin=(pinInput.value||'').trim(), nm=(nameInput.value||'').trim();
@@ -22851,7 +22860,7 @@ function openGroupManageModal(){
         .then(function(){
           GROUP_VIEW.name = nm || GROUP_VIEW.name;
           rememberGroup(GROUP_VIEW.id, GROUP_VIEW.name);
-          showToast(newPinVal ? 'PIN을 정했어요. 다른 기기에서도 이 PIN으로 관리할 수 있어요.' : '그룹을 저장했어요.');
+          showToast(newPinVal ? 'PIN을 정했어요. 다른 기기에서도 이 PIN으로 관리할 수 있어요.' : '모임을 저장했어요.');
           render();
         })
         .catch(function(err){ showToast(String(err && err.message || '고치지 못했어요.')); });
@@ -22864,10 +22873,10 @@ function confirmDeleteGroup(){
   var body = el('div',{});
   var mineDel = !!groupToken(GROUP_VIEW.id);
   var pinInput = el('input',{type:'text', inputMode:'numeric', maxLength:'8',
-    placeholder: mineDel ? '이 기기에서 만든 그룹이라 필요 없어요' : 'PIN', id:'delPin'});
-  body.appendChild(el('p',{},['"'+(GROUP_VIEW.name||'이 그룹')+'"을 지울까요? 지우면 이 주소로는 다시 열 수 없어요.']));
+    placeholder: mineDel ? '이 기기에서 만든 모임이라 필요 없어요' : 'PIN', id:'delPin'});
+  body.appendChild(el('p',{},['"'+(GROUP_VIEW.name||'이 모임')+'"을 지울까요? 지우면 이 주소로는 다시 열 수 없어요.']));
   if(!mineDel) body.appendChild(el('div',{class:'field'},[ el('label',{for:'delPin'},['관리용 PIN']), pinInput ]));
-  openModal('그룹 지우기', body, [
+  openModal('모임 지우기', body, [
     {label:'취소', cls:'btn-ghost', onclick:closeModal},
     {label:'지우기', cls:'btn-primary', onclick:function(){
       var pin=(pinInput.value||'').trim();
@@ -22877,7 +22886,7 @@ function confirmDeleteGroup(){
         .then(function(){
           forgetGroup(GROUP_VIEW.id);
           GROUP_VIEW=null; PENDING_MEET=null; GC_SOURCE='profiles';
-          showToast('그룹을 지웠어요.'); ROUTE='compat'; render();
+          showToast('모임을 지웠어요.'); ROUTE='compat'; render();
         })
         .catch(function(err){ showToast(String(err && err.message || '지우지 못했어요.')); });
     }}
@@ -22931,14 +22940,14 @@ function renderGroupJoin(){
     var backId = PENDING_GROUP_JOIN;
     PENDING_GROUP_JOIN = null;
     GROUP_JOIN_STATE = {busy:false, error:null, done:false, name:null, lookedUp:false};
-    wrap.appendChild(el('p',{class:'section-sub'},['들어가 계신 그룹을 여는 중이에요…']));
+    wrap.appendChild(el('p',{class:'section-sub'},['들어가 계신 모임을 여는 중이에요…']));
     main.appendChild(wrap);
     openSavedGroup(backId);
     return;
   }
 
   if(GROUP_JOIN_STATE.error){
-    wrap.appendChild(pageHead('그룹 참여', '참여하지 못했어요'));
+    wrap.appendChild(pageHead('모임 참여', '참여하지 못했어요'));
     wrap.appendChild(el('p',{class:'section-sub'},[GROUP_JOIN_STATE.error]));
     wrap.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){
       PENDING_GROUP_JOIN=null; GROUP_JOIN_STATE={busy:false,error:null,done:false,name:null,lookedUp:false};
@@ -22956,13 +22965,13 @@ function renderGroupJoin(){
       .then(function(d){ GROUP_JOIN_STATE.name = (d && d.name) || ''; render(); })
       .catch(function(err){
         GROUP_JOIN_STATE.error = (err && err.status===404)
-          ? '이 그룹은 없거나 보관 기간이 지났어요. 주소를 다시 받아주세요.'
-          : '지금은 그룹을 확인할 수 없어요. 잠시 뒤 다시 시도해 주세요.';
+          ? '이 모임은 없거나 보관 기간이 지났어요. 주소를 다시 받아주세요.'
+          : '지금은 모임을 확인할 수 없어요. 잠시 뒤 다시 시도해 주세요.';
         render();
       });
   }
   var me = activeProfile();
-  wrap.appendChild(pageHead('그룹 참여', GROUP_JOIN_STATE.name ? ('"'+GROUP_JOIN_STATE.name+'" 그룹에 참여할까요?') : '그룹을 확인하는 중이에요…'));
+  wrap.appendChild(pageHead('모임 참여', GROUP_JOIN_STATE.name ? ('"'+GROUP_JOIN_STATE.name+'" 모임에 참여할까요?') : '모임을 확인하는 중이에요…'));
   wrap.appendChild(el('p',{class:'section-sub'},[
     me ? (nameOr(me.name)+'님으로 참여해요. 다른 프로필로 하시려면 화면 위에서 프로필을 바꿔주세요.') : ''
   ]));
@@ -22979,8 +22988,8 @@ function renderGroupJoin(){
     /* ★ 2026-09-09 — 예전에는 명단에서 빠지려면 그룹을 만든 분께 부탁하라고 적혀 있었다.
        내 정보인데 남에게 부탁해야 빠진다는 뜻이라 맞지 않았다(대표님 지적). 이제 직접 나간다.
        ★ 옛 문장이 되살아나지 않게 checks/group_leave_pair.cjs 가 그 글자를 막고 있다. */
-    '참여하면 입력하신 정보가 이 그룹에 참여한 분들에게 보여요. '
-    + GROUP_TTL_PHRASE + ' 동안 보관되고, 그룹 화면의 [이 그룹에서 나가기]로 언제든 직접 빠지실 수 있어요.'
+    '참여하면 입력하신 정보가 이 모임에 참여한 분들에게 보여요. '
+    + GROUP_TTL_PHRASE + ' 동안 보관되고, 모임 화면의 [이 모임에서 나가기]로 언제든 직접 빠지실 수 있어요.'
   ]));
   var notReady = GROUP_JOIN_STATE.busy || GROUP_JOIN_STATE.name === null;
   wrap.appendChild(el('button',{class:'btn btn-primary', disabled: notReady?'disabled':null, onclick:function(){
@@ -23001,7 +23010,7 @@ function doGroupJoin(){
     .then(function(d){
       GROUP_JOIN_STATE.busy = false;
       PENDING_GROUP_JOIN = null;
-      showToast(d && d.already ? '이미 참여하고 계셨어요.' : '그룹에 참여했어요.');
+      showToast(d && d.already ? '이미 참여하고 계셨어요.' : '모임에 참여했어요.');
       openSavedGroup(gid);
     })
     .catch(function(err){
@@ -23016,7 +23025,7 @@ function buildGroupJoinCard(){
   if(!GROUP_VIEW) return null;
   var card = sectionCard(['사람 더 받기 (접수 주소)']);
   card.appendChild(el('p',{class:'biz-hint'},[
-    '이 주소를 보내면 받은 분이 자기 정보를 직접 넣고 이 그룹에 들어와요. 최대 '+GC_MAX+'명까지 받을 수 있어요.'
+    '이 주소를 보내면 받은 분이 자기 정보를 직접 넣고 이 모임에 들어와요. 최대 '+GC_MAX+'명까지 받을 수 있어요.'
   ]));
   card.appendChild(el('div',{class:'field'},[
     el('input',{type:'text', value:groupJoinLink(GROUP_VIEW.id), readOnly:'readonly', id:'groupJoinLink'})
@@ -23024,7 +23033,7 @@ function buildGroupJoinCard(){
   var row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;'});
   row.appendChild(el('button',{class:'btn btn-primary btn-sm', onclick:function(){
     var lk = groupJoinLink(GROUP_VIEW.id);
-    if(navigator.share){ navigator.share({title:COMPANY.serviceName+' · '+(GROUP_VIEW.name||'그룹')+'에 참여하기', url:lk}).catch(function(){}); }
+    if(navigator.share){ navigator.share({title:COMPANY.serviceName+' · '+(GROUP_VIEW.name||'모임')+'에 참여하기', url:lk}).catch(function(){}); }
     else { copyText(lk); }
   }},['접수 주소 보내기']));
   row.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
@@ -23032,7 +23041,7 @@ function buildGroupJoinCard(){
   }},['새로 들어온 사람 확인']));
   card.appendChild(row);
   card.appendChild(el('p',{class:'biz-hint'},[
-    '접수 주소는 그룹 주소와 달라요. 접수 주소를 받은 분은 참여만 하고, 그룹을 고치거나 지우려면 PIN이 필요해요.'   /* 두 주소를 헷갈려 잘못 보내는 사고를 막는 문장이라 접지 않는다 */
+    '접수 주소는 모임 주소와 달라요. 접수 주소를 받은 분은 참여만 하고, 모임을 고치거나 지우려면 PIN이 필요해요.'   /* 두 주소를 헷갈려 잘못 보내는 사고를 막는 문장이라 접지 않는다 */
   ]));
   return card;
 }
@@ -23154,7 +23163,7 @@ function tickInviteWatch(byHand){
      뺀다 — 남의 모임을 지울 권한이 없고, 있어서도 안 된다. */
 function askDeleteGroup(g){
   var canDelete = !!g.token;
-  var name = g.name || '이름 없는 그룹';
+  var name = g.name || '이름 없는 모임';
   confirmModal(canDelete
       ? ['"'+name+'"을 지울까요?', '담긴 분들의 정보도 함께 지워져요.', '되돌릴 수 없어요.']
       : ['"'+name+'"을 목록에서 뺄까요?', '이 모임은 다른 분이 만든 것이라 서버에서는 지워지지 않아요.'],
@@ -23268,13 +23277,18 @@ function swipeToDelete(node, onAsk, label){
 
 function buildSavedGroupsCard(){
   var cur = activeProfile();
-  var list = savedGroupsForProfile(cur);
+  var all = savedGroupsForProfile(cur);
+  /* ★ 2026-09-22 대표님 지적 "지금 고른 프로필 모임이 아닌 다른 모임이 보인다" — 어느 프로필에도 안 맞는 모임
+     (지운 프로필로 들어간 것 · 명단에 내가 없는 것)은 목록에서 빼서 아래 접힌 줄에 둔다. 숨기지는 않는다 —
+     닿는 길은 있어야 한다. 아직 확인 전인 모임은 지금 프로필 것일 수 있으니 목록에 그대로 둔다. */
+  var list = all.filter(function(g){ return !(g.pchk && !g.profileId); });
+  var orphan = all.filter(function(g){ return g.pchk && !g.profileId; });
   fillGroupProfiles();
-  if(!list.length) return null;
+  if(!all.length) return null;
   /* 다시 그리면 밀려 있던 줄은 사라진다. 가리키던 것을 안 놓으면 화면에 없는 줄을
      계속 붙들고 있게 된다. */
   SWIPE_OPEN = null;
-  var card = sectionCard(['저장한 그룹']);
+  var card = sectionCard(['저장한 모임']);
   card.appendChild(el('p',{class:'biz-hint'},['눌러서 다시 열 수 있어요. 왼쪽으로 밀면 지울 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관돼요.']));
   /* ★ 2026-09-22 대표님 지시 — 프로필별로 가른다. 다른 프로필의 모임은 위에서 프로필을 바꾸면 보인다. */
   if(cur) card.appendChild(el('p',{class:'biz-hint'},['지금 고른 프로필('+nameOr(cur.name,'이름 없음')+')로 본 모임만 보여요. 다른 프로필의 모임은 맨 위에서 프로필을 바꾸면 보여요.']));
@@ -23297,6 +23311,17 @@ function buildSavedGroupsCard(){
        지우겠냐는 창이 뜨게 해라." 줄마다 단추를 하나씩 달면 목록이 두 배로 길어진다. */
     card.appendChild(swipeToDelete(row, function(){ askDeleteGroup(g); }));
   });
+  if(orphan.length){
+    var fold = el('details',{class:'invite-fold group-orphan-fold'});
+    fold.appendChild(el('summary',{},['지금 없는 프로필로 들어간 모임 ' + orphan.length + '개']));
+    fold.appendChild(el('p',{class:'biz-hint', style:'margin-top:4px;'},['지운 프로필로 들어갔거나 명단에 지금 프로필이 없는 모임이에요. 열어 보거나 왼쪽으로 밀어 지울 수 있어요.']));
+    orphan.forEach(function(g){
+      var row = settingsRow(savedGroupLabel(g), '열기', function(){ openSavedGroup(g.id); });
+      row.setAttribute('data-gid', g.id);
+      fold.appendChild(swipeToDelete(row, function(){ askDeleteGroup(g); }));
+    });
+    card.appendChild(fold);
+  }
   /* ★ R60 — 눌러만 보고 안 보낸 링크가 쌓였을 때 한 번에 치운다.
      내가 만든 것 중 '아직 아무도 안 들어온 것'만 지운다 — 이 두 조건을 다 만족해야
      지워도 아무도 잃는 게 없다. 사람이 들어와 있는 그룹은 건드리지 않는다. */
@@ -23476,7 +23501,7 @@ function gcAutoSaveNotice(){
   return el('p',{class:'biz-hint', style:'margin-top:-4px;'},[
     '이 모임은 다시 찾으실 수 있게 자동으로 저장돼요. 담긴 분들의 '
     + inviteFieldsText() + josaOnly(inviteFieldsText(),'이','가') + ' 함께 저장되고 '
-    + GROUP_TTL_PHRASE + ' 동안 보관돼요. 원하지 않으시면 [여럿이서 보기]의 저장한 그룹에서 지우실 수 있어요.'
+    + GROUP_TTL_PHRASE + ' 동안 보관돼요. 원하지 않으시면 [여럿이서 보기]의 저장한 모임에서 지우실 수 있어요.'
   ]);
 }
 function renderGroupCompat(){
@@ -23498,20 +23523,20 @@ function renderGroupCompat(){
     GC_AUTOSAVE={sig:null, busy:false};   /* 다음 모임은 다시 판정한다 */
     setRoute('compat');
   }},[dirIcon('left'), '궁합 보기로 돌아가기']));
-  view.appendChild(pageHead('궁합 보기 · 그룹',
-    (GROUP_VIEW && GROUP_VIEW.name) ? GROUP_VIEW.name : (fromLink ? '받은 그룹 궁합' : '모두의 궁합 보기'),
+  view.appendChild(pageHead('궁합 보기 · 모임',
+    (GROUP_VIEW && GROUP_VIEW.name) ? GROUP_VIEW.name : (fromLink ? '받은 모임 궁합' : '모두의 궁합 보기'),
     null, {marginTop:'14px'}));
   /* ★ 링크로 열었을 때의 안내문은 뺐다(대표님 지시). 그룹은 어차피 링크로 관리되므로
      들어올 때마다 같은 말을 되풀이할 이유가 없다. 저장하지 않는다는 사실은
      개인정보처리방침에 적혀 있고, 화면 위에는 그룹 이름이 이미 떠 있다. */
   if(!fromLink){
     view.appendChild(el('p',{class:'section-sub'},
-      ['저장된 프로필로 그룹을 만들어요. 한 그룹에 최대 '+GC_MAX+'명까지 한 그림에서 볼 수 있어요.']));
+      ['저장된 프로필로 모임을 만들어요. 한 모임에 최대 '+GC_MAX+'명까지 한 그림에서 볼 수 있어요.']));
   }
 
   var usable = gcUsableProfiles();
   if(!fromLink && usable.length<2){
-    view.appendChild(emptyState('프로필이 2명 이상 필요해요','그룹 궁합을 보려면 생년월일과 성격유형이 채워진 프로필이 2명 이상 필요해요.', function(){ startSetupWizard(null); render(); }, '새 프로필 추가하기'));
+    view.appendChild(emptyState('프로필이 2명 이상 필요해요','모임 궁합을 보려면 생년월일과 성격유형이 채워진 프로필이 2명 이상 필요해요.', function(){ startSetupWizard(null); render(); }, '새 프로필 추가하기'));
     main.appendChild(view);
     return;
   }
@@ -23524,8 +23549,8 @@ function renderGroupCompat(){
   if(!fromLink && usable.length>=2){
     var chosen = {};
     (GC_PICK || usable.slice(0, GC_MAX).map(function(p){ return p.id; })).forEach(function(id){ chosen[id]=1; });
-    view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['이번 그룹에 넣을 사람을 골라요.']));
-    var chips = el('div',{class:'gc-members', role:'group','aria-label':'그룹 멤버 고르기'});
+    view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['이번 모임에 넣을 사람을 골라요.']));
+    var chips = el('div',{class:'gc-members', role:'group','aria-label':'모임 멤버 고르기'});
     usable.forEach(function(p){
       var on = !!chosen[p.id];
       var b = el('button',{type:'button', class:'gc-member', 'aria-pressed':on?'true':'false'},[p.name]);
@@ -23534,8 +23559,8 @@ function renderGroupCompat(){
         $all('button', chips).forEach(function(x, ix){ if(x.getAttribute('aria-pressed')==='true') cur[usable[ix].id]=1; });
         if(on) delete cur[p.id]; else cur[p.id]=1;
         var ids = usable.map(function(q){ return q.id; }).filter(function(id){ return cur[id]; });
-        if(ids.length<2){ showToast('그룹에는 2명 이상이 있어야 해요.'); return; }
-        if(ids.length>GC_MAX){ showToast('한 그룹에는 '+GC_MAX+'명까지 넣을 수 있어요.'); return; }
+        if(ids.length<2){ showToast('모임에는 2명 이상이 있어야 해요.'); return; }
+        if(ids.length>GC_MAX){ showToast('한 모임에는 '+GC_MAX+'명까지 넣을 수 있어요.'); return; }
         GC_PICK = ids; GC_SEL = null; render();
       });
       chips.appendChild(b);
@@ -23543,7 +23568,7 @@ function renderGroupCompat(){
     view.appendChild(chips);
     if(usable.length>GC_MAX){
       view.appendChild(el('p',{class:'biz-hint'},
-        ['저장된 프로필이 '+usable.length+'명이라 한 화면에 다 세우면 서로 겹쳐서 못 읽어요. 한 그룹에는 '+GC_MAX+'명까지만 넣을 수 있어요.']));
+        ['저장된 프로필이 '+usable.length+'명이라 한 화면에 다 세우면 서로 겹쳐서 못 읽어요. 한 모임에는 '+GC_MAX+'명까지만 넣을 수 있어요.']));
     }
   }
 
@@ -23732,7 +23757,7 @@ function renderGroupCompat(){
   if(!fromLink){
     view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:16px;', onclick:function(){
       openMeetLinkModal(members.map(function(m){ return STATE.profiles.filter(function(p){ return p.id===m.id; })[0]; }).filter(Boolean));
-    }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('그룹 링크 만들기','지금 멤버 그대로')]));
+    }},[svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('모임 링크 만들기','지금 멤버 그대로')]));
   }
 
   /* =====================================================================
@@ -23746,7 +23771,7 @@ function renderGroupCompat(){
   ===================================================================== */
   var gsCard = el('div',{class:'scroll-card', style:'margin-top:16px;'});
   if(GROUP_VIEW){
-    gsCard.appendChild(el('h3',{},['이 그룹 주소']));
+    gsCard.appendChild(el('h3',{},['이 모임 주소']));
     gsCard.appendChild(el('p',{class:'biz-hint'},['이 주소로 다시 열 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관돼요.']));
     gsCard.appendChild(el('div',{class:'field'},[
       el('input',{type:'text', value:groupLink(GROUP_VIEW.id), readOnly:'readonly', id:'groupViewLink'})
@@ -23754,11 +23779,11 @@ function renderGroupCompat(){
     var gRow = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;'});
     gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
       var lk = groupLink(GROUP_VIEW.id);
-      if(navigator.share){ navigator.share({title:COMPANY.serviceName+' 그룹 · '+(GROUP_VIEW.name||''), url:lk}).catch(function(){}); }
+      if(navigator.share){ navigator.share({title:COMPANY.serviceName+' 모임 · '+(GROUP_VIEW.name||''), url:lk}).catch(function(){}); }
       else { copyText(lk); }
     }},['주소 공유']));
-    gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:openGroupManageModal},['그룹 관리']));
-    gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:confirmDeleteGroup},['그룹 지우기']));
+    gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:openGroupManageModal},['모임 관리']));
+    gRow.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:confirmDeleteGroup},['모임 지우기']));
     gsCard.appendChild(gRow);
     /* ★ 2026-09-10 대표님 지시 — PIN 을 정할 수 있다는 것을 아는 길이 [그룹 관리] 창을
        열어 보는 것뿐이었습니다. 그래서 대개 모르고 지나갑니다.
@@ -23771,7 +23796,7 @@ function renderGroupCompat(){
          모임이 자동 저장되는 지금은 물어볼 자리도 없습니다. */
     if(groupToken(GROUP_VIEW.id)){
       gsCard.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
-        '다른 분께 관리를 맡기시려면 [그룹 관리]에서 PIN을 정해 알려주세요. '
+        '다른 분께 관리를 맡기시려면 [모임 관리]에서 PIN을 정해 알려주세요. '
         + '회원님은 카카오 로그인만 하시면 어느 기기에서든 PIN 없이 관리할 수 있어요.'
       ]));
     }
@@ -23789,9 +23814,9 @@ function renderGroupCompat(){
     }
     if(groupMyMemberRow()){
       gsCard.appendChild(el('button',{class:'btn btn-ghost btn-block btn-sm',
-        style:'margin-top:12px;', onclick:confirmLeaveGroup},['이 그룹에서 나가기']));
+        style:'margin-top:12px;', onclick:confirmLeaveGroup},['이 모임에서 나가기']));
       gsCard.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},[
-        '나가면 회원님 정보만 명단에서 빠져요. 그룹은 남은 분들에게 그대로 남아요.'
+        '나가면 회원님 정보만 명단에서 빠져요. 모임은 남은 분들에게 그대로 남아요.'
       ]));
     }
     view.appendChild(gsCard);
@@ -23799,8 +23824,8 @@ function renderGroupCompat(){
     if(joinCard) view.appendChild(joinCard);
     gsCard = null;
   } else {
-    gsCard.appendChild(el('h3',{},['이 그룹 저장하기']));
-    gsCard.appendChild(el('p',{class:'biz-hint'},['이름을 붙여 저장하면 주소가 생겨요. 새로고침하거나 나중에 다시 와도 그 주소로 같은 그룹이 열려요.']));
+    gsCard.appendChild(el('h3',{},['이 모임 저장하기']));
+    gsCard.appendChild(el('p',{class:'biz-hint'},['이름을 붙여 저장하면 주소가 생겨요. 새로고침하거나 나중에 다시 와도 그 주소로 같은 모임이 열려요.']));
     gsCard.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:10px;', onclick:openGroupSaveModal},['이름 붙여 저장하기']));
     gsCard.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
       '저장하면 "접수 주소"도 함께 생겨요. 그 주소를 보내면 다른 분들이 스스로 참여할 수 있어요.'
@@ -23964,7 +23989,7 @@ var GROUP_TTL_TEXT = '1년';
    지운 표식(묘비)을 언제까지 들고 있을지를 이 값으로 정합니다 — 보관 기간이 지나면
    서버에도 그 모임이 없으므로 표식도 들고 있을 이유가 없습니다. */
 var GROUP_TTL_MS = 365 * 24 * 60 * 60 * 1000;
-var GROUP_TTL_PHRASE = '그룹을 처음 만든 날로부터 '+GROUP_TTL_TEXT;
+var GROUP_TTL_PHRASE = '모임을 처음 만든 날로부터 '+GROUP_TTL_TEXT;
 var ROOM_POLL_MS = 3000;      /* 몇 초마다 방을 들여다볼지 */
 var ROOM_POLL_MAX_MIN = 10;   /* 이 시간이 지나면 그만 본다 — 배터리를 계속 쓰지 않는다 */
 var ROOM_WAIT = null;         /* {roomId, link, timer, startedAt, ttlHours} — 기다리는 중일 때만 값이 있다 */
@@ -24183,6 +24208,7 @@ function openInviteLinkModal(profile, relationKey){
      "눌렀는데 아무 일도 안 난다"로 보였다. 이제 창을 먼저 띄우고 링크만 나중에 채운다.
      ★ 링크가 도착하면 applyInviteLink()가 채우고 자동으로 복사까지 한다. */
   armGestureCopy();                                   /* 누른 이 순간에 복사를 걸어 둔다 */
+  INVITE_LINK_CUR.groupId = null; INVITE_LINK_CUR.name = autoName; INVITE_LINK_CUR.wantName = null;
   showInviteModal(profile, null, true, 0, relForLink);
 
   function makeNew(){
@@ -24198,6 +24224,7 @@ function openInviteLinkModal(profile, relationKey){
            이미 거기 있다. 안 그리면 손님이 탭을 한 번 눌러야 나타난다(실측으로 잡음).
            창은 #modalRoot에 따로 떠 있어서 여기서 다시 그려도 닫히지 않는다. */
         if(ROUTE==='compat') render();
+        noteInviteGroup(d.groupId, autoName);
         applyInviteLink(groupJoinLink(d.groupId, relForLink));
       });
   }
@@ -24217,6 +24244,7 @@ function openInviteLinkModal(profile, relationKey){
       GROUP_VIEW = {id:pending, name:(d.name || autoName)};
       rememberGroup(pending, GROUP_VIEW.name, null, n, GC_RELATION_SET ? GC_RELATION : null);
       if(ROUTE==='compat') render();
+      noteInviteGroup(pending, GROUP_VIEW.name);
       applyInviteLink(groupJoinLink(pending, relForLink));
     })
     .catch(function(){
@@ -24226,7 +24254,33 @@ function openInviteLinkModal(profile, relationKey){
 }
 /* 지금 창에 떠 있는 링크. 링크가 서버에서 뒤늦게 도착하므로, 창을 그릴 때의 값을
    그대로 가둬 두면(클로저) 나중에 채운 링크가 [공유하기]·[복사]에 안 잡힌다. */
-var INVITE_LINK_CUR = { link:null, deliver:null, copied:false, said:false };
+var INVITE_LINK_CUR = { link:null, deliver:null, copied:false, said:false, groupId:null, name:null, wantName:null };
+/* ★ 2026-09-22 대표님 지시 "모임 이름 정할 수 있게 하바" (초대 링크 창 사진) — 링크를 뽑는 그 자리에서 이름을 정한다.
+   모임은 링크가 도착한 뒤에야 번호가 생기므로, 번호가 없으면 적어 두었다가(wantName) 도착하는 순간 보낸다.
+   만든 분의 열쇠(ownerToken)로 고치니 PIN 이 필요 없다. 실패해도 창은 그대로 — 나중에 [모임 관리]에서 다시 바꿀 수 있다. */
+function saveInviteGroupName(nm){
+  nm = String(nm || '').trim().slice(0, 40);
+  if(!nm){ showToast('모임 이름을 적어주세요.'); return; }
+  INVITE_LINK_CUR.wantName = nm;
+  var gid = INVITE_LINK_CUR.groupId;
+  if(!gid){ showToast('링크가 만들어지면 이 이름으로 저장할게요.'); return; }
+  if(nm === INVITE_LINK_CUR.name){ showToast('이미 그 이름이에요.'); return; }
+  groupFetch({action:'update', groupId:gid, name:nm, ownerToken:groupToken(gid)})
+    .then(function(){
+      INVITE_LINK_CUR.name = nm; INVITE_LINK_CUR.wantName = null;
+      rememberGroup(gid, nm);
+      if(GROUP_VIEW && GROUP_VIEW.id === gid) GROUP_VIEW.name = nm;
+      if(ROUTE==='compat') render();
+      showToast('모임 이름을 저장했어요.');
+    })
+    .catch(function(){ showToast('이름을 저장하지 못했어요. 나중에 [모임 관리]에서 바꿀 수 있어요.'); });
+}
+/* 링크가 도착한 자리에서 부른다 — 먼저 적어 둔 이름이 있으면 그때 보낸다. */
+function noteInviteGroup(gid, name){
+  INVITE_LINK_CUR.groupId = gid; INVITE_LINK_CUR.name = name || null;
+  var want = INVITE_LINK_CUR.wantName;
+  if(want && want !== name) saveInviteGroupName(want);
+}
 /* 조용한 자동 복사 — 실패해도 손님을 놀래지 않는다.
    ★ 브라우저는 '사람이 누른 직후'에만 복사를 허락한다. 링크는 서버에서 받아 온 뒤라
      그 순간이 이미 지나 있다. 그래서 두 갈래로 건다.
@@ -24332,6 +24386,16 @@ function showInviteModal(profile, link, live, ttlHours, relationKey){
   /* ★ 이 문장은 실제 동작과 정확히 같아야 한다. 방이 만들어졌을 때와 아닐 때가 다르다. */
   if(live){
     body.appendChild(linkRow());
+    /* ★ 2026-09-22 — 모임 이름. 링크 아래, 사이 안내 위. [저장]을 눌러야 보낸다(글자를 칠 때마다 서버에 쓰지 않는다). */
+    (function(){
+      var nameInp = el('input',{type:'text', maxLength:'40', id:'inviteGroupName',
+        value:(INVITE_LINK_CUR.name || (profile.name ? profile.name + '님의 궁합' : '내 궁합')),
+        'aria-label':'모임 이름',
+        onkeydown:function(e){ if(e.key === 'Enter'){ e.preventDefault(); saveInviteGroupName(nameInp.value); } }});
+      var saveBtn = el('button',{type:'button', id:'inviteGroupNameSave', onclick:function(){ saveInviteGroupName(nameInp.value); }},['저장']);
+      var row = el('div',{class:'invite-link-row invite-name-row'}); row.appendChild(nameInp); row.appendChild(saveBtn);
+      body.appendChild(el('div',{class:'field', style:'margin-top:10px;'},[ el('label',{for:'inviteGroupName'},['모임 이름']), row ]));
+    })();
     (function(){ var r=relLine(); if(r) body.appendChild(r); })();
     /* ★ 2026-09-07 대표님 지적 — 연인으로 만든 링크에까지 "두 명이든 30명이든"이 붙어 나갔다.
        연인은 두 사람 사이라 그 문장이 말이 안 된다. 사이에 따라 갈라 적는다. */
@@ -24347,8 +24411,8 @@ function showInviteModal(profile, link, live, ttlHours, relationKey){
       '초대받은 분이 입력한 정보가 궁합을 확인하기 위한 목적으로 서버에 저장돼요.'
     ]));
     var noteList = el('ul',{class:'invite-note'});
-    [ '그룹을 처음 만든 날로부터 ' + GROUP_TTL_TEXT + ' 동안 보관돼요.',
-      '이름을 바꾸거나 사람을 제외하고 싶으면 궁합 화면의 [그룹 관리]에서, 회원님만 빠지고 싶으면 [이 그룹에서 나가기]로 할 수 있어요.'
+    [ '모임을 처음 만든 날로부터 ' + GROUP_TTL_TEXT + ' 동안 보관돼요.',
+      '이름을 바꾸거나 사람을 제외하고 싶으면 궁합 화면의 [모임 관리]에서, 회원님만 빠지고 싶으면 [이 모임에서 나가기]로 할 수 있어요.'
     ].forEach(function(t){ noteList.appendChild(el('li',{},[t])); });
     fold.appendChild(noteList);
     body.appendChild(fold);

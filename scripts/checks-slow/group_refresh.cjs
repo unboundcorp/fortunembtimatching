@@ -31,7 +31,7 @@ const R = reporter('모임 내 정보 갱신(화면)');
             refreshBody = body;
             const rows = String(roster).split(';').filter(Boolean);
             const i = rows.indexOf(body.member);
-            if(i < 0) return J(404, {ok:false, reason:'이 그룹 명단에서 회원님을 찾지 못했어요.'});
+            if(i < 0) return J(404, {ok:false, reason:'이 모임 명단에서 회원님을 찾지 못했어요.'});
             rows[i] = body.newMember; roster = rows.join(';');
             return J(200, {ok:true, members:roster});
           }
@@ -73,7 +73,7 @@ const R = reporter('모임 내 정보 갱신(화면)');
     R.note(txt.indexOf('내 정보 갱신') >= 0, '[내 정보 갱신] 단추가 보인다');
     R.note(txt.indexOf('닉네임: 옛이름 → ' + rows.myName) >= 0, '무엇이 달라졌는지 적는다 (닉네임)', txt.match(/닉네임: [^\n]*/) ? txt.match(/닉네임: [^\n]*/)[0] : '없음');
     R.note(new RegExp('성격유형: \\w+ → ' + rows.myType).test(txt), '무엇이 달라졌는지 적는다 (성격유형)');
-    R.note(txt.indexOf('이 그룹에서 나가기') >= 0, '나가기 단추도 보인다 (태어난 정보로 내 자리를 찾음)');
+    R.note(txt.indexOf('이 모임에서 나가기') >= 0, '나가기 단추도 보인다 (태어난 정보로 내 자리를 찾음)');
     const idx = await p.evaluate(function(){ return window.__INYEON_TEST__.groupMyMemberIdx(); });
     R.note(idx === 0, '내 자리를 0번으로 찾는다', String(idx));
     R.note(!!(await clickText(p, /내 정보 갱신/)), '단추를 눌렀다');
@@ -96,7 +96,7 @@ const R = reporter('모임 내 정보 갱신(화면)');
     roster = rows.mine + ';' + rows.other; refreshBody = null;
     p = await page(); await openGroup(p); txt = await text(p);
     R.note(txt.indexOf('이 모임에 적힌 내 정보가 지금 프로필과 달라요') < 0 && txt.indexOf('내 정보 갱신') < 0, '안내·단추가 없다');
-    R.note(txt.indexOf('이 그룹에서 나가기') >= 0, '나가기 단추는 그대로 보인다');
+    R.note(txt.indexOf('이 모임에서 나가기') >= 0, '나가기 단추는 그대로 보인다');
     await p.close();
 
     R.head('── ③ 태어난 정보가 같은 줄이 둘일 때 (짐작하지 않는다)');
@@ -104,7 +104,7 @@ const R = reporter('모임 내 정보 갱신(화면)');
     p = await page(); await openGroup(p); txt = await text(p);
     const idx3 = await p.evaluate(function(){ return window.__INYEON_TEST__.groupMyMemberIdx(); });
     R.note(idx3 === -1, '내 자리를 정하지 않는다 (-1)', String(idx3));
-    R.note(txt.indexOf('내 정보 갱신') < 0 && txt.indexOf('이 그룹에서 나가기') < 0, '갱신·나가기 단추가 모두 없다');
+    R.note(txt.indexOf('내 정보 갱신') < 0 && txt.indexOf('이 모임에서 나가기') < 0, '갱신·나가기 단추가 모두 없다');
     R.note((p.__errs||[]).length === 0, 'JS 오류 0건', (p.__errs||[]).join(' | ') || '없음');
     await p.close();
   }catch(e){ R.bad('검사 중 예외', String(e && e.message).slice(0,160)); }

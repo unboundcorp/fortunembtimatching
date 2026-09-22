@@ -48,7 +48,7 @@ const R = reporter('그룹 나가기(화면)');
             const rows = String(roster).split(';').filter(Boolean);
             const i = rows.indexOf(body.member);
             if(i < 0) return req.respond({status:404, contentType:'application/json',
-              body: JSON.stringify({ok:false, reason:'이 그룹 명단에서 회원님을 찾지 못했어요.'})});
+              body: JSON.stringify({ok:false, reason:'이 모임 명단에서 회원님을 찾지 못했어요.'})});
             rows.splice(i,1); roster = rows.join(';');
             return req.respond({status:200, contentType:'application/json',
               body: JSON.stringify({ok:true, emptied:!roster, members:roster})});
@@ -106,9 +106,9 @@ const R = reporter('그룹 나가기(화면)');
     p = await page();
     await openGroup(p);
     let txt = await p.evaluate(function(){ return document.body.innerText; });
-    R.note(txt.indexOf('검사 모임') >= 0 || txt.indexOf('이 그룹 주소') >= 0,
+    R.note(txt.indexOf('검사 모임') >= 0 || txt.indexOf('이 모임 주소') >= 0,
            '그룹 화면이 열렸다');
-    R.note(txt.indexOf('이 그룹에서 나가기') < 0, '나가기 단추가 안 보인다');
+    R.note(txt.indexOf('이 모임에서 나가기') < 0, '나가기 단추가 안 보인다');
     R.note((p.__errs||[]).length === 0, 'JS 오류 0건', (p.__errs||[]).join(' | ') || '없음');
     await p.close();
 
@@ -119,7 +119,7 @@ const R = reporter('그룹 나가기(화면)');
     p = await page();
     R.note(await openGroup(p), '사이를 먼저 고르게 한다 (모임 규칙 그대로)');
     txt = await p.evaluate(function(){ return document.body.innerText; });
-    R.note(txt.indexOf('이 그룹에서 나가기') >= 0, '나가기 단추가 보인다');
+    R.note(txt.indexOf('이 모임에서 나가기') >= 0, '나가기 단추가 보인다');
 
     const savedBefore = await p.evaluate(function(k){
       try{ return (JSON.parse(localStorage.getItem(k)||'{}').savedGroups||[]).length; }catch(e){ return -1; }
@@ -129,7 +129,7 @@ const R = reporter('그룹 나가기(화면)');
     R.note(txt.indexOf('다른 분께 관리를 맡기시려면') < 0,
            '만든 분이 아니면 PIN 안내를 안 적는다');
 
-    const hit = await clickText(p, /이 그룹에서 나가기/);
+    const hit = await clickText(p, /이 모임에서 나가기/);
     await wait(400);
     let modal = await p.evaluate(function(){
       const m = document.querySelector('.modal-box');
@@ -147,7 +147,7 @@ const R = reporter('그룹 나가기(화면)');
     R.note(roster === rows.other, '서버 명단에서 내 줄만 빠졌다', roster === rows.other ? '' : roster);
 
     txt = await p.evaluate(function(){ return document.body.innerText; });
-    R.note(txt.indexOf('이 그룹 주소') < 0, '그룹 화면에서 빠져나왔다');
+    R.note(txt.indexOf('이 모임 주소') < 0, '그룹 화면에서 빠져나왔다');
 
     const savedAfter = await p.evaluate(function(k){
       try{ return (JSON.parse(localStorage.getItem(k)||'{}').savedGroups||[])
@@ -209,7 +209,7 @@ const R = reporter('그룹 나가기(화면)');
     });
     R.note(pinHint, '만드신 분 화면에 PIN 안내가 보인다 (관리를 남에게 맡기는 길)');
 
-    await clickText(p, /이 그룹에서 나가기/);
+    await clickText(p, /이 모임에서 나가기/);
     await wait(400);
     const ownerModal = await p.evaluate(function(){
       const m = document.querySelector('.modal-box'); return m ? m.innerText : '';

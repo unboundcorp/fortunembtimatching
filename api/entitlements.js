@@ -89,6 +89,10 @@ export default async function handler(req, res) {
           productId: pass ? pass.id : 'premium_pass',
           purchasedAt: Date.now(),
           expiresAt: until,
+          /* ★ 2026-09-22 대표님 지시 "1,2,3 다해라"(① 테스트 허가로 2027년 사주도) — 허가는 모든 해를 연다.
+             연도는 그대로 붙여 둔다(화면의 이용권 카드가 그 해를 적는다). 손님의 이용권에는 이 표식이 절대 안 붙는다 —
+             결제로 만들어지는 이용권(buildEntitlements)은 이 자리를 지나지 않는다. */
+          allYears: true,
         };
       }
     }

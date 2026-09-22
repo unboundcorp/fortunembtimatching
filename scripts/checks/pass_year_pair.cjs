@@ -52,6 +52,18 @@ const code = strip(html);
     R.note(can(withYear(Y), pid), pid + ' 은 이용권으로 열린다');
   });
 
+  R.head('⑥ 테스트 허가(allYears)는 모든 해를 연다 — 2026-09-22 대표님 지시');
+  const tester = { productId: 'premium_pass:' + Y, purchasedAt: now, expiresAt: alive, allYears: true };
+  R.note(can(tester, 'saju_full:' + (Y + 1)), '허가(allYears) → 내년 사주도 열림');
+  R.note(can(tester, 'saju_full:' + (Y - 1)), '허가(allYears) → 작년 사주도 열림');
+  R.note(!can(Object.assign({}, tester, { expiresAt: now - 1000 }), 'saju_full:' + Y), '끝난 허가는 allYears 여도 안 연다');
+  R.note(!can(withYear(Y), 'saju_full:' + (Y + 1)), '표식 없는 손님 이용권은 그대로 그 해만');
+  const apiSrc = fs.readFileSync(path.join(ROOT, 'api', 'entitlements.js'), 'utf8');
+  R.note(/allYears:\s*true/.test(strip(apiSrc)), 'api/entitlements.js 가 테스트 허가에 allYears 를 붙인다');
+  R.note(!/allYears/.test(strip(fs.readFileSync(path.join(ROOT, 'api', '_lib', 'entitlements.js'), 'utf8').split('export function hasAccess')[0])),
+         'buildEntitlements(손님 결제) 쪽에는 allYears 가 없다 — 손님 이용권에 안 붙는다');
+  R.note(/pass\.allYears\) return true/.test(fs.readFileSync(path.join(ROOT, 'fortune.html'), 'utf8')), '화면 hasAccess 도 allYears 를 본다');
+
   R.head('④ 끝난 이용권은 아무것도 안 연다');
   R.note(!can({ productId: 'premium_pass:' + Y, purchasedAt: now, expiresAt: now - 1000 },
               'saju_full:' + Y), '만료된 이용권은 그 해도 안 연다');

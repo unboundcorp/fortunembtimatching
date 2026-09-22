@@ -88,6 +88,8 @@ export function passYearOf(pass) {
 
 export function hasAccess(ent, productId) {
   if (ent.pass && ent.pass.expiresAt > Date.now()) {
+    /* 테스트 허가(allYears)만 모든 해. 화면 hasAccess 와 한 쌍이다. */
+    if (ent.pass.allYears) return true;
     const passYear = passYearOf(ent.pass);
     const wantYear = splitProductId(productId).year;
     if (passYear == null || wantYear == null || passYear === wantYear) return true;

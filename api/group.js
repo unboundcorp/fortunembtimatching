@@ -15,7 +15,7 @@ import { json, methodGuard, readBody } from './_lib/http.js';
 import { createGroup, getGroup, joinGroup, leaveGroup, replaceMember, updateGroup, deleteGroup, tooManyPinTries, notePinTry, GROUP_TTL_DAYS, GROUP_MAX_MEMBERS } from './_lib/groups.js';
 
 const MAX_MEMBERS_TEXT = 8000;   /* 30명 × 한 줄 여유 */
-const DENY = '그룹을 찾을 수 없거나 PIN이 맞지 않아요.';
+const DENY = '모임을 찾을 수 없거나 PIN이 맞지 않아요.';
 
 function badPin(v) { return typeof v !== 'string' || !/^\d{4,8}$/.test(v); }
 
@@ -51,9 +51,9 @@ export default async function handler(req, res) {
       const r = await joinGroup(body.groupId, body.member);
       if (!r.ok) {
         if (r.reason === 'full') {
-          return json(res, 409, { ok: false, reason: '이 그룹은 정원('+GROUP_MAX_MEMBERS+'명)이 다 찼어요.' });
+          return json(res, 409, { ok: false, reason: '이 모임은 정원('+GROUP_MAX_MEMBERS+'명)이 다 찼어요.' });
         }
-        return json(res, 404, { ok: false, reason: '그룹을 찾을 수 없거나 기간이 지났어요.' });
+        return json(res, 404, { ok: false, reason: '모임을 찾을 수 없거나 기간이 지났어요.' });
       }
       return json(res, 200, { ok: true, already: !!r.already, name: r.name, members: r.members });
     }
@@ -74,9 +74,9 @@ export default async function handler(req, res) {
       const r = await leaveGroup(body.groupId, body.member);
       if (!r.ok) {
         if (r.reason === 'not_member') {
-          return json(res, 404, { ok: false, reason: '이 그룹 명단에서 회원님을 찾지 못했어요.' });
+          return json(res, 404, { ok: false, reason: '이 모임 명단에서 회원님을 찾지 못했어요.' });
         }
-        return json(res, 404, { ok: false, reason: '그룹을 찾을 수 없거나 기간이 지났어요.' });
+        return json(res, 404, { ok: false, reason: '모임을 찾을 수 없거나 기간이 지났어요.' });
       }
       return json(res, 200, { ok: true, emptied: !!r.emptied, members: r.members || '' });
     }
@@ -95,12 +95,12 @@ export default async function handler(req, res) {
       const r = await replaceMember(body.groupId, body.member, body.newMember);
       if (!r.ok) {
         if (r.reason === 'not_member') {
-          return json(res, 404, { ok: false, reason: '이 그룹 명단에서 회원님을 찾지 못했어요.' });
+          return json(res, 404, { ok: false, reason: '이 모임 명단에서 회원님을 찾지 못했어요.' });
         }
         if (r.reason === 'duplicate') {
           return json(res, 409, { ok: false, reason: '같은 정보가 이미 명단에 있어요.' });
         }
-        return json(res, 404, { ok: false, reason: '그룹을 찾을 수 없거나 기간이 지났어요.' });
+        return json(res, 404, { ok: false, reason: '모임을 찾을 수 없거나 기간이 지났어요.' });
       }
       return json(res, 200, { ok: true, same: !!r.same, members: r.members || '' });
     }

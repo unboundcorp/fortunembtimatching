@@ -36,7 +36,7 @@ const L = require('../_lib.cjs');
   await L.clickText(page, /여럿이서/, {all:true}); await L.wait(600);
 
   const found = await page.evaluate(() => document.querySelectorAll('.swipe-wrap').length);
-  R.note(found === 2, '저장한 그룹 두 줄이 밀 수 있는 모양으로 그려진다', '.swipe-wrap ' + found + '개');
+  R.note(found === 2, '저장한 모임 두 줄이 밀 수 있는 모양으로 그려진다', '.swipe-wrap ' + found + '개');
   if(found !== 2){ await browser.close(); if(srv) srv.close(); R.done(); return; }
 
   /* 안내 문구가 미는 법을 알려주는가 — 알려주지 않으면 아무도 못 찾는다 */

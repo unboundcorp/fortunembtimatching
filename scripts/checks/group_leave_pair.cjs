@@ -42,8 +42,8 @@ R.note(/forgetGroup\(gid\)/.test(html), '나가면 내 저장 목록에서도 �
 /* ★ 안내 글 — 기능이 생겼으면 "만든 분께 부탁하라"는 낡은 문장이 남아 있으면 안 된다 */
 R.note(!/그룹을 만든 분께 빼달라고/.test(html),
        "'만든 분께 빼달라고' 라는 낡은 안내가 남아 있지 않다");
-const leaveLabelCount = (html.match(/이 그룹에서 나가기/g) || []).length;
-R.note(leaveLabelCount >= 3, '[이 그룹에서 나가기] 가 화면·안내·FAQ 에 함께 적혀 있다',
+const leaveLabelCount = (html.match(/이 모임에서 나가기/g) || []).length;
+R.note(leaveLabelCount >= 3, '[이 모임에서 나가기] 가 화면·안내·FAQ 에 함께 적혀 있다',
        leaveLabelCount + '곳');
 
 R.done();

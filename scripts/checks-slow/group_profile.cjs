@@ -80,6 +80,11 @@ const R = L.reporter('저장한 그룹 프로필별');
     await L.clickText(p, /여럿이서/, {all:true}); await L.wait(500);
     lb = await labels(p);
     R.note(lb.length === 2 && lb.some(x => /^gA=/.test(x)) && lb.some(x => /^gC=/.test(x)), '① 다시 그리면 첫째의 모임과 「지금 없는 프로필」 모임만 보인다', JSON.stringify(lb));
+    /* 2026-09-22 대표님 지적 "지금 고른 프로필 모임이 아닌 다른 모임이 보인다" — 안 맞는 모임은 접힌 줄 안에 */
+    const fold = await p.evaluate(function(){ const d = document.querySelector('.group-orphan-fold'); const c = d ? d.querySelector('[data-gid="gC"]') : null;
+      return { has: !!d, open: d ? d.open : null, inside: !!c, outsideA: !!document.querySelector('.group-orphan-fold [data-gid="gA"]'), sum: d ? d.querySelector('summary').textContent : '' }; });
+    R.note(fold.has && fold.inside && !fold.open, '③ 「지금 없는 프로필」 모임은 접힌 줄 안에 있고 처음엔 접혀 있다', JSON.stringify(fold));
+    R.note(!fold.outsideA && /1개/.test(fold.sum), '③ 첫째의 모임은 접힌 줄 밖 · 접힌 줄 제목에 개수', fold.sum);
 
     /* ④ 첫째 프로필로 둘째의 모임(gB)을 열어 봐도 적힌 프로필은 그대로 */
     await p.evaluate(function(){ window.__INYEON_TEST__.openSavedGroup('gB'); }); await L.wait(1200);
