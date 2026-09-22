@@ -3,7 +3,7 @@
    ---------------------------------------------------------------------
    2026-09-22 대표님 지시 "모임 이름 정할 수 있게 하바" (초대 링크 창 사진).
    ① 창에 [모임 이름] 칸이 자동 이름으로 채워져 있다 ② [저장]을 누르면 서버로 action:'update' + ownerToken 이
-   가고 저장한 모임 목록의 이름이 바뀐다 ③ 링크(모임 번호)가 도착하기 전에 저장을 눌러도 도착하는 순간 보낸다
+   가고 저장된 모임 목록의 이름이 바뀐다 ③ 링크(모임 번호)가 도착하기 전에 저장을 눌러도 도착하는 순간 보낸다
    ④ 폭 390 에서 칸이 안 넘친다. ★ /api/group 은 가로채 흉내 낸다 — 진짜 모임을 만들지 않는다. */
 const L = require('../_lib.cjs');
 const R = L.reporter('초대 링크 모임 이름');
@@ -47,6 +47,10 @@ const R = L.reporter('초대 링크 모임 이름');
       return { has: !!i, val: i ? i.value : null, btn: !!b, over: i ? (i.closest('.invite-name-row').scrollWidth > i.closest('.invite-name-row').clientWidth + 1) : null,
                link: (document.querySelector('#inviteLinkInput')||{}).value || '' }; });
     R.note(f.has && f.btn, '① 창에 [모임 이름] 칸과 [저장] 단추가 있다');
+    /* 2026-09-22 대표님 지시 "모임 이름을 올리고 링크 복사를 내려" */
+    const order = await p.evaluate(function(){ const n = document.querySelector('#inviteGroupName'), l = document.querySelector('#inviteLinkInput');
+      return (n && l) ? !!(n.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING) : null; });
+    R.note(order === true, '① [모임 이름] 칸이 링크·[복사] 줄보다 위에 있다', String(order));
     R.note(f.val === '검사님의 궁합', '① 자동 이름으로 채워져 있다', JSON.stringify(f.val));
     R.note(f.link.indexOf('invname1') >= 0, '링크가 도착했다', f.link.slice(0, 60));
     R.note(f.over === false, '④ 이름 줄이 폭 390 에서 안 넘친다');
@@ -54,7 +58,7 @@ const R = L.reporter('초대 링크 모임 이름');
     await L.wait(500);
     R.note(updates.length === 1 && updates[0].groupId === 'invname1' && updates[0].name === '우리 셋 모임' && updates[0].ownerToken === 'OWNER-TOKEN-1234567890',
       '② [저장] → 서버로 update(이름 · 만든 분 열쇠)가 한 번 간다', JSON.stringify(updates));
-    R.note(/invname1=우리 셋 모임/.test(await saved(p)), '② 저장한 모임 목록의 이름이 바뀐다', await saved(p));
+    R.note(/invname1=우리 셋 모임/.test(await saved(p)), '② 저장된 모임 목록의 이름이 바뀐다', await saved(p));
     const toast = await p.evaluate(function(){ const t = document.querySelector('#toast'); return t ? t.textContent.trim() : ''; });
     R.note(/이름을 저장했어요/.test(toast), '② 알림이 뜬다', toast);
     /* 같은 이름을 또 저장하면 서버에 안 보낸다 */
@@ -63,7 +67,7 @@ const R = L.reporter('초대 링크 모임 이름');
     /* 창을 닫고 여럿이서 목록에서 이름을 본다 */
     await L.clickText(p, /^닫기$/); await L.wait(300);
     await L.clickText(p, /여럿이서/, {all:true}); await L.wait(500);
-    R.note(await p.evaluate(function(){ return document.body.innerText.indexOf('우리 셋 모임') >= 0; }), '② 저장한 모임 목록에 새 이름이 보인다');
+    R.note(await p.evaluate(function(){ return document.body.innerText.indexOf('우리 셋 모임') >= 0; }), '② 저장된 모임 목록에 새 이름이 보인다');
     R.note(p.__errs.length === 0, 'JS 오류 없음 (①②)', p.__errs.join(' | '));
     await p.close();
 

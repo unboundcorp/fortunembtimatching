@@ -85,6 +85,13 @@ const R = L.reporter('저장한 그룹 프로필별');
       return { has: !!d, open: d ? d.open : null, inside: !!c, outsideA: !!document.querySelector('.group-orphan-fold [data-gid="gA"]'), sum: d ? d.querySelector('summary').textContent : '' }; });
     R.note(fold.has && fold.inside && !fold.open, '③ 「지금 없는 프로필」 모임은 접힌 줄 안에 있고 처음엔 접혀 있다', JSON.stringify(fold));
     R.note(!fold.outsideA && /1개/.test(fold.sum), '③ 첫째의 모임은 접힌 줄 밖 · 접힌 줄 제목에 개수', fold.sum);
+    /* 2026-09-22 대표님 지시(사진) — 제목 '저장된 모임' · 안내 두 줄은 목록 아래 */
+    const lay = await p.evaluate(function(){ const card = document.querySelector('[data-gid]').closest('.scroll-card'); if(!card) return null;
+      const h = card.querySelector('h3'); const hints = [...card.querySelectorAll('p.biz-hint')].filter(function(x){ return /지금 고른 프로필|왼쪽으로 밀면/.test(x.textContent); });
+      const row = card.querySelector('[data-gid]');
+      return { title: h ? h.textContent.trim() : '', hints: hints.length, below: hints.every(function(x){ return !!(row.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING); }) }; });
+    R.note(lay && lay.title === '저장된 모임', '카드 제목이 「저장된 모임」', JSON.stringify(lay));
+    R.note(lay && lay.hints === 2 && lay.below, '안내 두 줄이 목록 아래에 있다', JSON.stringify(lay));
 
     /* ④ 첫째 프로필로 둘째의 모임(gB)을 열어 봐도 적힌 프로필은 그대로 */
     await p.evaluate(function(){ window.__INYEON_TEST__.openSavedGroup('gB'); }); await L.wait(1200);
