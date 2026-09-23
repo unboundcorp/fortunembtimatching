@@ -13278,6 +13278,22 @@ var TODAY_STAGE_ACT = {
   사:'오늘은 지키는 쪽에 무게를 두세요.',
   절:'욕심만 덜어내면 무난하게 지나가요.'
 };
+/* ★ 2026-09-24 대표님 지적 — "판단력은 평소만큼 좋은 날이니, 새로 벌이는 일은 다음으로 미루세요"가 모순.
+   한마디는 앞 토막(건강운 판정 · 좋음/조심)과 뒤 토막(십이운성 · 밀어라/자제하라)을 무조건 '이니'로 붙였는데,
+   두 값은 서로 다른 계산에서 와서 인과가 없다. 방향이 같으면 '이니', 다르면 '이지만'으로 잇는다("응 그렇게 바꿔").
+   낱말은 그대로다 — 잇는 말만 고른다. 위 열두 문장의 방향: +1 밀어라 · -1 자제하라 · 0 어느 쪽도 아님(절). */
+var TODAY_STAGE_DIR = { 제왕:1, 건록:1, 관대:1, 장생:1, 양:-1, 쇠:-1, 목욕:-1, 태:-1, 병:-1, 묘:-1, 사:-1, 절:0 };
+var TODAY_DAY_WORD = { weak:'몸과 마음이 덜 눌리는 날', most:'한쪽으로 쏠리기 쉬운 날', else:'판단력은 평소만큼 좋은 날' };
+var TODAY_DAY_DIR  = { weak:1, most:-1, else:1 };
+function todayEndLine(healthTier, stageName){
+  var key = (healthTier === 'weak' || healthTier === 'most') ? healthTier : 'else';
+  var dayWord = TODAY_DAY_WORD[key];
+  var act = TODAY_STAGE_ACT[stageName];
+  if(!act) return dayWord + '이에요.';
+  var sd = TODAY_STAGE_DIR[stageName] || 0;
+  var conflict = sd !== 0 && sd !== TODAY_DAY_DIR[key];
+  return dayWord + (conflict ? '이지만, ' : '이니, ') + act;
+}
 
 /* 총평 문단들을 만든다. 화면·복사·공유가 같은 글을 쓰도록 문자열 배열로 돌려준다. */
 /* =====================================================================
@@ -13366,12 +13382,8 @@ function buildTodaySummaryRows(fortune){
   }
 
   /* ④ 마무리 — 오늘 기운이 내게 어떻게 닿는지(앞)와 그래서 뭘 하면 좋은지(뒤)를 한 문장으로.
-     앞부분을 '…한 날'로 끝나게 맞춰 놓아서 뒤에 '이니, '를 붙이면 그대로 이어진다. */
-  var dayWord = (b.healthTier === 'weak')  ? '몸과 마음이 덜 눌리는 날'
-              : (b.healthTier === 'most')  ? '한쪽으로 쏠리기 쉬운 날'
-              :                              '판단력은 평소만큼 좋은 날';
-  var act = TODAY_STAGE_ACT[b.stageName];
-  out.push({kind:'end', tag:'한마디', text: act ? (dayWord + '이니, ' + act) : (dayWord + '이에요.')});
+     잇는 말('이니'/'이지만')은 todayEndLine 이 두 토막의 방향을 보고 고른다 (2026-09-24). */
+  out.push({kind:'end', tag:'한마디', text: todayEndLine(b.healthTier, b.stageName)});
 
   return out;
 }
