@@ -89,7 +89,7 @@ const R = reporter('보낸 분 화면의 사이');
       T.goRoute('compat'); await W(300);
       const btn = t => Array.from(document.querySelectorAll('button')).filter(x => x.textContent.trim().indexOf(t) >= 0)[0];
       let b = btn('요약으로 돌아가기'); if(b){ b.click(); await W(400); }
-      b = btn('다시 보기'); if(b){ b.click(); await W(400); }
+      b = btn('다른 사람과도 궁합 보기'); if(b){ b.click(); await W(400); }
       const pick = (label) => { const b = Array.from(document.querySelectorAll('button')).filter(x => x.textContent.trim().indexOf(label) === 0)[0]; if(b) b.click(); };
       pick('둘이서'); await W(500); const pairTxt = document.querySelector('#main').innerText;
       pick('여럿이서'); await W(500); const grpTxt = document.querySelector('#main').innerText;
