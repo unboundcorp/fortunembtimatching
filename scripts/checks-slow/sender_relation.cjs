@@ -93,10 +93,12 @@ const R = reporter('보낸 분 화면의 사이');
       const pick = (label) => { const b = Array.from(document.querySelectorAll('button')).filter(x => x.textContent.trim().indexOf(label) === 0)[0]; if(b) b.click(); };
       pick('둘이서'); await W(500); const pairTxt = document.querySelector('#main').innerText;
       pick('여럿이서'); await W(500); const grpTxt = document.querySelector('#main').innerText;
-      return { snip: pairTxt.slice(0,200), pair: /링크로 본 궁합[\s\S]*검사님의 궁합/.test(pairTxt), grp: /저장된 모임[\s\S]*검사님의 궁합/.test(grpTxt), grpHas: /검사님의 궁합/.test(grpTxt) };
+      return { snip: pairTxt.slice(0,200), full: pairTxt, pair: /저장된 모임[\s\S]*검사님의 궁합/.test(pairTxt), manual: /상대방 성별|궁합 풀어보기/.test(pairTxt), grp: /저장된 모임[\s\S]*검사님의 궁합/.test(grpTxt), grpHas: /검사님의 궁합/.test(grpTxt) };
     });
-    R.note(lists.pair, "둘이서 화면 '링크로 본 궁합'에 있음", JSON.stringify(lists));
-    R.note(!/들어가 계신 모임 [0-9]+개는/.test(lists.snip), '둘이서 링크를 여럿이서 모임 수에 안 셈', lists.snip.slice(0,120));
+    R.note(lists.pair, "둘이서 화면 '저장된 모임'에 있음", lists.snip);
+    R.note(!lists.manual, '둘이서 화면에 직접 입력 칸이 없음(링크로만)');
+    R.note(lists.full.indexOf('저장된 모임') >= 0 && lists.full.indexOf('저장된 모임') < (lists.full.indexOf('전에 본 궁합') < 0 ? 1e9 : lists.full.indexOf('전에 본 궁합')), '저장된 모임이 위쪽');
+    R.note(!/들어가 계신 모임 [0-9]+개는/.test(lists.full), '둘이서 링크를 여럿이서 모임 수에 안 셈', lists.snip.slice(0,120));
     R.note(!lists.grpHas, '여럿이서 화면에는 없음', JSON.stringify(lists));
 
     /* ③ — 친구로 바꾼 셋 모임 */

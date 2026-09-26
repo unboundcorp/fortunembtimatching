@@ -952,10 +952,16 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 
 /* 성격유형 사분면 */
 .mq-wrap{margin:4px 0 2px;}
-.mq-axis-top{text-align:center;font-size:.7rem;color:var(--ink-faint);margin-bottom:6px;}
-.mq-axis-bot{text-align:center;font-size:.7rem;color:var(--ink-faint);margin-top:2px;}
+/* 2026-09-26 대표님 지시 "가운데 배치하지 말고 최대한 왼쪽으로 두고 축 설명 글자는 작게" —
+   세로축 글을 작게, 한 글자씩 세워 왼쪽 끝 좁은 띠에 붙인다(옆으로 눕히면 한글이 안 읽혔다). */
+.mq-body{display:flex;gap:4px;align-items:stretch;}
+.mq-body .mq-grid{flex:1;min-width:0;}
+.mq-axis-side{flex:0 0 14px;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
+  font-size:.58rem;line-height:1;color:var(--ink-faint);margin-left:-2px;}
+.mq-side-end,.mq-side-name{writing-mode:vertical-rl;text-orientation:upright;white-space:nowrap;letter-spacing:-.05em;}
+.mq-side-name{color:var(--ink-dim);}
 .mq-axis-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;
-  font-size:.7rem;color:var(--ink-faint);margin-top:6px;}
+  font-size:.6rem;color:var(--ink-faint);margin-top:4px;padding-left:16px;}   /* 왼쪽 세로축(14+4-2) 만큼 밀어 그림과 맞춘다 */
 .mq-axis-name{color:var(--ink-dim);}
 .mq-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
 .mq-cell{background:var(--panel-3);border:1px solid transparent;border-radius:var(--r-md);
@@ -5913,7 +5919,7 @@ var PRODUCTS = {
                          '두 사람의 기운이 어디서 맞물리고 어디서 부딪히는지 — 자세한 풀이',
                          '연애·우정·함께 있을 때·갈등 네 상황별 성격유형 궁합 해석',
                          '사주로 본 나의 연애 성향',
-                         '그림 — 기운 견주기 · 성격유형 사분면 · 인연 매듭 · 글자 연결선'] },
+                         '그림 — 기운 견주기 · 성격유형 사분면 · 인연 매듭'] },
   /* ★ 2026-09-04 대표님 결정 — 7일 → 1년, 만드는 편수 10 → 1.
      대표님이 "사주·궁합·성격유형 한번에 4,900원 패키지"를 붙이자고 하셨는데
      이 상품이 이미 그것이었다. 새 상품을 만들지 않고 기간과 편수만 바꿨다.
@@ -8699,7 +8705,7 @@ function renderFaq(){
       ['서비스', [
         ['둘이서 보는 궁합과 여럿이 보는 궁합은 뭐가 다른가요?',
          '궁합 보기 맨 위에서 [둘이서 보기 / 여럿이서 보기]를 고를 수 있어요. 둘이서 보기는 두 분의 점수와 13개 이야기를 자세히 풀어드리고, 여럿이서 보기는 모인 사람들 사이의 인연을 한 그림에 함께 보여드려요. 링크 하나로 최대 '+GC_MAX+'명까지 궁합을 확인할 수 있어요.',
-         '모으는 방법이 달라요. 둘이서 보기는 상대방 정보를 직접 넣으셔도 되고 초대 링크를 보내셔도 돼요. 여럿이서 보기는 초대 링크로만 모아요 — 각자 본인이 넣은 값으로 봐야 정확하기 때문이에요.',
+         '둘 다 링크로만 모아요. 받은 분이 자기 정보를 직접 넣어요 — 각자 본인이 넣은 값으로 봐야 정확하기 때문이에요.',
          '고르실 수 있는 사이도 달라요. 둘이서는 친구·연인·직장 동료·가족 네 가지가 다 되고, 여럿이서는 연인을 뺀 세 가지예요. 연인은 두 분 사이를 가리키는 말이라 여러 명이 모인 자리에는 맞지 않아서예요.'],
         ['친구·연인·직장 동료·가족은 왜 고르나요?',
          '같은 두 사람이라도 어떤 사이냐에 따라 볼 것이 달라지기 때문이에요. 연인과 가족은 타고난 기운(사주)을, 직장 동료는 말이 통하는지(성격유형)를 더 무겁게 봐요. 풀이 내용도 사이에 맞춰 달라져요 — 직장 동료로 고르면 연애 이야기 대신 일하는 방식과 역할 나누기를 써드려요.'],
@@ -20177,7 +20183,7 @@ function compatDraftDirty(){
 ===================================================================== */
 /* 둘이서 링크로 모인 두 분을 둘이서 결과 화면으로 연다. 열었으면 true.
    못 여는 경우(둘이서 표식 아님 · 두 분이 아님 · 사이 미정 · 명단에서 지금 프로필을 못 찾음)는 false — 모임 화면으로 간다.
-   ★ 결과를 새로 저장하지 않는다(silent) — 이 궁합은 '링크로 본 궁합' 목록이 이미 들고 있다. */
+   ★ 결과를 새로 저장하지 않는다(silent) — 이 궁합은 둘이서 화면 '저장된 모임' 목록이 이미 들고 있다. */
 function openPairGroupAsCompat(id, rel){
   try{
     var g = savedGroups().filter(function(x){ return x && x.id === id; })[0];
@@ -20302,7 +20308,7 @@ function renderCompat(){
         ? ('모인 사람들이 서로 어떻게 맞는지 한 그림에 함께 봐요. 링크 하나로 최대 '+GC_MAX+'명까지 궁합을 확인할 수 있어요.')
         : ((COMPAT_DRAFT.fromInvite && COMPAT_DRAFT.name)
           ? (nameOr(COMPAT_DRAFT.name,'상대방')+'님이 보낸 정보는 링크에 담겨 와서 이미 채워져 있어요. 아래 [궁합 풀어보기]를 누르면 '+p.name+'님과의 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.')
-          : ('상대방의 정보를 입력하면 '+personLabel(p.name, '나')+' 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.'))}));
+          : ('상대방에게 링크를 보내면, 받은 분이 자기 정보를 넣는 대로 '+personLabel(p.name, '나')+' 성격유형 궁합 + 사주 궁합을 함께 풀어드려요.'))}));
 
     if(!COMPAT_DRAFT.fromInvite){
       var vseg = el('div',{class:'seg-toggle', style:'margin-bottom:16px;', role:'group','aria-label':'몇 분의 궁합을 볼까요'});
@@ -20314,7 +20320,7 @@ function renderCompat(){
       /* ★ 2026-09-05 대표님 지시 — 링크로 들어와 참여한 모임이 '여럿이서 보기' 안에만 있어서
          둘이서 화면으로 들어온 분은 자기가 들어간 모임을 못 찾았다. 여기 한 줄로 길을 알린다.
          카드를 여기에 또 그리지는 않는다 — 같은 것을 두 군데 두면 한쪽만 고치는 사고가 난다. */
-      /* 2026-09-26 — 둘이서 링크(isPairGroup)는 이 화면 '링크로 본 궁합'에 있으니 빼고, 여럿이서 목록과 같은 기준(프로필별)으로 센다 */
+      /* 2026-09-26 — 둘이서 링크(isPairGroup)는 이 화면 '저장된 모임'에 있으니 빼고, 여럿이서 목록과 같은 기준(프로필별)으로 센다 */
       var grpCount = savedGroupsForProfile(activeProfile()).filter(function(g){ return !isPairGroup(g); }).length;
       if(!isGroupView && grpCount){
         view.appendChild(el('p',{class:'biz-hint', style:'margin-top:-8px;'},[
@@ -20419,15 +20425,20 @@ function renderCompat(){
       /* ★ R56 — 아래 입력 칸에 이름을 붙인다(대표님 지시). 위 버튼(상대가 넣기)과
          아래 칸(내가 넣기)이 같은 일을 다른 방법으로 하는 것인데, 아래에는 이름이 없어
          둘의 관계가 안 보였다. */
-      view.appendChild(compatManualHead());
-      view.appendChild(renderCompatForm());
+      /* ★ 2026-09-26 대표님 지시 "저장된 모임을 위로 올리고 위에 내가 입력하기를 지워버려 그냥! 무조건 링크로만 하게해"
+           · "링크로 본 궁합이 아니라 저장된 모임으로 글자 바꿔" — 둘이서도 여럿이서처럼 링크로만 본다.
+           [내가 직접 입력] 칸을 뺐고, 저장된 모임(둘이서 링크)을 링크 단추 바로 아래로 올렸다.
+           ★ 옛 1:1 초대 링크(#i1=)로 들어와 칸이 이미 채워진 경우(fromInvite)만 칸을 그대로 둔다 — 안 두면 그 링크가 막힌다. */
+      var pairLinks = buildSavedGroupsCard(true);
+      if(pairLinks) view.appendChild(pairLinks);
+      if(COMPAT_DRAFT.fromInvite){
+        view.appendChild(compatManualHead());
+        view.appendChild(renderCompatForm());
+      }
       /* ★ 2026-09-07 대표님 지시 — "전에 본 궁합은 맨 밑으로 내려라".
          처음에는 토글 바로 아래에 뒀는데, 그러면 새로 보러 온 사람이 남의 기록부터 지나야 한다.
          새로 보는 흐름(사이 고르기 → 링크 → 입력 칸)을 끝까지 둔 뒤 맨 아래에 놓는다.
          ★ 여럿이서 화면에는 안 놓는다 — 거기는 '저장한 그룹'이 같은 일을 한다. */
-      /* ★ 2026-09-26 대표님 지시 — 둘이서 보낸 링크로 본 궁합은 여기에(여럿이서 '저장된 모임'이 아니라). */
-      var pairLinks = buildSavedGroupsCard(true);
-      if(pairLinks) view.appendChild(pairLinks);
       var recent = buildRecentCompatCard(p);
       if(recent) view.appendChild(recent);
     }
@@ -20998,7 +21009,7 @@ function renderCompatSummary(p, draft){
   box.appendChild(sumGrid);
 
   /* 버튼 이름도 일상어로. '합충선' 같은 말은 이 화면(무료 요약)에 남기지 않는다. */
-  box.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ COMPAT_SUB='visual'; render(); scrollToTopNow(); }},[compatLockMark(), btnLines('그림으로 한눈에 보기','기운 균형 · 인연 매듭 · 연결선')]));
+  box.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ COMPAT_SUB='visual'; render(); scrollToTopNow(); }},[compatLockMark(), btnLines('그림으로 한눈에 보기','기운 균형 · 인연 매듭 · 성격유형 사분면')]));
 
   if(!hasAccess(PRODUCTS.compat_full.id)){
     /* 무료로 어디까지 본 것인지, 결제하면 무엇이 더 열리는지 요약 화면에서 바로 알려준다.
@@ -21148,26 +21159,9 @@ function renderCompatVisual(p, draft){
     regionLabel:'오행 균형 오각형 그림', children:[radarBox] });
   box.appendChild(radarFold.wrap);
 
-  if(r.pA.saju && r.pB.saju){
-    var relCard=el('div',{class:'scroll-card'});
-    /* ★ R85-c — 제목 아래 "사주 용어로는 합충형파" 줄을 뺐다. 이 그림에서 한자를 전부 없앴는데
-       바로 밑에 용어를 다시 붙이면 앞뒤가 맞지 않는다. 용어는 용어 사전에 그대로 있다. */
-    relCard.appendChild(cardHead('어느 자리가 서로 잘 맞고 어느 자리가 부딪히나요'));
-    relCard.appendChild(buildCoupleRelationSvg(r.pA.saju, r.pB.saju, p.name, r.pB.name));
-    /* ★ R85-b — 예전에는 한자 글자 여섯 개와 선만 있고 아무 설명이 없었다.
-       사주를 모르면 무엇을 보는 그림인지 알 수가 없다. */
-    /* ★ 다섯 문장이 그림 밑에 통째로 깔려 있었다. 누가 위/아래인지만 밖에 두고 나머지는 접는다 —
-       그건 그림을 보는 순간 바로 필요한 정보이고, 나머지는 궁금할 때 펴면 된다. */
-    relCard.appendChild(el('p',{class:'radar-note'},[
-      '위 줄이 ' + (p.name||'나') + '님, 아래 줄이 ' + (r.pB.name||'상대방') + '님이에요.'
-    ]));
-    relCard.appendChild(buildNoteFold('이 그림은 어떻게 읽나요?', [
-      '동그라미 넷은 각각 태어난 해 · 달 · 날 · 시각을 뜻해요.',
-      '두 사람의 자리를 하나씩 맞대어 보고, 짝이 맞는 자리는 초록 선으로, 정면으로 부딪히는 자리는 붉은 선으로 이었어요. 선이 하나도 없으면 크게 얽히지도 부딪히지도 않는다는 뜻이에요.',
-      '동그라미를 길게 누르면 원래 사주 글자가 떠요.'
-    ]));
-    box.appendChild(relCard);
-  }
+  /* ★ 2026-09-26 대표님 지시("동그라미 누르면은 뭐가 안 보인다 · 이거 어려운데 빼도 되지 않아") —
+     '어느 자리가 서로 잘 맞고 어느 자리가 부딪히나요' 연결선 그림(buildCoupleRelationSvg)을 뺐다.
+     길게 누르면 뜨던 글자(<title>)는 폰에서 안 보였다. 결제창 목록의 '글자 연결선'과 단추 설명의 '연결선'도 함께 뺐다(인연 매듭 buildKnotSvg 는 그대로). */
   return box;
 }
 /* =====================================================================
@@ -21273,7 +21267,14 @@ function buildMbtiQuadCompare(mbtiA, mbtiB, nameA, nameB){
   var wrap = el('div',{class:'mq-wrap'});
 
   /* 축 이름 — 그림 밖에 둔다. 칸 안에 다 넣으면 320px에서 글자가 뭉갠다. */
-  wrap.appendChild(el('div',{class:'mq-axis-top'},['어떻게 정하나 ↑ 논리']));
+  /* ★ 2026-09-26 대표님 지시 "그래프 축을 왼쪽으로 옮겨서 표시해" — 세로축(어떻게 정하나: 논리↑ 마음↓)을
+     그림 위·아래 가운데에서 그림 왼쪽 세로 막대로 옮겼다. 가로축(무엇을 먼저 보나)은 그대로 아래. */
+  var body = el('div',{class:'mq-body'});
+  var side = el('div',{class:'mq-axis-side'});
+  side.appendChild(el('span',{class:'mq-side-end'},['↑논리']));
+  side.appendChild(el('span',{class:'mq-side-name'},['어떻게 정하나']));
+  side.appendChild(el('span',{class:'mq-side-end'},['마음↓']));
+  body.appendChild(side);
 
   var grid = el('div',{class:'mq-grid', role:'img',
     'aria-label':'성격유형 사분면 — '+nameA+'('+mbtiA+')는 '+MBTI_QUAD[qa].title
@@ -21288,14 +21289,14 @@ function buildMbtiQuadCompare(mbtiA, mbtiB, nameA, nameB){
     cell.appendChild(pins);
     grid.appendChild(cell);
   });
-  wrap.appendChild(grid);
+  body.appendChild(grid);
+  wrap.appendChild(body);
 
   var foot = el('div',{class:'mq-axis-foot'});
   foot.appendChild(el('span',{},['← 사실']));
   foot.appendChild(el('span',{class:'mq-axis-name'},['무엇을 먼저 보나']));
   foot.appendChild(el('span',{},['가능성 →']));
   wrap.appendChild(foot);
-  wrap.appendChild(el('div',{class:'mq-axis-bot'},['마음 ↓']));
 
   /* 사분면에 안 들어가는 두 축 — 이름 옆 칩 */
   var chips = el('div',{class:'mq-chips'});
@@ -21324,71 +21325,6 @@ function buildMbtiQuadCompare(mbtiA, mbtiB, nameA, nameB){
   return wrap;
 }
 
-/* 네 기둥의 자리 이름. 한자 대신 이걸 동그라미에 적는다. */
-var POS_PLAIN = { year:'해', month:'달', day:'날', hour:'시' };
-function buildCoupleRelationSvg(sajuA, sajuB, nameA, nameB){
-  nameA = nameA || '나'; nameB = nameB || '상대방';
-  var ns='http://www.w3.org/2000/svg';
-  var branchesA = sajuA.hour? ['year','month','day','hour'] : ['year','month','day'];
-  var branchesB = sajuB.hour? ['year','month','day','hour'] : ['year','month','day'];
-  var w=300, h=120;
-  var svg=document.createElementNS(ns,'svg'); svg.setAttribute('viewBox','0 0 '+w+' '+h); svg.setAttribute('width','100%'); svg.setAttribute('height',h); svg.setAttribute('role','img');
-  var title=document.createElementNS(ns,'title');
-  title.textContent='두 사람의 태어난 해·달·날·시각이 서로 짝이 되는 자리와 부딪히는 자리';
-  svg.appendChild(title);
-  var stepA = w/(branchesA.length+1), stepB = w/(branchesB.length+1);
-  function ptA(i){ return [stepA*(i+1), 20]; }
-  function ptB(i){ return [stepB*(i+1), h-20]; }
-  /* ★ R85-b (2026-08-18) — 그리는 순서를 뒤집었다.
-     예전에는 동그라미와 글자를 먼저 그리고 선을 나중에 그려서, 선이 글자 위를 그대로 지나갔다
-     (실측 확대해서 확인했다). SVG는 나중에 붙인 것이 위에 그려지므로 선을 먼저 붙인다. */
-  branchesA.forEach(function(posA,i){
-    branchesB.forEach(function(posB,j){
-      var relSet = SajuEngine.branchRelations([{idx:sajuA[posA].branchIdx},{idx:sajuB[posB].branchIdx}]);
-      var color = relSet.hap.length>0 ? '#357A6D' : (relSet.chung.length>0 ? 'var(--red-hi)' : null);
-      if(color){
-        var a=ptA(i), b=ptB(j);
-        var line=document.createElementNS(ns,'line'); line.setAttribute('x1',a[0]); line.setAttribute('y1',a[1]); line.setAttribute('x2',b[0]); line.setAttribute('y2',b[1]); line.setAttribute('stroke',color); line.setAttribute('stroke-width','1.6'); line.setAttribute('opacity','.8');
-        svg.appendChild(line);
-      }
-    });
-  });
-  /* ★ R85-c (2026-08-18) — 동그라미 안의 글자를 '오·묘·축·술' 같은 지지 글자에서
-     '해·달·날·시' 라는 자리 이름으로 바꿨다 (대표님 지시: "합충파 오묘 이런 한자어 아예 빼고").
-     사주를 모르는 사람에게 '오'와 '묘'는 아무 뜻이 없다. 반면 "태어난 해끼리 부딪힌다"는
-     설명 없이도 읽힌다. 원래 글자는 지운 게 아니라 눌렀을 때 뜨는 설명(<title>)과
-     화면 낭독기용 이름표에만 남겼다 — 아는 분은 여전히 확인할 수 있다.
-     (여덟 글자 원본을 보고 싶으면 요약 화면의 '두 사람의 여덟 글자' 표가 그대로 있다.) */
-  function drawNodes(list, saju, ptFn, strokeVar, who){
-    list.forEach(function(pos,i){
-      var xy=ptFn(i);
-      var g=document.createElementNS(ns,'g');
-      var tip=document.createElementNS(ns,'title');
-      tip.textContent = who+' · '+POS_PLAIN[pos]+' — '+saju[pos].branch+'('+saju[pos].branchH+')';
-      g.appendChild(tip);
-      var c=document.createElementNS(ns,'circle');
-      c.setAttribute('cx',xy[0]); c.setAttribute('cy',xy[1]); c.setAttribute('r','14');
-      c.setAttribute('fill','var(--panel)'); c.setAttribute('stroke',strokeVar);
-      g.appendChild(c);
-      var t=document.createElementNS(ns,'text');
-      t.setAttribute('x',xy[0]); t.setAttribute('y',xy[1]+4); t.setAttribute('text-anchor','middle');
-      t.setAttribute('font-size','11'); t.setAttribute('fill','var(--ink)');
-      t.textContent = POS_PLAIN[pos];
-      g.appendChild(t);
-      svg.appendChild(g);
-    });
-  }
-  drawNodes(branchesA, sajuA, ptA, 'var(--pA)', nameA);
-  drawNodes(branchesB, sajuB, ptB, 'var(--pB)', nameB);
-  var wrap=el('div',{style:'overflow-x:auto;'},[svg]);
-  /* ★ R85-c — 범례도 '합 / 충' 두 글자였다. 무슨 뜻인지 그대로 적는다. */
-  var legend=el('div',{class:'legend', style:'margin-top:8px;'},[
-    el('span',{},[el('span',{class:'dot',style:'background:var(--em-wood)'}),'짝이 맞아요']),
-    el('span',{},[el('span',{class:'dot',style:'background:var(--red-hi)'}),'부딪혀요'])
-  ]);
-  var outer=el('div',{},[wrap,legend]);
-  return outer;
-}
 function buildKnotSvg(){
   var ns='http://www.w3.org/2000/svg';
   var svg=document.createElementNS(ns,'svg'); svg.setAttribute('viewBox','0 0 300 90'); svg.setAttribute('width','260'); svg.setAttribute('height','78'); svg.setAttribute('aria-hidden','true');
@@ -23792,7 +23728,7 @@ function buildSavedGroupsCard(pairMode){
   SWIPE_OPEN = null;
   /* ★ 2026-09-22 대표님 지시(사진) "저장된 모임으로 바꾸고 밑에 내용은 맨 아래로 빼서 적어둬" — 제목은 '저장된 모임',
      안내 두 줄은 목록 아래(정리 단추 뒤)로. 목록이 먼저 보여야 한다. */
-  var card = sectionCard([pairMode ? '링크로 본 궁합' : '저장된 모임']);
+  var card = sectionCard(['저장된 모임']);
   list.forEach(function(g){
     var row = settingsRow(
       /* ★ 2026-09-05 대표님 지적 — 위 카드는 "아직 아무도 열지 않았어요"라는데
@@ -23829,7 +23765,7 @@ function buildSavedGroupsCard(pairMode){
   /* 하나만 있어도 보여준다 — 그 하나가 눌러만 보고 안 보낸 링크일 수 있다. */
   card.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[(pairMode ? '둘이서 보낸 궁합 링크예요. ' : '')+'눌러서 다시 열 수 있어요. 왼쪽으로 밀면 지울 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관돼요.']));
   /* 프로필별로 가른다(2026-09-22). 다른 프로필의 모임은 위에서 프로필을 바꾸면 보인다. */
-  if(cur) card.appendChild(el('p',{class:'biz-hint'},['지금 고른 프로필('+nameOr(cur.name,'이름 없음')+')로 본 '+(pairMode ? '궁합' : '모임')+'만 보여요. 다른 프로필의 것은 맨 위에서 프로필을 바꾸면 보여요.']));
+  if(cur) card.appendChild(el('p',{class:'biz-hint'},['지금 고른 프로필('+nameOr(cur.name,'이름 없음')+')로 본 모임만 보여요. 다른 프로필의 것은 맨 위에서 프로필을 바꾸면 보여요.']));
   /* ★ 2026-09-22 대표님 지시 "아무도 안들어온 링크 정리하기는 맨 밑을 내려" — 카드의 맨 마지막. */
   if(list.length >= 1){
     card.appendChild(el('button',{class:'btn btn-ghost btn-sm btn-block', style:'margin-top:10px;',
