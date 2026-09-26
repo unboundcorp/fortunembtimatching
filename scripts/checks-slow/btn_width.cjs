@@ -38,6 +38,10 @@ const L = require('/Users/beautymacmini/dev/harness-project(coding)/output/fortu
       const uneven = sib.length>1 && Math.max(...widths)-Math.min(...widths)>4;
       if(fill<0.93 || uneven) out.push({t:bt.textContent.trim().slice(0,30), w:Math.round(r.width), inner:Math.round(inner), n:sib.length, fill:+fill.toFixed(2), uneven, cls:bt.className, pcls:par.className.slice(0,30)});
     });
+    /* 2026-09-26 대표님 지적 "어떻게 맞췄는지 자세히 보기랑 출생지 보정 설정 바꾸기랑 폰트 크기가 왜 달라?" —
+       폭을 채운 단추(btn-block)는 한 화면에서 글자 크기가 같아야 한다 */
+    const fs = {}; scope.querySelectorAll('.btn-block').forEach(bt=>{ if(!bt.getBoundingClientRect().width) return; const f=getComputedStyle(bt).fontSize; (fs[f]=fs[f]||[]).push(bt.textContent.trim().slice(0,16)); });
+    if(Object.keys(fs).length > 1) out.push({t:'[폭 채운 단추 글자 크기가 섞임] '+JSON.stringify(fs), w:0, inner:0, n:9, fill:0, uneven:true, cls:'', pcls:'fontsize'});
     const seen={}; return out.filter(o=>{const k=o.t+o.pcls; if(seen[k]) return false; seen[k]=1; return true;}).map(o=>label+' | '+JSON.stringify(o));
   }, label);
   const T = (fn, ...a) => p.evaluate(fn, ...a);
