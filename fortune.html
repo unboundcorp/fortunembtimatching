@@ -19907,7 +19907,12 @@ function renderCompat(){
          둘이서 화면과 같은 순서다 — 사이를 먼저 정하고, 그다음 어떻게 모을지 고른다. */
       view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['이 모임은 어떤 사이인가요']));
       var gseg = el('div',{class:'seg-toggle seg-rel', style:'margin-bottom:6px;', role:'group','aria-label':'이 모임은 어떤 사이인가요'});
-      groupRelations().forEach(function(r){
+      /* ★ 2026-09-26 — 두 분뿐인 모임을 보낸 분이 연인으로 정했으면 그 단추도 그린다(눌린 채).
+         목록에서 빼 둔 채 값만 연인이면 화면에는 아무것도 안 눌린 것처럼 보인다(대표님 제보).
+         셋째가 들어오면 openSavedGroup 이 '아직 안 고름'으로 되돌리므로 그때는 안 그려진다. */
+      var relList = groupRelations().slice();
+      if(GC_RELATION_SET && isPairOnlyRelation(GC_RELATION)) relList.splice(1, 0, relationOf(GC_RELATION));
+      relList.forEach(function(r){
         gseg.appendChild(el('button',{type:'button','aria-pressed':(GC_RELATION_SET && GC_RELATION===r.key)?'true':'false',
           onclick:function(){ if(GC_RELATION_SET && GC_RELATION===r.key) return;
             GC_RELATION=r.key; GC_RELATION_SET=true;
@@ -19917,6 +19922,10 @@ function renderCompat(){
       view.appendChild(el('p',{class:'biz-hint', style:'margin:0 0 16px;'},
         [GC_RELATION_SET ? relationNote(GC_RELATION)
                          : '먼저 어떤 사이인지 골라주세요. 고르신 사이에 맞춰 풀이를 써드려요. 링크에도 함께 담겨 가요.']));
+      if(GC_RELATION_SET && isPairOnlyRelation(GC_RELATION)){
+        view.appendChild(el('p',{class:'biz-hint', style:'margin:-10px 0 16px;'},
+          ['보내신 분이 '+relationLabel(GC_RELATION)+' 사이로 정한 모임이에요. 두 분일 때만 이 사이로 봐요.']));
+      }
 
       var savedG = buildSavedGroupsCard();   /* 아래 링크 버튼 뒤에 붙인다 — 2026-09-07 대표님 지시 */
       /* ★ 2026-09-01 대표님 지시(2번안) — 궁합은 링크로만 모은다.
@@ -22823,7 +22832,12 @@ function clearPendingInviteIfJoined(id, memberCount){
     STATE.pendingInviteGroup = null; saveState();
   }
 }
-function openSavedGroup(id, after){
+/* ★ 2026-09-26 대표님 제보 — "둘이서 궁합 보기로 연인으로 설정한 다음에 보냈는데 받은 사람이 들어왔더니
+   가족 사이로 설정이 되어 있었다 … 연인은 심지어 고를 수 없게 되어 있어".
+   링크의 #rel=lover 는 부팅 때 GC_RELATION 에 잘 실렸는데, [동의하고 참여하기] 뒤 여기서 '이 모임에 적어 둔 사이'만
+   보고(처음 참여라 없음) '아직 안 고름'으로 되돌리며 그 값을 지웠다(9/7 "모임마다 사이 따로"의 회귀).
+   셋째 인자 linkRel — 처음 참여할 때 doGroupJoin 이 링크에 실려 온 사이를 넘긴다. 적힌 값이 없을 때만 쓴다. */
+function openSavedGroup(id, after, linkRel){
   showToast('모임을 불러오는 중이에요…');
   groupFetch({action:'get', groupId:id}).then(function(d){
     if(!d || !d.members) throw new Error('모임을 찾을 수 없어요.');
@@ -22842,7 +22856,8 @@ function openSavedGroup(id, after){
     GROUP_VIEW = {id:id, name:d.name, rows:gvRaw};
     /* ★ rememberGroup보다 먼저 읽는다. 뒤에서 읽어도 값은 같지만(rel은 이어받는다),
        "이 그룹에 적혀 있던 값"을 쓴다는 것을 읽는 순서로도 분명히 해 둔다. */
-    var savedRel = groupRelation(id);
+    var savedRel = groupRelation(id)
+      || ((linkRel && relationOf(linkRel).key === linkRel) ? linkRel : null);   /* 링크에 실려 온 사이 (처음 참여) */
     /* 이 모임을 어느 프로필로 봤는지 — 명단에 든 프로필로 정한다. 지금 고른 프로필이 아닐 수 있다
        (다른 프로필의 모임을 열어 본 것). 이미 적혀 있으면 rememberGroup 이 그 값을 지킨다. */
     rememberGroup(id, d.name, null, PENDING_MEET.length, savedRel, groupProfileIdOf(PENDING_MEET));
@@ -22992,7 +23007,7 @@ function renderGroupJoin(){
     GROUP_JOIN_STATE = {busy:false, error:null, done:false, name:null, lookedUp:false};
     wrap.appendChild(el('p',{class:'section-sub'},['들어가 계신 모임을 여는 중이에요…']));
     main.appendChild(wrap);
-    openSavedGroup(backId);
+    openSavedGroup(backId, null, PENDING_LINK_RELATION);   /* 적힌 사이가 없으면 링크의 것을 쓴다 (2026-09-26) */
     return;
   }
 
@@ -23061,7 +23076,7 @@ function doGroupJoin(){
       GROUP_JOIN_STATE.busy = false;
       PENDING_GROUP_JOIN = null;
       showToast(d && d.already ? '이미 참여하고 계셨어요.' : '모임에 참여했어요.');
-      openSavedGroup(gid);
+      openSavedGroup(gid, null, PENDING_LINK_RELATION);   /* 보낸 분이 정한 사이를 이 모임에 적는다 (2026-09-26) */
     })
     .catch(function(err){
       GROUP_JOIN_STATE.busy = false;
@@ -23634,7 +23649,13 @@ function renderGroupCompat(){
   if(!GC_RELATION_SET){
     view.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['이 모임은 어떤 사이인가요']));
     var relSeg = el('div',{class:'seg-toggle seg-rel', role:'group','aria-label':'이 모임은 어떤 사이인가요'});
-    groupRelations().forEach(function(r){
+    /* ★ 2026-09-26 대표님 제보 — "연인은 심지어 고를 수 없게 되어 있어".
+       둘이서 화면에서 연인으로 정해 보낸 링크는 두 사람짜리 모임이 된다. 그 모임에서 [바꾸기]를
+       누르거나 사이가 안 실려 있으면 이 고르기 줄이 뜨는데, groupRelations() 가 연인을 빼 버려
+       **두 분뿐인데도 연인으로 되돌아갈 길이 없었다.** 9/7 규칙(연인은 셋 이상 모임에 안 둔다)은
+       그대로다 — 명단이 둘일 때만 연인을 함께 내놓는다. */
+    var relOpts = (gcMembers().length <= 2) ? COMPAT_RELATIONS.slice() : groupRelations();
+    relOpts.forEach(function(r){
       relSeg.appendChild(el('button',{type:'button','aria-pressed':'false',
         onclick:function(){ GC_RELATION=r.key; GC_RELATION_SET=true; GC_SEL=null;
           noteGroupRelation(r.key);
@@ -26715,7 +26736,8 @@ try{
       openPaywall: openPaywall,   /* 결제창 문구를 화면으로 재는 용도 (2026-09-21) */
       groupMyMemberIdx: groupMyMemberIdx, groupMyRowStale: groupMyRowStale,
       /* 2026-09-22 — 결제 취소 복귀 검사(checks-slow/pay_cancel.cjs)가 쓴다 */
-      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, pairDeep: function(){ return PAIR_DEEP; }
+      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, pairDeep: function(){ return PAIR_DEEP; },
+      gcRelation: function(){ return {rel:GC_RELATION, set:!!GC_RELATION_SET, link:PENDING_LINK_RELATION}; }
     };
   }
 }catch(e){}
