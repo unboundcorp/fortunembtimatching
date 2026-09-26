@@ -93,24 +93,15 @@ const R = reporter('링크에 실린 사이');
     R.note(/보내신 분이 연인 사이로 정하셨어요/.test(j1.before), '참여 화면이 "보내신 분이 연인 사이로 정하셨어요"를 적는다');
     R.note(joins === 1, '참여 요청이 서버로 한 번 갔다', '실제 ' + joins);
     let s1 = await state(p);
-    R.note(s1.route === 'groupCompat', '참여 뒤 모임 화면으로 갔다', s1.route);
+    /* 2026-09-26 — 연인 링크(두 분)는 둘이서 링크로 보고 둘이서 결과 화면으로 연다(openPairGroupAsCompat) */
+    R.note(s1.route === 'compat' && /궁합 풀이 읽어보기/.test(s1.text), '참여 뒤 둘이서 결과 화면으로 갔다', s1.route);
     R.note(s1.rel.rel === 'lover' && s1.rel.set === true, '참여 뒤 GC_RELATION 이 연인으로 서 있다', JSON.stringify(s1.rel));
     R.note(s1.chip === '연인 사이로 봤어요', "화면 칩이 '연인 사이로 봤어요'다", JSON.stringify(s1.chip));
     R.note(s1.pressed.length === 0 && s1.labels.length === 0, '고르기 줄이 안 떠 있다(이미 정해진 사이)', JSON.stringify(s1.labels));
     R.note(s1.text.indexOf('먼저 어떤 사이인지 골라주세요') < 0, '"먼저 어떤 사이인지 골라주세요"가 없다');
     R.note(s1.saved.some(g => g.id === 'testgroup123' && g.rel === 'lover'), '저장한 모임에 연인이 적혔다', JSON.stringify(s1.saved));
-    /* [바꾸기] → 확인 창 [바꾸기] → 두 분뿐이므로 고르기 줄에 연인이 있어야 한다 */
-    await clickText(p, /^바꾸기$/); await wait(400);
-    await p.evaluate(function(){
-      const btns = Array.from(document.querySelectorAll('.modal-box button'));
-      const b = btns.find(x => x.textContent.trim() === '바꾸기'); if(b) b.click();
-    });
-    await wait(600);
-    const s1b = await state(p);
-    R.note(s1b.rel.set === false && s1b.labels.length >= 4 && s1b.labels.indexOf('연인') >= 0, '[바꾸기] 뒤 두 분뿐인 모임의 고르기 줄에 [연인]이 있다', JSON.stringify(s1b.labels));
-    await clickText(p, /^연인$/); await wait(600);
-    const s1c = await state(p);
-    R.note(s1c.rel.rel === 'lover' && s1c.rel.set === true && s1c.chip === '연인 사이로 봤어요', '[연인]을 다시 고르면 연인으로 돌아온다', JSON.stringify(s1c.rel));
+    /* 둘이서 결과 화면에는 사이를 바꾸는 자리가 없다 — 보낸 분이 정한 사이로 굳는다(대표님 "관계를 설정하고 보냈는데 왜 자꾸 바꾸는 거야") */
+    R.note(!/(^|\s)바꾸기(\s|$)/.test(s1.text), '둘이서 결과 화면에 사이 [바꾸기]가 없다');
     /* ⑤ 같은 기기에서 다시 열기 */
     await p.evaluate(function(){ window.__INYEON_TEST__.openSavedGroup('testgroup123'); });
     await wait(1500);
