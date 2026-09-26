@@ -71,6 +71,7 @@ const R = reporter('보낸 분 화면의 사이');
     R.note(s2.route === 'compat' && /궁합 풀이 읽어보기/.test(s2.text), '둘이서 결과 화면으로 열림', s2.route);
     R.note(!/궁합 보기 · 모임|이 모임에서 나가기/.test(s2.text), "'모임' 화면 글이 없음");
     R.note(/사주 × 성격유형으로 엮어 보면/.test(s2.text), '엮기 칸이 있음');
+    R.note(!/다른 사람을 더 초대하고 싶다면/.test(s2.text), "둘이서 결과에 '다른 사람을 더 초대하고 싶다면' 없음");
     R.note(s2.rel.rel === 'lover' && s2.rel.set, '두 분 모임을 열면 사이 연인', JSON.stringify(s2.rel));
     R.note(/연인 사이로 봤어요/.test(s2.chip), "칩 '연인 사이로 봤어요'", s2.chip);
     R.note(!/전체 순위/.test(s2.text), "두 분이면 '전체 순위' 없음");
