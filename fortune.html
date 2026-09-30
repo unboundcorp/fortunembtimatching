@@ -595,6 +595,9 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + env(safe-area-inset-bottom, 0p
 .btn-ghost{background:var(--btn-soft);color:var(--ink);border-color:transparent;}
 .btn-ghost:hover{background:var(--btn-soft-hi);border-color:transparent;}
 .btn-block{width:100%;}
+/* 2026-09-30 — 결제로 이어지는 권유 상자. 낙관색 옅은 면 + 같은 색 괘선. 새 색을 만들지 않는다(--gold-soft · --brand). */
+.scroll-card.pitch-card{background:var(--gold-soft);border-color:rgba(175,43,37,.28);}
+.pitch-lead{font-size:.95rem;font-weight:600;color:var(--brand);line-height:1.65;margin:4px 0 14px;}
 /* 2026-09-26 대표님 지시 "너비 안 맞는 버튼 다 맞춰라" — 한 줄에 선 단추들은 같은 너비로 줄을 채운다.
    글이 길어 한 줄에 안 들어가면 다음 줄로 넘어가 그 줄을 채운다. */
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;}
@@ -20988,8 +20991,11 @@ function renderCompatSummary(p, draft){
   /* ★ R98 — 궁합 풀이(AI가 쓰는 13섹션)로 들어가는 문. 상세 버튼 세 개보다 위에 둔다.
      이게 이 상품의 본체이고, 아래 세 개는 그림·표로 보는 곁가지다. */
   var storyCard = sectionCard(['두 분만을 위한 긴 풀이']);
-  storyCard.appendChild(el('p',{class:'section-sub'},
-    [COMPAT_SECTION_TITLES.length+'개 이야기로, 두 분의 사주 여덟 글자와 성격유형을 함께 읽어 새로 써요. 앞 '+FREE_SECTION_COUNT+'개는 그냥 볼 수 있어요.']));
+  /* ★ 2026-09-30 대표님 지시 — "결제 유도 부분 강조하자 텍스트 박스 색 바꾸고" · "13개 이야기라고 하니깐 뭐가 13개인지 몰겠다".
+       상자는 낙관색 옅은 면(pitch-card), 문장은 대표님이 주신 그대로. 1:1 결과와 모임 쌍 상세가 같은 모양이다. */
+  storyCard.classList.add('pitch-card');
+  storyCard.appendChild(el('p',{class:'pitch-lead'},
+    ['첫인상부터 돈과 생활 습관까지!', el('br'), '두 분의 궁합을 사주와 성격유형을', el('br'), '기반으로 더 깊게 알아봐요.']));   /* 뜻 단위 줄바꿈(2026-09-14 규칙) */
   storyCard.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ COMPAT_SUB='story'; render(); scrollToTopNow(); }},
     ['궁합 풀이 읽어보기', dirIcon('right')]));
   box.appendChild(storyCard);
@@ -23878,8 +23884,11 @@ function renderPairDeep(){
   view.appendChild(buildDeepCompatBlock(pr.a.person, pr.b.person, pr.res));
 
   var storyCard = sectionCard(['두 분만을 위한 긴 풀이']);
-  storyCard.appendChild(el('p',{class:'section-sub'},
-    [COMPAT_SECTION_TITLES.length+'개 이야기로, 두 분의 사주 여덟 글자와 성격유형을 함께 읽어 새로 써요.']));
+  /* ★ 2026-09-30 대표님 지시 — "결제 유도 부분 강조하자 텍스트 박스 색 바꾸고" · "13개 이야기라고 하니깐 뭐가 13개인지 몰겠다".
+       상자는 낙관색 옅은 면(pitch-card), 문장은 대표님이 주신 그대로. 1:1 결과와 모임 쌍 상세가 같은 모양이다. */
+  storyCard.classList.add('pitch-card');
+  storyCard.appendChild(el('p',{class:'pitch-lead'},
+    ['첫인상부터 돈과 생활 습관까지!', el('br'), '두 분의 궁합을 사주와 성격유형을', el('br'), '기반으로 더 깊게 알아봐요.']));   /* 뜻 단위 줄바꿈(2026-09-14 규칙) */
   storyCard.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ PAIR_DEEP.story=true; render(); }},
     ['궁합 풀이 읽어보기', dirIcon('right')]));
   view.appendChild(storyCard);
