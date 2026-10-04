@@ -1529,23 +1529,13 @@ button.today-iljin:active{opacity:.7;}
    .btn이 inline-flex + gap:8px이므로 별도 여백 없이 라벨과 나란히 놓인다. */
 .dir-icon{width:1.05em;height:1.05em;flex:none;vertical-align:-.16em;color:currentColor;opacity:.85;}
 .locked-icon .lock-icon{width:1.6rem;height:1.6rem;margin-right:0;vertical-align:middle;}
-.locked-title{font-size:1.08rem;font-weight:700;color:var(--ink);margin-bottom:6px;}
+.locked-title{font-size:1.08rem;font-weight:700;color:var(--ink);margin-bottom:6px;word-break:keep-all;text-wrap:balance;}
 .locked-desc{font-size:.88rem;font-weight:600;color:var(--brand);margin-bottom:6px;line-height:1.6;}
 .locked-from{font-size:.78rem;color:var(--ink-faint);margin-bottom:12px;}
 /* ★ 2026-09-26 — 걸이 문장. 그 사람 계산에서 나온 말이라 눈에 먼저 들어와야 한다. */
 .locked-hook{font-size:.92rem;color:var(--ink);line-height:1.75;text-align:left;background:var(--panel-3);border-radius:10px;padding:12px 14px;margin:2px 0 14px;}
 .locked-hook b{color:var(--brand);font-weight:700;}
 .locked-hook .hook-cut{display:block;margin-top:6px;color:var(--ink-dim);font-weight:600;}
-.compat-upsell{margin-top:20px;padding:20px 18px;border:1px solid rgba(31,28,23,0.144);border-radius:var(--r-lg);background:var(--gold-soft);text-align:center;}
-.compat-upsell p{font-size:.86rem;color:var(--ink-dim);line-height:1.7;margin-bottom:12px;}
-/* ★ R84 — 결제 전 "무엇을 받는지" 목록. 가운데 정렬 카드 안이지만 목록만은 왼쪽으로 맞춘다 —
-   여러 줄짜리 항목을 가운데 정렬하면 줄머리가 들쭉날쭉해서 훑어 읽을 수가 없다. */
-.upsell-opens{list-style:none;padding:0;margin:0 0 14px;text-align:left;}
-.upsell-opens li{position:relative;padding-left:16px;font-size:.87rem;font-weight:600;
-  color:var(--ink);line-height:1.75;margin-top:6px;}
-.upsell-opens li:first-child{margin-top:0;}
-.upsell-opens li::before{content:'';position:absolute;left:2px;top:.72em;width:5px;height:5px;
-  border-radius:50%;background:var(--gold);}
 
 /* 결제 화면 */
 .pay-product{text-align:center;padding:6px 0 14px;border-bottom:1px solid rgba(31,28,23,0.144);margin-bottom:14px;}
@@ -1554,7 +1544,9 @@ button.today-iljin:active{opacity:.7;}
 /* 값 아래 작은 줄 — 기간·결제 방식. 값과 한 줄에 붙이면 큰 글씨가 두 줄로 접힌다. */
 .pay-price-sub{font-size:.86rem;color:var(--ink-dim);margin:0 0 6px;}
 .pay-desc{font-size:.85rem;color:var(--ink-dim);line-height:1.6;}
-.pay-pitch{font-size:.98rem;font-weight:700;color:var(--ink);margin-top:10px;line-height:1.5;}
+.pay-pitch{font-size:.98rem;font-weight:700;color:var(--ink);margin-top:10px;line-height:1.5;word-break:keep-all;text-wrap:balance;}
+/* ★ 2026-10-04 QA — 단추 두 줄 글자는 낱말 중간에서 끊지 않는다('한 / 번에'가 났다). */
+.btn-lines .l1,.btn-lines .l2{word-break:keep-all;text-wrap:balance;}
 .pay-desc-pitch{color:var(--brand);font-weight:600;}
 /* ★ R84 — "결제하면 무엇이 열리는가"를 따로 떼어 맨 앞에 둔다 (테스터 지적, 2026-08-14:
    "결제 후 뭘 볼 수 있는지가 잘 안 읽혀서 어려워요").
@@ -5896,7 +5888,7 @@ var PRODUCTS = {
      ★ '올해'라고 쓰지 마라 — 고른 해가 올해가 아닐 수 있다. 사는 순간 그 해의 것이다. */
   saju_full:    { id:'saju_full',    name:'사주 풀이 전체 해석', price:1900, kind:'once',
                   desc:'금전운 · 건강운 · 월별 운세\n인생 흐름(10년 대운)까지!',
-                  opens:['사주 풀이 13개 섹션 — 성격·재물·직업·관계·건강',
+                  opens:['사주 풀이 전체 — 성격·재물·직업·관계·건강',
                          '고른 해의 1월부터 12월까지 달마다의 흐름',
                          '10년 단위 흐름(대운)을 구간마다 풀어 쓴 글'] },
   /* ★ 2026-09-21 대표님 지시 — '해마다 흐름이 달라서 연도마다 따로 결제예요' 줄을 **뺐습니다.**
@@ -5909,7 +5901,7 @@ var PRODUCTS = {
                      대표님 지시로 다시 뺐다("암시 문장은 빼자, 너무 상업적으로").
                      여기에 재구매·갱신을 부추기거나 암시하는 줄을 새로 넣지 마라.
                      이 목록은 '결제하면 무엇이 열리는가'만 적는 자리다. */
-                  opens:['성격유형 풀이 13개 섹션',
+                  opens:['성격유형 풀이 전체',
                          '강점과 그림자, 관계에서 반복되는 패턴',
                          '앞으로 어느 쪽으로 크면 좋을지'] },
   /* ★ 2026-09-07 대표님 지시 — 1,900 → 990. 그리고 **한 쌍이 990원**이다.
@@ -5922,7 +5914,7 @@ var PRODUCTS = {
                   /* ★ R85-e (QA 지적 F-3) — '점수 다섯 항목이 각각 왜 그렇게 나왔는지'는
                      이미 무료 요약 화면에 다 있다(막대 다섯 개 + 접이식 근거 패널, 잠금 없음).
                      결제 전 목록에 적어 두면 이미 본 것을 다시 파는 셈이다. 실제로 열리는 것만 적는다. */
-                  opens:['두 분만을 위해 새로 쓰는 궁합 풀이 13개 섹션',
+                  opens:['두 분만을 위해 새로 쓰는 궁합 풀이 — 첫인상부터 돈과 생활 습관까지',
                          '두 사람의 기운이 어디서 맞물리고 어디서 부딪히는지 — 자세한 풀이',
                          '연애·우정·함께 있을 때·갈등 네 상황별 성격유형 궁합 해석',
                          '사주로 본 나의 연애 성향',
@@ -5946,7 +5938,7 @@ var PRODUCTS = {
                      돈을 내신 뒤에야 알게 되는 조건이 됩니다.
                      ★ 이것은 **사실 고지**이지 '다음에 또 사시라'는 말이 아닙니다.
                        사주 결제창의 "해마다 흐름이 달라서…"와 같은 자리입니다. */
-                  opens:['사주 풀이 · 성격유형 풀이 · 궁합 상세 전부',
+                  opens:['사주 풀이 · 성격유형 풀이 · 궁합 상세',
                          '고른 해가 끝날 때까지 언제든 만들면 돼요',
                          '사주 풀이는 고른 해의 것이에요 (성격유형 · 궁합은 해와 상관없어요)'] }
 };
@@ -5984,7 +5976,7 @@ function aiQuotaText(product){
   /* ★ 2026-09-07 — 문장을 통째로 돌려준다. 예전에는 부르는 쪽이 '까지 만드실 수 있어요'를
      붙였는데, 같은 상품을 또 사면 늘어나는 지금은 '까지'가 거짓이 된다("더 살 수 없다"로 읽힌다).
      건별은 '이번 결제로 …을', 이용권은 '기간 중 …까지'로 말이 달라서 한쪽 틀에 안 맞는다. */
-  if(product.kind === 'pass') return '이용권 기간에는 상품마다 새 해석 ' + n + '편까지 만드실 수 있어요.';
+  if(product.kind === 'pass') return '이용권 기간에는 상품마다 새 해석 ' + n + '편까지 만들 수 있어요.';
   /* ★ 2026-09-21 대표님 지시 — 단품은 편수를 세지 않고 무엇이 만들어지는지로 말합니다.
        "이번 결제로 새 해석 1편을 만드실 수 있어요" → "결제하면 사주 풀이 전체 해석이 만들어져요".
      이름은 연도 없는 기본 이름(PRODUCTS)을 씁니다 — 결제창 제목이 이미 '· 2027년'을 답니다.
@@ -7486,7 +7478,7 @@ function productPitch(product){
   }
   if(base === 'mbti_full') return '내 성격유형을 끝까지 파헤쳐 봐요';
   if(base === 'compat_full') return '두 분 궁합을 끝까지 알아 봐요';
-  return '사주 · 성격유형 · 궁합을 한 번에 깊게 알아 봐요';
+  return '이용권 하나로 전부 깊게 알아 봐요';   /* ★ 2026-10-04 QA — '…알아 / 봐요' 로 접히고, 아래 두 줄과 '사주 · 성격유형 · 궁합'이 세 번 겹쳤다 */
 }
 function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles, hookHtml){
   var wrap = el('div',{class:'locked-block'});
@@ -7520,11 +7512,13 @@ function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles, hookHtml){
      '더보기'는 아래 탭 메뉴의 이름이기도 해서, 1,900원짜리 결제 버튼이 메뉴 여는 버튼으로 읽힌다.
      게다가 같은 상품(궁합)인데 요약 화면에서는 '궁합 상세 열기 · 1,900원'이라 이름이 둘이었다.
      상품 이름을 그대로 써서 한 가지로 통일한다. */
+  /* ★ 2026-10-04 QA — 한 줄로 쓰면 '…2026년 / 열기 · 1,900원'처럼 접혀서 낱말 중간이 끊겼다(320~390 전 폭).
+       상품 이름과 값을 두 줄(btnLines)로 나눠 줄이 끊기는 자리를 우리가 정한다. */
   var btn = el('button',{class:'btn btn-primary btn-block', onclick:function(){ openPaywall(product); }},
-    [product.name+' 열기 · '+formatWon(product.price)]);
+    [btnLines(PRODUCTS[splitProductId(product.id).base].name, (product.year ? product.year+'년 · ' : '')+formatWon(product.price)+'으로 열기')]);
   cta.appendChild(btn);
   cta.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:function(){ openPaywall(passProduct()); }},
-    ['전체 이용권 '+formatWon(PRODUCTS.premium_pass.price)+'으로 한 번에 열기']));
+    [btnLines('전체 이용권으로 열기', formatWon(PRODUCTS.premium_pass.price)+' · 세 가지 한 번에')]));
   var gap = singleProductsTotal() - PRODUCTS.premium_pass.price;
   if(gap > 0){
     cta.appendChild(el('p',{class:'locked-compare'},[
@@ -7658,7 +7652,7 @@ function openPaywall(product){
     }
     if(AI_QUOTA.pass > 1 && product.kind === 'pass'){
       q.appendChild(el('span',{class:'pay-quota-hint'},[
-        '다른 분 사주를 봐드리고 싶으면 화면 맨 위 이름 고르개에서 [＋ 다른 사람 추가]를 눌러 프로필을 만드시면 돼요. 궁합은 프로필 없이 링크만 보내셔도 돼요.'
+        '다른 분 사주를 봐드리고 싶으면 화면 맨 위 이름 고르개에서 [＋ 다른 사람 추가]를 눌러 프로필을 만들면 돼요. 궁합은 프로필 없이 링크만 보내도 돼요.'
       ]));
     }
     body.appendChild(q);
@@ -7669,7 +7663,7 @@ function openPaywall(product){
   body.appendChild(list);
   if(benefitGate.live){
     body.appendChild(el('p',{class:'pay-legal-line'},[
-      '결제가 끝나면 영수증 번호를 보여드립니다. 이 번호가 나중에 이용권을 되찾는 유일한 열쇠이니 브라우저 밖에도 저장해 주세요.'
+      '결제가 끝나면 영수증 번호를 보여드려요. 카카오 계정으로 찾지 못할 때 이 번호로 되찾을 수 있으니 따로 적어 두세요.'
     ]));
   }
 
@@ -8711,7 +8705,7 @@ function renderFaq(){
     var GROUPS = [
       ['서비스', [
         ['둘이서 보는 궁합과 여럿이 보는 궁합은 뭐가 다른가요?',
-         '궁합 보기 맨 위에서 [둘이서 보기 / 여럿이서 보기]를 고를 수 있어요. 둘이서 보기는 두 분의 점수와 13개 이야기를 자세히 풀어드리고, 여럿이서 보기는 모인 사람들 사이의 인연을 한 그림에 함께 보여드려요. 링크 하나로 최대 '+GC_MAX+'명까지 궁합을 확인할 수 있어요.',
+         '궁합 보기 맨 위에서 [둘이서 보기 / 여럿이서 보기]를 고를 수 있어요. 둘이서 보기는 두 분의 점수와 긴 풀이를 자세히 풀어드리고, 여럿이서 보기는 모인 사람들 사이의 인연을 한 그림에 함께 보여드려요. 링크 하나로 최대 '+GC_MAX+'명까지 궁합을 확인할 수 있어요.',
          '둘 다 링크로만 모아요. 받은 분이 자기 정보를 직접 넣어요 — 각자 본인이 넣은 값으로 봐야 정확하기 때문이에요.',
          '고르실 수 있는 사이도 달라요. 둘이서는 친구·연인·직장 동료·가족 네 가지가 다 되고, 여럿이서는 연인을 뺀 세 가지예요. 연인은 두 분 사이를 가리키는 말이라 여러 명이 모인 자리에는 맞지 않아서예요.'],
         ['친구·연인·직장 동료·가족은 왜 고르나요?',
@@ -8719,7 +8713,7 @@ function renderFaq(){
         ['\'내 사주\'는 무엇인가요?',
          '태어난 날과 시각으로 사주 여덟 글자를 계산해, 타고난 기운(오행)과 10년 단위 흐름(대운)까지 보여드리는 화면이에요. 절기와 진태양시까지 따져서 뽑아요.'],
         ['\'상세 해석\'은 무엇인가요?',
-         '기본 풀이보다 더 깊이 들어간 유료 콘텐츠예요. 사주 풀이는 13개 섹션 전체와 올해 월별 흐름·대운 구간별 상세가 열리고, 궁합은 사주 궁합·성격유형 궁합 상세가 열려요. 무엇이 열리는지는 결제 전에 화면에 적어드려요.'],
+         '기본 풀이보다 더 깊이 들어간 유료 콘텐츠예요. 사주 풀이는 전체 이야기와 올해 월별 흐름·대운 구간별 상세가 열리고, 궁합은 사주 궁합·성격유형 궁합 상세가 열려요. 무엇이 열리는지는 결제 전에 화면에 적어드려요.'],
         ['생시(태어난 시간)는 꼭 넣어야 하나요?',
          '아니요, 선택이에요. 모르면 "시간 모름"을 고르면 돼요. 그러면 시주를 뺀 여섯 글자로 계산하고, 그 사실을 화면에 함께 적어드려요. 다만 시각을 알면 결과가 더 정확해져요.'],
         ['결과에 나오는 캐릭터가 제 띠와 달라요',
@@ -10271,8 +10265,8 @@ function renderGatedSections(view, sections, product, opts){
     var remain = sections.length - freeCount;
     var lockedTitles = sections.slice(freeCount).map(function(x){ return x.title.split(' · ')[0]; });
     var block = lockedBlock(product, teaser ? '<p>'+escapeHtml(teaser)+'…</p>' : '',
-                            next.title.split(' · ')[0], lockedTitles, opts.hook || '');
-    block.insertBefore(el('div',{class:'locked-count'},['남은 '+remain+'개 섹션이 잠겨 있어요']), block.firstChild);
+                            next.title.split(' · ')[0], null, opts.hook || '');   /* ★ 2026-10-04 QA — 바로 위 목차가 잠긴 제목을 이미 보여 준다 */
+    block.insertBefore(el('div',{class:'locked-count'},['목차에서 잠긴 이야기 '+remain+'개가 이어져요']), block.firstChild);
     view.appendChild(block);
   }
 }
@@ -13574,7 +13568,10 @@ function buildTodaySummaryRows(fortune){
   } else if(sc[worst] < 60){
     out.push({kind:'care', tag:labelOf[worst], text:'대신 ' + TODAY_CAT_LOW[worst]});
   } else {
-    out.push({kind:'care', tag:labelOf[worst], text:'다섯 중에서는 ' + labelOf[worst] + '이 상대적으로 낮은데, 낮다고 해도 나쁘다는 뜻은 아니에요.'});
+    /* ★ 2026-10-04 QA — 동점이 있으면 하나만 짚지 않는다(금전 68 · 직장 68인데 '금전운이 낮은데'라고만 했다). */
+    var lows = keys.filter(function(k){ return sc[k] === sc[worst]; }).map(function(k){ return labelOf[k]; });
+    var lowText = lows.length > 1 ? lows.slice(0,-1).join(', ') + josaOnly(lows[lows.length-2], '과', '와') + ' ' + lows[lows.length-1] : lows[0];
+    out.push({kind:'care', tag:labelOf[worst], text:'다섯 중에서는 ' + lowText + josaOnly(lows[lows.length-1], '이', '가') + ' 상대적으로 낮은데, 낮다고 해도 나쁘다는 뜻은 아니에요.'});
   }
 
   /* ④ 마무리 — 오늘 기운이 내게 어떻게 닿는지(앞)와 그래서 뭘 하면 좋은지(뒤)를 한 문장으로.
@@ -14142,6 +14139,21 @@ function mbtiAxisLines(a, b){
 }
 
 /* 궁합 결과 하나를 받아 "잘 맞는 점 / 조심할 점"을 만든다. 근거는 전부 이미 계산된 값이다. */
+/* 문장 끝에 마침표가 없으면 붙인다. */
+function endDot(t){ t = String(t || '').trim(); return (!t || /[.!?…]$/.test(t)) ? t : t + '.'; }
+/* 궁합 화면 문장 속 맨몸 이름에 '님'을 붙이고 조사를 '님' 받침에 맞춘다(엮기 줄과 호칭을 맞춘다). */
+function pairNim(t, pA, pB){
+  t = String(t || '');
+  [pA && pA.name, pB && pB.name].forEach(function(n){
+    n = String(n || '').trim(); if(!n) return;
+    var esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    t = t.replace(new RegExp(esc + '(?!님)(이|가|은|는|을|를|과|와|의)?(?=[\\s,.]|$)', 'g'), function(m, j){
+      var map = {'이':'이','가':'이','은':'은','는':'은','을':'을','를':'을','과':'과','와':'과','의':'의'};
+      return n + '님' + (j ? map[j] : '');
+    });
+  });
+  return t;
+}
 function buildPairReasons(pA, pB, res){
   var good = [], care = [];
   /* ★ 2026-09-21 — 문장마다 어디서 온 말인지(성격·사주·띠)를 나란히 적어 둔다(goodSrc·careSrc).
@@ -14151,6 +14163,10 @@ function buildPairReasons(pA, pB, res){
   function pushCare(src, t){ care.push(t); careSrc.push(src); }
   function unshiftGood(src, t){ good.unshift(t); goodSrc.unshift(src); }
   var A = pA.name || '이쪽', B = pB.name || '상대방';
+  /* ★ 2026-10-04 QA — elemRel 은 마침표 없이 끝나는 갈래가 있어 뒤 문장과 붙어 나왔다("흐름이에요 한쪽이…").
+     또 이름이 맨몸('테스트가')이라, 같은 카드의 엮기 줄('테스트님은')과 호칭이 갈렸다.
+     ★ elemRel 자체는 AI 재료(dayStemDetail)라 고치면 저장 열쇠가 바뀐다 — 여기 화면 문장에서만 다듬는다. */
+  var sajuLine = function(t){ return pairNim(endDot(t), pA, pB); };
 
   /* ① MBTI 네 축 */
   var ax = mbtiAxisLines(pA.mbti, pB.mbti);
@@ -14163,11 +14179,11 @@ function buildPairReasons(pA, pB, res){
   /* ② 오행 — 사주에서 두 사람의 일간이 어떤 관계인지 */
   var st = res.saju && res.saju.elemTerm ? res.saju.elemTerm : '';
   if(/상생/.test(st)){
-    pushGood('사주', res.saju.elemRel + ' 한쪽이 애쓰지 않아도 기운이 흐르는 방향이라, 오래 볼수록 편해지는 조합이에요.');
+    pushGood('사주', sajuLine(res.saju.elemRel) + ' 한쪽이 애쓰지 않아도 기운이 흐르는 방향이라, 오래 볼수록 편해지는 조합이에요.');
   } else if(/비화/.test(st)){
-    pushGood('사주', res.saju.elemRel + ' 결이 닮아 처음부터 말이 잘 통하는 대신, 부족한 부분도 같이 비어 있을 수 있어요.');
+    pushGood('사주', sajuLine(res.saju.elemRel) + ' 결이 닮아 처음부터 말이 잘 통하는 대신, 부족한 부분도 같이 비어 있을 수 있어요.');
   } else if(/상극/.test(st)){
-    pushCare('사주', res.saju.elemRel + ' 서로를 자극하는 기운이라 짧게는 재밌고 길게는 지칠 수 있어요. 다툰 날은 결론을 미루고 하루 자고 이야기하는 편이 좋아요.');
+    pushCare('사주', sajuLine(res.saju.elemRel) + ' 서로를 자극하는 기운이라 짧게는 재밌고 길게는 지칠 수 있어요. 다툰 날은 결론을 미루고 하루 자고 이야기하는 편이 좋아요.');
   }
 
   /* ③ 일지 — 태어난 날의 아래 글자끼리 맺는 관계.
@@ -18743,7 +18759,7 @@ function renderHomeDash(p){
     function(){ setMode('compat'); ROUTE='compat'; render(); }));
 
   var opened = hasAccess(sajuProductId());
-  view.appendChild(hdRow('내 사주 전체 풀이','13개 섹션 · 월별 운세 · 대운 구간',
+  view.appendChild(hdRow('내 사주 전체 풀이','성격·재물·건강 · 월별 운세 · 대운 구간',
     el('span',{class:'price'+(opened?' open':'')},[opened ? '열려 있어요' : formatWon(sajuProduct().price)]),
     function(){ setMode('self'); ROUTE='report13'; render(); }, true));
 
@@ -18933,7 +18949,7 @@ function crossSell(kind){
   card.appendChild(el('p',{class:'cs-desc'},[
     toCompat
       ? '링크 하나만 보내면 상대가 직접 넣고 바로 결과가 나와요. 최대 '+GC_MAX+'명까지 함께 볼 수 있어요.'
-      : '타고난 사주와 성격 유형을 함께 읽어드려요. 생년월일만 있으면 바로 나와요.'
+      : '타고난 사주와 성격유형을 함께 읽어드려요. 지금 프로필 그대로 바로 볼 수 있어요.'
   ]));
   card.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){
     if(toCompat){ setMode('compat'); ROUTE='compat'; }
@@ -19408,9 +19424,10 @@ function renderSaju(){
     li.appendChild(Array.isArray(body) ? el('span',{class:'dw-txt'},body) : el('span',Object.assign({class:'dw-txt'},body)));
     peakList.appendChild(li);
   }
-  dwRow('best','가장 큰 때',{html:'지금 계산으로는 <strong>'+dwBest.startAge+'세~'+dwBest.endAge+'세</strong>가 기운이 가장 크게 열리는 구간이에요. 정해진 결과가 아니라, 아래 네 가지만 놓고 봤을 때 상대적으로 높다는 뜻이에요.'});
-  dwRow('now','지금',['지금은 '+ageNow+'세 · '+dwCur.startAge+'세~'+dwCur.endAge+'세 구간(강도 '+dwCur.total+')을 지나고 있어요.'+
-    (dwStr.bestIdx===curIdx ? ' 지금 지나는 구간이 그 구간이에요.' : (dwStr.bestIdx>curIdx ? ' 가장 큰 구간은 아직 앞에 있어요.' : ' 가장 큰 구간은 이미 지나온 자리예요.'))]);
+  dwRow('best','가장 큰 때',{html:'이 계산으로는 <strong>'+dwBest.startAge+'세~'+dwBest.endAge+'세</strong>가 기운이 가장 크게 열리는 구간이에요. 정해진 결과가 아니라, 아래 네 가지만 놓고 봤을 때 상대적으로 높다는 뜻이에요.'});
+  /* ★ 2026-10-04 QA — [지금] 칩 · '지금은' · '지금 지나는 구간'으로 '지금'이 세 번 겹쳤다. 나이는 구간 첫해와 다를 때만 붙인다. */
+  dwRow('now','지금',[dwCur.startAge+'세~'+dwCur.endAge+'세 구간(강도 '+dwCur.total+')을 지나고 있어요'+(ageNow !== dwCur.startAge ? ' (올해 '+ageNow+'세)' : '')+'.'+
+    (dwStr.bestIdx===curIdx ? ' 기운이 가장 크게 열리는 바로 그 구간이에요.' : (dwStr.bestIdx>curIdx ? ' 가장 큰 구간은 아직 앞에 있어요.' : ' 가장 큰 구간은 이미 지나온 자리예요.'))]);
   /* 전체 최고 구간이 이미 지나갔거나 지금이면, 앞으로 남은 구간 중 가장 큰 곳도 함께 알려준다.
      "가장 컸던 때는 이미 지났다"만 남기면 정작 알고 싶은 다음 자리가 안 보인다. */
   if(dwStr.bestIdx <= curIdx && curIdx < dwStr.list.length-1){
@@ -19781,7 +19798,7 @@ function renderReport13(){
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='saju'; render(); }},[dirIcon('left'), '내 사주로 돌아가기']));
   /* ★ 2026-09-21 대표님 지시 — 제목 오른쪽의 '十三篇'(장식 · 13장이라는 뜻)을 뺐다. 바로 아래 줄이 '13개 이야기'라고 이미 말한다. */
   view.appendChild(screenHead(ownerLabel(p.name)+' 사주 풀이 · '+VIEW_YEAR+'년', {
-    sub:'13개 이야기로 이어지는 긴 풀이예요. 목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.'}));
+    sub:'목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.'}));
   var yp = buildYearPicker(); if(yp) view.appendChild(yp);
 
   var sajuHost = el('div',{});
@@ -19819,7 +19836,7 @@ function renderMbtiReport13(){
   var view=el('div',{class:'view'});
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='report'; render(); }},[dirIcon('left'), '성향 리포트로 돌아가기']));
   view.appendChild(screenHead(ownerLabel(p.name)+' 성격유형 풀이', {
-    sub:'13개 이야기로 이어지는 '+p.mbti+' 풀이예요. 목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.'}));
+    sub:'목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.'}));
 
   /* R19 — 이 화면의 주인공 캐릭터. 그림과 한 줄은 무료이고, 아래 13섹션 본문의 잠금 규칙은 그대로다. */
   var mbtiRepCharKey = charKeyForMbti(p.mbti);
@@ -20839,7 +20856,7 @@ function renderCompatStory(p, draft){
   box.appendChild(compatBackNav());
   box.appendChild(pageHead('궁합 상세 · 궁합 풀이',
     nameOr(p.name)+' × '+nameOr(r.pB.name,'상대')+' 궁합 풀이',
-    COMPAT_SECTION_TITLES.length+'개 이야기로 이어지는 긴 풀이예요. 목차를 눌러 원하는 부분으로 바로 갈 수 있어요.',
+    '목차를 눌러 원하는 부분으로 바로 갈 수 있어요.',
     {marginTop:'14px'}));
   box.appendChild(buildCompatStoryBody(p, r.pB, r.res));
   return box;
@@ -20998,6 +21015,13 @@ function renderCompatSummary(p, draft){
     ['첫인상부터 돈과 생활 습관까지!', el('br'), '두 분의 궁합을 사주와 성격유형을', el('br'), '기반으로 더 깊게 알아봐요.']));   /* 뜻 단위 줄바꿈(2026-09-14 규칙) */
   storyCard.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ COMPAT_SUB='story'; render(); scrollToTopNow(); }},
     ['궁합 풀이 읽어보기', dirIcon('right')]));
+  /* ★ 2026-10-04 QA — 이 상자 바로 아래에 990원 '상세 해석에서는 이걸 볼 수 있어요' 카드가 또 있어서
+       같은 상품을 한 화면에서 두 번 권했다. 그 카드를 지우고 결제 단추를 이 상자 안으로 옮겼다.
+       무엇이 열리는지 목록은 결제창(openPaywall)이 그대로 보여 준다. */
+  if(!hasAccess(PRODUCTS.compat_full.id)){
+    storyCard.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:function(){ openPaywall(PRODUCTS.compat_full); }},
+      [btnLines(PRODUCTS.compat_full.name+' 바로 열기', formatWon(PRODUCTS.compat_full.price))]));
+  }
   box.appendChild(storyCard);
 
   /* ⑤ 상세(유료) — 무료/유료 경계는 예전과 같다. 버튼 두 개도 그대로 둔다. */
@@ -21006,7 +21030,7 @@ function renderCompatSummary(p, draft){
   sajuCol.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['두 사람의 기운이 어떻게 맞물리는지, 어떤 자리에서 부딪히는지 문장으로 풀어드려요.']));
   sajuCol.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='saju'; render(); scrollToTopNow(); }},[compatLockMark(), '사주 궁합 자세히 보기', dirIcon('right')]));
   var mbtiCol = sectionCard(['성격으로 더 보기']);
-  mbtiCol.appendChild(el('p',{},[r.res.categories.chemistry]));
+  mbtiCol.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},[r.res.categories.chemistry]));
   mbtiCol.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='mbti'; render(); scrollToTopNow(); }},[compatLockMark(), '성격유형 궁합 자세히 보기', dirIcon('right')]));
   sumGrid.appendChild(sajuCol); sumGrid.appendChild(mbtiCol);
   box.appendChild(sumGrid);
@@ -21014,20 +21038,6 @@ function renderCompatSummary(p, draft){
   /* 버튼 이름도 일상어로. '합충선' 같은 말은 이 화면(무료 요약)에 남기지 않는다. */
   box.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ COMPAT_SUB='visual'; render(); scrollToTopNow(); }},[compatLockMark(), btnLines('그림으로 한눈에 보기','기운 균형 · 인연 매듭 · 성격유형 사분면')]));
 
-  if(!hasAccess(PRODUCTS.compat_full.id)){
-    /* 무료로 어디까지 본 것인지, 결제하면 무엇이 더 열리는지 요약 화면에서 바로 알려준다.
-       ★ 여기도 용어를 쓰지 않는다 — 무엇을 사는 건지는 "무엇을 알게 되는지"로 적는다. */
-    /* ★ R84 — 여기도 "무엇을 받는지"를 목록으로 보여준다 (테스터 지적, 2026-08-14).
-       예전에는 회색 글씨 두 문장이 가운데 정렬로 붙어 있어 결제 버튼 위 장식처럼 읽혔다.
-       결제창(openPaywall)과 같은 목록을 쓰므로 두 화면이 서로 다른 약속을 할 일이 없다. */
-    var upsell = el('div',{class:'compat-upsell'});
-    upsell.appendChild(el('h3',{style:'margin:0 0 10px;font-size:1rem;'},['상세 해석에서는 이걸 볼 수 있어요']));
-    var upList = el('ul',{class:'upsell-opens'});
-    (PRODUCTS.compat_full.opens||[]).forEach(function(t){ upList.appendChild(el('li',{},[t])); });
-    upsell.appendChild(upList);
-    upsell.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openPaywall(PRODUCTS.compat_full); }},[PRODUCTS.compat_full.name+' 열기 · '+formatWon(PRODUCTS.compat_full.price)]));
-    box.appendChild(upsell);
-  }
 
   /* ★ 2026-09-26 대표님 지시 — 두 단추 너비를 맞추고(btn-row) '다시 보기' → '다른 사람과도 궁합 보기'.
        누르면 궁합 탭 둘이서 첫 화면으로 가고 맨 위로 올린다. */
@@ -22547,7 +22557,7 @@ function buildCompatReport13(pA, pB, res){
        + '<p>'+escapeHtml(compatWeightSentence(res, '')) +'</p>'
        + '<p>'+escapeHtml(compatTierLine(res, pA, pB))+'</p>');
   add(1, '<p>'+escapeHtml(res.categories.chemistry)+'</p>'
-       + '<p>사주로 보면 '+escapeHtml(rs.elemRel||'')+'</p>');
+       + '<p>사주로 보면 '+escapeHtml(pairNim(rs.elemMean || rs.elemRel || '', pA, pB))+'</p>');   /* ★ 2026-10-04 QA — 3장 '잘 맞는 자리'와 같은 문장이 두 번 나와 elemMean 으로 바꿈 */
   add(2, '<p>잘 맞는 자리</p>' + listOf(reasons.good, '두드러지게 맞는 자리는 아직 안 보여요.')
        + '<p>어긋나는 자리</p>' + listOf(reasons.care, '크게 부딪히는 자리는 안 보여요.'));
 
@@ -23873,7 +23883,7 @@ function renderPairDeep(){
        1:1 궁합에만 문이 있어서 여기서는 13개 이야기로 갈 길이 아예 없었다.
        본문은 buildCompatStoryBody 하나를 두 화면이 같이 쓴다. */
     view.appendChild(pageHead('심층 궁합 분석 · 궁합 풀이', pr.a.name+' × '+pr.b.name+' 궁합 풀이',
-      COMPAT_SECTION_TITLES.length+'개 이야기로 이어지는 긴 풀이예요. 목차를 눌러 원하는 부분으로 바로 갈 수 있어요.',
+      '목차를 눌러 원하는 부분으로 바로 갈 수 있어요.',
       {marginTop:'10px'}));
     view.appendChild(buildCompatStoryBody(pr.a.person, pr.b.person, pr.res));
     main.appendChild(autoTermify(view));
@@ -26230,7 +26240,7 @@ function openMoreSheet(){
    궁합 요약 화면의 결제 버튼("궁합 상세 열기 · 1,900원")은 .locked-cta 밖에 있어서
    이 회피 장치가 안 걸렸고, 떠 있는 단추가 그 버튼을 44x34px 덮어
    "1,900원"이 "1,90("으로 잘려 보였다(실측). 돈 받는 버튼을 가리는 건 가장 나쁜 겹침이다. */
-var FAB_AVOID = '#main .locked-cta, #main .compat-upsell';
+var FAB_AVOID = '#main .locked-cta, #main .pitch-card, #main .csb-verdict';   /* ★ 2026-10-04 QA — 궁합 총평 문장 · 긴 풀이 권유 상자 */
 function updateFabAway(){
   var fab = document.getElementById('modeFab');
   if(!fab) return;
