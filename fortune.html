@@ -1044,7 +1044,6 @@ button.today-iljin:active{opacity:.7;}
 .note-block .nb-head{font-family:var(--serif);font-weight:700;font-size:.94rem;margin-bottom:8px;}
 .note-block p{font-size:.9rem;line-height:1.8;color:var(--ink-dim);margin-bottom:9px;word-break:keep-all;}
 .note-block p:last-child{margin-bottom:0;}
-.today-gauge-row{display:flex;justify-content:center;margin:6px 0 2px;}
 /* 항목 카드 오른쪽: 별 + 점수 숫자 */
 .today-cat-score{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .today-cat-num{font-size:.9rem;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap;}
@@ -1066,6 +1065,8 @@ button.today-iljin:active{opacity:.7;}
   font-size:.7rem;line-height:1.4;white-space:nowrap;color:var(--ink-dim);background:rgba(31,28,23,.07);}
 .tsum-row.good .tsum-chip{color:#fff;background:#286648;}
 .tsum-row.care .tsum-chip{color:#fff;background:#9B1A15;}
+/* ★ 2026-10-04 — 60점 넘는 '상대적으로 낮은' 항목. 문장이 '나쁘다는 뜻은 아니에요'인데 빨간 칩이면 경고로 읽힌다. */
+.tsum-row.mild .tsum-chip{color:var(--ink-dim);background:var(--panel-3);}
 .tsum-row.end .tsum-chip{color:var(--gold);background:var(--gold-soft);}
 .tsum-txt{font-size:.9rem;line-height:1.8;color:var(--ink);min-width:0;word-break:keep-all;}
 .tsum-row.good .tsum-txt,.tsum-row.care .tsum-txt{font-weight:600;}
@@ -1658,6 +1659,9 @@ button.today-iljin:active{opacity:.7;}
    낮은 쪽은 색을 빼고 한 단 흐리게 둔다 — 색을 둘 쓰면 어느 쪽이 좋은 건지 안 읽힌다. */
 .hd-cell .v.hi{color:var(--gold);}
 .hd-cell .v.lo{color:var(--ink-faint);}
+.hd-cell .bar{display:block;width:62%;height:3px;margin:7px auto 0;border-radius:2px;background:var(--gold-line);overflow:hidden;}
+.hd-cell .bar i{display:block;height:100%;border-radius:2px;background:var(--ink-faint);}
+.hd-cell .v.hi + .bar i{background:var(--gold);}
 .hd-line{font-size:.95rem;color:var(--ink-dim);line-height:1.75;margin:14px 0 0;}
 .hd-cardhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   border-bottom:1px solid var(--gold-line);padding-bottom:10px;margin-bottom:14px;}
@@ -2065,7 +2069,7 @@ body.admin-on .mode-fab{display:none !important;}
   font-size:.86rem;font-weight:600;text-decoration:underline;cursor:pointer;min-height:32px;}
 .cm-mix{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 2px;}
 /* R22 — 두 칸을 "숫자가 주인공"인 타일로. 라벨은 작은 회색, 숫자는 크고 뒤에 색 원. */
-.cm-mix-cell{padding:16px 13px 14px;border:1px solid rgba(31,28,23,0.084);border-radius:var(--r-md);background:var(--panel-3);text-align:center;}
+.cm-mix-cell{display:flex;flex-direction:column;justify-content:center;padding:16px 13px 14px;border:1px solid rgba(31,28,23,0.084);border-radius:var(--r-md);background:var(--panel-3);text-align:center;}
 .cm-mix-k{font-size:.74rem;font-weight:700;letter-spacing:.08em;color:var(--ink-dim);margin-bottom:6px;}
 .cm-mix-v{font-family:var(--sans);font-weight:700;letter-spacing:-.02em;font-size:1.15rem;color:var(--gold);}
 .cm-mix-note{font-size:.78rem;color:var(--ink-faint);line-height:1.8;margin-top:11px;}
@@ -2088,7 +2092,8 @@ body.admin-on .mode-fab{display:none !important;}
 .why-row .why-k{color:var(--ink-dim);}
 .why-row .why-v{color:var(--ink);text-align:right;word-break:keep-all;}
 .why-note{font-size:.8rem;color:var(--ink-dim);line-height:1.75;margin-top:10px;}
-@media (max-width:420px){ .cm-mix{grid-template-columns:1fr;} }
+/* ★ 2026-10-04 — 좁은 화면에서도 두 숫자를 나란히 둔다(비교하는 값이라 세로로 쌓으면 길기만 하다). */
+.cm-mix-k{word-break:keep-all;text-wrap:balance;}
 
 /* ===================== R21: 대운 기운 강도 흐름 그래프 =====================
    가로 스크롤 타임라인만으로는 "언제가 크게 열리는지"가 안 보인다. 나이(가로)×강도(세로)
@@ -2455,13 +2460,20 @@ body.admin-on .mode-fab{display:none !important;}
 .svc-list{margin:12px 0 0;padding-left:16px;}
 .svc-list li{color:var(--ink-dim);font-size:.82rem;line-height:1.95;word-break:keep-all;}
 .cross-sell{margin-top:20px;padding:20px 18px;border-radius:var(--r-lg);
-  background:var(--gold-soft);border:1px solid var(--gold-line);text-align:center;}
+  background:var(--panel-3);border:1px solid var(--gold-line);text-align:center;}
+/* ★ 2026-10-04 대표님 지시(UI 개선) — 붉은 면(--gold-soft)은 결제 권유 상자(.pitch-card · 잠금)만 쓴다.
+   교차 권유까지 같은 색이면 한 화면에 분홍 상자가 둘이라 무엇이 중요한지 안 보였다. */
 .cross-sell .cs-mark{display:flex;justify-content:center;margin-bottom:6px;}
 .cross-sell .cs-title{font-family:var(--sans);font-size:1.06rem;font-weight:800;
-  letter-spacing:-.02em;color:var(--gold);}
+  letter-spacing:-.02em;color:var(--ink);}
 .cross-sell .cs-desc{color:var(--ink-dim);font-size:.84rem;line-height:1.7;
   margin:6px 0 14px;word-break:keep-all;}
 .cross-sell .btn{display:flex;align-items:center;justify-content:center;gap:4px;}
+.link-btn{display:block;margin:4px auto 0;min-height:44px;padding:10px 12px;background:none;border:0;cursor:pointer;
+  font-family:var(--sans);font-size:.84rem;font-weight:600;color:var(--ink-dim);
+  text-decoration:underline;text-decoration-color:var(--gold-line);text-underline-offset:4px;}
+.link-btn:hover{color:var(--ink);}
+.link-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px;}
 
 /* 봉투 애니메이션 */
 .envelope-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding:30px 20px;text-align:center;}
@@ -2684,7 +2696,6 @@ body.admin-on .mode-fab{display:none !important;}
   .grid2,.grid3{grid-template-columns:1fr;}
   .compat-summary-grid{grid-template-columns:1fr;}
   .gc-cards{grid-template-columns:1fr;}
-  .cm-mix{grid-template-columns:1fr;}
   .pillar-table{gap:6px;}
   .pillar-seal{max-width:72px;}
   .pillar-seal .ch{font-size:1.05rem;}
@@ -12040,8 +12051,9 @@ function buildDaeunFlowSvg(str, curIdx, ageNow){
       '가장 높은 구간은 '+best.startAge+'세~'+best.endAge+'세 '+best.total+'점, 지금 지나는 구간은 '+cur.startAge+'세~'+cur.endAge+'세 '+cur.total+'점이에요.'});
   var t=mk('title',{}); t.textContent='대운 기운 강도 흐름'; svg.appendChild(t);
 
-  /* 가로 눈금 0·50·100 */
-  [0, Math.round(DAEUN_MAX_TOTAL/2), DAEUN_MAX_TOTAL].forEach(function(v){
+  /* 가로 눈금 — ★ 2026-10-04 대표님 지시(UI 개선): 만점이 98이라 0·49·98 로 찍혀 눈금이 어색했다.
+     25 간격 둥근 수(0·25·50·75)로 긋는다. 그래프 높이는 그대로 만점(98) 기준이다. */
+  [0, 25, 50, 75].forEach(function(v){
     var y=yOf(v);
     svg.appendChild(mk('line',{x1:padL, y1:y, x2:W-padR, y2:y, stroke:'var(--gold-line)', 'stroke-width':1}));
     var lab=mk('text',{x:padL-6, y:y+3.5, 'text-anchor':'end', 'font-size':9, fill:'var(--ink-dim)'});
@@ -12065,8 +12077,9 @@ function buildDaeunFlowSvg(str, curIdx, ageNow){
   }
   svg.appendChild(mk('line',{x1:nowX, y1:padT-4, x2:nowX, y2:padT+plotH, stroke:'var(--red-hi)',
     'stroke-width':1.2, 'stroke-dasharray':'3 3', opacity:.85}));
-  var nowLab=mk('text',{x:Math.max(padL+12, Math.min(W-padR-12, nowX)), y:padT-6, 'text-anchor':'middle', 'font-size':9, fill:'var(--red-hi)'});
-  nowLab.textContent='지금 '+ageNow+'세'; svg.appendChild(nowLab);
+  var nowLab=mk('text',{x:Math.max(padL+28, Math.min(W-padR-28, nowX)), y:padT-6, 'text-anchor':'middle', 'font-size':9, fill:'var(--red-hi)', 'font-weight':600});
+  /* ★ 2026-10-04 — 지금 구간이 가장 큰 구간이면 표시 둘('지금 37세' · '가장 큼')이 위아래로 겹쳤다. 한 줄로 합친다. */
+  nowLab.textContent='지금 '+ageNow+'세' + (str.bestIdx===curIdx ? ' · 가장 큼' : ''); svg.appendChild(nowLab);
 
   /* 흐름선 */
   var pts=[]; for(var j=0;j<n;j++) pts.push(xOf(j)+','+yOf(arr[j].total));
@@ -12080,15 +12093,18 @@ function buildDaeunFlowSvg(str, curIdx, ageNow){
       /* R29 — 점의 안쪽 색이 뒤집힌 자리. 예전엔 '어두운 배경색으로 속을 비운' 점이었는데,
          밝은 화면에서 #0d0d0f를 그대로 두면 검은 점이 박혀 가장 큰 구간과 구분이 안 된다. */
       fill:isBest?'var(--pA)':'var(--panel)', stroke:isCur?'var(--red-hi)':'var(--pA)', 'stroke-width':isCur?2:1.4}));
-    if(k%2===0 || isBest || isCur){
+    /* ★ 2026-10-04 — 한 칸 걸러 적으니 7·27·37·47·67·87 로 듬성듬성 빠졌다. 9칸은 다 들어간다(칸 사이 약 33px). */
+    if(n <= 10 || k%2===0 || isBest || isCur){
       var ax=mk('text',{x:xOf(k), y:H-14, 'text-anchor':'middle', 'font-size':9, fill:'var(--ink-dim)'});
       ax.textContent=arr[k].startAge+'세'; svg.appendChild(ax);
     }
   }
   /* 가장 큰 구간 표시 */
   var bx=Math.max(padL+16, Math.min(W-padR-16, xOf(str.bestIdx)));
+  if(str.bestIdx!==curIdx){
   var bl=mk('text',{x:bx, y:Math.max(padT+9, yOf(best.total)-9), 'text-anchor':'middle', 'font-size':9.5, fill:'var(--pA)'});
   bl.textContent='가장 큼'; svg.appendChild(bl);
+  }
   /* 축 이름. 나이 라벨 줄(y=H-14) 왼쪽에 두면 첫 칸('1세')과 글자가 겹친다(실측으로 확인) —
      한 줄 아래, 오른쪽 끝에 앉힌다. */
   var axisLab=mk('text',{x:W-padR, y:H-2, 'text-anchor':'end', 'font-size':8.5, fill:'var(--ink-dim)'});
@@ -13571,7 +13587,7 @@ function buildTodaySummaryRows(fortune){
     /* ★ 2026-10-04 QA — 동점이 있으면 하나만 짚지 않는다(금전 68 · 직장 68인데 '금전운이 낮은데'라고만 했다). */
     var lows = keys.filter(function(k){ return sc[k] === sc[worst]; }).map(function(k){ return labelOf[k]; });
     var lowText = lows.length > 1 ? lows.slice(0,-1).join(', ') + josaOnly(lows[lows.length-2], '과', '와') + ' ' + lows[lows.length-1] : lows[0];
-    out.push({kind:'care', tag:labelOf[worst], text:'다섯 중에서는 ' + lowText + josaOnly(lows[lows.length-1], '이', '가') + ' 상대적으로 낮은데, 낮다고 해도 나쁘다는 뜻은 아니에요.'});
+    out.push({kind:'mild', tag:labelOf[worst], text:'다섯 중에서는 ' + lowText + josaOnly(lows[lows.length-1], '이', '가') + ' 상대적으로 낮은데, 낮다고 해도 나쁘다는 뜻은 아니에요.'});
   }
 
   /* ④ 마무리 — 오늘 기운이 내게 어떻게 닿는지(앞)와 그래서 뭘 하면 좋은지(뒤)를 한 문장으로.
@@ -14153,6 +14169,25 @@ function pairNim(t, pA, pB){
     });
   });
   return t;
+}
+/* ★ 2026-10-04 대표님 지시(UI 개선) — 다섯 칸 점수 띠.
+     예전에는 70점 이상만 붉게 칠해 81·78·76 은 빨강, 68 은 먹색이었다 — 기준이 화면에 안 보여서
+     '빨강 = 나쁨'으로도 읽혔다. 이제 숫자는 모두 먹색이고 가장 높은 칸만 붉다.
+     칸마다 얇은 막대(100점 기준)를 그려 크기를 눈으로 비교하게 한다.
+     ★ 라벨은 HD_CAT_SHORT — 규칙으로 깎지 말고 쓸 이름을 적어 둔다('총운'이 '총'이 된 적 있다). */
+function buildScoreStrip(scores){
+  var strip = el('div',{class:'hd-strip'});
+  var vals = FORTUNE_CATS.map(function(c){ return scores[c.key]; }).filter(function(v){ return typeof v === 'number'; });
+  var top = vals.length ? Math.max.apply(null, vals) : null;
+  FORTUNE_CATS.forEach(function(cat){
+    var v = scores[cat.key];
+    var cell = el('div',{class:'hd-cell'});
+    cell.appendChild(el('span',{class:'k'},[HD_CAT_SHORT[cat.key] || cat.label]));
+    cell.appendChild(el('span',{class:'v' + (v != null && v === top ? ' hi' : '')},[v == null ? '—' : String(v)]));
+    if(typeof v === 'number') cell.appendChild(el('span',{class:'bar','aria-hidden':'true'},[el('i',{style:'width:'+Math.max(0,Math.min(100,v))+'%;'})]));
+    strip.appendChild(cell);
+  });
+  return strip;
 }
 function buildPairReasons(pA, pB, res){
   var good = [], care = [];
@@ -14861,7 +14896,7 @@ function buildCompatMetricBars(res){
     var row = el('div',{class:'cm-row'});
     row.appendChild(el('div',{class:'cm-head'},[
       el('span',{class:'cm-label'},[m.label]),
-      el('span',{class:'cm-num','aria-hidden':'true'},[v+'점']) ]));
+      el('span',{class:'cm-num','aria-hidden':'true', style:'color:'+compatBarColor(v)+';'},[v+'점']) ]));   /* ★ 2026-10-04 — 막대와 같은 색(40점 막대는 회색인데 숫자만 빨강이었다) */
     /* 막대는 그림이라 role='img' + 수치를 담은 aria-label을 준다. 옆의 숫자는 같은 값을
        두 번 읽지 않도록 aria-hidden으로 감춘다(라벨·한마디는 실제 글자로 읽힌다). */
     row.appendChild(el('div',{class:'cm-track', role:'img',
@@ -18639,18 +18674,7 @@ function renderHomeDash(p){
     tc.appendChild(top);
 
     /* 다섯 칸. 점수가 없는 항목은 '—'로 둔다 — 지어내지 않는다. */
-    var strip = el('div',{class:'hd-strip'});
-    FORTUNE_CATS.forEach(function(cat){
-      var v = fortune.scores[cat.key];
-      var cell = el('div',{class:'hd-cell'});
-      /* 라벨은 다섯 칸에 들어가도록 짧게 줄인다. 표를 따로 두는 이유: 예전에 '운'만 지웠더니
-         '총운'이 '총'이 됐다. 규칙으로 깎지 말고 쓸 이름을 적어 둔다. */
-      cell.appendChild(el('span',{class:'k'},[HD_CAT_SHORT[cat.key] || cat.label]));
-      var cls = 'v' + (v == null ? '' : (v >= 70 ? ' hi' : (v < 45 ? ' lo' : '')));
-      cell.appendChild(el('span',{class:cls},[v == null ? '—' : String(v)]));
-      strip.appendChild(cell);
-    });
-    tc.appendChild(strip);
+    tc.appendChild(buildScoreStrip(fortune.scores));
 
     var lead = fortune.items && fortune.items.total && fortune.items.total.text;
     if(lead) tc.appendChild(el('p',{class:'hd-line'},[lead]));
@@ -19007,18 +19031,8 @@ function renderHome(){
   view.appendChild(hero);
 
   /* 다섯 칸 점수 — 홈과 같은 띠를 쓴다. 두 화면이 다른 모양으로 같은 값을 보이지 않게. */
-  if(fortune.scores){
-    var strip = el('div',{class:'hd-strip'});
-    FORTUNE_CATS.forEach(function(cat){
-      var v = fortune.scores[cat.key];
-      var cell = el('div',{class:'hd-cell'});
-      cell.appendChild(el('span',{class:'k'},[HD_CAT_SHORT[cat.key] || cat.label]));
-      var cls = 'v' + (v == null ? '' : (v >= 70 ? ' hi' : (v < 45 ? ' lo' : '')));
-      cell.appendChild(el('span',{class:cls},[v == null ? '—' : String(v)]));
-      strip.appendChild(cell);
-    });
-    view.appendChild(strip);
-  }
+  /* ★ 2026-10-04 대표님 지시(UI 개선) — 다섯 점수가 점수 띠 · 오각형 · 항목 카드 세 곳에 나왔다.
+       띠는 홈에만 두고, 오늘 화면은 오각형(그림)과 항목 카드(풀이)로 본다. */
 
   /* 총평 — 시안의 왼쪽 선 블록으로 올린다. 예전에는 점수 카드 맨 아래에 묻혀 있었다. */
   var topSum = (fortune.overall != null && fortune.scores) ? buildTodaySummaryRows(fortune) : null;
@@ -19058,11 +19072,8 @@ function renderHome(){
   if(fortune.overall != null && fortune.scores){
     var scoreCard = el('div',{class:'scroll-card stamp-in'});
     /* ★ 2026-09-02 — 여기 있던 큰 제목(todayOverallWord)은 위 히어로로 올라갔다. */
-    scoreCard.appendChild(el('p',{class:'card-eyebrow'},['오늘의 종합 점수']));
-
-    var gauge = el('div',{class:'today-gauge-row'});
-    gauge.appendChild(buildDonutGauge(fortune.overall, 132, '100점 만점'));
-    scoreCard.appendChild(gauge);
+    /* ★ 2026-10-04 — 종합 점수 도넛은 뺐다. 같은 숫자가 바로 위 히어로에 크게 있다. */
+    scoreCard.appendChild(el('p',{class:'card-eyebrow'},['다섯 항목 한눈에 보기']));
 
     var radar = buildRadarChart(FORTUNE_CATS.map(function(c){
       return { label:c.label, value:fortune.scores[c.key], max:100 };
@@ -19513,18 +19524,24 @@ function renderSaju(){
     }catch(e){ console.warn('대운 띠 위치 맞추기 실패', e); }
   }, 0);
   /* 잠긴 구간이 있으면 다른 유료 지점과 똑같은 잠금 카드로 결제를 안내한다. */
+  var dBlock = null;
   if(!dwUnlocked && dw.list.length > 1){
-    var dBlock = lockedBlock(sajuProduct(), '', '대운 구간 상세');
+    dBlock = lockedBlock(sajuProduct(), '', '대운 구간 상세');
     dBlock.insertBefore(el('div',{class:'locked-count'},[(dw.list.length-1)+'개 구간 상세가 잠겨 있어요']), dBlock.firstChild);
-    dwCard.appendChild(dBlock);
   }
   view.appendChild(dwCard);
+  /* ★ 2026-10-04 대표님 지시(UI 개선) — 잠금 카드가 대운 카드 안에 들어가 있어(상자 속 상자) 320 폭에서
+       글이 많이 접혔다. 카드 바로 아래로 꺼낸다. */
+  if(dBlock) view.appendChild(dBlock);
 
   view.appendChild(circleCTA(CTA_ICON.arrow, '내 사주 풀이 읽어보기', function(){ ROUTE='report13'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ ROUTE='monthlyFortune'; render(); }},['올해 월별 운세 보기']));
   /* ★ R92 — 친구 사주를 봐주는 길. 이 화면에서 가장 자주 그 생각이 든다(대표님 제보). */
-  view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ startSetupWizard(null); render(); }},['다른 사람 사주 보기']));
-  view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('saju', p, saju); }},['사주 요약 카드 저장하기']));
+  /* ★ 2026-10-04 — 같은 모양 단추 넷이 세로로 쌓여 있었다. 곁가지 둘은 한 줄로 묶는다. */
+  view.appendChild(el('div',{class:'btn-row', style:'margin-top:4px;'},[
+    el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ startSetupWizard(null); render(); }},['다른 사람 사주 보기']),
+    el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ openShareModal('saju', p, saju); }},['요약 카드 저장하기'])
+  ]));
   view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   /* ★ R53 — 내 사주에도 궁합 권유를 넣는다(대표님 지적: MBTI에만 있었다).
      이 화면이 사주 쪽에서 가장 오래 머무는 자리인데 여기가 비어 있었다. */
@@ -19534,7 +19551,7 @@ function renderSaju(){
 }
 /* R23 — 용어 사전으로 가는 버튼. 여러 화면에서 같은 모양으로 쓴다(무료). */
 function glossaryLinkButton(){
-  return el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;',
+  return el('button',{class:'link-btn', type:'button',
     onclick:function(){ openGlossary(null); }},['모르는 말이 있나요? 용어 사전 열기']);
 }
 
@@ -20974,7 +20991,7 @@ function renderCompatSummary(p, draft){
     el('div',{class:'cm-mix-v'},[bigNum(r.res.mbtiScore+'점')])
   ]));
   mix.appendChild(el('div',{class:'cm-mix-cell'},[
-    el('div',{class:'cm-mix-k'},['타고난 기운으로 본 궁합']),
+    el('div',{class:'cm-mix-k'},['사주로 본 궁합']),   /* ★ 2026-10-04 — 나란히 두면서 짧게(제목이 '성격 쪽과 사주 쪽') */
     /* ★ R85-d — buildSajuCompat이 못 구하면 score가 null이다. "null점"이 찍히지 않게 막는다. */
     el('div',{class:'cm-mix-v'},[bigNum((typeof r.res.saju.score === 'number') ? (r.res.saju.score+'점') : '정보 부족')])
   ]));
@@ -25752,7 +25769,9 @@ function copyScreenText(){
 }
 /* 결과 화면마다 붙이는 [전체 복사] 버튼. 공유 버튼 바로 옆(또는 아래)에 둔다. */
 function copyAllButton(){
-  return el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:copyScreenText},
+  /* ★ 2026-10-04 대표님 지시(UI 개선) — 화면 끝에 같은 모양 베이지 단추가 서너 개 쌓여 무엇이 중요한지 안 보였다.
+       복사·용어 사전은 보조 길이라 글자 링크로 낮춘다(누르는 자리는 44px 그대로). */
+  return el('button',{class:'link-btn', type:'button', onclick:copyScreenText},
     ['이 화면 글 전체 복사']);
 }
 function copyText(text){

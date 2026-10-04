@@ -35,7 +35,7 @@ const HIST = [{
 /* 카드마다 [어디로 가서, 무엇을 누르면, 캐릭터가 몇 명 들어가는가] */
 const CARDS = [
   {name:'오늘의 운세', go:/^오늘/,        press:/오늘의 운세 공유하기/,       chars:1},
-  {name:'내 사주',     go:/^내 사주/,      press:/사주 요약 카드 저장하기/,     chars:1},
+  {name:'내 사주',     go:/^내 사주/,      press:/^요약 카드 저장하기/,     chars:1},
   {name:'성향 리포트', go:/^내 성격유형/,  press:/리포트 요약 공유하기/,        chars:1},
   {name:'궁합',        go:null,            press:/궁합 결과 공유하기/,          chars:2},
 ];
