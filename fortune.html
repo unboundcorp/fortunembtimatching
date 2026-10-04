@@ -1701,8 +1701,28 @@ button.today-iljin:active{opacity:.7;}
 /* ★ 2026-08-28 — 세 줄 중 이 줄 하나만 무게를 올린다. 배경을 한 단 밝히고 테두리에 색을 준다.
    새 색을 만들지 않고 이미 있는 토큰(--panel-3 · --gold)만 쓴다. */
 /* 셋 중 하나만 무게를 올린다 — 테두리를 그리지 않고 면을 한 단 더 눌러 앉힌다. */
-.hd-row-accent{background:var(--gold-soft);border-color:transparent;}
-.hd-row-accent:hover,.hd-row-accent:focus-visible{background:rgba(175,43,37,.13);}
+/* ★ 2026-10-04 — 홈 '더 깊이 알아보기' 그림 카드. 글 왼쪽 · 캐릭터 오른쪽(경쟁 서비스의 메뉴 카드 결). */
+.hist-tabs{display:grid !important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
+.hist-tabs > button{padding-left:2px !important;padding-right:2px !important;font-size:.8rem !important;white-space:nowrap;}
+.hd-menu{margin-top:22px;display:grid;gap:10px;}
+.hd-menu-head{font-family:var(--serif);font-size:1.08rem;font-weight:600;color:var(--ink);margin:0 2px 4px;}
+.hd-card{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;cursor:pointer;
+  padding:16px 14px 16px 18px;border-radius:var(--r-lg);background:var(--panel);border:1px solid var(--gold-line);
+  box-shadow:0 1px 2px rgba(60,54,44,.05);transition:transform .15s,box-shadow .15s;font:inherit;color:inherit;}
+.hd-card:hover,.hd-card:focus-visible{box-shadow:0 6px 18px rgba(60,54,44,.10);transform:translateY(-1px);}
+.hd-card:active{transform:translateY(0);}
+.hd-card .hc-text{min-width:0;flex:1;}
+.hd-card .hc-chip{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--panel-3);color:var(--ink-dim);font-size:.7rem;font-weight:700;letter-spacing:-.01em;}
+.hd-card .hc-title{margin-top:6px;font-size:1.04rem;font-weight:700;color:var(--ink);}
+.hd-card .hc-sub{margin-top:2px;font-size:.82rem;color:var(--ink-faint);line-height:1.5;}
+.hd-card .hc-foot{display:flex;align-items:center;gap:6px;margin-top:8px;}
+.hd-card .hc-price{font-size:.92rem;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;}
+.hd-card .hc-price.open{color:var(--ok);}
+.hd-card .hc-go{display:inline-flex;color:var(--ink-faint);}
+.hd-card .hc-go svg{width:14px;height:14px;}
+.hd-card .hc-art{flex:none;display:flex;align-items:flex-end;}
+.hd-card .hc-art > *{flex:none;}
+.hd-card .hc-art > * + *{margin-left:-14px;}
 .hd-row .t{font-size:1.02rem;font-weight:700;color:var(--ink);}
 .hd-row .s{font-size:.86rem;color:var(--ink-faint);margin-top:3px;}
 .hd-row .price{font-size:1rem;font-weight:700;color:var(--gold);white-space:nowrap;font-variant-numeric:tabular-nums;}
@@ -8863,7 +8883,7 @@ var FEEDBACK_KIND_LABEL = {
 /* 화면 이름 — 손님이 아니라 우리가 읽을 값이다. 여기 없는 화면은 ROUTE 이름 그대로 간다. */
 var ROUTE_LABEL = {
   home:'홈', today:'오늘 운세', saju:'내 사주', monthlyFortune:'월별 운세',
-  report13:'사주 풀이', mbtiReport:'성격유형 풀이', report:'성향 리포트',
+  report13:'사주 풀이', mbtiReport:'성격유형 풀이', report:'내 성격유형',
   compat:'궁합', groupCompat:'모임 궁합', chars:'캐릭터', history:'기록',
   settings:'설정', glossary:'용어 사전', about:'서비스 소개',
   /* ★ R102 — 새로 만든 화면을 여기 안 적으면 개선 의견 기록에 'pairDeep' 같은
@@ -18759,35 +18779,49 @@ function renderHomeDash(p){
   }
 
   /* ── ③ 다음 갈 곳 ── */
-  /* ★ 2026-08-28 (UX 점검) — accent=true면 한 단 올려 그린다.
-     세 줄이 배경색·테두리·높이(76px)·글자 크기까지 전부 똑같아서, 돈을 받는 줄이
-     무료 기능 둘과 눈으로 구분되지 않았다(실측: 셋 다 rgb(19,26,46) / 76px).
-     design_system.md 4절 "카드를 여러 개 나열할 때 전부 같은 무게로 두지 마세요"에 걸린다. */
-  function hdRow(title, sub, right, go, accent){
-    var b = el('button',{class:'hd-row'+(accent?' hd-row-accent':''), type:'button', onclick:go});
-    var l = el('div',{});
-    l.appendChild(el('div',{class:'t'},[title]));
-    if(sub) l.appendChild(el('div',{class:'s'},[sub]));
-    b.appendChild(l);
-    b.appendChild(right);
+  /* ★ 2026-10-04 대표님 지시("경쟁사에 뒤처지지 않게 세련되고 감성있게") — 한자 번호 줄 셋을 그림 카드로.
+       경쟁 서비스(사주도령·이음)는 첫 화면에 '무엇을 볼 수 있나'를 캐릭터 그림 + 누구와(칩) + 값으로 늘어놓는다.
+       우리는 줄 글자뿐이라 무엇을 파는지가 안 보였다. 값은 PRODUCTS 에서 읽는다(손으로 적지 않는다).
+       ★ 붉은 면은 결제 권유 상자만 쓴다는 규칙(2026-10-04)대로, 카드는 모두 같은 면이고 값만 붉다. */
+  function hdCard(o){
+    var b = el('button',{class:'hd-card', type:'button', onclick:o.go});
+    var tx = el('div',{class:'hc-text'});
+    tx.appendChild(el('span',{class:'hc-chip'},[o.chip]));
+    tx.appendChild(el('div',{class:'hc-title'},[o.title]));
+    tx.appendChild(el('div',{class:'hc-sub'},[o.sub]));
+    tx.appendChild(el('div',{class:'hc-foot'},[
+      o.price ? el('span',{class:'hc-price'+(o.open?' open':'')},[o.price]) : null,
+      el('span',{class:'hc-go','aria-hidden':'true'},[dirIcon('right')])
+    ].filter(Boolean)));
+    b.appendChild(tx);
+    var art = el('div',{class:'hc-art','aria-hidden':'true'});
+    (o.art || []).forEach(function(a){ if(a) art.appendChild(a); });
+    b.appendChild(art);
     return b;
   }
-  /* ★ R92 (2026-08-19 대표님 지적) — 친구 사주를 봐주러 들어올 자리.
-     궁합(둘을 맞대어 보는 것)과 다른 일이라 줄을 따로 둔다. */
-  /* ★ 2026-09-01 리뉴얼 — 시안은 줄 오른쪽에 한자 번호(一二三)를 둔다. 화살표를 대신한다.
-     낭독기에는 번호가 읽히지 않게 aria-hidden으로 감춘다 — 줄 전체가 이미 버튼이라
-     "무엇을 하는 줄인지"는 제목이 말한다. */
-  view.appendChild(hdRow('다른 사람 사주 봐주기','친구 · 가족 것도 만들어서 볼 수 있어요',
-    el('span',{class:'hd-no', 'aria-hidden':'true'},['一']),
-    function(){ startSetupWizard(null); render(); }));
-  view.appendChild(hdRow('궁합 보기','링크 하나로 가족 · 친구 · 연인과',
-    el('span',{class:'hd-no', 'aria-hidden':'true'},['二']),
-    function(){ setMode('compat'); ROUTE='compat'; render(); }));
-
-  var opened = hasAccess(sajuProductId());
-  view.appendChild(hdRow('내 사주 전체 풀이','성격·재물·건강 · 월별 운세 · 대운 구간',
-    el('span',{class:'price'+(opened?' open':'')},[opened ? '열려 있어요' : formatWon(sajuProduct().price)]),
-    function(){ setMode('self'); ROUTE='report13'; render(); }, true));
+  var menu = el('div',{class:'hd-menu'});
+  menu.appendChild(el('h3',{class:'hd-menu-head'},['더 깊이 알아보기']));
+  var sajuOpen = hasAccess(sajuProductId());
+  var dayKey = saju ? charKeyForDayStem(saju) : null;
+  var mbtiKey = charKeyForMbti(p.mbti);
+  menu.appendChild(hdCard({ chip:'나 1명', title:'내 사주 전체 풀이', sub:'성격·재물·건강 · 월별 운세 · 대운 구간',
+    price: sajuOpen ? '열려 있어요' : formatWon(sajuProduct().price), open:sajuOpen,
+    art:[dayKey ? buildCharSvg(dayKey, 72, {gender:p.gender}) : null],
+    go:function(){ setMode('self'); ROUTE='report13'; render(); } }));
+  var mbtiOpen = hasAccess(PRODUCTS.mbti_full.id);
+  menu.appendChild(hdCard({ chip:'나 1명', title:'내 성격유형 풀이', sub:'강점·그림자·연애 스타일·관계 패턴',
+    price: mbtiOpen ? '열려 있어요' : formatWon(PRODUCTS.mbti_full.price), open:mbtiOpen,
+    art:[mbtiKey ? buildCharSvg(mbtiKey, 72, {gender:p.gender}) : null],
+    go:function(){ setMode('self'); ROUTE='mbtiReport'; render(); } }));
+  menu.appendChild(hdCard({ chip:'두 사람 · 여럿', title:'궁합 보기', sub:'링크 하나로 가족 · 친구 · 연인과',
+    price:'무료로 시작',
+    art:[mbtiKey ? buildCharSvg(mbtiKey, 52, {gender:p.gender}) : null, buildCharSvg('mENFJ', 52, {gender:(p.gender==='F'?'M':'F')})],
+    go:function(){ setMode('compat'); ROUTE='compat'; render(); } }));
+  menu.appendChild(hdCard({ chip:'친구 · 가족', title:'다른 사람 사주 봐주기', sub:'친구 · 가족 것도 만들어서 볼 수 있어요',
+    price:'무료',
+    art:[buildCharSvg('e0', 64, {})],
+    go:function(){ startSetupWizard(null); render(); } }));
+  view.appendChild(menu);
 
   main.appendChild(autoTermify(view));
 }
@@ -19163,7 +19197,7 @@ function renderReport(){
   var view=el('div',{class:'view'});
   /* ★ R49 — 실사용자 피드백: "눌러보니 ISTJ가 나오네, 이게 MBTI인가?"
      이름만 보고는 무엇을 보여주는 화면인지 알 수 없었다. 화면 이름과 근거를 함께 적는다. */
-  view.appendChild(screenHead(ownerLabel(p.name)+' 성향 리포트', {seal:'性',
+  view.appendChild(screenHead(ownerLabel(p.name)+' 성격유형', {seal:'性',   /* ★ 2026-10-04 — 탭 이름('내 성격유형')과 화면 제목을 맞춤 */
     /* ★ 2026-09-03 대표님 지시 — 뒤에 붙어 있던 "· 성격유형만 보고 쓴 화면이에요 — 사주는
        쓰지 않아요"를 뺐다. 내 사주 · 오늘 화면과 함께 뺀 것이다(세 곳이 한 묶음이다). */
     /* ★ 2026-09-05 — 여기 있던 'ENTJ · 목표를 향한 통솔자'를 뺐다.
@@ -19853,7 +19887,7 @@ function renderMbtiReport13(){
   /* 사주 풀이와 같은 규칙 — 열람 시점에 기록하고, 같은 날 같은 프로필이면 갱신만 한다. */
   recordMbtiReportHistory(p, report);
   var view=el('div',{class:'view'});
-  view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='report'; render(); }},[dirIcon('left'), '성향 리포트로 돌아가기']));
+  view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='report'; render(); }},[dirIcon('left'), '내 성격유형으로 돌아가기']));
   view.appendChild(screenHead(ownerLabel(p.name)+' 성격유형 풀이', {
     sub:'목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.'}));
 
@@ -25127,7 +25161,7 @@ function renderInviteAccept(){
 /* =====================================================================
    렌더: 히스토리 (기능13 — 운세/궁합/사주풀이 3탭)
 ===================================================================== */
-var HIST_TABS = [['fortune','운세 기록'],['compat','궁합 기록'],['saju','사주풀이 기록'],['mbtiReport','성격유형 풀이 기록']];
+var HIST_TABS = [['fortune','운세 기록'],['compat','궁합 기록'],['saju','사주 풀이'],['mbtiReport','성격유형']];   /* ★ 2026-10-04 — 넷이 한 줄에 같은 폭으로 들어가게 짧게(화면 제목이 이미 '히스토리 보관함') */
 /* 탭을 바꾸면 화면이 통째로 다시 그려지므로, 키보드로 옮긴 경우에는 새로 그려진 같은 탭으로 포커스를 되돌린다. */
 function histTabSelect(key, moveFocus){
   HIST_TAB = key;
@@ -25142,7 +25176,8 @@ function renderHistory(){
      실제로 있어야 한다. 전에는 tablist/tab만 있고 패널도 aria-controls도 없어서,
      화면 낭독기에는 "탭"이라고 알려주면서 정작 무엇이 바뀌는지는 알려주지 못했다.
      아래 histPanel이 그 대상이고, aria-controls가 가리키는 id는 같은 렌더에서 반드시 만들어진다. */
-  var tg=el('div',{class:'tabgroup', role:'tablist', 'aria-label':'히스토리 종류'});
+  /* ★ 2026-10-04 — 네 칸이 두 줄로 접혀 넷째만 아랫줄에 혼자 섰다. 같은 폭 네 칸 한 줄로 둔다. */
+  var tg=el('div',{class:'tabgroup hist-tabs', role:'tablist', 'aria-label':'히스토리 종류'});
   HIST_TABS.forEach(function(pair){
     var on = HIST_TAB===pair[0];
     tg.appendChild(el('button',{type:'button', id:'histTab-'+pair[0], role:'tab',
@@ -25239,7 +25274,7 @@ function renderHistory(){
   } else if(HIST_TAB==='saju'){
     var slist = STATE.sajuHistory.filter(function(s){ return !p || s.profileId===p.id; });
     if(slist.length===0){
-      panel.appendChild(el('div',{class:'empty-state'},[el('p',{},['아직 저장된 사주풀이 기록이 없어요. \'내 사주\' 탭에서 풀이를 읽으면 자동으로 기록돼요.'])]));
+      panel.appendChild(el('div',{class:'empty-state'},[el('p',{},['아직 저장된 사주 풀이 기록이 없어요. \'내 사주\' 탭에서 풀이를 읽으면 자동으로 기록돼요.'])]));
     } else {
       slist.forEach(function(s){
         var item=el('div',{class:'hist-item'});
@@ -25261,16 +25296,16 @@ function renderHistory(){
         panel.appendChild(item);
       });
       panel.appendChild(el('button',{class:'btn btn-ghost btn-sm', style:'margin-top:10px;', onclick:function(){
-        confirmModal('사주풀이 기록을 모두 삭제할까요?', function(){
+        confirmModal('사주 풀이 기록을 모두 삭제할까요?', function(){
           STATE.sajuHistory = STATE.sajuHistory.filter(function(s2){ return p && s2.profileId!==p.id; });
-          saveState(); render(); showToast('사주풀이 기록을 초기화했어요.');
+          saveState(); render(); showToast('사주 풀이 기록을 초기화했어요.');
         });
       }},['전체 삭제']));
     }
   } else {
     var mlist = STATE.mbtiReportHistory.filter(function(m){ return !p || m.profileId===p.id; });
     if(mlist.length===0){
-      panel.appendChild(el('div',{class:'empty-state'},[el('p',{},['아직 저장된 성격유형 풀이 기록이 없어요. \'성향 리포트\' 탭에서 성격유형 풀이를 읽으면 자동으로 기록돼요.'])]));
+      panel.appendChild(el('div',{class:'empty-state'},[el('p',{},['아직 저장된 성격유형 풀이 기록이 없어요. \'내 성격유형\' 탭에서 성격유형 풀이를 읽으면 자동으로 기록돼요.'])]));
     } else {
       mlist.forEach(function(m){
         var item=el('div',{class:'hist-item'});

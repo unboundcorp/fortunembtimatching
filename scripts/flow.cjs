@@ -78,7 +78,7 @@ const HIST = [{
   await L.clickText(page, /^더보기/); await L.wait(700);
   await L.clickText(page, /^히스토리/); await L.wait(1400);
   await nextPage('운세 기록 → 궁합 기록', /^궁합 기록/, '궁합');
-  await nextPage('궁합 기록 → 사주풀이 기록', /^사주풀이 기록/, '사주');
+  await nextPage('궁합 기록 → 사주 풀이', /^사주 풀이$/, '사주');
 
   /* ── 3. 궁합 — 기록에서 다시 열기 ────────────────────────────── */
   R.head('[3] 궁합 — 전에 본 궁합을 다시 열기');
