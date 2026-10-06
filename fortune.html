@@ -4545,9 +4545,30 @@ function termAutoRegex(){
 /* svg·title — 2026-09-21 손님 단추 검사가 잡음: 대운 그래프의 <title>(읽기 도우미용 이름) 안 '대운'을
    용어 단추로 감싸 <title> 속에 <button> 이 들어갔다. 그림 안은 어디든 안 건드린다. */
 var TERM_SKIP_SEL = 'button,a,input,select,textarea,svg,title,.no-term,.term-lite,.term-chip,.pillar-seal,.gl-item';
+/* ★ 2026-10-06 대표님 지적 "이름이 정인인데 왜 정인에 사주 용어 해석을 넣어버리냐" —
+   사람 이름이 용어와 글자가 같으면(정인·식신·제왕…) 이름이 용어 단추가 됐다.
+   화면에 나올 수 있는 이름을 모아, 이름 자리와 겹치는 용어는 감싸지 않는다. */
+function termPersonNames(){
+  var out = {};
+  function add(v){ v = String(v == null ? '' : v).trim(); if(v) out[v] = 1; }
+  try{ (STATE.profiles || []).forEach(function(p){ add(p.name); }); }catch(e){}
+  try{ (PENDING_MEET || []).forEach(function(o){ add(o && o.n); }); }catch(e){}
+  try{ if(COMPAT_DRAFT) add(COMPAT_DRAFT.name); }catch(e){}
+  try{ if(PENDING_INVITE) add(PENDING_INVITE.n); }catch(e){}
+  return Object.keys(out);
+}
+function termNameSpans(v, names){
+  var spans = [];
+  names.forEach(function(nm){
+    var i = v.indexOf(nm);
+    while(i >= 0){ spans.push([i, i + nm.length]); i = v.indexOf(nm, i + 1); }
+  });
+  return spans;
+}
 function autoTermify(root){
   if(!root || !root.querySelectorAll || typeof document.createTreeWalker !== 'function') return root;
   var re = termAutoRegex();
+  var personNames = termPersonNames();
   var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
   var nodes = [], n;
   while((n = walker.nextNode())) nodes.push(n);
@@ -4561,7 +4582,10 @@ function autoTermify(root){
     if(pe.closest && pe.closest(TERM_SKIP_SEL)) return;
     re.lastIndex = 0;
     var frag = document.createDocumentFragment(), last = 0, m;
+    var nameSpans = personNames.length ? termNameSpans(v, personNames) : [];
     while((m = re.exec(v)) !== null){
+      var mEnd = m.index + m[0].length;
+      if(nameSpans.some(function(sp){ return m.index < sp[1] && mEnd > sp[0]; })){ continue; }
       /* ★ 앞 글자가 한글이면 낱말 한가운데를 잘라낸 것이므로 용어가 아니다.
          실제로 "자리가 눅눅해지지 않더라"의 '해지지'에서 '지지'가 지지(地支) 버튼이 됐다.
          한국어는 조사가 뒤에 붙으므로(지지가·오행이) 뒷글자는 볼 수 없지만,
@@ -16434,8 +16458,8 @@ function renderSetupBirth(){
         if(nameValSpan) nameValSpan.textContent = e.target.value.trim() || '(없음)';
       }});
     nameBody.appendChild(nameInp);
-    var nameField = setupField('프로필 이름 (닉네임)', (SETUP.name||'').trim() || '(없음)', nameBody,
-      '빈칸으로 두셔도 돼요. 그러면 화면에서 이름 없이 보여드려요.');
+    var nameField = setupField('프로필 이름 (닉네임) · 필수', (SETUP.name||'').trim() || '(없음)', nameBody,
+      '꼭 넣어 주세요. 궁합에서 상대방 화면에 이 이름으로 보여요.');
     var nameValSpan = nameField.querySelector('.inline-pick-val');
     box.appendChild(nameField);
   }
@@ -16773,7 +16797,7 @@ function renderSetupStep3(){
      여기에 또 두면 같은 칸이 두 개가 된다. 만들 때만 이 자리에 둔다. */
   if(!SETUP.editId){
     box.appendChild(el('div',{class:'field'},[
-      el('label',{for:'profName'},['프로필 이름 (닉네임)']),
+      el('label',{for:'profName'},['프로필 이름 (닉네임) · 필수']),
       el('input',{type:'text',id:'profName',maxlength:'20',value:SETUP.name||'', placeholder:'예: 나, 민지 등', oninput:function(e){ SETUP.name=e.target.value; }})
     ]));
   }
@@ -16789,6 +16813,17 @@ function renderSetupStep3(){
        손님이 자기를 '나님'이라고 부르는 화면이 된다. 빈 이름으로 두고,
        화면에 쓸 때 이름이 없으면 호칭을 아예 빼는 쪽으로 처리한다(personLabel). */
     var name = (nameInput?nameInput.value:SETUP.name).trim();
+    /* ★ 2026-10-06 대표님 지시 "이름 의무 입력하게 바꿔라" — 이름을 비우면 모임 명단에
+       빈 칸으로 실려 상대방 화면에 'null'로 찍혔다. 이제 이름 없이는 저장하지 않는다. */
+    if(!name){
+      var focusId = SETUP.editId ? '#profNameTop' : '#profName';
+      /* 수정할 때 이름 칸은 1단계 맨 위에 있다 — 거기로 데려간다 */
+      if(SETUP.editId) gotoSetupStep(1);
+      showToast('프로필 이름을 넣어 주세요.');
+      var fi = $(focusId);
+      if(fi){ fi.scrollIntoView({block:'center', behavior:'instant'}); fi.focus(); }
+      return;
+    }
     var recompute = computeSetupSaju();
     var legacyZ = calcZodiac(SETUP.year), legacyYY = calcYinYang(SETUP.year), legacyStar = calcStarSign(recompute.solarM, recompute.solarD);
     var elemInfo = dominantElementIdx(recompute.saju);
@@ -21576,9 +21611,12 @@ function gcMemberFromMeetRow(row, i){
   }catch(e){ saju = null; }
   var ei = saju ? dominantElementIdx(saju).idx : 0;
   var z = calcZodiac(row.y);
-  var person = {mbti:row.m, elementIdx:ei, zodiacIdx:z.idx, name:row.n, element:ELEMENTS[ei],
+  /* ★ 2026-10-06 — 이름 없이 들어온 줄은 n 이 null 이다. 그대로 쓰면 화면에 'null'이 찍혔다
+     (대표님 사진 "TEST × null"). row.n 자체는 안 바꾼다 — 내 자리 찾기가 원문으로 맞댄다. */
+  var nm = (row.n == null || String(row.n).trim() === '') ? '이름 없음' : row.n;
+  var person = {mbti:row.m, elementIdx:ei, zodiacIdx:z.idx, name:nm, element:ELEMENTS[ei],
                 zodiac:z.name, saju:saju, gender:row.g};
-  return {id:'k'+i, name:row.n, mbti:row.m, elementIdx:ei, gender:row.g, person:person};
+  return {id:'k'+i, name:nm, mbti:row.m, elementIdx:ei, gender:row.g, person:person};
 }
 
 /* ---------------------------------------------------------------------
@@ -26553,6 +26591,42 @@ function render(){
      그때는 #main이 아직 비어 있어 결제 상자가 없다. 여기서 다시 봐야
      스크롤을 하지 않아도 처음부터 비켜나 있다. */
   try{ updateFabAway(); }catch(e){}
+  askNameIfMissing();
+}
+
+/* ★ 2026-10-06 대표님 지시 "이름 의무 입력하게 바꿔라" — 예전엔 이름이 선택이라
+   이름 없이 만든 프로필이 남아 있다. 그 프로필로 서비스 화면에 서면 한 번 묻는다
+   (페이지를 열 때마다 한 번). 모임 명단에 이미 빈 이름으로 들어간 줄은
+   모임 화면의 [내 정보 갱신]으로 바뀐다. */
+var NAME_ASKED = false;
+var NAME_ASK_ROUTES = {home:1, today:1, saju:1, report:1, compat:1, groupCompat:1, history:1, settings:1};
+function askNameIfMissing(){
+  if(NAME_ASKED || !NAME_ASK_ROUTES[ROUTE]) return;
+  var p = activeProfile();
+  if(!p || String(p.name == null ? '' : p.name).trim()) return;
+  if($('#activeModal')) return;
+  NAME_ASKED = true;
+  setTimeout(function(){
+    if($('#activeModal')) return;
+    var cur = activeProfile();
+    if(!cur || String(cur.name == null ? '' : cur.name).trim()) return;
+    var inp = el('input',{type:'text', id:'askNameInput', maxlength:'20', class:'biz-input', placeholder:'예: 민지'});
+    var body = el('div',{},[
+      el('p',{},['이 프로필에 이름이 없어요. 궁합을 볼 때 상대방 화면에 이 이름으로 보여요.']),
+      el('div',{class:'field'},[ el('label',{for:'askNameInput'},['프로필 이름 (닉네임)']), inp ])
+    ]);
+    openModal('프로필 이름을 넣어 주세요', body, [
+      {label:'저장', cls:'btn-primary', onclick:function(){
+        var v = String(($('#askNameInput')||{}).value || '').trim().slice(0,20);
+        if(!v){ showToast('프로필 이름을 넣어 주세요.'); return; }
+        var t = activeProfile(); if(!t) { closeModal(); return; }
+        t.name = v; saveState(); closeModal();
+        showToast('이름을 저장했어요.');
+        render();
+      }}
+    ]);
+    setTimeout(function(){ var f=$('#askNameInput'); if(f) f.focus(); }, 50);
+  }, 0);
 }
 
 /* =====================================================================
@@ -27172,7 +27246,7 @@ scheduleCharWarm();
 try{
   if(window.__INYEON_TEST__ === true){
     window.__INYEON_TEST__ = {
-      SajuEngine: SajuEngine,
+      SajuEngine: SajuEngine, autoTermify: autoTermify,
       MBTI_MATRIX: MBTI_MATRIX, MBTI_STACK: MBTI_STACK,
       COMPAT_RELATIONS: COMPAT_RELATIONS, COMPAT_TIER_LINE: COMPAT_TIER_LINE,
       COMPAT_NICK: COMPAT_NICK, PERSON_NICK: PERSON_NICK,
