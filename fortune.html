@@ -5661,7 +5661,7 @@ function healState(s, d){
    ★ 카카오로 로그인하시면 서버 서랍에서 다시 내려받습니다 — 그쪽도 비워 두었으므로
      지금은 정말 빈 상태에서 시작합니다.
 ===================================================================== */
-var STATE_RESET_ID = '20260909-kakao-required';
+var STATE_RESET_ID = '20261006-launch';   /* ★ 2026-10-06 대표님 지시 "론칭하려고 하니깐 기존 데이터들 다 지워" — 서버 표 12개 비운 날 함께 바꿈. 론칭 뒤에는 바꾸지 마십시오 */
 /* 카카오톡 안의 브라우저에서 열렸는가. 카카오톡은 UA에 KAKAOTALK 을 붙인다.
    ★ 이 값으로 **동작을 바꾸지 마십시오.** 안내 문구를 고르는 데에만 씁니다 —
      UA는 언제든 바뀔 수 있고, 틀렸을 때 기능이 막히면 안 됩니다. */
@@ -9786,15 +9786,19 @@ function buildPaymentStatusPanel(){
      실제 서버 호출은 하나뿐이다.
 ===================================================================== */
 var GEN_INFLIGHT = {};
-function generateOnce(key, productId, payload, onText){
+function generateOnce(key, productId, payload, onText, onOpen){
   var cur = GEN_INFLIGHT[key];
   if(cur){
     if(onText) cur.subs.push(onText);
+    if(onOpen){ if(cur.opened) onOpen(); else cur.opens.push(onOpen); }
     return cur.promise;
   }
-  var entry = { subs: onText ? [onText] : [] };
+  var entry = { subs: onText ? [onText] : [], opens: onOpen ? [onOpen] : [], opened: false };
   entry.promise = Interpreter.generateStream(productId, payload, function(text){
     for(var i=0;i<entry.subs.length;i++){ try{ entry.subs[i](text); }catch(e){} }
+  }, function(){
+    entry.opened = true;
+    for(var i=0;i<entry.opens.length;i++){ try{ entry.opens[i](); }catch(e){} }
   }).then(function(full){ delete GEN_INFLIGHT[key]; return full; },
           function(err){ delete GEN_INFLIGHT[key]; throw err; });
   GEN_INFLIGHT[key] = entry;
@@ -9938,10 +9942,23 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     }
   }
 
+  /* 서버가 새로 만들기를 거절했다 — 기다림 창을 조용히 거두고 잠금으로 선다. 다른 창구로 다시 시도하지 않는다
+     (똑같이 막히고, 그 사이 기다림 창이 또 떠서 '쓰는 척'이 된다 — 2026-10-06 대표님 영상). */
+  function isLockErr(err){ return !!(err && (err.code === 'quota_exceeded' || err.code === 'no_access')); }
+  function lockNow(err){
+    state.locked = err.code;
+    state.loading = false; state.error = null; state.paidLoading = false; state.paidError = null;
+    state.sections = baseSections; state.source = 'local';
+    waitDone = true;
+    if(waitTimer){ clearTimeout(waitTimer); waitTimer = null; }
+    if(waitOpened && waitAlive()){ waitUI = null; closeModal(true); }
+    paint();
+  }
+
   function paint(){
     host.innerHTML = '';
-    host.appendChild(buildGatedToc(state.sections, product, tocLabel));
-    host.appendChild(interpreterNotice(state));
+    host.appendChild(buildGatedToc(state.sections, product, tocLabel, state.locked));
+    if(!state.locked) host.appendChild(interpreterNotice(state));
     /* ★ 2026-09-09 — 저장 열쇠가 안 맞아 **먼저 만들어 드린 글을 되찾아 온** 경우다.
        아무 말 없이 옛 글을 띄우면 "왜 지금 화면 점수랑 글이 다르지?"가 된다.
        서버가 알려줄 때만 적는다(state.recovered) — 우리가 짐작해서 적지 않는다. */
@@ -9952,9 +9969,10 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
       ]));
     }
     /* AI 해석이 이미 13섹션을 통째로 갈아끼운 뒤라면 본문이 비어 있지 않으므로 대체 카드를 쓰지 않는다. */
-    var showPending = paidNeeded && state.source !== 'api' && (state.paidLoading || state.paidError);
+    var showPending = !state.locked && paidNeeded && state.source !== 'api' && (state.paidLoading || state.paidError);
     if(showPending) host.appendChild(paidContentNotice(state, loadPaidBody, product));
     renderGatedSections(host, state.sections, product, {
+      forceLocked: state.locked || null,
       pendingFrom: showPending ? FREE_SECTION_COUNT : -1,
       pendingLoading: state.paidLoading,
       onRetry: loadPaidBody,
@@ -9977,6 +9995,7 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
       finishWait(true);
       paint();
     }).catch(function(err){
+      if(isLockErr(err)){ lockNow(err); return; }
       state.paidLoading = false;
       state.paidError = (err && err.message) || '유료 해석을 불러오지 못했어요.';
       /* ★ 2026-09-07 — 오류 '코드'를 함께 남긴다. 횟수를 다 쓴 것(quota_exceeded)은
@@ -10081,10 +10100,11 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     }
   }
 
-  armWait();
+  /* ★ 2026-10-06 — 기다림 창 시계는 서버가 받아들인 뒤(응답 200)에 건다. 예전에는 요청 전에 걸어서,
+     서버가 '횟수 다 씀'으로 거절하는 사이에 '풀이를 쓰는 중이에요'가 떴다가 막혔다(대표님 영상). */
   /* 같은 사람 · 같은 상품이면 한 번만 부른다(위 generateOnce 주석 참고). */
   var genKey = product.id + '|' + ((activeProfile()||{}).id || '-');
-  generateOnce(genKey, product.id, payload, function(text){ applyText(text, false); })
+  generateOnce(genKey, product.id, payload, function(text){ applyText(text, false); }, armWait)
     .then(function(full){
       var secs = Interpreter.parseSections(full, titles);
       if(!secs.length) throw new Error('해석 결과가 비어 있어요.');
@@ -10107,6 +10127,7 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     })
     .catch(function(err){
       if(pendingPaint){ clearTimeout(pendingPaint); pendingPaint = null; }
+      if(isLockErr(err)){ lockNow(err); return; }
       state.sections = baseSections;     /* 쓰다 만 글은 남기지 않는다 */
       state.source = 'local';
       state.loading = false;
@@ -10182,8 +10203,8 @@ function sectionPlainText(s){
 /* 목차. 잠긴 섹션도 제목은 보여준다 — 무엇을 사는 건지 알 수 있어야 하기 때문이다.
    다만 눌렀을 때 아무 데도 안 가는 링크를 남기면 고장난 것처럼 보이므로,
    잠긴 항목은 결제 화면으로 연결한다. */
-function buildGatedToc(sections, product, ariaLabel){
-  var unlocked = hasAccess(product.id);
+function buildGatedToc(sections, product, ariaLabel, forceLocked){
+  var unlocked = hasAccess(product.id) && !forceLocked;
   var freeCount = unlocked ? sections.length : Math.min(FREE_SECTION_COUNT, sections.length);
   var toc = el('nav',{class:'toc-nav','aria-label':ariaLabel});
   sections.forEach(function(s,i){
@@ -10259,7 +10280,9 @@ function paidContentNotice(state, onRetry, product){
 function renderGatedSections(view, sections, product, opts){
   opts = opts || {};
   var pendingFrom = (typeof opts.pendingFrom === 'number') ? opts.pendingFrom : -1;
-  var unlocked = hasAccess(product.id);
+  /* ★ 2026-10-06 — 서버가 '횟수를 다 썼다'(quota_exceeded)·'권한 없음'(no_access)으로 거절했으면
+     화면이 아는 권한(열림)과 상관없이 잠근다. 예전에는 '본문을 불러오지 못했어요'를 열 줄 늘어놓았다. */
+  var unlocked = hasAccess(product.id) && !opts.forceLocked;
   var freeCount = unlocked ? sections.length : Math.min(FREE_SECTION_COUNT, sections.length);
 
   sections.forEach(function(s,i){
@@ -10315,6 +10338,10 @@ function renderGatedSections(view, sections, product, opts){
     }
   });
 
+  if(opts.forceLocked && sections.length > freeCount){
+    view.appendChild(quotaLockBlock(product, opts.forceLocked, sections.length - freeCount));
+    return;
+  }
   if(!unlocked && sections.length > freeCount){
     var next = sections[freeCount];
     /* 맛보기는 다음 섹션의 앞부분만 보여준다. 통째로 넣으면 잠금이 무의미해진다.
@@ -10327,6 +10354,29 @@ function renderGatedSections(view, sections, product, opts){
     block.insertBefore(el('div',{class:'locked-count'},['목차에서 잠긴 이야기 '+remain+'개가 이어져요']), block.firstChild);
     view.appendChild(block);
   }
+}
+
+/* ★ 2026-10-06 대표님 영상 — "보여줄듯 하다가 막히는 거도 오류다 · 바로 막혀야" — 서버가 새로 만들기를
+   거절했을 때 그 자리에 바로 서는 잠금. 이용권이 있어도 같은 상품을 또 구매하면 한 편(궁합은 한 쌍)이 늘어난다
+   (2026-09-07 규칙). 그래서 이용권 단추는 두지 않고 그 상품 하나만 권한다. */
+function quotaLockBlock(product, code, remain){
+  var base = PRODUCTS[splitProductId(product.id).base] || product;
+  var buy = (base.kind === 'pass') ? PRODUCTS.compat_full : product;
+  var one = (splitProductId(buy.id).base === 'compat_full') ? '한 쌍' : '한 편';
+  var wrap = el('div',{class:'locked-block'});
+  var cta = el('div',{class:'locked-cta'});
+  cta.appendChild(el('div',{class:'locked-icon'},[lockIcon('잠김')]));
+  cta.appendChild(el('div',{class:'locked-count'},['목차에서 잠긴 이야기 '+remain+'개가 이어져요']));
+  cta.appendChild(el('p',{class:'locked-title'},[code === 'quota_exceeded'
+    ? '새 풀이를 만들 수 있는 횟수를 다 썼어요'
+    : '이 풀이는 결제하면 바로 만들어져요']));
+  cta.appendChild(el('p',{class:'section-sub'},[code === 'quota_exceeded'
+    ? ('먼저 만든 풀이는 그대로 열려요. '+one+'을 더 결제하면 이 풀이를 바로 만들어 드려요.')
+    : '먼저 만든 풀이가 있다면 그건 그대로 열려요.']));
+  cta.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openPaywall(buy); }},
+    [btnLines(one+' 더 열기', formatWon(buy.price))]));
+  wrap.appendChild(cta);
+  return wrap;
 }
 
 /* 지금 풀이가 어떻게 만들어지고 있는지 알린다.
@@ -10614,7 +10664,7 @@ var Interpreter = {
      ★ onText는 지금까지 받은 '전체'를 넘긴다. 조각만 넘기면 화면 쪽에서 다시 이어붙여야 하고,
        그 이어붙이기가 한 군데라도 어긋나면 문장이 깨진 채로 굳는다.
   ===================================================================== */
-  generateStream: function(productId, payload, onText){
+  generateStream: function(productId, payload, onText, onOpen){
     var self = this;
     if(!this.isApiReady()){
       return Promise.reject(new Error('AI 해석이 연결되어 있지 않아요.'));
@@ -10697,6 +10747,7 @@ var Interpreter = {
         done();
         throw new Error('이 브라우저에서는 실시간 표시를 지원하지 않아요.');
       }
+      if(onOpen){ try{ onOpen(); }catch(e){} }   /* 서버가 받아들였다 — 이제 기다림 창 시계를 건다 (2026-10-06) */
       var reader = res.body.getReader();
       var dec = new TextDecoder();
       var buf = '', full = '', failed = null;
@@ -26419,7 +26470,9 @@ function viewKeyNow(){
   parts.push(COMPAT_SUB || '');
   parts.push(HIST_TAB || '');
   parts.push(GC_SOURCE || '');
-  parts.push(PAIR_DEEP ? ('쌍' + PAIR_DEEP.ai + '-' + PAIR_DEEP.bi) : '');
+  /* ★ 2026-10-06 대표님 영상 — 모임 쌍 상세에서 [궁합 풀이 읽어보기]를 누르면 PAIR_DEEP.story 만 바뀌어
+     스크롤이 그대로 남았고, 긴 풀이 화면의 맨 아래(마지막 장)에서 시작했다. 풀이 화면도 다른 쪽이다. */
+  parts.push(PAIR_DEEP ? ('쌍' + PAIR_DEEP.ai + '-' + PAIR_DEEP.bi + (PAIR_DEEP.story ? '풀이' : '')) : '');
   parts.push(GROUP_VIEW ? ('모임' + (GROUP_VIEW.id || '')) : '');
   parts.push(ADMIN_ROUTES[ROUTE] ? ('어드민' + ADMIN_SCREEN) : '');
   return parts.join('|');
@@ -27275,7 +27328,7 @@ try{
       openPaywall: openPaywall,   /* 결제창 문구를 화면으로 재는 용도 (2026-09-21) */
       groupMyMemberIdx: groupMyMemberIdx, groupMyRowStale: groupMyRowStale,
       /* 2026-09-22 — 결제 취소 복귀 검사(checks-slow/pay_cancel.cjs)가 쓴다 */
-      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); },
+      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); },
       elemReadFacts: elemReadFacts, buildSajuHook: buildSajuHook, buildMbtiHook: buildMbtiHook, buildCompatWeave: buildCompatWeave,
       buildCompatHook: buildCompatHook, compatWeaveFacts: compatWeaveFacts, buildElemReading: function(sj){ var b = buildElemReading(sj, false); return b ? b.innerText : ''; },
       Interpreter: Interpreter, pairDeep: function(){ return PAIR_DEEP; },
