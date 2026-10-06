@@ -650,17 +650,20 @@ export async function unlinkKakao(sessionId) {
 export async function moveOrdersToSession(fromSessionId, toSessionId) {
   if (!fromSessionId || fromSessionId === toSessionId) return 0;
   const rows = await rest(
-    `orders?session_id=eq.${encodeURIComponent(fromSessionId)}&status=eq.paid`,
+    `orders?session_id=eq.${encodeURIComponent(fromSessionId)}&status=in.(paid,refunded)`,
     {
       method: 'PATCH',
       headers: { Prefer: 'return=representation' },
       body: JSON.stringify({ session_id: toSessionId }),
     }
   );
+  /* ★ 2026-10-06 — 환불된 주문도 함께 옮긴다. 만든 기록(ai_usage)은 아래에서 통째로 옮겨 가는데
+     환불 표시가 옛 세션에 남으면, 새 기기에서는 '만든 적 있음'만 보이고 '환불됨'은 안 보여
+     R76 이 환불한 풀이를 다시 열었다(refundClosed 는 이 세션의 환불 주문만 본다). */
   /* ★ 2026-09-04 — 결제 기록만 옮기고 '만든 기록'을 두고 가던 것을 고쳤다.
      자세한 이유는 아래 moveAiUsageToSession 주석에 있다. */
   await moveAiUsageToSession(fromSessionId, toSessionId, null);
-  return rows ? rows.length : 0;
+  return rows ? rows.filter((r) => r.status === 'paid').length : 0;
 }
 
 /* =====================================================================

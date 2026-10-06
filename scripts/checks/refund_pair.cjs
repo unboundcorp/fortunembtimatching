@@ -107,5 +107,8 @@ function resp(status, obj){ const t = JSON.stringify(obj); return { ok: status <
   R.note(gi > 0 && ri > gi, '환불 창구는 운영자 관문 뒤에만 있다');
   const pub = ['api/entitlements.js','api/interpret.js','api/content.js','api/confirm.js','api/feedback.js'].filter(f => /cancelPayment/.test(strip(f)));
   R.note(pub.length === 0, '토스 취소는 stats.js 밖 어디서도 안 부른다', pub.join(','));
+  const st = strip('api/_lib/store.js');
+  const mv = st.slice(st.indexOf('export async function moveOrdersToSession'), st.indexOf('export async function moveOrdersToSession') + 600);
+  R.note(/status=in\.\(paid,refunded\)/.test(mv), '기기를 바꾸면 환불된 주문도 새 세션으로 옮긴다(안 옮기면 새 기기에서 환불한 풀이가 다시 열린다)');
   R.done();
 })();
