@@ -163,6 +163,20 @@ export async function rebindOrder(orderId, sessionId) {
   /* ★ 옮기기 전에 이 주문이 원래 어느 세션에 붙어 있었는지 알아 둔다.
      옮기고 나면 알 수 없게 되고, '만든 기록'을 어디서 가져와야 할지 모르게 된다. */
   const before = await getOrder(orderId);
+  /* ★ 2026-10-06 — 결제는 카카오로 로그인한 세션에서 시작한다. 그런데 카드사 앱(KB Pay 등)을 거쳐 돌아올 때
+     **다른 브라우저**로 돌아오면, 그 브라우저(로그인 안 된 새 세션)로 주문이 옮겨져 손님 계정에서 구매가 떨어졌다
+     (대표님 첫 실결제 — 주문은 로그인 안 된 세션에, 그 계정의 세션에는 주문이 없었음).
+     옛 세션이 카카오에 붙어 있고 새 세션은 안 붙어 있으면 **옮기지 않는다** — 그 브라우저에서 카카오로 로그인하면
+     kakaocb 가 계정의 구매를 그쪽으로 옮겨 준다. 못 읽으면 예전대로 옮긴다(되찾는 길이 막히는 것이 더 나쁘다). */
+  if (before && before.session_id && before.session_id !== sessionId) {
+    try {
+      const fromLink = await kakaoLinkOfSession(before.session_id);
+      if (fromLink) {
+        const toLink = await kakaoLinkOfSession(sessionId);
+        if (!toLink) return before;
+      }
+    } catch (e) { /* 예전대로 진행 */ }
+  }
   const rows = await rest(
     `orders?order_id=eq.${encodeURIComponent(orderId)}&status=eq.paid`,
     {
@@ -426,25 +440,27 @@ export async function aiAlreadyUsed(sessionId, cacheKey) {
      그때 그 주소를 아는 사람은 누구나 유료 기능을 전부 열 수 있었다. 같은 실수를 반복하지 않는다. */
 export async function grantTestAccess(sessionId, hours, role) {
   const expires = new Date(Date.now() + hours * 3600 * 1000).toISOString();
-  let finalRole = role === 'admin' ? 'admin' : 'tester';
+  const want = role === 'admin' ? 'admin' : 'tester';
   /* ★ 2026-09-22 — 세션당 허가가 한 줄이라, 운영자 허가가 있는 브라우저에서 #unlock 테스트 코드를 넣으면
-     운영자 허가가 테스터로 **내려앉았다**(대표님이 실제로 겪음 · 관리자 화면이 잠김). 이미 운영자면 유지한다.
-     테스터 코드는 운영자 권한을 새로 주지 않는다 — 있는 것을 깎지만 않을 뿐이다. */
-  if (finalRole !== 'admin') {
-    try {
-      const prev = await testAccessOf(sessionId);
-      if (prev && prev.role === 'admin') finalRole = 'admin';
-    } catch (e) { /* 못 읽으면 요청한 역할 그대로 */ }
-  }
-  await rest('test_grants?on_conflict=session_id', {
+     운영자 허가가 테스터로 **내려앉았다**(대표님이 실제로 겪음 · 관리자 화면이 잠김). 있는 것을 깎지 않는다.
+     ★ 2026-10-06 대표님 결정 "1로 해라" — 운영자(admin)는 관리자 화면만 열고 유료는 열지 않는다.
+       그래서 두 코드를 다 넣은 브라우저는 'both'(관리자 화면 + 유료 테스트)다. */
+  let prev = null;
+  try { const cur = await testAccessOf(sessionId); prev = cur ? cur.role : null; } catch (e) { /* 못 읽으면 요청한 역할 그대로 */ }
+  let finalRole = want;
+  if (prev === 'both' || (prev === 'admin' && want === 'tester') || (prev === 'tester' && want === 'admin')) finalRole = 'both';
+  const write = (r) => rest('test_grants?on_conflict=session_id', {
     method: 'POST',
     headers: { Prefer: 'return=minimal,resolution=merge-duplicates' },
-    body: JSON.stringify({
-      session_id: sessionId,
-      expires_at: expires,
-      role: finalRole,
-    }),
+    body: JSON.stringify({ session_id: sessionId, expires_at: expires, role: r }),
   });
+  try {
+    await write(finalRole);
+  } catch (e) {
+    /* 'both' 를 아직 표가 안 받으면(역할 제약 미변경) 운영자를 지키는 쪽으로 물러선다 — 관리자 화면이 잠기는 게 더 나쁘다. */
+    if (finalRole !== 'both') throw e;
+    await write('admin');
+  }
   return expires;
 }
 
@@ -472,10 +488,23 @@ export async function testAccessOf(sessionId) {
 export async function adminAccessOf(sessionId) {
   const row = await testAccessOf(sessionId);
   if (!row) return null;
-  if (row.role === 'admin') return row;
+  if (row.role === 'admin' || row.role === 'both') return row;
   const adminCode = process.env.ADMIN_UNLOCK_CODE;
   if (!adminCode || adminCode.length < 8) return row;   /* 아직 안 나눈 상태 — 예전대로 */
   return null;
+}
+
+/* =====================================================================
+   유료를 테스트로 여는 허가인가 (2026-10-06 대표님 결정 "1로 해라")
+   ---------------------------------------------------------------------
+   운영자 허가(admin)가 유료까지 전부 열어서, 대표님이 환불이 닫혔는지조차 볼 수 없었다
+   (환불 시험 때 실제로 겪음). 이제 유료를 여는 것은 테스터(tester)와 둘 다(both)뿐이다.
+   ★ 유료 판정 자리(api/entitlements.js · aiprompt.hasAiAccess)는 이것만 본다. testAccessOf 를 다시 쓰지 마십시오.
+===================================================================== */
+export async function testPassOf(sessionId) {
+  const row = await testAccessOf(sessionId);
+  if (!row) return null;
+  return (row.role === 'tester' || row.role === 'both' || !row.role) ? row : null;
 }
 
 /* 코드 맞히기를 막는다. 코드가 짧아도 무한정 찍어보지는 못하게 한다.

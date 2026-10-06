@@ -10,7 +10,7 @@
 ===================================================================== */
 import { json, methodGuard } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { paidOrdersOf, recentOrdersOf, testAccessOf, adminAccessOf, aiUsedProductIds, refundedProductIdsOf } from './_lib/store.js';
+import { paidOrdersOf, recentOrdersOf, testPassOf, adminAccessOf, aiUsedProductIds, refundedProductIdsOf } from './_lib/store.js';
 import { buildEntitlements, kstYearOf, refundClosed } from './_lib/entitlements.js';
 import { productOf, productIdFor } from './_lib/products.js';
 import { isTossTestKey } from './_lib/company.js';
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const [ordersR, madeR, testR, recentR, refundR] = await Promise.allSettled([
       paidOrdersOf(sessionId),
       aiUsedProductIds(sessionId),
-      testAccessOf(sessionId),
+      testPassOf(sessionId),   /* ★ 2026-10-06 — 운영자 허가는 유료를 안 연다 */
       recentOrdersOf(sessionId, 10),
       refundedProductIdsOf(sessionId),
     ]);

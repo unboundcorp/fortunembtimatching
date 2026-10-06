@@ -10,7 +10,7 @@
    ★ 이 파일은 열쇠를 직접 쓰지 않는다. 부르는 쪽에서 process.env로 꺼내 넘긴다.
 ===================================================================== */
 import crypto from 'node:crypto';
-import { testAccessOf, paidOrdersOf, aiAlreadyUsed, getAiCache, latestAiForSubject, refundedProductIdsOf } from './store.js';
+import { testPassOf, paidOrdersOf, aiAlreadyUsed, getAiCache, latestAiForSubject, refundedProductIdsOf } from './store.js';
 import { splitProductId, aiQuotaOf } from './products.js';
 import { buildEntitlements, refundClosed } from './entitlements.js';
 
@@ -369,7 +369,7 @@ export function subjectKeyOf(productId, payload) {
      ★ 연도가 붙는 상품은 productId가 'saju_full:2026'처럼 통째로 들어온다.
        주문에도 그 값이 그대로 저장되므로 연도별로 따로 세어진다. */
 export async function hasAiAccess(sessionId, productId) {
-  const test = await testAccessOf(sessionId);
+  const test = await testPassOf(sessionId);   /* ★ 2026-10-06 — 운영자 허가(admin)로는 유료를 안 연다 */
   if (test) return { ok: true, viaPass: true, test: true, quota: aiQuotaOf('pass') };
 
   const orders = await paidOrdersOf(sessionId);

@@ -3846,7 +3846,14 @@ function paragraphsToFragment(list){
       continue;
     }
     var p = document.createElement('p');
-    p.textContent = t;
+    /* ★ 2026-10-06 — AI 가 문단 안에 **굵게** 를 쓰면 별표가 그대로 찍혔다(대표님 복사본에서 발견).
+       굵은 글씨로 그린다. 글자는 textContent 로만 넣는다(태그가 섞여 와도 글자로만). */
+    var bits = t.split(/\*\*(.+?)\*\*/);
+    for(var bi=0; bi<bits.length; bi++){
+      if(!bits[bi]) continue;
+      if(bi % 2){ var bb = document.createElement('b'); bb.textContent = bits[bi]; p.appendChild(bb); }
+      else p.appendChild(document.createTextNode(bits[bi]));
+    }
     frag.appendChild(p);
   }
   return frag;
@@ -15245,7 +15252,7 @@ function screenHead(name, opts){
   if(opts.seal) row.appendChild(el('div',{class:'sh-seal','aria-hidden':'true'},[opts.seal]));
   else if(opts.right) row.appendChild(el('div',{class:'sh-right'},[opts.right]));
   wrap.appendChild(row);
-  if(opts.sub) wrap.appendChild(el('p',{class:'sh-sub'},[opts.sub]));
+  if(opts.sub) wrap.appendChild(el('p',{class:'sh-sub'+(opts.subCopySkip?' copy-skip':'')},[opts.sub]));
   return wrap;
 }
 /* 한자 숫자 — 시안이 목록·단계·장 번호에 쓰는 표기. 1~30까지면 충분하다(모임 최대 인원). */
@@ -15264,7 +15271,7 @@ function pageHead(eyebrow, title, sub, opts){
   if(opts.marginTop) head.style.marginTop = opts.marginTop;
   head.appendChild(el('p',{class:'page-eyebrow'},[eyebrow]));
   head.appendChild(el('h2',{class:'section-title'},[title]));
-  if(sub) head.appendChild(el('p',{class:'section-sub'},[sub]));
+  if(sub) head.appendChild(el('p',{class:'section-sub'+(opts.subCopySkip?' copy-skip':'')},[sub]));
   return head;
 }
 /* R22 — "숫자를 크게, 뒤에 색 원 하나". 원은 CSS ::before로 그리므로 낭독되는 글자가 늘지 않는다. */
@@ -20032,7 +20039,7 @@ function renderReport13(){
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='saju'; render(); }},[dirIcon('left'), '내 사주로 돌아가기']));
   /* ★ 2026-09-21 대표님 지시 — 제목 오른쪽의 '十三篇'(장식 · 13장이라는 뜻)을 뺐다. 바로 아래 줄이 '13개 이야기'라고 이미 말한다. */
   view.appendChild(screenHead(ownerLabel(p.name)+' 사주 풀이 · '+VIEW_YEAR+'년', {
-    sub:'목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.'}));
+    sub:'목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.', subCopySkip:true}));
   var yp = buildYearPicker(); if(yp) view.appendChild(yp);
 
   var sajuHost = el('div',{});
@@ -20070,7 +20077,7 @@ function renderMbtiReport13(){
   var view=el('div',{class:'view'});
   view.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='report'; render(); }},[dirIcon('left'), '내 성격유형으로 돌아가기']));
   view.appendChild(screenHead(ownerLabel(p.name)+' 성격유형 풀이', {
-    sub:'목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.'}));
+    sub:'목차를 눌러 원하는 부분으로 바로 이동할 수 있어요.', subCopySkip:true}));
 
   /* R19 — 이 화면의 주인공 캐릭터. 그림과 한 줄은 무료이고, 아래 13섹션 본문의 잠금 규칙은 그대로다. */
   var mbtiRepCharKey = charKeyForMbti(p.mbti);
@@ -21091,7 +21098,7 @@ function renderCompatStory(p, draft){
   box.appendChild(pageHead('궁합 상세 · 궁합 풀이',
     nameOr(p.name)+' × '+nameOr(r.pB.name,'상대')+' 궁합 풀이',
     '목차를 눌러 원하는 부분으로 바로 갈 수 있어요.',
-    {marginTop:'14px'}));
+    {marginTop:'14px', subCopySkip:true}));
   box.appendChild(buildCompatStoryBody(p, r.pB, r.res));
   return box;
 }
@@ -22847,7 +22854,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
       var ph = el('div',{class:'gc-pair-head'});
       var pav = inlineCharAvatar(other, 28);
       if(pav) ph.appendChild(pav);
-      ph.appendChild(el('b',{},[other.name+'와의 궁합']));
+      ph.appendChild(el('b',{},[josa(other.name,'과','와')+'의 궁합']));
       ph.appendChild(el('span',{class:'badge', style:'border-color:'+gcTierColor(pTier)+';color:'+gcTierTextColor(pTier)+';'},[pTier]));
       blk.appendChild(ph);
       blk.appendChild(el('div',{class:'gc-score'},[
@@ -22855,7 +22862,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
       ]));
       var ep = pr.res.saju.elemRel.indexOf(' — ')>=0 ? pr.res.saju.elemRel.split(' — ')[1] : pr.res.saju.elemRel;
       blk.appendChild(el('p',{class:'section-sub', style:'margin-top:6px;'},
-        ['사주로는 '+ep+', 성격유형으로는 '+pr.res.categories.chemistry]));
+        ['사주로는 '+endDot(ep)+' 성격유형으로는 '+pr.res.categories.chemistry]));
       /* 1:1 화면과 같은 블록·같은 근거를 쓴다. 같은 두 사람에 대해 두 화면이 다른 말을 하지 않는다. */
       var pWhy = buildCompatWhyScores(pr.res.combined, {
         mbti: pr.res.mbtiScore,
@@ -24121,7 +24128,7 @@ function renderPairDeep(){
        본문은 buildCompatStoryBody 하나를 두 화면이 같이 쓴다. */
     view.appendChild(pageHead('심층 궁합 분석 · 궁합 풀이', pr.a.name+' × '+pr.b.name+' 궁합 풀이',
       '목차를 눌러 원하는 부분으로 바로 갈 수 있어요.',
-      {marginTop:'10px'}));
+      {marginTop:'10px', subCopySkip:true}));
     view.appendChild(buildCompatStoryBody(pr.a.person, pr.b.person, pr.res));
     main.appendChild(autoTermify(view));
     return;
@@ -25832,7 +25839,13 @@ var COPY_SKIP_SEL = [
   'button', '.btn-circle-wrap', '.tab-btn', '.site-footer', '.biz', '.copy',
   '.locked-block', '.locked-count', '.compat-upsell', '.pay-opens', '.upsell-opens',
   '.cross-sell', '.share-preview', '.fb-callout', '.fb-kinds',
-  'script', 'style', 'svg', 'canvas', 'input', 'textarea', 'select'
+  'script', 'style', 'svg', 'canvas', 'input', 'textarea', 'select',
+  /* ★ 2026-10-06 대표님 지시 "UI상에서 있는 목차라든지 한자 복사는 필요 없는데 다 복사를 해버리네
+       맥락에 맞게 필요한 말만 복사해라" — 읽을 글이 아니라 화면 장치인 것들.
+       목차(.toc-nav) · 장 번호 한자(.sec-no) · 'AI 해석' 딱지와 설명(.interp-notice) ·
+       화면 위 작은 머리말(.page-eyebrow) · 두 캐릭터 사이 '×'(.pd-head) · 접이식 안내의 여닫이 제목.
+       접이식 안의 글은 남긴다(제목만 뺀다). */
+  '.toc-nav', '.sec-no', '.interp-notice', '.page-eyebrow', '.pd-head', '.note-fold > summary'
 ].join(',');
 /* ★ 용어 풀이(autoTermify)는 문장 한가운데의 낱말을 <button>으로 감싼다 —
    '검사님의 사주팔자'의 '사주팔자'가 버튼이다. 그래서 버튼을 통째로 지우면
@@ -25917,6 +25930,25 @@ function copyPackRows(clone){
     var t = txt(n);
     if(t){ n.textContent = t; n.style.display='block'; }
   });
+  /* ★ 2026-10-06 — AI 풀이 속 표(.md-tbl)는 innerText 로 읽으면 칸이 띄어쓰기로만 붙어
+     '말투 둘 다 핵심만 말함 정인은 바로…'처럼 어디서 칸이 끝나는지 알 수 없었다(대표님이 받아 보신 복사본).
+     줄마다 '· 첫 칸 — 머리글: 값 · 머리글: 값' 한 줄로 편다. */
+  $all('.md-tbl-wrap', clone).forEach(function(w){
+    var tbl = w.querySelector('table'); if(!tbl || !w.parentNode) return;
+    var heads = $all('thead th', tbl).map(txt);
+    var box = el('div',{});
+    $all('tbody tr', tbl).forEach(function(tr){
+      var cells = [].slice.call(tr.children).map(txt);
+      if(!cells.length) return;
+      var rest = [];
+      for(var ci=1; ci<cells.length; ci++){
+        if(!cells[ci]) continue;
+        rest.push(heads[ci] ? heads[ci]+': '+cells[ci] : cells[ci]);
+      }
+      box.appendChild(el('p',{},['· '+cells[0]+(rest.length?' — '+rest.join(' · '):'')]));
+    });
+    w.parentNode.replaceChild(box, w);
+  });
   /* 목록 — 가운뎃점을 붙인다. 안 붙이면 줄글과 구별이 안 된다. */
   $all('li', clone).forEach(function(n){
     var t = txt(n);
@@ -25946,6 +25978,8 @@ function screenTextForCopy(){
     var t = copyLeafTexts(n).join(' ');
     n.parentNode.replaceChild(document.createTextNode(t), n);
   });
+  /* ★ 장 번호 한자(.sec-no)는 제목 안에 있어서, 아래 제목 묶기(■)가 먼저 돌면 '■ 一두 분은…'으로 굳는다. 먼저 걷는다. */
+  $all('.sec-no', clone).forEach(function(n){ if(n.parentNode) n.parentNode.removeChild(n); });
   copyPackRows(clone);   /* ★ 반드시 지우기보다 먼저 — 표의 줄이 <button>이라 나중엔 없다 */
   $all(COPY_SKIP_SEL, clone).forEach(function(n){ if(n.parentNode) n.parentNode.removeChild(n); });
   /* 지우기가 끝난 뒤에 눌러야 한다 — 버튼을 지우기 전에 누르면 지울 것까지 한 줄에 섞인다. */
@@ -26915,7 +26949,7 @@ if(MEET_HASH_PRESENT){
 function openAdminUnlockModal(){
   var body = el('div',{class:'sheet-body'});
   body.appendChild(el('p',{class:'biz-hint'},[
-    '운영자 코드를 넣으면 관리자 페이지가 열려요. 손님 문의와 운영 현황을 보는 화면이에요.'
+    '운영자 코드를 넣으면 관리자 페이지가 열려요. 손님 문의와 운영 현황을 보는 화면이에요. 유료 풀이는 열리지 않아서, 서비스 화면은 손님과 똑같이 보여요.'
   ]));
   var input = el('input',{class:'biz-input', type:'password', style:'margin-top:12px;',
     placeholder:'운영자 코드', 'aria-label':'운영자 코드', autocomplete:'off', spellcheck:'false'});
@@ -27423,7 +27457,7 @@ try{
       openPaywall: openPaywall,   /* 결제창 문구를 화면으로 재는 용도 (2026-09-21) */
       groupMyMemberIdx: groupMyMemberIdx, groupMyRowStale: groupMyRowStale,
       /* 2026-09-22 — 결제 취소 복귀 검사(checks-slow/pay_cancel.cjs)가 쓴다 */
-      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, startService: startService, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
+      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, screenTextForCopy: screenTextForCopy, startService: startService, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
       elemReadFacts: elemReadFacts, buildSajuHook: buildSajuHook, buildMbtiHook: buildMbtiHook, buildCompatWeave: buildCompatWeave,
       buildCompatHook: buildCompatHook, compatWeaveFacts: compatWeaveFacts, buildElemReading: function(sj){ var b = buildElemReading(sj, false); return b ? b.innerText : ''; },
       Interpreter: Interpreter, pairDeep: function(){ return PAIR_DEEP; }, compatSub: function(){ return COMPAT_SUB; },
