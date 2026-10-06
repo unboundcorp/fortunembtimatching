@@ -1540,7 +1540,6 @@ button.today-iljin:active{opacity:.7;}
 /* ★ 2026-09-26 — 걸이 문장. 그 사람 계산에서 나온 말이라 눈에 먼저 들어와야 한다. */
 .locked-hook{font-size:.92rem;color:var(--ink);line-height:1.75;text-align:left;background:var(--panel-3);border-radius:10px;padding:12px 14px;margin:2px 0 14px;}
 .locked-hook b{color:var(--brand);font-weight:700;}
-.locked-hook .hook-cut{display:block;margin-top:6px;color:var(--ink-dim);font-weight:600;}
 
 /* 결제 화면 */
 .pay-product{text-align:center;padding:6px 0 14px;border-bottom:1px solid rgba(31,28,23,0.144);margin-bottom:14px;}
@@ -11887,11 +11886,11 @@ function buildSajuHook(profile, saju){
     if(f.lack === f.strongest) return '';
     var who = (String(profile && profile.name || '').trim() || '이분') + '님 사주엔 ';
     var L = ELEM_PROFILE[f.lack];
-    return '<b>그런데 걸리는 게 하나 있어요.</b> '
-      + escapeHtml(who) + elemLabel(f.lack) + ' 기운이 ' + (f.lackCount === 0 ? '하나도 없어요. ' : f.lackCount + '개뿐이에요. ')
-      + L.lackShort + ' 모습이 여기서 나와요. '
-      + '이게 ' + elemLabel(f.strongest) + ' 기운과 만나 <b>돈</b>과 <b>연애</b>에서 어떻게 드러나는지, 어느 달이 고비인지는'
-      + '<span class="hook-cut">— 여기서부터 이어져요.</span>';
+    /* ★ 2026-10-06 대표님 지시 "점찍고 엔터 값을 넣자" — 문장마다 마침표로 끝내고 줄을 바꾼다. 끝의 '— 여기서부터'는 문장에 이어 붙인다. */
+    return '<b>그런데 걸리는 게 하나 있어요.</b><br>'
+      + escapeHtml(who) + elemLabel(f.lack) + ' 기운이 ' + (f.lackCount === 0 ? '하나도 없어요.' : f.lackCount + '개뿐이에요.') + '<br>'
+      + L.lackShort + ' 모습이 여기서 나와요.<br>'
+      + '이게 ' + elemLabel(f.strongest) + ' 기운과 만나 <b>돈</b>과 <b>연애</b>에서 어떻게 드러나는지, 어느 달이 고비인지는 여기서부터 이어져요.';
   }catch(e){ return ''; }
 }
 /* 신규(대운 서술 심화 후속): 십이운성(十二運星) 조견표 — 일간(10) × 지지(12) 고정 룩업. 명리학 통설(화토동법 포함, WebSearch로 교차검증 완료).
@@ -13041,10 +13040,9 @@ function buildMbtiHook(profile){
   try{
     var t = String(profile && profile.mbti || '').toUpperCase(), f = mbtiLeastFacts(t); if(!f) return '';
     var who = escapeHtml((String(profile.name||'').trim() || '이분') + '님');
-    return '<b>그런데 걸리는 게 하나 있어요.</b> ' + who + '(' + t + ')이 가장 덜 쓰는 건 '
-      + f.plain + '(' + f.name + ')이에요. 몹시 지치면 이 힘이 엉뚱하게 튀어나와서, ' + f.grip + ' 모습이 될 수 있어요. '
-      + '그 모습이 <b>연애</b>와 <b>돈 쓰는 습관</b>에서 어떻게 드러나는지, 어떻게 빠져나오면 되는지는'
-      + '<span class="hook-cut">— 여기서부터 이어져요.</span>';
+    return '<b>그런데 걸리는 게 하나 있어요.</b><br>' + who + '(' + t + ')이 가장 덜 쓰는 건 '
+      + f.plain + '(' + f.name + ')이에요.<br>몹시 지치면 이 힘이 엉뚱하게 튀어나와서, ' + f.grip + ' 모습이 될 수 있어요.<br>'
+      + '그 모습이 <b>연애</b>와 <b>돈 쓰는 습관</b>에서 어떻게 드러나는지, 어떻게 빠져나오면 되는지는 여기서부터 이어져요.';
   }catch(e){ return ''; }
 }
 /* 16유형별 문구뱅크(1차 키) — 섹션 3~10,12,13에서 사용. 각 유형마다 서로 다른 문장. */
@@ -14518,14 +14516,13 @@ function buildCompatHook(pA, pB){
     var b = w.filter(function(x){ return x.who === 'b' && x.lookEnd; })[0];
     var nA = escapeHtml((String(pA.name||'').trim() || '나') + '님'), nB = escapeHtml((String(pB.name||'').trim() || '상대') + '님');
     var body, two = false;
-    if(a && b && a.axis === b.axis && a.kind === b.kind) body = '두 분 다 ' + a.lookEnd + ' ';
-    else if(a && b){                body = nA + '은 ' + a.lookEnd + ' ' + nB + '은 ' + b.lookEnd + ' '; two = true; }
-    else if(a)                      body = nA + '은 ' + a.lookEnd + ' ';
-    else if(b)                      body = nB + '은 ' + b.lookEnd + ' ';
+    if(a && b && a.axis === b.axis && a.kind === b.kind) body = '두 분 다 ' + a.lookEnd + '<br>';
+    else if(a && b){                body = nA + '은 ' + a.lookEnd + '<br>' + nB + '은 ' + b.lookEnd + '<br>'; two = true; }
+    else if(a)                      body = nA + '은 ' + a.lookEnd + '<br>';
+    else if(b)                      body = nB + '은 ' + b.lookEnd + '<br>';
     else return '';
-    return '<b>그런데 두 분 사이에 걸리는 게 하나 있어요.</b> ' + body
-      + (two ? '이 두 모습이' : '이 모습이') + ' <b>다툴 때</b> 어떻게 부딪히는지, 어떻게 <b>풀면</b> 되는지는'
-      + '<span class="hook-cut">— 여기서부터 이어져요.</span>';
+    return '<b>그런데 두 분 사이에 걸리는 게 하나 있어요.</b><br>' + body
+      + (two ? '이 두 모습이' : '이 모습이') + ' <b>다툴 때</b> 어떻게 부딪히는지, 어떻게 <b>풀면</b> 되는지는 여기서부터 이어져요.';
   }catch(e){ return ''; }
 }
 /* 화면에 그린다. 1:1 결과와 그룹 쌍별 상세가 같은 함수를 쓴다 —
