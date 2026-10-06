@@ -6705,7 +6705,27 @@ function notePayPosition(productId){
 }
 /* 되돌린다. 되돌릴 게 없거나 오래됐으면 아무것도 하지 않는다.
    ★ render() 앞에서 불러야 한다 — 값을 채운 뒤에 그려야 그 화면이 나온다. */
-function restorePayPosition(productId){
+/* 결제한 것이 궁합을 여는가 — 궁합 단품, 또는 궁합 화면에서 산 이용권. */
+function payBackIsCompat(productId, route){
+  var base = productId ? splitProductId(productId).base : '';
+  if(base === 'compat_full') return true;
+  return base === 'premium_pass' && (route === 'compat' || route === 'groupCompat' || route === 'pairDeep');
+}
+/* 이용권은 정해진 화면이 없다 — 떠나기 전에 보던 화면에서 이어지는 풀이로 보낸다. 모르면 null(홈 그대로). */
+function passRouteFromPayBack(){
+  var saved = null;
+  try{ saved = JSON.parse(sessionStorage.getItem(PAY_BACK_KEY) || 'null'); }catch(e){ saved = null; }
+  if(!saved || !saved.at || Date.now() - saved.at > 30 * 60 * 1000) return null;
+  var r = saved.route;
+  if(r === 'saju' || r === 'report13') return 'report13';
+  if(r === 'report' || r === 'mbtiReport') return 'mbtiReport';
+  if(r === 'compat' || r === 'groupCompat' || r === 'pairDeep') return 'compat';
+  return null;
+}
+/* ★ 2026-10-06 대표님 지시 "결제하면 바로 심층보기로 들어가지게 · 다른 결제도 결제하고 난 이후의 화면이 열리게" —
+   deep 이 참이면(결제 성공 복귀) 떠나기 전 자리로 돌리는 데서 그치지 않고, 궁합은 그 쌍의 긴 풀이(13장)까지 연다.
+   취소·실패 복귀(payCancelReturn)는 deep 없이 부른다 — 결제 안 한 분을 잠긴 풀이로 보내지 않는다. */
+function restorePayPosition(productId, deep){
   var saved = null;
   try{
     var raw = sessionStorage.getItem(PAY_BACK_KEY);
@@ -6733,12 +6753,16 @@ function restorePayPosition(productId){
     /* 모임 화면(groupCompat·pairDeep)에서 떠난 경우에만 — GROUP_VIEW 는 다른 탭으로 가도 남아 있어서
        내 사주에서 떠났는데 모임으로 돌려보내는 일이 생긴다(검사기가 잡았다). */
     var inGroup = (saved.route === 'groupCompat' || saved.route === 'pairDeep');
+    var compatDeep = !!deep && payBackIsCompat(productId, saved.route);
     if(inGroup && c.groupId){
       var pd = (saved.route === 'pairDeep') ? c.pairDeep : null;
       setTimeout(function(){
-        try{ openSavedGroup(c.groupId, function(){ if(pd){ PAIR_DEEP = {ai:pd.ai, bi:pd.bi}; setRoute('pairDeep'); } }); }
+        try{ openSavedGroup(c.groupId, function(){ if(pd){ PAIR_DEEP = {ai:pd.ai, bi:pd.bi, story: compatDeep}; setRoute('pairDeep'); if(compatDeep) scrollToTopNow(); } }); }
         catch(e){ console.warn('결제 복귀 모임 다시 열기 실패', e); }
       }, 0);
+    } else if(compatDeep && saved.route === 'compat' && !COMPAT_SUB && COMPAT_DRAFT && COMPAT_DRAFT.result){
+      /* 1:1 결과 화면에서 떠났으면 긴 풀이로. 사주·성격유형 궁합 상세(COMPAT_SUB)에서 떠났으면 그 화면이 곧 결제한 화면이라 그대로 둔다. */
+      COMPAT_SUB = 'story';
     }
   }catch(e){ console.warn('결제 복귀 자리 되돌리기 실패', e); }
 }
@@ -9162,7 +9186,8 @@ var ENT_RECENT = [];
 var ORDER_STATUS = {
   paid:    ['결제 완료',        'ok'],
   created: ['승인 전에 멈춤',   'warn'],
-  failed:  ['결제 실패',        'bad']
+  failed:  ['결제 실패',        'bad'],
+  refunded:['환불됨',           'warn']
 };
 
 function supportGo(route){
@@ -16962,8 +16987,10 @@ function renderSetupStep3(){
       /* ★ R50 — 홈에서 서비스를 고르다가 프로필을 만들게 된 경우다.
          여기서 홈으로 떨어뜨리면 방금 고른 것이 없던 일이 된다. */
       var m = PENDING_SERVICE; PENDING_SERVICE = null;
+      /* ★ 2026-10-06 대표님 지시 "로그인하고 초기 화면은 오늘탭이 아닌 홈탭으로" — 사주(self) 쪽은 홈에 선다.
+         궁합을 고르고 온 분은 그대로 궁합으로 보낸다(고른 것이 없던 일이 되지 않게). */
       setMode(m);
-      ROUTE = (m==='compat') ? 'compat' : 'today';
+      ROUTE = (m==='compat') ? 'compat' : 'home';
       showToast('프로필이 저장됐어요.');
     } else {
       ROUTE='home';
@@ -17349,7 +17376,7 @@ function statsDelta(now, before, won){
    | 공지·배너 | 만듦 (2026-09-11 "나중을 위해서 구현은 해놔라") |
    | 궁합 링크·모임 · AI 해석 | 문서에 없지만 우리만 있는 것이라 넣음 |
    | 신고·쿠폰·운세 문구·푸시·A/B·감사 로그 | **뺌** — 기능 자체가 없음 |
-   | 환불 '승인' 단추 | **뺌** — 토스 환불 API 를 아직 안 붙였음 |
+   | 환불 '승인' 단추 | 2026-10-06 붙임 — [주문 확인] 창의 [환불 처리](adminRefundButton · stats action:'refund') |
    | DAU/MAU·리텐션·유입 경로 | **뺌** — 접속·유입 이벤트 표가 없음. 지어낸 숫자를 띄우지 않음 |
 
    ★ 아이콘은 인라인 SVG 입니다(adminIcon). 바깥 CDN 을 부르지 않습니다.
@@ -18025,7 +18052,7 @@ function adminMemberDrawer(r){
     var line = el('div',{style:'display:flex;gap:8px;font-size:12.5px;padding:6px 0;border-bottom:1px solid rgba(31,28,23,0.08);'});
     line.appendChild(el('span',{class:'ad-sub2', style:'width:96px;flex:0 0 auto;'},[statsTime(o.at).slice(0,12)]));
     line.appendChild(el('span',{style:'min-width:0;'},[o.name + ' ' + formatWon(o.amount) + ' — '
-      + ({paid:'결제완료', created:'승인 전에 멈춤', failed:'실패'}[o.status] || o.status)]));
+      + ({paid:'결제완료', created:'승인 전에 멈춤', failed:'실패', refunded:'환불됨'}[o.status] || o.status)]));
     panel.appendChild(line);
   });
 
@@ -18096,6 +18123,7 @@ function adminTickets(body){
   talk.appendChild(el('p',{class:'ad-note'},[
     '보내신 때 ' + statsTime(cur.created_at)
     + (cur.contact ? ' · 연락처 ' + cur.contact : ' · 연락처를 안 적으셨어요')]));
+  talk.appendChild(csOrdersBlock(cur));
 
   var thread = el('div',{class:'ad-thread'});
   thread.appendChild(el('div',{class:'ad-bub ad-bub-them'},[cur.body || '']));
@@ -18170,7 +18198,7 @@ function adminPayments(body){
     tr.appendChild(adTd([o.name]));
     tr.appendChild(adTd([formatWon(o.amount)],'ad-num'));
     tr.appendChild(adTd([el('span',{class:'ad-sub2'},[statsTime(o.paidAt || o.at)])],'ad-nowrap'));
-    tr.appendChild(adTd([adTag({paid:'결제완료', created:'승인 전 멈춤', failed:'실패'}[o.status] || o.status,
+    tr.appendChild(adTd([adTag({paid:'결제완료', created:'승인 전 멈춤', failed:'실패', refunded:'환불됨'}[o.status] || o.status,
       o.status === 'paid' ? null : 'out')],'ad-nowrap'));
     /* ★ 2026-09-21 — 카카오 회원번호(환불 때 누구 결제인지 맞추는 열쇠). 없으면 '—'. */
     tr.appendChild(adTd([el('span',{class:'ad-sub2'},[o.kakaoId ? String(o.kakaoId) : '—'])],'ad-nowrap'));
@@ -18185,7 +18213,7 @@ function adminPayments(body){
 
   body.appendChild(adCard([
     adH('환불'),
-    el('p',{class:'ad-note'},['환불 처리 단추는 아직 없어요. 토스 환불 API 를 안 붙였기 때문이에요 — 누르면 아무 일도 안 나는 단추를 두지 않으려고 뺐습니다.']),
+    el('p',{class:'ad-note'},['환불은 줄을 눌러 여는 [주문 확인] 창의 [환불 처리]로 해요. 토스 결제 취소와 손님 화면 닫기가 함께 돼요.']),
     el('p',{class:'ad-note'},['지금은 [열람 여부]로 이미 읽으셨는지 확인하시고(약관 제8조), 토스 상점 관리자에서 직접 환불하시면 됩니다.'])
   ]));
 }
@@ -18618,6 +18646,67 @@ function loadStats(){
 }
 
 /* 주문 하나 — 환불 판단용 */
+/* ★ 2026-10-06 대표님 지시 "아무거도 안적으면 어떻게 환불해줘야되냐 admin에 주문번호를 적어줘야지" —
+   문의를 보낸 분의 결제 내역(서버 api/feedback.js attachOrders 가 붙여 줌)을 문의 상세에 늘어놓는다.
+   줄을 누르면 [주문 확인](openOrderLookup)이 열려 토스 결제 조회·누구의 결제인가까지 본다.
+   ★ cur.orders 가 아예 없으면(옛 배포본) '안 내려줘요', 빈 배열이면 '결제 내역 없음'이라고 적는다 — 둘을 섞지 않는다. */
+function csOrdersBlock(cur){
+  var box = el('div',{class:'ad-cs-orders', style:'margin:8px 0 12px;'});
+  box.appendChild(el('div',{style:'font-size:12.5px;font-weight:600;margin-bottom:4px;'},['이 손님의 결제']));
+  if(cur.order_id) box.appendChild(el('div',{class:'ad-sub2'},['손님이 적은 주문번호: ' + cur.order_id]));
+  if(!Array.isArray(cur.orders)){
+    box.appendChild(el('div',{class:'ad-sub2'},['서버가 결제 내역을 안 내려줬어요(배포 직후일 수 있어요).']));
+    return box;
+  }
+  if(!cur.orders.length){
+    box.appendChild(el('div',{class:'ad-sub2'},['결제 내역 없음 — 이 손님의 세션·카카오 계정으로 결제된 건이 없어요.']));
+    return box;
+  }
+  cur.orders.forEach(function(o){
+    var def = productDef(o.productId);
+    var row = el('button',{type:'button', class:'ad-titem', style:'display:block;width:100%;text-align:left;margin-top:4px;',
+      onclick:(function(id){ return function(){ openOrderLookup(id); }; })(o.orderId)});
+    row.appendChild(el('div',{style:'font-size:13px;'},[
+      (def ? def.name : o.productId) + ' · ' + formatWon(o.amount) + ' · ' + statsTime(o.paidAt || o.createdAt)
+      + (o.status === 'refunded' ? ' · 환불됨' : '')]));
+    row.appendChild(el('div',{class:'ad-sub2', style:'word-break:break-all;'},['주문번호 ' + o.orderId + ' · 눌러서 주문 확인']));
+    box.appendChild(row);
+  });
+  return box;
+}
+/* ★ 2026-10-06 대표님 결정 A — [환불 처리]. 누르면 사유를 묻고 한 번 더 확인받은 뒤 서버(action:'refund')가
+   토스 결제 취소 → 주문 '환불됨' 을 한다. 그러면 그 손님의 유료 화면(이미 만든 AI 풀이 포함)이 닫힌다.
+   ★ 실제 돈이 돌아갑니다. 확인 창을 빼지 마십시오. */
+function adminRefundButton(o){
+  var wrap = el('div',{style:'margin:12px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;'});
+  wrap.appendChild(el('p',{class:'biz-hint', style:'margin:0 0 6px;'},
+    ['환불하면 토스에서 '+formatWon(o.amount)+' 전액이 취소되고, 이 손님 화면의 유료 풀이(이미 만든 AI 풀이 포함)가 닫혀요. 되돌릴 수 없어요.']));
+  var inp = el('input',{type:'text', class:'biz-input', maxlength:'200', placeholder:'환불 사유 (예: 고객 요청)', value:'고객 요청 환불'});
+  wrap.appendChild(inp);
+  var msg = el('p',{class:'biz-hint', style:'margin:6px 0 0;'},['']);
+  var btn = el('button',{type:'button', class:'btn btn-block', style:'margin-top:8px;border-color:var(--red-hi);color:var(--red-hi);',
+    onclick:function(){
+      var reason = (inp.value||'').trim() || '고객 요청 환불';
+      if(!window.confirm('정말 환불할까요?\n\n'+(o.productName||'')+' · '+formatWon(o.amount)+'\n주문번호 '+o.receiptId+'\n\n토스에서 전액 취소되고 손님 화면의 유료 풀이가 닫혀요.')) return;
+      btn.disabled = true; msg.textContent = '환불하는 중이에요…';
+      fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'}, credentials:'include',
+        body:JSON.stringify({action:'refund', receiptId:o.receiptId, reason:reason})})
+        .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+        .then(function(r){
+          if(r.ok && r.d && r.d.ok){
+            msg.textContent = r.d.already ? '이미 환불된 주문이었어요. 표시를 환불됨으로 맞췄어요.' : '환불했어요. 토스 취소 완료 · 손님 화면의 유료 풀이가 닫혀요.';
+            showToast('환불했어요');
+            STATS_DATA = null; CS_ADMIN.state = 'idle';
+          } else {
+            btn.disabled = false;
+            msg.textContent = (r.d && r.d.reason) || '환불하지 못했어요.';
+          }
+        })
+        .catch(function(){ btn.disabled = false; msg.textContent = '서버에 닿지 못했어요. 토스 콘솔에서 이 주문이 취소됐는지 먼저 확인해 주세요.'; });
+    }},['환불 처리']);
+  wrap.appendChild(btn); wrap.appendChild(msg);
+  return wrap;
+}
 function openOrderLookup(receiptId){
   var body=el('div',{class:'sheet-body'});
   var status=el('p',{class:'biz-hint'},['찾는 중이에요…']);
@@ -18633,10 +18722,15 @@ function openOrderLookup(receiptId){
       function row(k,v){ body.appendChild(el('p',{class:'legal-row'},[el('strong',{},[k]),' — ',String(v)])); }
       row('상품', o.productName);
       row('금액', formatWon(o.amount));
-      row('상태', {paid:'결제완료', created:'미완료', failed:'실패'}[o.status] || o.status);
+      row('상태', {paid:'결제완료', created:'미완료', failed:'실패', refunded:'환불됨'}[o.status] || o.status);
       row('영수증 번호', o.receiptId);
       row('결제 시각', o.paidAt ? fmtDateTime(o.paidAt) : '—');
+      if(o.status === 'refunded'){
+        row('환불 시각', o.refundedAt ? fmtDateTime(o.refundedAt) : '—');
+        if(o.refundReason) row('환불 사유', o.refundReason);
+      }
       if(d.passUntil) row('이용권 만료', fmtDateTime(d.passUntil));
+      if(o.status === 'paid') body.appendChild(adminRefundButton(o));
       /* ★ 2026-09-21 대표님 지시 — 환불 때 "이 손님이 맞는가"를 맞출 정보. 서버가 결제 세션 → 카카오
          회원번호 → 그 계정의 프로필을 맞대어 내려준다(action:'order' 의 who). 없으면 없다고 적는다. */
       body.appendChild(el('h4',{style:'margin-top:14px;'},['누구의 결제인가']));
@@ -27133,13 +27227,14 @@ scheduleCharWarm();
     if(product){
       /* ★ 2026-09-07 — 연도가 붙은 상품('saju_full:2026')은 밑동으로 찾아야 한다. */
       var pbase2 = splitProductId(product).base;
-      var toRoute = PAID_PRODUCT_ROUTE[pbase2];
+      var toRoute = PAID_PRODUCT_ROUTE[pbase2] || (pbase2 === 'premium_pass' ? passRouteFromPayBack() : null);
       if(toRoute && hasAccess(product) && activeProfile()){
         ROUTE = toRoute;
-        if(pbase2 === 'compat_full'){ setMode('compat'); }
-        else if(pbase2 !== 'mbti_full'){ setMode('self'); }
-        /* ★ 탭만 맞추면 탭 안 첫 화면이 나온다. 보던 자리까지 되돌린 뒤에 그린다. */
-        restorePayPosition(product);
+        if(toRoute === 'compat'){ setMode('compat'); }
+        else if(toRoute !== 'mbtiReport'){ setMode('self'); }
+        /* ★ 탭만 맞추면 탭 안 첫 화면이 나온다. 보던 자리까지 되돌린 뒤에 그린다.
+           ★ 2026-10-06 — 둘째 인자 true: 결제한 풀이 화면(궁합은 긴 풀이)까지 연다. */
+        restorePayPosition(product, true);
         render();
         opened = true;
         PRODUCT_FROM_URL = null;
@@ -27328,10 +27423,10 @@ try{
       openPaywall: openPaywall,   /* 결제창 문구를 화면으로 재는 용도 (2026-09-21) */
       groupMyMemberIdx: groupMyMemberIdx, groupMyRowStale: groupMyRowStale,
       /* 2026-09-22 — 결제 취소 복귀 검사(checks-slow/pay_cancel.cjs)가 쓴다 */
-      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); },
+      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, startService: startService, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
       elemReadFacts: elemReadFacts, buildSajuHook: buildSajuHook, buildMbtiHook: buildMbtiHook, buildCompatWeave: buildCompatWeave,
       buildCompatHook: buildCompatHook, compatWeaveFacts: compatWeaveFacts, buildElemReading: function(sj){ var b = buildElemReading(sj, false); return b ? b.innerText : ''; },
-      Interpreter: Interpreter, pairDeep: function(){ return PAIR_DEEP; },
+      Interpreter: Interpreter, pairDeep: function(){ return PAIR_DEEP; }, compatSub: function(){ return COMPAT_SUB; },
       reopenCompat: reopenCompatFromHistory,
       openInviteLinkModal: openInviteLinkModal, groupRelation: groupRelation, groupMoreRel: groupMoreRel,
       gcRelation: function(){ return {rel:GC_RELATION, set:!!GC_RELATION_SET, link:PENDING_LINK_RELATION}; }

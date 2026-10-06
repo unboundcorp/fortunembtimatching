@@ -78,9 +78,12 @@ const ROWS = {
   sync:[{id:'5057959396',rev:7,profiles:2,history:5,groups:1,bytes:4096,
          at:'2026-09-01T00:00:01Z',updatedAt:'2026-09-10T00:00:02Z'}],
 };
+const REFUND_SENT = [];
 const TICKETS = [
   {id:11,kind:'refund',screen:'결제',body:'결제했는데 결과가 안 보여요.',contact:'test@example.com',
-   status:'received',created_at:'2026-09-10T01:00:00Z',reply:null},
+   status:'received',created_at:'2026-09-10T01:00:00Z',reply:null,
+   /* 2026-10-06 — 서버(attachOrders)가 붙여 주는 그분의 결제 내역. 손님이 주문번호를 안 적어도 보여야 한다 */
+   orders:[{orderId:'ORDCSCHECK123', productId:'compat_full', amount:990, status:'paid', paidAt:'2026-09-10T00:50:00Z', createdAt:'2026-09-10T00:49:00Z'}]},
   {id:10,kind:'idea',screen:'궁합',body:'링크가 안 열려요',contact:'',
    status:'answered',created_at:'2026-09-09T01:00:00Z',reply:'확인 후 고쳤습니다.'},
 ];
@@ -99,6 +102,7 @@ function wire(page, opt){
     if(u.indexOf('/api/stats') >= 0){
       let b = {}; try{ b = JSON.parse(r.postData() || '{}'); }catch(e){}
       if(b.action === 'rows') return r.respond(j({kind:b.kind, rows:ROWS[b.kind] || []}));
+      if(b.action === 'refund'){ REFUND_SENT.push(b); return r.respond(j({ok:true, order:{orderId:b.receiptId, status:'refunded'}})); }
       /* ★ 2026-09-21 — 주문 확인 창: 누구의 결제인지(카카오 회원번호·프로필·결제키)를 내려준다 */
       if(b.action === 'order') return r.respond(j({found:true,
         order:{receiptId:'ORD-1', productId:'compat_full', productName:'궁합 심층 해석', amount:990, status:'paid',
@@ -289,7 +293,7 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
 
   R.head('④ 문의 · 결제 · 궁합 · AI');
   o = await go('tickets');
-  ['#11','결제했는데 결과가 안 보여요','test@example.com','답변 저장']
+  ['#11','결제했는데 결과가 안 보여요','test@example.com','답변 저장','이 손님의 결제','ORDCSCHECK123','990원']
     .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "문의 — '" + w + "' 가 보인다"); });
   const badge = await page.evaluate(() => {
     const b = [...document.querySelectorAll('#adminRoot .ad-nav')].find(x => x.textContent.indexOf('문의') === 0);
@@ -298,7 +302,7 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   R.note(badge === '1', '메뉴에 미답변 건수가 붙는다', String(badge));
 
   o = await go('payments');
-  ['ORD-1','궁합 심층 해석','결제완료','실패','열람 여부','환불 처리 단추는 아직 없어요']
+  ['ORD-1','궁합 심층 해석','결제완료','실패','열람 여부','[환불 처리]']
     .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "결제 — '" + w + "' 가 보인다"); });
   /* ★ 2026-09-21 대표님 지시 — 환불 때 누구 결제인지 맞출 정보가 표와 창에 있는가 */
   R.note(o.text.indexOf('회원번호') >= 0 && o.text.indexOf('5079990001') >= 0, '결제 표에 카카오 회원번호 칸이 있다');
@@ -309,6 +313,17 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   /* ★ 2026-09-22 — 토스 결제 조회 절: 어느 MID 로 나갔는지 · 상태 · 카드사 · 실패 사유가 실제로 찍히는가 */
   ['토스 결제 조회','inyeon_mid_1','승인 실패','KB국민카드(11)','9410****0001','INVALID_UNREGISTERED_SUBMALL','등록되지 않은 서브몰']
     .forEach(function(w){ R.note(om.indexOf(w) >= 0, "주문 확인 창 · 토스 조회 — '" + w + "' 가 보인다"); });
+  /* ★ 2026-10-06 대표님 결정 A — 결제 완료 주문에는 [환불 처리]가 있고, 확인을 받은 뒤에만 서버로 refund 를 보낸다 */
+  R.note(om.indexOf('환불 처리') >= 0 && om.indexOf('되돌릴 수 없어요') >= 0, '주문 확인 창 — 결제 완료 주문에 [환불 처리]와 경고가 있다');
+  REFUND_SENT.length = 0;
+  page.once('dialog', d => d.dismiss());
+  await L.clickText(page, /^환불 처리$/); await L.wait(500);
+  R.note(REFUND_SENT.length === 0, '확인 창에서 취소하면 서버로 안 보낸다', JSON.stringify(REFUND_SENT));
+  page.once('dialog', d => d.accept());
+  await L.clickText(page, /^환불 처리$/); await L.wait(900);
+  const om2 = await page.evaluate(() => ((document.querySelector('#activeModal .modal-box')||{}).innerText || '').replace(/\s+/g,' '));
+  R.note(REFUND_SENT.length === 1 && REFUND_SENT[0].receiptId === 'ORD-1', '확인하면 refund 를 한 번 보낸다', JSON.stringify(REFUND_SENT));
+  R.note(om2.indexOf('환불했어요') >= 0, '환불 결과가 창에 적힌다');
   await page.evaluate(() => { const b = document.querySelector('#activeModal .modal-close-row .btn'); if(b) b.click(); }); await L.wait(300);
 
   o = await go('compat');

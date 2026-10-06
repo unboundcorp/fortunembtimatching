@@ -96,3 +96,23 @@ export function hasAccess(ent, productId) {
   }
   return !!ent.items[productId];
 }
+
+/* =====================================================================
+   ★ 2026-10-06 대표님 결정 A — 환불한 상품은 '이미 만든 AI 풀이'까지 닫는다.
+   ---------------------------------------------------------------------
+   refundedIds: 이 세션의 환불된 주문 상품 열쇠들(store.refundedProductIdsOf).
+   paidEnt: **결제 완료 주문만으로** 만든 권한(buildEntitlements). 테스트 허가는 넣지 않는다.
+   닫는 조건 = 환불된 주문이 그 상품(밑동이 같음)이거나 이용권이고, **그래도 남은 결제로는 그 상품을 못 연다.**
+   ★ 같은 상품을 두 번 사서 한 번만 환불했으면 남은 한 번으로 열려 있으므로 닫지 않는다.
+   ★ 화면·서버 두 자리(api/entitlements.js R76 · aiprompt.ownAiOf)가 이 함수 하나를 본다. 각자 판정하게 하지 마십시오.
+===================================================================== */
+export function refundClosed(refundedIds, productId, paidEnt) {
+  if (!productId || !Array.isArray(refundedIds) || !refundedIds.length) return false;
+  const base = splitProductId(productId).base;
+  const hit = refundedIds.some((id) => {
+    const b = splitProductId(id).base;
+    return b === base || b === 'premium_pass';
+  });
+  if (!hit) return false;
+  return !hasAccess(paidEnt || { items: {}, pass: null }, productId);
+}

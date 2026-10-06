@@ -10,8 +10,8 @@
 ===================================================================== */
 import { json, methodGuard } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { paidOrdersOf, recentOrdersOf, testAccessOf, adminAccessOf, aiUsedProductIds } from './_lib/store.js';
-import { buildEntitlements, kstYearOf } from './_lib/entitlements.js';
+import { paidOrdersOf, recentOrdersOf, testAccessOf, adminAccessOf, aiUsedProductIds, refundedProductIdsOf } from './_lib/store.js';
+import { buildEntitlements, kstYearOf, refundClosed } from './_lib/entitlements.js';
 import { productOf, productIdFor } from './_lib/products.js';
 import { isTossTestKey } from './_lib/company.js';
 
@@ -28,11 +28,12 @@ export default async function handler(req, res) {
        네 조회는 서로의 결과를 쓰지 않으므로 함께 보내도 값이 같다.
        ★ 실패 처리는 갈래마다 예전 그대로다 — 결제 내역·테스트 허가는 실패하면 전체 실패(잠금),
          만든 해석·최근 주문은 실패해도 무시하고 진행. 그래서 allSettled를 쓴다. */
-    const [ordersR, madeR, testR, recentR] = await Promise.allSettled([
+    const [ordersR, madeR, testR, recentR, refundR] = await Promise.allSettled([
       paidOrdersOf(sessionId),
       aiUsedProductIds(sessionId),
       testAccessOf(sessionId),
       recentOrdersOf(sessionId, 10),
+      refundedProductIdsOf(sessionId),
     ]);
     if (ordersR.status === 'rejected') throw ordersR.reason;
     const orders = ordersR.value;
@@ -65,10 +66,14 @@ export default async function handler(req, res) {
        ★ 새로 만드는 것은 여전히 막힌다 — 이용권이 끝나면 횟수 상한이 단품 기준(1회)으로
          내려가고 이미 그만큼 썼으므로 새 생성은 거절된다.
     ===================================================================== */
+    /* ★ 2026-10-06 대표님 결정 A — 환불한 상품은 만든 글도 닫는다(refundClosed). 환불 목록을 못 읽으면 닫지 않는다(예전대로). */
+    const refunded = refundR.status === 'fulfilled' ? refundR.value : [];
+    const paidOnly = buildEntitlements(orders);
     if (madeR.status === 'fulfilled') {
       for (const pid of madeR.value) {
         const p = productOf(pid);
         if (!p || p.kind === 'pass') continue;   /* 이용권 자체를 영구로 만들지는 않는다 */
+        if (refundClosed(refunded, p.id, paidOnly)) continue;
         if (!ent.items[p.id]) ent.items[p.id] = { purchasedAt: Date.now() };
       }
     } else {

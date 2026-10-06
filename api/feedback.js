@@ -77,6 +77,28 @@ function conf() {
   return { url: url.replace(/\/+$/, ''), key };
 }
 
+const inListQ = (arr) => encodeURIComponent(arr.map((v) => '"' + String(v).replace(/"/g, '') + '"').join(','));
+/* 문의 줄마다 orders 를 붙인다(결제 완료·환불된 건 · 최근 것부터). 화면 fortune.html 의 문의 상세가 읽는다. */
+export async function attachOrders(rows) {
+  if (!rows.length) return;
+  const kids = [...new Set(rows.map((r) => r.kakao_id).filter(Boolean))];
+  const kakaoSess = {};
+  if (kids.length) {
+    const links = await rest(`kakao_links?kakao_id=in.(${inListQ(kids)})&select=kakao_id,session_id`);
+    (links || []).forEach((l) => { if (l && l.kakao_id) kakaoSess[l.kakao_id] = l.session_id; });
+  }
+  const sids = new Set();
+  rows.forEach((r) => { if (r.session_id) sids.add(r.session_id); if (r.kakao_id && kakaoSess[r.kakao_id]) sids.add(kakaoSess[r.kakao_id]); });
+  if (!sids.size) return;
+  const orders = await rest(
+    `orders?session_id=in.(${inListQ([...sids])})&status=in.(paid,refunded)&select=session_id,order_id,product_id,amount,status,created_at,paid_at&order=paid_at.desc&limit=500`
+  );
+  rows.forEach((r) => {
+    const mine = new Set([r.session_id, r.kakao_id ? kakaoSess[r.kakao_id] : null].filter(Boolean));
+    r.orders = (orders || []).filter((o) => mine.has(o.session_id)).slice(0, 20)
+      .map((o) => ({ orderId: o.order_id, productId: o.product_id, amount: o.amount, status: o.status, paidAt: o.paid_at, createdAt: o.created_at }));
+  });
+}
 async function rest(path, init = {}) {
   const { url, key } = conf();
   const res = await fetch(`${url}/rest/v1/${path}`, {
@@ -391,6 +413,11 @@ export default async function handler(req, res) {
       const grant = await adminAccessOf(sessionId);
       if (!grant) return json(res, 404, { error: 'not_found', reason: '없는 주소예요.' });
       const rows = await rest('feedback?select=*&order=created_at.desc&limit=100');
+      /* ★ 2026-10-06 대표님 지시 "아무거도 안적으면 어떻게 환불해줘야되냐 admin에 주문번호를 적어줘야지" —
+         손님이 주문번호를 안 적어도 찾을 수 있게, 문의마다 **그분의 결제 내역**을 붙여 내려준다.
+         그분 = 문의를 보낸 세션 + 그 카카오 계정이 지금 가리키는 세션(결제는 로그인 때 최신 세션으로 옮겨진다).
+         결제를 못 찾아도 목록은 그대로 내려준다 — 이것 때문에 문의 목록이 안 열리면 안 된다. */
+      try { await attachOrders(rows || []); } catch (e) { console.warn('문의에 결제 붙이기 실패', e && e.message); }
       return json(res, 200, { items: rows || [] });
     } catch (err) {
       console.error('개선 의견 조회 실패', err && err.message);

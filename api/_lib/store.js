@@ -111,6 +111,27 @@ export async function markFailed(orderId) {
   });
 }
 
+/* ★ 2026-10-06 — 환불 처리. 'paid' 인 행만 바꾼다(이미 환불됐거나 결제 전이면 아무것도 안 바뀌고 null). */
+export async function markRefunded(orderId, reason) {
+  const rows = await rest(
+    `orders?order_id=eq.${encodeURIComponent(orderId)}&status=eq.paid`,
+    {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ status: 'refunded', refunded_at: new Date().toISOString(), refund_reason: String(reason || '').slice(0, 200) || null }),
+    }
+  );
+  return rows && rows[0] ? rows[0] : null;
+}
+
+/* ★ 2026-10-06 — 이 세션의 환불된 주문 상품 열쇠들. 환불한 상품은 '만든 글은 영구'(R76)·되찾기(ownAiOf)에서도 닫는다. */
+export async function refundedProductIdsOf(sessionId) {
+  const rows = await rest(
+    `orders?session_id=eq.${encodeURIComponent(sessionId)}&status=eq.refunded&select=product_id`
+  );
+  return [...new Set((rows || []).map((r) => r.product_id).filter(Boolean))];
+}
+
 export async function paidOrdersOf(sessionId) {
   return (await rest(
     `orders?session_id=eq.${encodeURIComponent(sessionId)}&status=eq.paid&select=*&order=paid_at.asc`

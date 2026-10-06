@@ -16,11 +16,11 @@
 ===================================================================== */
 import { readBody, json } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
-import { adminAccessOf } from './_lib/store.js';
+import { adminAccessOf, markRefunded } from './_lib/store.js';
 import { productOf, aiQuotaOf } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import { decodePersonRow, describeProfile } from './_lib/person.js';
-import { lookupPaymentByOrder } from './_lib/toss.js';
+import { lookupPaymentByOrder, cancelPayment } from './_lib/toss.js';
 
 /* AI 해석 1건당 대략 얼마가 나가는지 — 원가 감을 잡기 위한 값이다.
    Sonnet 5 기준 입력 $2 / 출력 $10 per MTok, 유료 10섹션 ≈ 7천 토큰으로 잡았다.
@@ -105,6 +105,45 @@ export default async function handler(req, res) {
 
     const body = readBody(req);
 
+    /* =====================================================================
+       ★ 2026-10-06 대표님 결정 A — [환불 처리]
+       ---------------------------------------------------------------------
+       ① 주문을 찾는다(결제 완료 · 결제키 있음) ② 우리 DB 가 '환불됨'을 받을 수 있는지 먼저 본다
+       ③ 토스 결제 취소 ④ 주문을 '환불됨'으로 바꾼다 → 권한 조회(paid 만 봄)에서 빠져 유료 화면이 닫힌다.
+       ★ ②를 ③보다 먼저 보는 이유: 토스에서 돈은 돌려줬는데 우리 기록이 그대로면 손님 화면이 계속 열린다.
+       ★ 이미 환불된 주문이면 토스를 다시 부르지 않고 그대로 알린다.
+       ★ 운영자 관문(위 adminAccessOf) 뒤에만 있다. 손님 창구에 붙이지 마십시오.
+    ===================================================================== */
+    if (body.action === 'refund') {
+      const receipt = String(body.receiptId || '').trim();
+      if (!receipt) return json(res, 400, { error: 'bad_request', reason: '주문번호를 넣어주세요.' });
+      const reason = String(body.reason || '').trim().slice(0, 200) || '고객 요청 환불';
+      const rows = await rest(`orders?order_id=eq.${encodeURIComponent(receipt)}&select=*&limit=1`);
+      const order = rows && rows[0] ? rows[0] : null;
+      if (!order) return json(res, 404, { error: 'not_found', reason: '그 번호로 된 주문이 없어요.' });
+      if (order.status === 'refunded') return json(res, 200, { ok: true, already: true, order: { orderId: order.order_id, status: 'refunded', refundedAt: order.refunded_at || null } });
+      if (order.status !== 'paid' || !order.payment_key) {
+        return json(res, 409, { error: 'not_paid', reason: '결제가 끝난 주문이 아니에요(상태 ' + order.status + '). 환불할 돈이 없어요.' });
+      }
+      /* ② 스키마 확인 — refunded_at 칸이 없으면 '환불됨'도 못 받는 상태다(2026-10-06 SQL 이 아직 안 돈 것). 토스를 부르기 전에 멈춘다. */
+      try { await rest(`orders?order_id=eq.${encodeURIComponent(receipt)}&select=refunded_at&limit=1`); }
+      catch (e) { return json(res, 503, { error: 'db_not_ready', reason: 'DB 에 환불 칸이 아직 없어요. 토스는 건드리지 않았어요(환불 SQL 을 먼저 돌려야 해요).' }); }
+
+      const c = await cancelPayment(order.payment_key, reason, 'refund-' + order.order_id);
+      if (!c.ok) {
+        console.error('토스 결제 취소 실패', order.order_id, c.code);
+        return json(res, 502, { error: 'toss_cancel_failed', code: c.code, reason: '토스 결제 취소가 거절됐어요: ' + (c.message || c.code) + ' · 돈은 안 돌려줬고 주문도 그대로예요.' });
+      }
+      let marked = null;
+      try { marked = await markRefunded(order.order_id, reason); } catch (e) { marked = null; }
+      if (!marked) {
+        console.error('★ 토스 취소는 됐는데 주문 표시 실패', order.order_id);
+        return json(res, 500, { error: 'mark_failed', tossCanceled: true,
+          reason: '★ 토스 환불은 완료됐는데 우리 주문 표시를 못 바꿨어요. 손님 화면이 아직 열려 있을 수 있어요. 다시 [환불 처리]를 누르면 표시만 바꿉니다(토스는 다시 취소되지 않아요).' });
+      }
+      return json(res, 200, { ok: true, already: !!c.already, order: { orderId: marked.order_id, status: marked.status, refundedAt: marked.refunded_at || null }, toss: { status: c.status, canceledAt: c.canceledAt || null, cancelAmount: c.cancelAmount || null } });
+    }
+
     /* ── 주문 하나 조회 — 환불을 판단할 때 쓴다 ────────────────────── */
     if (body.action === 'order') {
       const receipt = String(body.receiptId || '').trim();
@@ -165,6 +204,7 @@ export default async function handler(req, res) {
           paidAt: order.paid_at,
           paymentKey: order.payment_key ? '있음' : '없음',
           paymentKeyFull: order.payment_key || '',   /* 토스 콘솔에서 이 건을 찾는 열쇠 (운영자 화면 전용) */
+          refundedAt: order.refunded_at || null, refundReason: order.refund_reason || null,
           sessionId: order.session_id || '',
         },
         who,

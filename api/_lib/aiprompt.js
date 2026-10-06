@@ -10,9 +10,9 @@
    ★ 이 파일은 열쇠를 직접 쓰지 않는다. 부르는 쪽에서 process.env로 꺼내 넘긴다.
 ===================================================================== */
 import crypto from 'node:crypto';
-import { testAccessOf, paidOrdersOf, aiAlreadyUsed, getAiCache, latestAiForSubject } from './store.js';
+import { testAccessOf, paidOrdersOf, aiAlreadyUsed, getAiCache, latestAiForSubject, refundedProductIdsOf } from './store.js';
 import { splitProductId, aiQuotaOf } from './products.js';
-import { buildEntitlements } from './entitlements.js';
+import { buildEntitlements, refundClosed } from './entitlements.js';
 
 export const MODEL = 'claude-sonnet-5';
 /* ★ 2026-08-25 — 12000 → 20000. 대운 세 섹션이 실제 내용으로 채워지면서 글이 길어졌고,
@@ -401,6 +401,12 @@ export async function hasAiAccess(sessionId, productId) {
    ★ 두 창구가 이 함수 하나를 쓴다. 각자 판정하게 되돌리지 마라 — 그게 이번 결함의 원인이다. */
 export async function ownAiOf(sessionId, productId, cacheKey, subjectKey) {
   if (!sessionId || !productId || !cacheKey) return null;
+  /* ★ 2026-10-06 대표님 결정 A — 환불한 상품은 만든 글도 다시 안 연다. 남은 결제로 열리는 경우는 refundClosed 가 가른다. */
+  const refunded = await refundedProductIdsOf(sessionId);
+  if (refunded.length) {
+    const paidOnly = buildEntitlements(await paidOrdersOf(sessionId));
+    if (refundClosed(refunded, productId, paidOnly)) return null;
+  }
   if (await aiAlreadyUsed(sessionId, cacheKey)) {
     const cached = await getAiCache(cacheKey);
     if (cached && cached.body) return { body: cached.body, recovered: false };

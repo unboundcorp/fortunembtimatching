@@ -121,3 +121,40 @@ export async function lookupPaymentByOrder(orderId) {
   }
   return { found: true, payment: summarizePayment(data) };
 }
+
+/* =====================================================================
+   ★ 2026-10-06 — 결제 취소(환불) · 운영자 [환불 처리] 전용
+   ---------------------------------------------------------------------
+   대표님 결정 A: "관리자 화면 [환불 처리] → 우리 서버가 토스 결제 취소까지 하고, 주문을 '환불됨'으로 바꿔
+   유료 화면(이미 만든 AI 풀이 포함)을 닫는다."
+   POST /v1/payments/{paymentKey}/cancel · 본문 cancelReason(200자) · 전액 취소(cancelAmount 없음).
+   ★ Idempotency-Key 를 붙인다 — 단추를 두 번 누르거나 응답이 늦어 다시 눌러도 두 번 취소되지 않는다.
+   ★ 이미 취소된 결제(ALREADY_CANCELED_PAYMENT)는 '취소된 상태'로 본다 — 토스 콘솔에서 먼저 취소한 경우다.
+   ★ 시크릿 키는 authHeader 에서만 쓰고 돌려주는 값에는 안 싣는다.
+   ★ 호출부는 api/stats.js 의 action:'refund'(운영자 관문 뒤) 하나다. 손님 창구에 붙이지 마십시오.
+===================================================================== */
+const CANCEL_URL = (key) => 'https://api.tosspayments.com/v1/payments/' + encodeURIComponent(key) + '/cancel';
+export async function cancelPayment(paymentKey, reason, idemKey) {
+  const key = String(paymentKey || '').trim();
+  if (!key) return { ok: false, code: 'no_payment_key', message: '결제키가 없는 주문이에요.' };
+  const res = await fetch(CANCEL_URL(key), {
+    method: 'POST',
+    headers: {
+      Authorization: authHeader(),
+      'Content-Type': 'application/json',
+      'Idempotency-Key': String(idemKey || ('refund-' + key)).slice(0, 300),
+    },
+    body: JSON.stringify({ cancelReason: String(reason || '고객 요청 환불').slice(0, 200) }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (data.code === 'ALREADY_CANCELED_PAYMENT') return { ok: true, already: true, status: 'CANCELED' };
+    return { ok: false, code: data.code || `HTTP_${res.status}`, message: data.message || '토스 결제 취소에 실패했습니다.' };
+  }
+  /* 전액 취소면 CANCELED. 그 밖의 상태(부분 취소 등)는 성공으로 치지 않는다 — 우리는 전액만 취소한다. */
+  if (data.status !== 'CANCELED') {
+    return { ok: false, code: 'NOT_CANCELED', message: '토스가 취소 완료로 답하지 않았어요(상태 ' + (data.status || '없음') + ').', status: data.status };
+  }
+  const c = Array.isArray(data.cancels) && data.cancels.length ? data.cancels[data.cancels.length - 1] : {};
+  return { ok: true, status: data.status, canceledAt: c.canceledAt || null, cancelAmount: c.cancelAmount || null };
+}

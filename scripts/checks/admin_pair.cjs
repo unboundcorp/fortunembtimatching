@@ -75,7 +75,9 @@ const menuLabels = (function(){
 });
 R.note(!/function adminReports\(|function adminCoupons\(/.test(codeOnly),
        '신고·쿠폰 화면을 그리는 함수 자체가 없다');
-R.note(/환불 처리 단추는 아직 없어요/.test(html), '환불 단추를 왜 안 만들었는지 화면에 적었다');
+/* 2026-10-06 — 환불 단추가 생겼다(대표님 결정 A). 옛 '아직 없어요' 문장이 남아 있으면 화면이 거짓말을 한다. */
+R.note(!/환불 처리 단추는 아직 없어요/.test(html) && /function adminRefundButton\(o\)/.test(html) && /\[주문 확인\] 창의 \[환불 처리\]/.test(html),
+       '환불은 [주문 확인] 창의 [환불 처리]로 한다고 적었고, 옛 "아직 없어요" 문장은 없다');
 R.note(/접속자 수\(DAU\/MAU\)/.test(html), '없는 지표를 지어내지 않고 그 사실을 적었다');
 
 R.head('── 바깥에 기대지 않는가 (이 파일은 혼자 열려야 한다)');
