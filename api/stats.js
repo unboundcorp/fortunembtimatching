@@ -17,7 +17,7 @@
 import { readBody, json } from './_lib/http.js';
 import { ensureSession } from './_lib/session.js';
 import { adminAccessOf, markRefunded } from './_lib/store.js';
-import { productOf, aiQuotaOf } from './_lib/products.js';
+import { productOf, aiQuotaOf, splitProductId } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import { decodePersonRow, describeProfile } from './_lib/person.js';
 import { lookupPaymentByOrder, cancelPayment } from './_lib/toss.js';
@@ -327,6 +327,45 @@ export default async function handler(req, res) {
             (links || []).forEach((l) => { if (l.session_id) kakaoBySid[l.session_id] = l.kakao_id; });
           }
         } catch (e) { /* 못 맞대도 표는 나간다 — 회원번호 칸만 빈다 */ }
+        /* ★ 2026-10-07 대표님 지시 "결제 탭에 비용을 넣어서 열람여부와 함께 비용이 나갔는지 안나갔는지 열 하나 추가해서 확인할 수 있게 해".
+             주문마다 그 결제로 AI 풀이를 만들었는지(=원가가 나갔는지)와 그 값을 붙인다.
+             ai_usage(같은 세션 · 언제 · 토큰) → ai_cache(무슨 상품) 로 맞대고, 한 풀이는 **한 주문에만** 붙인다 —
+             그 풀이를 만들 때 이미 결제돼 있던 같은 상품(이용권이면 세 상품 모두)의 주문 중 **가장 나중 것**.
+             ★ 테스트 허가로 만든 풀이처럼 맞는 주문이 없으면 어느 줄에도 안 붙는다(지어내지 않는다). */
+        const aiByOrder = {};
+        try {
+          const paid = (rows || []).filter((o) => (o.status === 'paid' || o.status === 'refunded') && o.session_id);
+          const sids = [...new Set(paid.map((o) => o.session_id))];
+          if (sids.length) {
+            const inS = encodeURIComponent(sids.map((v) => '"' + String(v).replace(/"/g, '') + '"').join(','));
+            const uses = await rest(`ai_usage?session_id=in.(${inS})&select=session_id,cache_key,created_at,in_tokens,out_tokens,cache_read_tokens,cache_write_tokens`);
+            const keys = [...new Set((uses || []).map((u) => u.cache_key).filter(Boolean))];
+            const prodByKey = {};
+            if (keys.length) {
+              const inK = encodeURIComponent(keys.map((v) => '"' + String(v).replace(/"/g, '') + '"').join(','));
+              const cs = await rest(`ai_cache?cache_key=in.(${inK})&select=cache_key,product_id`);
+              (cs || []).forEach((c) => { prodByKey[c.cache_key] = c.product_id; });
+            }
+            (uses || []).forEach((u) => {
+              const prod = prodByKey[u.cache_key]; if (!prod) return;
+              const ub = splitProductId(prod).base;
+              const t = Date.parse(u.created_at) || 0;
+              const cand = paid.filter((o) => {
+                if (o.session_id !== u.session_id) return false;
+                const ot = Date.parse(o.paid_at || o.created_at) || 0;
+                if (ot > t) return false;
+                return o.product_id === prod || splitProductId(o.product_id).base === 'premium_pass'
+                  || (splitProductId(o.product_id).base === ub && ub !== 'saju_full');
+              }).sort((x, y) => (Date.parse(y.paid_at || y.created_at) || 0) - (Date.parse(x.paid_at || x.created_at) || 0));
+              if (!cand.length) return;
+              const id = cand[0].order_id;
+              const has = (u.in_tokens || u.out_tokens);
+              const won = has ? tokenCostKrw(u.in_tokens, u.out_tokens, u.cache_read_tokens, u.cache_write_tokens) : AI_COST_KRW;
+              const a = aiByOrder[id] || (aiByOrder[id] = { n: 0, krw: 0, estimated: false });
+              a.n += 1; a.krw += won; if (!has) a.estimated = true;
+            });
+          }
+        } catch (e) { /* 못 맞대도 표는 나간다 — 비용 칸이 '확인 못 함'으로 */ Object.defineProperty(aiByOrder, '__err', { value: true }); }
         return json(res, 200, { kind, rows: (rows || []).map((o) => {
           const p = productOf(o.product_id);
           return {
@@ -340,6 +379,10 @@ export default async function handler(req, res) {
             paymentKey: o.payment_key ? '있음' : '없음',
             at: o.created_at,
             paidAt: o.paid_at || null,
+            /* null = 확인 못 함 · {n:0} = 안 나감 · {n, krw, estimated} = 나감 */
+            aiCost: aiByOrder.__err ? null
+              : (aiByOrder[o.order_id] ? { n: aiByOrder[o.order_id].n, krw: Math.round(aiByOrder[o.order_id].krw), estimated: aiByOrder[o.order_id].estimated }
+                 : { n: 0, krw: 0, estimated: false }),
           };
         }) });
       }

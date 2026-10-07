@@ -57,7 +57,9 @@ const ROWS = {
      synced:false,rev:null,syncedAt:null,history:0,groups:0,paidCount:0,revenue:0,profiles:[],orders:[]}],
   orders:[
     {id:'ORD-1',productId:'compat_full',name:'궁합 심층 해석',amount:990,status:'paid',
-     sessionId:'sess-abc',paymentKey:'있음',at:'2026-09-10T02:03:04Z',paidAt:'2026-09-10T02:03:44Z',kakaoId:'5079990001'},
+     sessionId:'sess-abc',paymentKey:'있음',at:'2026-09-10T02:03:04Z',paidAt:'2026-09-10T02:03:44Z',kakaoId:'5079990001',aiCost:{n:1,krw:216,estimated:false}},
+    {id:'ORD-2',productId:'mbti_full',name:'성격유형 풀이 전체 해석',amount:1900,status:'paid',
+     sessionId:'sess-abc',paymentKey:'있음',at:'2026-09-10T02:10:00Z',paidAt:'2026-09-10T02:10:30Z',kakaoId:'5079990001',aiCost:{n:0,krw:0,estimated:false}},
     {id:'ORD-3',productId:'compat_full',name:'궁합 심층 해석',amount:990,status:'failed',
      sessionId:'sess-zzz',paymentKey:'없음',at:'2026-09-10T03:00:00Z',paidAt:null}],
   rooms:[{id:'RM-001',a:P_A,b:P_B,at:'2026-09-10T01:02:03Z',joinedAt:'2026-09-10T01:09:08Z',expiresAt:'2026-10-10T01:02:03Z'},
@@ -306,6 +308,18 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
     .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "결제 — '" + w + "' 가 보인다"); });
   /* ★ 2026-09-21 대표님 지시 — 환불 때 누구 결제인지 맞출 정보가 표와 창에 있는가 */
   R.note(o.text.indexOf('회원번호') >= 0 && o.text.indexOf('5079990001') >= 0, '결제 표에 카카오 회원번호 칸이 있다');
+  /* ★ 2026-10-07 대표님 지시 — 결제 표에 AI 비용 칸(나갔나 · 얼마) */
+  const ai = await page.evaluate(function(){
+    var t = document.querySelector('#adminRoot table'); if(!t) return null;
+    var hs = [...t.querySelectorAll('thead th')].map(function(h){ return h.textContent.trim(); }), i = hs.indexOf('AI 비용');
+    if(i < 0) return {hs:hs};
+    var m = {}; [...t.querySelectorAll('tbody tr')].forEach(function(r){ m[r.cells[0].textContent.trim()] = r.cells[i].textContent.trim(); });
+    return m;
+  });
+  R.note(ai && ai['ORD-1'] === '216원', '결제 표 AI 비용 — 만든 결제는 값', JSON.stringify(ai));
+  R.note(ai && ai['ORD-2'] === '안 나감', '결제 표 AI 비용 — 안 만든 결제는 「안 나감」', JSON.stringify(ai));
+  R.note(ai && ai['ORD-3'] === '—', '결제 표 AI 비용 — 실패한 결제는 —', JSON.stringify(ai));
+  if(process.env.SHOT) await page.screenshot({path: process.env.SHOT + '/pay_pc.png'});
   await L.clickText(page, /열람 여부/); await L.wait(900);
   const om = await page.evaluate(() => ((document.querySelector('#activeModal .modal-box')||{}).innerText || '').replace(/\s+/g,' '));
   ['누구의 결제인가','카카오 회원번호','5079990001','검사','ENFP','1990-01-02','tviva20260910','영수증 번호가 같은지']
