@@ -79,6 +79,8 @@ const wait = L.wait;
       return T.gcMeetRow(a) + ';' + T.gcMeetRow(Object.assign({}, a, {name:'정인', mbti:'ISTJ', day:a.day+1})) + ';' + T.gcMeetRow(Object.assign({}, a, {name:'나래', mbti:'ESFP', year:a.year+3}));
     });
     await q.evaluate(function(){ window.__INYEON_TEST__.openSavedGroup('gC'); }); await wait(1800);
+    /* 2026-10-07 — 아무도 안 누르면 총평만 보인다. 첫 사람(나)을 눌러 그 사람의 쌍 카드를 연다. */
+    await q.evaluate(function(){ var n = document.querySelector('#main .gc-node'); if(n) n.click(); }); await wait(500);
     const gt = await q.evaluate(function(){ return document.querySelector('#main').innerText; });
     R.note(/정인과의 궁합/.test(gt) && !/정인와의/.test(gt), "모임 쌍 — '정인과의 궁합'(받침 있는 이름은 '과')");
     R.note(/나래와의 궁합/.test(gt), "모임 쌍 — '나래와의 궁합'(받침 없는 이름은 '와')");

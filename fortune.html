@@ -13616,17 +13616,19 @@ var TODAY_CAT_LOW = {
    여기에는 **무엇을 하면 좋은지만** 담는다. 이유를 두 번 말하지 않기 위해서다.
    열두 단계의 순서와 뜻은 DAEUN_STAGE_POWER와 같다. */
 var TODAY_STAGE_ACT = {
-  제왕:'밀어붙여도 버텨요.',
-  건록:'맡은 일을 밀고 나가기 좋아요.',
-  관대:'앞에 나서서 목소리를 내기 좋아요.',
-  장생:'새로 시작하는 일에 힘이 붙어요.',
-  양:'서두르지 않는 편이 나아요.',
-  쇠:'완급을 조절하면 좋아요.',
-  목욕:'결정은 한 박자 늦추세요.',
-  태:'크게 벌이기보다 준비하는 쪽이 맞아요.',
-  병:'무리하지 않는 것이 오늘의 요령이에요.',
+  /* ★ 2026-10-07 대표님 지시 — "밀어붙여도 버텨요 … 뭘 버틴다는 거야? 말투가 ai 스럽네" → 사람 말로 다시 씀("엉 그대로 바꿔").
+       방향(TODAY_STAGE_DIR)은 그대로. 묘·절은 그대로 둠. */
+  제왕:'하던 일을 끝까지 밀고 가도 좋아요.',
+  건록:'맡은 일을 내 힘으로 해내기 좋아요.',
+  관대:'앞에 나서서 의견을 내기 좋아요.',
+  장생:'새로 시작하는 일이 잘 풀려요.',
+  양:'서두르지 말고 천천히 가세요.',
+  쇠:'힘을 아껴 가며 쓰세요.',
+  목욕:'중요한 결정은 하루쯤 미뤄 보세요.',
+  태:'일을 벌이기보다 준비해 두기 좋아요.',
+  병:'무리하지 말고 쉬어 가세요.',
   묘:'새로 벌이는 일은 다음으로 미루세요.',
-  사:'오늘은 지키는 쪽에 무게를 두세요.',
+  사:'새로 하기보다 있는 것을 지키세요.',
   절:'욕심만 덜어내면 무난하게 지나가요.'
 };
 /* ★ 2026-09-24 대표님 지적 — "판단력은 평소만큼 좋은 날이니, 새로 벌이는 일은 다음으로 미루세요"가 모순.
@@ -19022,7 +19024,9 @@ function renderHomeDash(p){
   /* ★ 2026-10-04 대표님 지시("경쟁사에 뒤처지지 않게 세련되고 감성있게") — 한자 번호 줄 셋을 그림 카드로.
        경쟁 서비스(사주도령·이음)는 첫 화면에 '무엇을 볼 수 있나'를 캐릭터 그림 + 누구와(칩) + 값으로 늘어놓는다.
        우리는 줄 글자뿐이라 무엇을 파는지가 안 보였다. 값은 PRODUCTS 에서 읽는다(손으로 적지 않는다).
-       ★ 붉은 면은 결제 권유 상자만 쓴다는 규칙(2026-10-04)대로, 카드는 모두 같은 면이고 값만 붉다. */
+       ★ 붉은 면은 결제 권유 상자만 쓴다는 규칙(2026-10-04)대로, 카드는 모두 같은 면이고 아래 줄만 붉다.
+       ★ 2026-10-07 대표님 지시 "비용은 없애라 비용은 맨 마지막에 보이게 세팅해야 허들이 없지" —
+         값(1,900원)을 카드에서 뺐다. 값은 잠금 카드·결제창에서 처음 보인다. 되살리지 마십시오. */
   function hdCard(o){
     var b = el('button',{class:'hd-card', type:'button', onclick:o.go});
     var tx = el('div',{class:'hc-text'});
@@ -19045,12 +19049,12 @@ function renderHomeDash(p){
   var dayKey = saju ? charKeyForDayStem(saju) : null;
   var mbtiKey = charKeyForMbti(p.mbti);
   menu.appendChild(hdCard({ chip:'나 1명', title:'내 사주 전체 풀이', sub:'성격·재물·건강 · 월별 운세 · 대운 구간',
-    price: sajuOpen ? '열려 있어요' : formatWon(sajuProduct().price), open:sajuOpen,
+    price: sajuOpen ? '열려 있어요' : '자세히 보기', open:sajuOpen,
     art:[dayKey ? buildCharSvg(dayKey, 72, {gender:p.gender}) : null],
     go:function(){ setMode('self'); ROUTE='report13'; render(); } }));
   var mbtiOpen = hasAccess(PRODUCTS.mbti_full.id);
   menu.appendChild(hdCard({ chip:'나 1명', title:'내 성격유형 풀이', sub:'강점·그림자·연애 스타일·관계 패턴',
-    price: mbtiOpen ? '열려 있어요' : formatWon(PRODUCTS.mbti_full.price), open:mbtiOpen,
+    price: mbtiOpen ? '열려 있어요' : '자세히 보기', open:mbtiOpen,
     art:[mbtiKey ? buildCharSvg(mbtiKey, 72, {gender:p.gender}) : null],
     go:function(){ setMode('self'); ROUTE='mbtiReport'; render(); } }));
   menu.appendChild(hdCard({ chip:'두 사람 · 여럿', title:'궁합 보기', sub:'링크 하나로 가족 · 친구 · 연인과',
@@ -22179,7 +22183,7 @@ function buildGroupCompatGraph(members, pairs, onSelect, opts){
 
   wrap.appendChild(stage);
   /* 두 분뿐이면 누를 까닭이 없다 (2026-09-26 둘이서 링크 정리) */
-  if(n > 2 && !opts.noHint) wrap.appendChild(el('p',{class:'gc-hint'},['궁금한 친구를 눌러보세요. 다시 누르면 전체로 돌아와요.']));
+  if(n > 2 && !opts.noHint) wrap.appendChild(el('p',{class:'gc-hint'},['궁금한 친구를 눌러보세요. 그 사람의 궁합이 아래에 나와요.']));
   wrap.appendChild(drawnBox);
 
   /* ★ R36 — 예전에는 '일상어 (등급 이름)' 두 벌을 나란히 적었다. 이름이 하나로 합쳐진 지금
@@ -24473,13 +24477,17 @@ function renderGroupCompat(){
     if(!cardsHost) return;
     var n = 0;
     $all('.gc-person-card', cardsHost).forEach(function(c){
-      var hit = (idx==null) || (String(idx) === c.getAttribute('data-mi'));
+      /* ★ 2026-10-07 대표님 지시 "아무것도 안 누르면 그냥 총평만 나오게 세팅 하자 그리고 누군가 눌러야
+           그 사람과의 궁합을 보여 주게 하자" — 아무도 안 눌렀으면 사람별 카드를 전부 접는다(위 총평만 남는다).
+           예전에는 전원 카드가 펼쳐져 화면이 길었다. 되살리지 마십시오. */
+      var hit = (idx!=null) && (String(idx) === c.getAttribute('data-mi'));
       c.classList.toggle('hidden', !hit);
       if(hit) n++;
     });
-    filterNote.textContent = (members.length <= 2) ? '' : (idx==null)
-      ? '지금은 ' + members.length + '명 모두의 궁합이 아래에 있어요. 위 캐릭터를 누르면 그 사람 것만 보여요.'
-      : (nameOr(members[idx].name,'이 사람') + '님의 궁합만 아래에 보이고 있어요. 다시 누르면 전체로 돌아와요.');
+    /* 셋 이상이면 그림 위 '궁금한 친구를 눌러보세요'가 이미 말한다 — 같은 말을 두 번 쓰지 않는다. 두 분이면 그 안내가 없어 여기서 적는다. */
+    filterNote.textContent = (idx==null)
+      ? (members.length <= 2 ? '캐릭터를 누르면 그 사람의 궁합이 아래에 나와요.' : '')
+      : (members.length <= 2 ? '' : (nameOr(members[idx].name,'이 사람') + '님의 궁합만 아래에 보이고 있어요. 다시 누르면 총평으로 돌아와요.'));
   }
   var filterNote = el('p',{class:'gc-filter-note', role:'status'},['']);
   function updateFocus(idx){

@@ -51,10 +51,10 @@ if(parts.every(Boolean) && fnSrc){
   ok("좋은 날 × 묘 → '…좋은 날이지만, 새로 벌이는 일은 다음으로 미루세요.'",
      F.todayEndLine('else','묘') === '판단력은 평소만큼 좋은 날이지만, 새로 벌이는 일은 다음으로 미루세요.', F.todayEndLine('else','묘'));
   ok("좋은 날 × 절 → 대표님 원문 그대로 '이니'", F.todayEndLine('else','절') === '판단력은 평소만큼 좋은 날이니, 욕심만 덜어내면 무난하게 지나가요.', F.todayEndLine('else','절'));
-  ok("쏠리기 쉬운 날 × 제왕 → '이지만, 밀어붙여도 버텨요'", F.todayEndLine('most','제왕') === '한쪽으로 쏠리기 쉬운 날이지만, 밀어붙여도 버텨요.', F.todayEndLine('most','제왕'));
-  ok("쏠리기 쉬운 날 × 양 → '이니, 서두르지 않는 편이 나아요'", F.todayEndLine('most','양') === '한쪽으로 쏠리기 쉬운 날이니, 서두르지 않는 편이 나아요.', F.todayEndLine('most','양'));
-  ok("덜 눌리는 날 × 건록 → '이니'", F.todayEndLine('weak','건록') === '몸과 마음이 덜 눌리는 날이니, 맡은 일을 밀고 나가기 좋아요.', F.todayEndLine('weak','건록'));
-  ok("덜 눌리는 날 × 목욕 → '이지만'", F.todayEndLine('weak','목욕') === '몸과 마음이 덜 눌리는 날이지만, 결정은 한 박자 늦추세요.', F.todayEndLine('weak','목욕'));
+  ok("쏠리기 쉬운 날 × 제왕 → '이지만, 하던 일을 끝까지 밀고 가도 좋아요'", F.todayEndLine('most','제왕') === '한쪽으로 쏠리기 쉬운 날이지만, 하던 일을 끝까지 밀고 가도 좋아요.', F.todayEndLine('most','제왕'));
+  ok("쏠리기 쉬운 날 × 양 → '이니, 서두르지 말고 천천히 가세요'", F.todayEndLine('most','양') === '한쪽으로 쏠리기 쉬운 날이니, 서두르지 말고 천천히 가세요.', F.todayEndLine('most','양'));
+  ok("덜 눌리는 날 × 건록 → '이니'", F.todayEndLine('weak','건록') === '몸과 마음이 덜 눌리는 날이니, 맡은 일을 내 힘으로 해내기 좋아요.', F.todayEndLine('weak','건록'));
+  ok("덜 눌리는 날 × 목욕 → '이지만'", F.todayEndLine('weak','목욕') === '몸과 마음이 덜 눌리는 날이지만, 중요한 결정은 하루쯤 미뤄 보세요.', F.todayEndLine('weak','목욕'));
   ok("모르는 단계면 '…날이에요.' 로 끝난다", F.todayEndLine('else','없음') === '판단력은 평소만큼 좋은 날이에요.', F.todayEndLine('else','없음'));
 
   /* 모순 문장(좋은 날이니 + 자제하라 / 조심 날이니 + 밀어라)이 한 조합도 없다 */
