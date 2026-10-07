@@ -4,6 +4,7 @@
    2026-10-07 대표님 지시(이음·귀인지도 비교 → "그대로해").
    ① 로그인 전에도 결과가 어떻게 생겼는지 보이게 — 모임 관계 그림을 지어낸 네 사람으로 그린다
    ② 동의 전 카드가 흐리게(opacity .55) 보여 누를 수 있는지 모르던 것 → 흐림을 걷는다
+   2026-10-07 대표님 "광고인데 실제 화면에서 설명글이 있으면 안돼" — 상자 안 설명글 0을 본다.
    보는 것: '예시' 표식 · 이름표 6개가 다 놓임 · 등급 다섯이 다 나옴(계산으로 낸 값)
           · 사람을 누르면 나머지가 흐려지고 다시 누르면 돌아옴 · 카드 opacity 1
           · 320·390 가로 넘침 0 · JS 오류 0 · 이름표 점수가 진짜 계산(computeCompat)과 같다 */
@@ -30,7 +31,11 @@ const wait = L.wait;
         for(var i=0;i<ms.length;i++) for(var j=i+1;j<ms.length;j++){
           tiers[H.computeCompat(ms[i].person, ms[j].person, 'friend').combinedTier] = 1;
         }
-        return {has: !!box, chip: box ? /예시/.test(box.textContent) : false, tags: tags,
+        var extra = '';
+        if(box){ var cl = box.cloneNode(true);
+          [].slice.call(cl.querySelectorAll('.onb-sample-chip,.gc-label,.gc-tag')).forEach(function(x){ x.remove(); });
+          extra = cl.textContent.replace(/\s+/g,''); }
+        return {extra: extra, has: !!box, chip: box ? /예시/.test(box.textContent) : false, tags: tags,
           calcTiers: Object.keys(tiers).sort(),
           cardOpacity: card ? getComputedStyle(card).opacity : null,
           over: document.documentElement.scrollWidth - document.documentElement.clientWidth};
@@ -42,6 +47,7 @@ const wait = L.wait;
         w+' — 그림의 이름표가 계산 결과와 같다');
       R.note(r.cardOpacity === '1', w+' — 동의 전에도 카드가 흐리지 않다', r.cardOpacity);
       R.note(r.over <= 0, w+' — 가로 넘침 없음', String(r.over));
+      R.note(r.extra === '', w+' — 예시 상자 안에 설명글이 없다(「예시」 표식·이름·등급만)', r.extra);
       if(w === 390){
         /* 사람을 누르면 나머지가 흐려지고, 다시 누르면 돌아온다 */
         const nodes = await p.$$('.onb-sample .gc-node');

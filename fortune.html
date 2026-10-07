@@ -2565,11 +2565,9 @@ body.admin-on .mode-fab{display:none !important;}
 .char-row-band .char-svg{margin-right:0;}
 @media (max-width:359px){.char-row-band{gap:2px;}}
 /* ★ 2026-10-07 — 첫 화면 결과 예시(관계 그림). 동의 칸을 너무 밀어내지 않게 그림을 작게 둔다. */
-.onb-sample{background:var(--panel-3);border-radius:var(--r-lg);padding:12px 10px 10px;margin:14px 0 6px;width:100%;}
-.onb-sample-head{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.84rem;color:var(--ink-dim);font-weight:600;}
-.onb-sample-chip{font-size:.7rem;font-weight:700;color:var(--brand);border:1px solid currentColor;border-radius:999px;padding:1px 7px;}
+.onb-sample{position:relative;background:var(--panel-3);border-radius:var(--r-lg);padding:10px;margin:14px 0 6px;width:100%;}
+.onb-sample-chip{position:absolute;top:10px;left:10px;z-index:3;font-size:.7rem;font-weight:700;color:var(--brand);border:1px solid currentColor;border-radius:999px;padding:1px 7px;}
 .onb-sample .gc-stage{max-width:250px;}
-.onb-sample .gc-hint{margin-top:6px;font-size:.76rem;}
 .onboard-charnote{font-size:.78rem;color:var(--ink-faint);text-align:center;margin:0 0 6px;line-height:1.6;}
 .char-row .char-svg{color:var(--ink);}
 /* 최소 폭 96→88. 여백을 키운 뒤 96px로 두었더니 390px에서 2열로 접혀 도감이 두 배로 길어졌다
@@ -16176,11 +16174,12 @@ function buildOnboardSample(){
                 res:computeCompat(members[i].person, members[j].person, 'friend')});
   }
   var box = el('div',{class:'onb-sample'});
-  box.appendChild(el('div',{class:'onb-sample-head'},[
-    el('span',{class:'onb-sample-chip'},['예시']), '친구 넷의 궁합을 한 그림으로'
-  ]));
+  /* ★ 2026-10-07 대표님 지시 "그림크기보다 안에 텍스트가 문제다 그냥 광고인데 실제 화면에서 설명글이 있으면 안돼"
+     — 머리 문장('친구 넷의 궁합을 한 그림으로')과 아래 안내('사람을 누르면…')를 뺐다. 그림만 둔다.
+     구석의 작은 「예시」 표식만 남긴다 — 지어낸 사람이라는 것을 밝히는 자리라 빼지 않는다. */
+  box.appendChild(el('span',{class:'onb-sample-chip'},['예시']));
   box.appendChild(buildGroupCompatGraph(members, pairs, null,
-    {sample:true, noLegend:true, hint:'사람을 누르면 그 사람의 궁합만 보여요.'}));
+    {sample:true, noLegend:true, noHint:true}));
   return box;
 }
 function renderOnboarding(){
@@ -22177,7 +22176,7 @@ function buildGroupCompatGraph(members, pairs, onSelect, opts){
 
   wrap.appendChild(stage);
   /* 두 분뿐이면 누를 까닭이 없다 (2026-09-26 둘이서 링크 정리) */
-  if(n > 2) wrap.appendChild(el('p',{class:'gc-hint'},[opts.hint || '궁금한 친구를 눌러보세요. 다시 누르면 전체로 돌아와요.']));
+  if(n > 2 && !opts.noHint) wrap.appendChild(el('p',{class:'gc-hint'},['궁금한 친구를 눌러보세요. 다시 누르면 전체로 돌아와요.']));
   wrap.appendChild(drawnBox);
 
   /* ★ R36 — 예전에는 '일상어 (등급 이름)' 두 벌을 나란히 적었다. 이름이 하나로 합쳐진 지금
