@@ -36,12 +36,14 @@ const wait = L.wait;
         if(box){ var cl = box.cloneNode(true);
           [].slice.call(cl.querySelectorAll('.gc-label,.gc-tag')).forEach(function(x){ x.remove(); });
           extra = cl.textContent.replace(/\s+/g,''); }
-        return {extra: extra, has: !!box, cards: [].slice.call(document.querySelectorAll('.onboard .svc-title')).map(function(x){ return x.textContent; }).join('|'), titleLines: [].slice.call(document.querySelectorAll('.onboard .svc-title')).map(function(x){ var lh=parseFloat(getComputedStyle(x).lineHeight)||20; return Math.round(x.getBoundingClientRect().height/lh); }), noNote: !/캐릭터가 정해져요/.test(document.querySelector('.onboard').textContent), tags: tags,
+        return {extra: extra, has: !!box, cards: [].slice.call(document.querySelectorAll('.onboard .svc-title')).map(function(x){ return x.textContent; }).join('|'), titleLines: [].slice.call(document.querySelectorAll('.onboard .svc-title')).map(function(x){ var lh=parseFloat(getComputedStyle(x).lineHeight)||20; return Math.round(x.getBoundingClientRect().height/lh); }), noNote: !/캐릭터가 정해져요/.test(document.querySelector('.onboard').textContent), noSub: !document.querySelector('.onboard-sub'), noTrust: !/천문 자료로 만든 만세력/.test(document.querySelector('.onboard').textContent), tags: tags,
           calcTiers: Object.keys(tiers).sort(),
           cardOpacity: card ? getComputedStyle(card).opacity : null,
           over: document.documentElement.scrollWidth - document.documentElement.clientWidth};
       });
       R.note(r.has, w+' — 예시 그림이 있다');
+      R.note(r.noSub, w+' — \'카카오로 로그인하고 … 앱을 깔 필요는 없어요\' 안내 문장이 없다(대표님 지시로 뺌)');
+      R.note(r.noTrust, w+' — \'천문 자료로 만든 만세력…\' 두 줄이 없다(대표님 지시로 뺌)');
       R.note(r.noNote, w+' — 캐릭터가 정해진다는 안내 줄이 없다');
       R.note(r.tags.length === 6, w+' — 이름표 6개가 전부 그림에 놓였다', r.tags.join(','));
       R.note(r.calcTiers.length === 5, w+' — 계산으로 낸 등급이 다섯 가지 다 나온다', r.calcTiers.join(','));

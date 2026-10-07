@@ -2463,8 +2463,6 @@ body.admin-on .mode-fab{display:none !important;}
   letter-spacing:-.02em;color:var(--ink);text-align:center;margin:4px 0 4px;word-break:keep-all;}
 .onboard-sub{color:var(--ink-dim);font-size:.92rem;line-height:1.7;text-align:center;
   margin:0 0 6px;word-break:keep-all;}
-.onboard-trust{color:var(--ink-faint);font-size:.82rem;line-height:1.65;text-align:center;
-  margin:14px 0 2px;word-break:keep-all;}
 @media (prefers-reduced-motion: reduce){
   .svc-card:hover,.svc-card:focus-visible{transform:none;}
 }
@@ -16207,10 +16205,13 @@ function renderOnboarding(){
      들어와서 두 번째 화면에 안 적힌 것을 요구받는 자리였습니다. 사실대로 적습니다.
      ★ "모르시면 8문항"까지 함께 적습니다 — 성격유형이 필요하다고만 하면 모르시는 분이
        거기서 멈춥니다. 실제로 있는 길이니 그것도 함께 말합니다. */
-  wrap.appendChild(el('p',{class:'onboard-sub'},[
-    invitedLead ? '생년월일과 성격유형만 넣으면 바로 점수가 나와요. 유형을 모르시면 8문항으로 알아봐 드려요.'
-                : '카카오로 로그인하고 생년월일과 성격유형만 넣으면 오늘의 운세부터 나와요. 앱을 깔 필요는 없어요.'
-  ]));
+  /* ★ 2026-10-07 대표님 지시 "카카오로 로그인하고 ~ 앱을 깔 필요는 없어요 이 부분 지워" —
+     그냥 오신 분의 안내 문장을 뺐다. 초대받은 분의 문장(성격유형도 필요하다)은 그대로 둔다 — invite_login.cjs 가 지킨다. */
+  if(invitedLead){
+    wrap.appendChild(el('p',{class:'onboard-sub'},[
+      '생년월일과 성격유형만 넣으면 바로 점수가 나와요. 유형을 모르시면 8문항으로 알아봐 드려요.'
+    ]));
+  }
   /* ★ 2026-09-01 리뉴얼 — 시안의 첫 화면은 밝은 종이 띠 위에 성격유형 캐릭터 넷을
      조금씩 겹쳐 세우고, 그 아래 한 줄로 "내 캐릭터가 어떻게 정해지는지"를 말한다.
      예전에는 오행 그림 셋(나무·불·물)이었는데, 그건 사주를 아는 사람에게만 뜻이 있고
@@ -16293,13 +16294,9 @@ function renderOnboarding(){
       /* ★ 2026-09-10 대표님 지시 — 네 낱말로 줄여 **한 줄에 들어가게** 맞췄습니다.
          예전 문구('… 대운 흐름 · 성격 강점')는 폭 390에서 두 줄로 접혔습니다. */
       '오늘의 운세 · 사주팔자 · 대운 · 성격유형', 'self'));
-    /* ★ 2026-09-14 대표님 지시 — "의미 단위로 끊길 거 같으면 줄바꿈을 해버려라".
-       폭에 따라 '해 위치까지 / 맞춰서요' 처럼 어중간한 데서 접히던 자리라,
-       문장 경계에 <br> 을 박아 두 줄로 못 박았습니다. 낱말은 한 글자도 안 바꿨습니다. */
-    wrap.appendChild(el('p',{class:'onboard-trust'},[
-      '천문 자료로 만든 만세력을 직접 계산해요.', el('br'),
-      '절기와 태어난 곳의 해 위치까지 맞춰서요.'
-    ]));
+    /* ★ 2026-10-07 대표님 지시 "천문 자료로 만세력 직접 계산도 지워 어차피 생년월일 입력하는 데 나오잖아" —
+       '천문 자료로 만든 만세력…/절기와 태어난 곳의 해 위치까지…' 두 줄(.onboard-trust)을 뺐다.
+       태어난 곳·해 위치 보정 설명은 프로필 마법사의 확인 단계에 그대로 있다. 되살리지 마십시오. */
   }
   /* =====================================================================
      R49 — 만 14세 이상 확인 (대표님 지시)
