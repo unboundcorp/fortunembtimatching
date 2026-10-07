@@ -108,6 +108,14 @@ const R = reporter('보낸 분 화면의 사이');
     const s3 = await p.evaluate(() => ({ text: document.querySelector('#main').innerText, more: (document.getElementById('groupJoinLink')||{}).value || '' }));
     R.note(/전체 순위/.test(s3.text), "셋이면 '전체 순위' 있음");
     R.note(/사람 더 받기/.test(s3.text) && /궁금한 친구를 눌러보세요/.test(s3.text), "셋이면 '사람 더 받기'·캐릭터 안내 있음");
+    /* 2026-10-07 대표님 "이 문장 필요없어" — 여럿이서 모임이 있어도 둘이서 화면에 '들어가 계신 모임 N개는…' 이 없다 */
+    const pairHint = await p.evaluate(async function(){
+      const W = ms => new Promise(r => setTimeout(r, ms));
+      window.__INYEON_TEST__.goRoute('compat'); await W(400);
+      const b = Array.from(document.querySelectorAll('button')).filter(x => x.textContent.trim().indexOf('둘이서') === 0)[0]; if(b) b.click(); await W(500);
+      return document.querySelector('#main').innerText;
+    });
+    R.note(!/들어가 계신 모임/.test(pairHint), "여럿이서 모임이 있어도 둘이서 화면에 '들어가 계신 모임 N개는…' 줄이 없다", pairHint.slice(0,120));
     R.note(/#rel=friend$/.test(s3.more), '친구 모임의 사람 더 받기 주소에 #rel=friend', s3.more);
     R.note((p.__errs||[]).length === 0, 'JS 오류 0', JSON.stringify(p.__errs));
   } finally { await browser.close(); site.close(); }
