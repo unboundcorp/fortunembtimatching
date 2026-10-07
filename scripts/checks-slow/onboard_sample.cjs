@@ -36,7 +36,7 @@ const wait = L.wait;
         if(box){ var cl = box.cloneNode(true);
           [].slice.call(cl.querySelectorAll('.gc-label,.gc-tag')).forEach(function(x){ x.remove(); });
           extra = cl.textContent.replace(/\s+/g,''); }
-        return {extra: extra, has: !!box, cards: [].slice.call(document.querySelectorAll('.onboard .svc-title')).map(function(x){ return x.textContent; }).join('|'), noNote: !/캐릭터가 정해져요/.test(document.querySelector('.onboard').textContent), tags: tags,
+        return {extra: extra, has: !!box, cards: [].slice.call(document.querySelectorAll('.onboard .svc-title')).map(function(x){ return x.textContent; }).join('|'), titleLines: [].slice.call(document.querySelectorAll('.onboard .svc-title')).map(function(x){ var lh=parseFloat(getComputedStyle(x).lineHeight)||20; return Math.round(x.getBoundingClientRect().height/lh); }), noNote: !/캐릭터가 정해져요/.test(document.querySelector('.onboard').textContent), tags: tags,
           calcTiers: Object.keys(tiers).sort(),
           cardOpacity: card ? getComputedStyle(card).opacity : null,
           over: document.documentElement.scrollWidth - document.documentElement.clientWidth};
@@ -47,7 +47,8 @@ const wait = L.wait;
       R.note(r.calcTiers.length === 5, w+' — 계산으로 낸 등급이 다섯 가지 다 나온다', r.calcTiers.join(','));
       R.note(r.tags.slice().sort().filter(function(t,i,a){ return a.indexOf(t)===i; }).join() === r.calcTiers.join(),
         w+' — 그림의 이름표가 계산 결과와 같다');
-      R.note(r.cards === '타인과 인연 점수 확인하기|내 사주 × 성격유형', w+' — 카드 순서·이름(궁합 카드가 위)', r.cards);
+      R.note(r.cards === '타인과 인연 점수 확인하기|내 사주 × 성격유형 풀이 보기', w+' — 카드 순서·이름(궁합 카드가 위)', r.cards);
+      R.note(r.titleLines.every(function(h){ return h <= 1; }), w+' — 카드 제목이 한 줄에 들어간다', r.titleLines.join(','));
       R.note(r.cardOpacity === '1', w+' — 동의 전에도 카드가 흐리지 않다', r.cardOpacity);
       R.note(r.over <= 0, w+' — 가로 넘침 없음', String(r.over));
       R.note(r.extra === '', w+' — 예시 상자 안에 글이 없다(이름·등급만 · 「예시」 표식도 없음)', r.extra);
