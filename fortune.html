@@ -2300,6 +2300,19 @@ body.admin-on .mode-fab{display:none !important;}
 /* ★ R101 (대표님 지시) — 화살표가 너무 작아 눌러도 되는 자리인지 안 보였다. 키우고 색도 준다. */
 .gc-why summary::after{content:' ▾';margin-left:6px;font-size:1.35em;line-height:1;color:var(--gold);}
 .gc-why[open] summary::after{content:' ▴';}
+/* ★ 2026-10-07 대표님 지시 "이거 모션효과 못넣냐? 그냥 다들 지나치네" —
+   ① 글자만 있던 자리를 옅은 알약 단추로 ② **화면에 들어온 순간**(IntersectionObserver · whyNudgeWhenSeen)
+   테두리 물결 + 화살표 까딱을 세 번만. 렌더 때 바로 돌리면 손님이 스크롤해 오기 전에 끝나 버린다.
+   ③ 펴 본 뒤에는 안 움직인다 ④ 움직임 줄이기 설정이면 안 움직인다. 새 색 없음(--gold-soft · --gold). */
+.gc-why summary{background:var(--gold-soft);border-radius:999px;padding:6px 14px 6px 16px;margin-top:2px;}
+.gc-why.nudge:not([open]) summary{animation:whyRing 1.6s ease-out 3;}
+.gc-why.nudge:not([open]) summary::after{display:inline-block;animation:whyNudge 1.6s ease-in-out 3;}
+@keyframes whyRing{
+  0%{box-shadow:0 0 0 0 rgba(155,26,21,.30);}
+  70%{box-shadow:0 0 0 10px rgba(155,26,21,0);}
+  100%{box-shadow:0 0 0 0 rgba(155,26,21,0);}
+}
+@media (prefers-reduced-motion:reduce){ .gc-why.nudge summary, .gc-why.nudge summary::after{animation:none !important;} }
 .gc-why-tbl{display:grid;gap:2px;margin-top:6px;}
 /* ★ R97 — 줄이 버튼이다. 눌러서 그 항목의 뜻을 편다. 눌리는 것임을 모양으로도 알린다. */
 /* ★ 2026-08-28 (UX 점검) — 라벨 열이 auto라 이름이 길수록 막대가 짧아졌다.
@@ -22367,6 +22380,17 @@ function compatWhyEvidence(pA, pB, res){
   }
   return ev;
 }
+/* ★ 2026-10-07 — '왜 N점인가요?' 가 화면에 실제로 들어왔을 때 한 번 움직이게 한다(.nudge).
+   관찰기는 한 번 붙이면 떼어 낸다. IntersectionObserver 가 없는 옛 브라우저면 바로 붙인다. */
+function whyNudgeWhenSeen(node){
+  if(!('IntersectionObserver' in window)){ node.classList.add('nudge'); return; }
+  var io = new IntersectionObserver(function(ents){
+    ents.forEach(function(e){
+      if(e.isIntersecting){ node.classList.add('nudge'); io.disconnect(); }
+    });
+  }, {threshold:0.9});
+  io.observe(node);
+}
 function buildCompatWhyScores(total, vals, extraNote, ev, relationKey){
   var relW = relationOf(relationKey).w;
   var rows = COMPAT_WHY_ITEMS
@@ -22376,6 +22400,7 @@ function buildCompatWhyScores(total, vals, extraNote, ev, relationKey){
 
   var why = el('details',{class:'gc-why'});
   why.appendChild(el('summary',{},['왜 '+total+'점인가요?']));
+  whyNudgeWhenSeen(why);
   var wSum = rows.reduce(function(x,r){ return x + relW[r.it.key]; }, 0) || 1;
   var tbl = el('div',{class:'gc-why-tbl'});
   rows.forEach(function(r){
