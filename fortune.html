@@ -2566,7 +2566,6 @@ body.admin-on .mode-fab{display:none !important;}
 @media (max-width:359px){.char-row-band{gap:2px;}}
 /* ★ 2026-10-07 — 첫 화면 결과 예시(관계 그림). 동의 칸을 너무 밀어내지 않게 그림을 작게 둔다. */
 .onb-sample{position:relative;background:var(--panel-3);border-radius:var(--r-lg);padding:10px;margin:14px 0 6px;width:100%;}
-.onb-sample-chip{position:absolute;top:10px;left:10px;z-index:3;font-size:.7rem;font-weight:700;color:var(--brand);border:1px solid currentColor;border-radius:999px;padding:1px 7px;}
 .onb-sample .gc-stage{max-width:250px;}
 .onboard-charnote{font-size:.78rem;color:var(--ink-faint);text-align:center;margin:0 0 6px;line-height:1.6;}
 .char-row .char-svg{color:var(--ink);}
@@ -16157,7 +16156,7 @@ function renderBootWait(){
    로그인 전에는 결과가 어떻게 생겼는지 볼 길이 없었다(이음·사주도령은 첫 화면에서 보여 줌).
    모임 화면의 관계 그림(buildGroupCompatGraph)을 **지어낸 네 사람**으로 그대로 그린다.
    ★ 점수는 손으로 적지 않는다 — 진짜 계산(computeCompat)으로 낸다. 예시 사람만 지어낸 것이다.
-   ★ '예시'라는 표식을 반드시 붙인다. 실제 손님의 결과로 읽히면 안 된다.
+   ★ 2026-10-07 대표님 결정으로 '예시' 표식은 붙이지 않는다(그림만 · 이름은 지어낸 것).
    ★ 친구 사이로 계산한다(모임 기본 사이). GC_PAIRS_CACHE·GC_SEL 은 건드리지 않는다.
 ===================================================================== */
 var ONB_SAMPLE_ROWS = [   /* 다섯 등급이 한 번씩은 나오게 고른 지어낸 네 사람(친구 사이 · 2026-10-07 실측 80·76·68·65·58·55) */
@@ -16176,8 +16175,8 @@ function buildOnboardSample(){
   var box = el('div',{class:'onb-sample'});
   /* ★ 2026-10-07 대표님 지시 "그림크기보다 안에 텍스트가 문제다 그냥 광고인데 실제 화면에서 설명글이 있으면 안돼"
      — 머리 문장('친구 넷의 궁합을 한 그림으로')과 아래 안내('사람을 누르면…')를 뺐다. 그림만 둔다.
-     구석의 작은 「예시」 표식만 남긴다 — 지어낸 사람이라는 것을 밝히는 자리라 빼지 않는다. */
-  box.appendChild(el('span',{class:'onb-sample-chip'},['예시']));
+     ★ 같은 날 대표님 "예시란 말도 캐릭터가 정해진다는 말도 필요없을듯" — 「예시」 표식과 아래
+       '성격유형 16종 × 남·여…' 한 줄도 뺐다. 그림만 둔다. */
   box.appendChild(buildGroupCompatGraph(members, pairs, null,
     {sample:true, noLegend:true, noHint:true}));
   return box;
@@ -16226,7 +16225,6 @@ function renderOnboarding(){
      정해져 있으니 예전 캐릭터 줄 그대로. */
   if(!invitedLead){
     wrap.appendChild(buildOnboardSample());
-    wrap.appendChild(el('p',{class:'onboard-charnote'},['성격유형 16종 × 남·여, 오행 5종으로 내 캐릭터가 정해져요']));
   } else if(introRow.childNodes.length){
     wrap.appendChild(introRow);
     wrap.appendChild(el('p',{class:'onboard-charnote'},['성격유형 16종 × 남·여, 오행 5종으로 내 캐릭터가 정해져요']));

@@ -5,7 +5,8 @@
    ① 로그인 전에도 결과가 어떻게 생겼는지 보이게 — 모임 관계 그림을 지어낸 네 사람으로 그린다
    ② 동의 전 카드가 흐리게(opacity .55) 보여 누를 수 있는지 모르던 것 → 흐림을 걷는다
    2026-10-07 대표님 "광고인데 실제 화면에서 설명글이 있으면 안돼" — 상자 안 설명글 0을 본다.
-   보는 것: '예시' 표식 · 이름표 6개가 다 놓임 · 등급 다섯이 다 나옴(계산으로 낸 값)
+   2026-10-07 대표님 "예시란 말도 캐릭터가 정해진다는 말도 필요없을듯" — 표식·캐릭터 안내 줄도 없어야 한다.
+   보는 것: 그림만 · 이름표 6개가 다 놓임 · 등급 다섯이 다 나옴(계산으로 낸 값)
           · 사람을 누르면 나머지가 흐려지고 다시 누르면 돌아옴 · 카드 opacity 1
           · 320·390 가로 넘침 0 · JS 오류 0 · 이름표 점수가 진짜 계산(computeCompat)과 같다 */
 const L = require('../_lib.cjs');
@@ -33,21 +34,22 @@ const wait = L.wait;
         }
         var extra = '';
         if(box){ var cl = box.cloneNode(true);
-          [].slice.call(cl.querySelectorAll('.onb-sample-chip,.gc-label,.gc-tag')).forEach(function(x){ x.remove(); });
+          [].slice.call(cl.querySelectorAll('.gc-label,.gc-tag')).forEach(function(x){ x.remove(); });
           extra = cl.textContent.replace(/\s+/g,''); }
-        return {extra: extra, has: !!box, chip: box ? /예시/.test(box.textContent) : false, tags: tags,
+        return {extra: extra, has: !!box, noNote: !/캐릭터가 정해져요/.test(document.querySelector('.onboard').textContent), tags: tags,
           calcTiers: Object.keys(tiers).sort(),
           cardOpacity: card ? getComputedStyle(card).opacity : null,
           over: document.documentElement.scrollWidth - document.documentElement.clientWidth};
       });
-      R.note(r.has && r.chip, w+' — 예시 그림이 있고 「예시」 표식이 붙어 있다');
+      R.note(r.has, w+' — 예시 그림이 있다');
+      R.note(r.noNote, w+' — 캐릭터가 정해진다는 안내 줄이 없다');
       R.note(r.tags.length === 6, w+' — 이름표 6개가 전부 그림에 놓였다', r.tags.join(','));
       R.note(r.calcTiers.length === 5, w+' — 계산으로 낸 등급이 다섯 가지 다 나온다', r.calcTiers.join(','));
       R.note(r.tags.slice().sort().filter(function(t,i,a){ return a.indexOf(t)===i; }).join() === r.calcTiers.join(),
         w+' — 그림의 이름표가 계산 결과와 같다');
       R.note(r.cardOpacity === '1', w+' — 동의 전에도 카드가 흐리지 않다', r.cardOpacity);
       R.note(r.over <= 0, w+' — 가로 넘침 없음', String(r.over));
-      R.note(r.extra === '', w+' — 예시 상자 안에 설명글이 없다(「예시」 표식·이름·등급만)', r.extra);
+      R.note(r.extra === '', w+' — 예시 상자 안에 글이 없다(이름·등급만 · 「예시」 표식도 없음)', r.extra);
       if(w === 390){
         /* 사람을 누르면 나머지가 흐려지고, 다시 누르면 돌아온다 */
         const nodes = await p.$$('.onb-sample .gc-node');
