@@ -2443,7 +2443,10 @@ body.admin-on .mode-fab{display:none !important;}
 .svc-card:active{transform:translateY(0);}
 /* ★ R90 — 첫 화면에서 만 14세 확인 전에는 카드가 잠긴다. 눌러도 안 되는 것을
    멀쩡해 보이게 두면 눌러보고 아무 일도 안 일어나서 고장으로 읽힌다. */
-.svc-card[disabled],.svc-card[aria-disabled="true"]{opacity:.55;box-shadow:none;}
+/* ★ 2026-10-07 대표님 지시(비교 분석 ②) — 흐리게(opacity .55) 두니 '누를 수 있는 것'인지 모르겠다는 지적.
+   동의 전에 누르면 알림과 깜빡임으로 이유를 말해 주므로(onbCard) 흐림은 걷는다. 대신 테두리를 둬 단추로 보이게 한다. */
+.onboard .svc-card{border-color:var(--gold-line);}
+.svc-card[disabled]{opacity:.55;box-shadow:none;}
 .svc-card[disabled]:hover,.svc-card[aria-disabled="true"]:hover{transform:none;border-color:var(--gold-line);}
 /* ★ 2026-08-28 — 확인을 안 하고 카드를 누르면 확인 줄을 두 번 깜빡여 어디를 봐야 하는지 알린다.
    움직임을 싫어하는 설정이면 깜빡이지 않고 테두리만 남긴다. */
@@ -2561,6 +2564,12 @@ body.admin-on .mode-fab{display:none !important;}
 .char-row-band{background:transparent;padding:0;margin:18px 0 8px;gap:8px;flex-wrap:nowrap;}
 .char-row-band .char-svg{margin-right:0;}
 @media (max-width:359px){.char-row-band{gap:2px;}}
+/* ★ 2026-10-07 — 첫 화면 결과 예시(관계 그림). 동의 칸을 너무 밀어내지 않게 그림을 작게 둔다. */
+.onb-sample{background:var(--panel-3);border-radius:var(--r-lg);padding:12px 10px 10px;margin:14px 0 6px;width:100%;}
+.onb-sample-head{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.84rem;color:var(--ink-dim);font-weight:600;}
+.onb-sample-chip{font-size:.7rem;font-weight:700;color:var(--brand);border:1px solid currentColor;border-radius:999px;padding:1px 7px;}
+.onb-sample .gc-stage{max-width:250px;}
+.onb-sample .gc-hint{margin-top:6px;font-size:.76rem;}
 .onboard-charnote{font-size:.78rem;color:var(--ink-faint);text-align:center;margin:0 0 6px;line-height:1.6;}
 .char-row .char-svg{color:var(--ink);}
 /* 최소 폭 96→88. 여백을 키운 뒤 96px로 두었더니 390px에서 2열로 접혀 도감이 두 배로 길어졌다
@@ -16144,6 +16153,36 @@ function renderBootWait(){
   main.appendChild(box);
 }
 
+/* =====================================================================
+   ★ 2026-10-07 대표님 지시("이음이랑 귀인지도 비교분석" → "그대로해") — 첫 화면 결과 예시
+   ---------------------------------------------------------------------
+   로그인 전에는 결과가 어떻게 생겼는지 볼 길이 없었다(이음·사주도령은 첫 화면에서 보여 줌).
+   모임 화면의 관계 그림(buildGroupCompatGraph)을 **지어낸 네 사람**으로 그대로 그린다.
+   ★ 점수는 손으로 적지 않는다 — 진짜 계산(computeCompat)으로 낸다. 예시 사람만 지어낸 것이다.
+   ★ '예시'라는 표식을 반드시 붙인다. 실제 손님의 결과로 읽히면 안 된다.
+   ★ 친구 사이로 계산한다(모임 기본 사이). GC_PAIRS_CACHE·GC_SEL 은 건드리지 않는다.
+===================================================================== */
+var ONB_SAMPLE_ROWS = [   /* 다섯 등급이 한 번씩은 나오게 고른 지어낸 네 사람(친구 사이 · 2026-10-07 실측 80·76·68·65·58·55) */
+  {n:'민준', m:'ISTJ', y:1996, mo:7,  d:6, h:23, mi:0, g:'M', lo:null, ts:0},
+  {n:'서윤', m:'INFJ', y:1999, mo:2,  d:7, h:10, mi:0, g:'F', lo:null, ts:0},
+  {n:'지호', m:'INTP', y:1997, mo:10, d:9, h:1,  mi:0, g:'M', lo:null, ts:0},
+  {n:'하은', m:'ENTP', y:1996, mo:8,  d:9, h:10, mi:0, g:'F', lo:null, ts:0}
+];
+function buildOnboardSample(){
+  var members = ONB_SAMPLE_ROWS.map(function(r, i){ return gcMemberFromMeetRow(r, i); });
+  var pairs = [];
+  for(var i=0;i<members.length;i++) for(var j=i+1;j<members.length;j++){
+    pairs.push({ai:i, bi:j, a:members[i], b:members[j],
+                res:computeCompat(members[i].person, members[j].person, 'friend')});
+  }
+  var box = el('div',{class:'onb-sample'});
+  box.appendChild(el('div',{class:'onb-sample-head'},[
+    el('span',{class:'onb-sample-chip'},['예시']), '친구 넷의 궁합을 한 그림으로'
+  ]));
+  box.appendChild(buildGroupCompatGraph(members, pairs, null,
+    {sample:true, noLegend:true, hint:'사람을 누르면 그 사람의 궁합만 보여요.'}));
+  return box;
+}
 function renderOnboarding(){
   var main=$('#main'); main.innerHTML='';
   var wrap=el('div',{class:'onboard view'});
@@ -16183,7 +16222,13 @@ function renderOnboarding(){
   introKeys.forEach(function(k, i){
     if(CHARACTERS[k]) introRow.appendChild(buildCharSvg(k, 74, {label:CHARACTERS[k].mbti+' 캐릭터', gender: (i%2 ? 'M' : 'F')}));
   });
-  if(introRow.childNodes.length){
+  /* ★ 2026-10-07 — 그냥 오신 분에게는 캐릭터 줄 대신 결과 예시(관계 그림)를 보여 준다.
+     그림 안에 캐릭터가 이미 서 있어 캐릭터 줄이 하던 일도 함께 한다. 초대받은 분은 고를 것이
+     정해져 있으니 예전 캐릭터 줄 그대로. */
+  if(!invitedLead){
+    wrap.appendChild(buildOnboardSample());
+    wrap.appendChild(el('p',{class:'onboard-charnote'},['성격유형 16종 × 남·여, 오행 5종으로 내 캐릭터가 정해져요']));
+  } else if(introRow.childNodes.length){
     wrap.appendChild(introRow);
     wrap.appendChild(el('p',{class:'onboard-charnote'},['성격유형 16종 × 남·여, 오행 5종으로 내 캐릭터가 정해져요']));
   }
@@ -21872,7 +21917,8 @@ function gcOverlap(a,b){
      · 그보다 많으면              → 제일 잘 맞는 K쌍 + 제일 안 맞는 K쌍만 (K는 4~6)
      · 사람을 누르면              → 그 사람과 나머지 사이의 선만
 --------------------------------------------------------------------- */
-function buildGroupCompatGraph(members, pairs, onSelect){
+function buildGroupCompatGraph(members, pairs, onSelect, opts){
+  opts = opts || {};
   var n = members.length;
   var lay = gcPositions(n), spec = lay.spec, pos = lay.pos;
   var wrap = el('div',{});
@@ -22119,7 +22165,7 @@ function buildGroupCompatGraph(members, pairs, onSelect){
   }
 
   function select(idx){
-    GC_SEL = idx;
+    if(!opts.sample) GC_SEL = idx;   /* 첫 화면 예시는 진짜 모임의 '눌러 둔 사람'을 건드리지 않는다 */
     nodeBtns.forEach(function(b, i){
       var on = (i===idx);
       b.setAttribute('aria-pressed', on?'true':'false');
@@ -22131,7 +22177,7 @@ function buildGroupCompatGraph(members, pairs, onSelect){
 
   wrap.appendChild(stage);
   /* 두 분뿐이면 누를 까닭이 없다 (2026-09-26 둘이서 링크 정리) */
-  if(n > 2) wrap.appendChild(el('p',{class:'gc-hint'},['궁금한 친구를 눌러보세요. 다시 누르면 전체로 돌아와요.']));
+  if(n > 2) wrap.appendChild(el('p',{class:'gc-hint'},[opts.hint || '궁금한 친구를 눌러보세요. 다시 누르면 전체로 돌아와요.']));
   wrap.appendChild(drawnBox);
 
   /* ★ R36 — 예전에는 '일상어 (등급 이름)' 두 벌을 나란히 적었다. 이름이 하나로 합쳐진 지금
@@ -22145,9 +22191,9 @@ function buildGroupCompatGraph(members, pairs, onSelect){
       el('span',{class:'gl-term'},[combinedTierRange(t) || ''])
     ]));
   });
-  wrap.appendChild(legend);
+  if(!opts.noLegend) wrap.appendChild(legend);
 
-  select(GC_SEL!=null && GC_SEL<n ? GC_SEL : null);
+  select(!opts.sample && GC_SEL!=null && GC_SEL<n ? GC_SEL : null);
   return wrap;
 }
 
@@ -27426,6 +27472,7 @@ try{
   if(window.__INYEON_TEST__ === true){
     window.__INYEON_TEST__ = {
       SajuEngine: SajuEngine, autoTermify: autoTermify,
+      computeCompat: computeCompat, gcMemberFromMeetRow: gcMemberFromMeetRow, ONB_SAMPLE_ROWS: ONB_SAMPLE_ROWS,
       MBTI_MATRIX: MBTI_MATRIX, MBTI_STACK: MBTI_STACK,
       COMPAT_RELATIONS: COMPAT_RELATIONS, COMPAT_TIER_LINE: COMPAT_TIER_LINE,
       COMPAT_NICK: COMPAT_NICK, PERSON_NICK: PERSON_NICK,
