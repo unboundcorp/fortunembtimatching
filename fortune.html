@@ -27104,6 +27104,7 @@ function viewKeyNow(){
    ★ 관리자 화면(ADMIN_ROUTES)에서는 아무것도 안 보냅니다.
 ===================================================================== */
 var PIXEL_ID = '739495668667523';
+var PIXEL_AD_PARAM = /^(fbclid|gclid|gbraid|wbraid|ttclid|igshid|utm_[a-z_]+|ref)$/i;  /* 광고·공유가 붙이는 꼬리 — 통과 */
 var PIXEL = { loaded:false, pv:false, q:[], vc:{} };
 function pixelAllowed(){
   if(STATE && STATE.adOptOut) return false;
@@ -27114,7 +27115,10 @@ function pixelAllowed(){
 function pixelUrlSafe(){
   var p = location.pathname, h = location.hash;
   if(!(p === '/' || p === '/fortune.html')) return false;
-  if(location.search) return false;
+  /* 광고에서 들어오면 ?fbclid=…·utm_… 꼬리가 붙는다. 그것까지 막으면 광고 손님이 하나도 안 잡힌다(2026-10-08).
+     그런 꼬리만 통과시키고, 영수증·카카오 복귀처럼 우리가 붙이는 것이 하나라도 있으면 기다린다. */
+  var qs = location.search.replace(/^\?/, '');
+  if(qs && !qs.split('&').every(function(x){ return !x || PIXEL_AD_PARAM.test(x.split('=')[0]); })) return false;
   return !h || h === '#' || h === '#pricing' || h === '#refund';
 }
 function pixelLoad(){

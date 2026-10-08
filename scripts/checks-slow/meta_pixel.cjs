@@ -74,6 +74,15 @@ const ID = '739495668667523';
     c = await calls(p);
     R.note(c.length > 0 && c.every(x => x.url.indexOf('#') < 0), '④ 초대 해시로 열어도 보낼 때 주소가 깨끗하다', c.map(x=>x.url).join(' | ').slice(0,200));
     await p.close();
+    /* ⑨ 광고 꼬리(fbclid·utm)가 붙어도 PageView 가 나간다 — 막으면 광고 손님이 하나도 안 잡힌다 */
+    p = await open({q:'?fbclid=IwAR0abc&utm_source=instagram&utm_campaign=launch', wait:1800});
+    c = await calls(p);
+    R.note(tracks(c,'PageView').length === 1, '⑨ 광고 꼬리가 붙어도 PageView 가 나간다', String(tracks(c,'PageView').length));
+    await p.close();
+    p = await open({q:'?fbclid=IwAR0abc&secret=1', wait:1800});
+    c = await calls(p);
+    R.note(tracks(c,'PageView').length === 0, '⑨ 모르는 꼬리가 섞이면 보내지 않는다', String(tracks(c,'PageView').length));
+    await p.close();
     /* ⑥ */
     p = await open({state:{adOptOut:true}});
     c = await calls(p);
