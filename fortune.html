@@ -24836,9 +24836,9 @@ function renderGroupCompat(){
   if(!GROUP_VIEW || autoSavedThis) view.appendChild(gcAutoSaveNotice());
   autoSaveGroupIfNeeded(members);
 
-  /* ★ 2026-10-07 대표님 "그룹 궁합 맨 위에는 총평 쓰라니깐" — 결과의 맨 위. */
+  /* ★ 2026-10-08 대표님 "모임 점수를 맨위로하고 그다음 총평으로" — 점수 카드 → 총평 카드 순.
+     (10-07 에는 총평이 맨 위였다.) 총평은 점수 카드를 붙인 바로 뒤에 붙인다. */
   var gVerdict = buildGroupVerdict(members, pairs, avgAll);
-  if(gVerdict) view.appendChild(gVerdict);
   var gaugeCard=el('div',{class:'scroll-card'});
   gaugeCard.appendChild(el('div',{class:'gauge-label'},[members.length+'명 · 전체 평균 궁합 지수']));
   gaugeCard.appendChild(el('div',{style:'display:flex;justify-content:center;'},[buildDonutGauge(avgAll, 152)]));
@@ -24869,6 +24869,7 @@ function renderGroupCompat(){
     if(why) gaugeCard.appendChild(why);
   })();
   view.appendChild(gaugeCard);
+  if(gVerdict) view.appendChild(gVerdict);
 
   /* 누른 사람 기준 요약 — 그림 아래에 글로도 남긴다(그림을 못 보는 경우를 위해서다). */
   var focusBox = el('p',{class:'section-sub', style:'text-align:center;', role:'status'},['']);

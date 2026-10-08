@@ -52,8 +52,8 @@ async function openGroup(browser, srv, errs, extra){
     R.note(/모임이에요|모였어요/.test(v3) && /중심이에요/.test(v3) && !/undefined|null|NaN/.test(v3), '세 사람 — 글로 된 총평(모임 성격 · 중심인 사람)이 있다', v3.slice(0,120));
     const top3 = await q.evaluate(function(){ var c = document.querySelector('#main .gc-verdict-card'), g = document.querySelector('#main .gauge-label');
       var e = c && c.querySelector('.gv-elem');
-      return {before: !!(c && g && (c.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING)), elem: e ? e.textContent : '', dots: c ? c.querySelectorAll('.ge-dots i').length : 0}; });
-    R.note(top3.before, '세 사람 — 총평 카드가 평균 점수보다 위(맨 위)', JSON.stringify(top3.before));
+      return {before: !!(c && g && (c.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_PRECEDING)), elem: e ? e.textContent : '', dots: c ? c.querySelectorAll('.ge-dots i').length : 0}; });
+    R.note(top3.before, '세 사람 — 평균 점수가 맨 위 · 총평 카드는 그 바로 아래 (2026-10-08 대표님 지시)', JSON.stringify(top3.before));
     R.note(/^이 모임은 .+기운이 가장 많아/.test(top3.elem) && (top3.elem.match(/요\./g)||[]).length >= 3 && /다만/.test(top3.elem), '세 사람 — 다섯 기운 문단이 "이 모임은"으로 시작해 세 문장 이상', top3.elem);
     /* ★ 2026-10-08 대표님 "MBTI도 총평에 녹여서 모임 풀이해라" — 문단에 성격유형 문장이 있고, 말한 글자가 실제로 다수인가 */
     R.note(/성격유형으로 보면 .+(많아서|섞여)|성격유형은 고루 섞여/.test(top3.elem), '세 사람 — 다섯 기운 문단에 성격유형 이야기가 녹아 있다', top3.elem);
