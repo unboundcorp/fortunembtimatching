@@ -19,8 +19,13 @@
 <meta property="og:locale" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://www.inyeonjeom.kr/og.png">
-<!-- 파비콘 — 외부 파일을 부르지 않고 SVG를 주소 안에 담는다(요청 0건 원칙 유지).
-     인장 모티프의 緣 한 글자. 없으면 브라우저가 /favicon.ico 를 찾다가 404를 낸다. -->
+<!-- 파비콘 — 헤더 로고(.brand-seal)와 같은 세 path. 바꾸면 LOGO_PATH · api/pay.js LOGO 와 함께 고칠 것.
+     ★ 2026-10-08 대표님 지시 "아이콘도 로고로 바꿔라" — 브라우저 [자주 방문] 타일·폰 홈 화면은 주소 안에 담은 SVG 를
+       안 읽고 PNG 파일을 찾아서 글자 'I' 가 떴다. 그래서 우리 서버에 PNG 를 둔다(외부 요청 아님):
+       favicon.ico(16·32) · favicon-32.png · icon-192.png · icon-512.png · apple-touch-icon.png(180, 꽉 찬 사각 — 폰이 둥글림). -->
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%23B41E30'/%3E%3Cpath d='M24 40.5C24 40.5 6.5 30.2 6.5 18.8c0-5.4 4.2-9.3 9-9.3 3.4 0 6.4 1.9 8.5 5 2.1-3.1 5.1-5 8.5-5 4.8 0 9 3.9 9 9.3 0 4.2-2.4 8.2-5.4 11.5' stroke='%23FFF7F4' stroke-width='3.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M16.5 23.5 22 29l10.5-10.5' stroke='%23FFF7F4' stroke-width='3.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M40.5 6.5c.4 2.1.9 2.6 3 3-2.1.4-2.6.9-3 3-.4-2.1-.9-2.6-3-3 2.1-.4 2.6-.9 3-3Z' fill='%23FFF7F4'/%3E%3C/svg%3E">
 <!-- =====================================================================
      글꼴 — 우리 서버에서만 내려준다 (2026-08-24 리디자인 1단계)
