@@ -30,9 +30,9 @@
 <!-- =====================================================================
      글꼴 — 우리 서버에서만 내려준다 (2026-08-24 리디자인 1단계)
      ---------------------------------------------------------------------
-     ★ 남의 서버에서 부르지 않는다. 처리방침 제5조가 "외부에서 불러오는
-       이미지·글꼴·스크립트가 없습니다"라고 적고 있어서, 부르는 순간 그 말이
-       거짓이 되고 손님 IP가 그 회사로 나간다. 파일은 fonts/ 아래에 있다.
+     ★ 남의 서버에서 부르지 않는다. 부르는 순간 손님 IP가 그 회사로 나가고, 처리방침에
+       적지 않은 국외 전송이 된다. 파일은 fonts/ 아래에 있다.
+       (바깥 스크립트는 메타 픽셀 하나뿐이다 — 2026-10-08 · 방침 제5조에 적음 · 거부 가능)
      ★ 따로 파일로 두는 이유: 이 목록이 145KB다. fortune.html 은 매번 새로
        받도록(must-revalidate) 해 두었으므로 안에 넣으면 방문할 때마다 145KB를
        다시 받는다. 따로 두면 브라우저가 오래 캐시한다.
@@ -2996,7 +2996,7 @@ var PAYMENT_METHODS = ['신용·체크카드', '간편결제'];
 /* =====================================================================
    개인정보 처리 위탁 — 개인정보보호법 제26조·제28조의8(국외 이전) 고지 항목
    ---------------------------------------------------------------------
-   ★ 실제로 쓰는 곳만 적는다. 광고·분석 업체는 하나도 쓰지 않으므로 적지 않는다.
+   ★ 실제로 쓰는 곳만 적는다. 메타 픽셀(2026-10-08~)은 위탁이 아니라 메타가 직접 거두는 것이라 방침 제5조에 따로 적었다.
    ★ 나라를 모르면 지어내지 않는다. region이 null이면 화면에 "확인 중"으로 나가고,
      아래 legalGaps()가 그것을 미확정 항목으로 세어 결제 게이트에도 반영된다.
      (Supabase는 프로젝트를 만들 때 고른 지역에 따라 달라진다 — 확인 후 채운다.)
@@ -7028,6 +7028,16 @@ var PAID_PRODUCT_ROUTE = {
   compat_full:'compat'         /* 궁합 — 상세는 이 화면에서 이어진다 */
   /* premium_pass 는 특정 화면이 없다. 홈에 그대로 둔다 — 무엇을 열지 손님이 고르는 게 맞다. */
 };
+/* ★ 2026-10-08 — 확인이 끝난 영수증은 주소에서 걷어 낸다(kakao=·pay=fail 과 같은 규칙).
+   영수증 번호는 구매를 되찾는 열쇠라 주소창·방문 기록·메타 픽셀(페이지 주소를 함께 가져감)에 남기지 않는다.
+   확인에 실패했으면 그대로 둔다 — 새로고침하면 다시 확인할 수 있어야 한다. 번호는 RECEIPT_FROM_URL·영수증 메모에 남아 있다. */
+function dropReceiptFromUrl(){
+  try{
+    var rest = location.search.replace(/^\?/,'').split('&')
+      .filter(function(x){ return x && !/^(receipt|product)=/.test(x); }).join('&');
+    history.replaceState(history.state, '', location.pathname + (rest ? '?'+rest : '') + location.hash);
+  }catch(e){}
+}
 async function verifyReceiptFromUrl(){
   if(!BILLING.verifyEndpoint) return false;
   var m = /(?:^|[?&])receipt=([^&]+)/.exec(location.search);
@@ -7043,6 +7053,7 @@ async function verifyReceiptFromUrl(){
       RECEIPT_FROM_URL = receiptId; rememberReceipt(receiptId);
       /* 방금 산 것이 무엇인지 기억해 둔다. 화면 이동은 권한을 다 받아온 뒤에 한다. */
       PRODUCT_FROM_URL = productId ? decodeURIComponent(productId) : null;
+      dropReceiptFromUrl(); pixelPurchase(PRODUCT_FROM_URL);
     }
     return !!(res && res.verified);
   }catch(e){
@@ -7063,6 +7074,7 @@ async function verifyReceiptFromUrl(){
       if(res2 && res2.verified){
         RECEIPT_FROM_URL = receiptId; rememberReceipt(receiptId);
         PRODUCT_FROM_URL = productId ? decodeURIComponent(productId) : null;
+        dropReceiptFromUrl(); pixelPurchase(PRODUCT_FROM_URL);
         return true;
       }
     }catch(e2){ console.warn('영수증 검증 재시도도 실패', e2); }
@@ -7714,6 +7726,7 @@ function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles, hookHtml){
    진짜처럼 생긴 결제창은 그 자체로 사용자를 속이는 물건이 되기 때문이다. */
 function openPaywall(product){
   var body = el('div',{});
+  if(product && product.id) pixelTrack('InitiateCheckout', pixelProductParams(product.id));
 
   /* ★ R74 — 테스트 키면 결제창 맨 위에 크게 알린다 (외부 실사 지적).
      "결제하기"를 누르기 전에 알아야 의미가 있다. 토스 결제창까지 가서 알게 되면
@@ -8501,7 +8514,7 @@ function openTermsModal(){
     '서비스는 만세력 사주 계산, 사주·성격유형 해석, 궁합 콘텐츠를 제공합니다. 구체적인 기능은 서비스 화면에서 안내합니다.',
     '서비스 이용에는 카카오 계정 로그인이 필요합니다(2026-09-09부터). 회사는 카카오로부터 회원번호 한 가지만 제공받으며, 이름·이메일·전화번호는 제공받지 않습니다. 오늘의 운세, 사주 기본 풀이, 궁합 등은 무료로 제공됩니다.',
     '유료 콘텐츠를 결제하실 때에는 카카오 로그인이 필요합니다. 결제 내역을 카카오 회원번호에 연결해 두어야, 브라우저 기록을 지우시거나 기기를 바꾸셔도 결제하신 내용을 그대로 보실 수 있기 때문입니다. 로그인 시 회사가 카카오로부터 제공받는 정보는 카카오 회원번호 한 가지이며, 이름·이메일·전화번호는 제공받지 않습니다.',
-    '서비스는 광고를 게재하지 않으며, 광고·분석 도구를 사용하지 않습니다.'
+    '서비스 화면에는 광고를 게재하지 않습니다. 다만 메타(페이스북·인스타그램) 광고의 성과를 재기 위해 메타 픽셀을 사용하며, 무엇이 전송되는지와 거부하는 방법은 개인정보처리방침 제5조에 적었습니다.'
   ]);
 
   h('제5조 (서비스의 변경 및 중단)');
@@ -8611,7 +8624,7 @@ function openPrivacyModal(){
   p2('법령에 따라 보관하는 것 — 계약·청약철회 기록 5년, 대금결제 기록 5년, 소비자 불만·분쟁 처리 기록 3년.');
 
   h('제3조 (제3자 제공)');
-  p2('이용자의 동의 없이 개인정보를 제3자에게 제공하지 않습니다. 광고나 마케팅 목적의 제공은 하지 않으며, 법령에 따른 경우만 예외입니다.');
+  p2('이용자의 동의 없이 개인정보를 제3자에게 제공하지 않습니다. 닉네임·생년월일·태어난 시각·사주·성격유형·궁합 결과를 광고나 마케팅 목적으로 제공하지 않으며, 법령에 따른 경우만 예외입니다. 광고 성과 측정을 위해 메타 픽셀이 거두는 정보는 제5조에 따로 적었습니다.');
 
   h('제4조 (처리위탁 및 국외 이전)');
   p2('서비스 운영을 위해 아래에 처리를 맡기고 있습니다. 맡긴 목적 외로 쓰지 않습니다.');
@@ -8627,8 +8640,15 @@ function openPrivacyModal(){
     '국외 이전을 원하지 않으시면 해당 기능(유료 AI 해석, 서비스 안에서 문의 접수)을 이용하지 않는 방법으로 거부하실 수 있습니다. 문의는 '+companyValue(COMPANY.supportEmail)+' 로 보내주셔도 됩니다. 그 경우에도 무료 기본 풀이는 그대로 이용하실 수 있습니다.'
   ]);
 
-  h('제5조 (자동 수집 정보)');
-  p2('회사는 광고·분석 도구를 하나도 사용하지 않습니다. 이용 통계를 위한 쿠키, 맞춤형 광고를 위한 식별자, 외부에서 불러오는 이미지·글꼴·스크립트가 없습니다. 결제한 이용권을 알아보기 위한 쿠키 한 개만 사용하며, 이 쿠키는 이용자를 식별하는 무작위 값일 뿐 이용 행태를 수집하지 않습니다.');
+  h('제5조 (자동 수집 정보 · 메타 픽셀)');
+  p2('회사는 메타 광고(페이스북·인스타그램)의 성과를 재고 맞춤형 광고에 쓰기 위해 Meta Platforms, Inc.(미국)의 메타 픽셀을 사용합니다. 서비스를 열면 메타의 스크립트를 불러오며, 아래 정보가 메타로 전송됩니다.');
+  ul([
+    '보내는 것 — 페이지를 연 것, 결제창을 연 것, 결제를 마친 것(상품 이름과 금액), 그리고 메타 스크립트가 함께 거두는 접속 정보(IP 주소, 브라우저·기기 정보, 메타의 쿠키 식별자, 그때의 페이지 주소).',
+    '보내지 않는 것 — 닉네임·생년월일·태어난 시각·성별·출생지·사주·성격유형·궁합 결과, 카카오 회원번호. 초대 링크나 영수증 번호가 주소에 담겨 있는 동안에는 아무것도 보내지 않습니다.',
+    '국외 이전 — 받는 곳 Meta Platforms, Inc.(미국) · 서비스를 여는 때 정보통신망으로 전송 · 메타가 자기 데이터 정책에 따라 처리·보관합니다.',
+    '거부하는 방법 — 설정 화면의 [맞춤 광고 정보 · 이 기기에서 보내지 않기]를 켜면 그 기기에서는 메타 스크립트를 불러오지 않고 아무것도 보내지 않습니다. 브라우저의 추적 방지·광고 차단 기능으로도 막을 수 있습니다. 거부해도 서비스 이용에는 아무 제한이 없습니다.',
+    '이 밖에 결제한 이용권을 알아보기 위한 쿠키 한 개를 씁니다. 이 쿠키는 이용자를 식별하는 무작위 값일 뿐 이용 행태를 수집하지 않습니다.'
+  ]);
 
   h('제6조 (파기)');
   p2('보유 기간이 지나거나 처리 목적을 이룬 정보는 지체 없이 파기합니다. 전자적 파일은 복구할 수 없는 방법으로 지웁니다. 법령에 따라 보관해야 하는 정보는 따로 분리해 보관한 뒤 기간이 지나면 파기합니다.');
@@ -17489,9 +17509,8 @@ function relationBadges(rel){
    주소 끝에 #stats 를 붙여야 열린다. 화면 어디에도 이 문으로 가는 버튼은 없고,
    서버는 테스트 허가를 받은 세션에만 답한다(그 허가는 #unlock 코드로만 받는다).
 
-   ★ 방문자 수는 없다. 이 서비스는 광고·분석 도구를 하나도 쓰지 않으며
-     개인정보처리방침에도 그렇게 적어 두었다. 세려면 추적을 붙여야 하고,
-     그 순간 그 문장이 거짓이 된다. 없는 것을 있는 척하지 않는다.
+   ★ 방문자 수는 여기 없다. 2026-10-08부터 메타 픽셀이 방문을 세지만 그 숫자는 메타 이벤트
+     관리자에 있고 우리 서버에는 안 남는다. 없는 것을 있는 척하지 않는다.
    ★ 대신 이미 쌓여 있는 기록으로 알 수 있는 것을 보여준다 —
      링크를 몇 개 만들었고 그중 몇 개에 상대가 실제로 들어왔는지 같은 것.
      이게 방문자 수보다 서비스 상태를 더 잘 말해 준다.
@@ -18158,7 +18177,7 @@ function adminDash(body){
   });
   srv.appendChild(srvGrid);
   srv.appendChild(el('p',{class:'ad-note'},[
-    '접속자 수(DAU/MAU)·리텐션·유입 경로는 여기 없어요. 그걸 세려면 접속 기록을 따로 쌓아야 하는데, 이 서비스는 광고·분석 도구를 하나도 쓰지 않아요.']));
+    '접속자 수(DAU/MAU)·리텐션·유입 경로는 여기 없어요. 방문·결제 흐름은 메타 이벤트 관리자(인연점 픽셀)에서 볼 수 있어요.']));
   three.appendChild(srv);
   body.appendChild(three);
 }
@@ -26135,6 +26154,16 @@ function renderSettings(){
   view.appendChild(circleCTA(CTA_ICON.plus, '새 프로필 추가', function(){ startSetupWizard(null); }));
   /* R23 — 용어 사전 입구. 무료이고, 여기서도 바로 갈 수 있어야 "이 서비스가 처음인 사람이 갈 곳"이 된다. */
   view.appendChild(settingsRow('사주 용어 사전', '어려운 말을 쉬운 말로', function(){ openGlossary(null); }));
+  /* 2026-10-08 — 메타 픽셀 거부. 방침 제5조가 '설정에서 끌 수 있다'고 약속하는 자리다(지우면 그 문장이 거짓이 된다).
+     이 기기에만 적는다(동기화 안 함). 켜는 순간부터 아무것도 안 보낸다(pixelAllowed). */
+  var adCard = sectionCard(['맞춤 광고 정보'], ['방문·결제 같은 행동 정보를 메타(페이스북·인스타그램)에 보내 광고 성과를 재요. 이름·생년월일·사주·성격유형은 보내지 않아요.']);
+  adCard.appendChild(el('div',{class:'chk-row', style:'margin-top:10px;'},[
+    el('input',{type:'checkbox', id:'adOptOutChk', checked: STATE.adOptOut?'checked':null,
+      onchange:function(e){ STATE.adOptOut = !!e.target.checked; saveState();
+        showToast(STATE.adOptOut ? '이 기기에서는 이제 보내지 않아요.' : '다시 보내도록 바꿨어요.'); }}),
+    el('label',{for:'adOptOutChk'},['이 기기에서 보내지 않기'])
+  ]));
+  view.appendChild(adCard);
   /* ★ R58 — '약관 · 사업자 정보' 카드를 뺐다(대표님 지시).
      같은 내용이 모든 화면 맨 아래(buildSiteFooter)에 이미 있다 —
      이용약관·개인정보처리방침 버튼과 법인명·대표·사업자등록번호·통신판매업신고·
@@ -27051,6 +27080,76 @@ function viewKeyNow(){
   parts.push(ADMIN_ROUTES[ROUTE] ? ('어드민' + ADMIN_SCREEN) : '');
   return parts.join('|');
 }
+/* =====================================================================
+   메타 픽셀 (2026-10-08 대표님 지시 "진행해" · 픽셀 ID 는 대표님이 이벤트 관리자 화면으로 확인해 주심)
+   ---------------------------------------------------------------------
+   보내는 것은 셋뿐 — PageView · InitiateCheckout(결제창 열림) · Purchase(결제 완료 · 상품·금액).
+   ★ 이름·생년월일·사주·성격유형·궁합 결과는 절대 싣지 않습니다. 방침 제5조가 그렇게 약속합니다.
+   ★ 메타는 그때의 페이지 주소(dl)를 함께 가져갑니다. 초대 링크(#i1= #meet= /g/…/이름)에는 남의
+     생년월일·이름이, 결제 복귀(?receipt=)에는 구매를 되찾는 열쇠가 실려 있습니다.
+     그래서 pixelUrlSafe() 가 참일 때만 보냅니다. 아닐 때 생긴 사건은 줄에 세워 두었다가
+     앱이 주소를 걷어 낸 뒤(render 때) 보냅니다.
+   ★ 자동 수집 둘을 끕니다 — autoConfig(단추 글자·페이지 정보 자동 수집) · disablePushState
+     (주소가 바뀔 때마다 PageView 를 저절로 보냄 — 그때 주소가 안전한지 우리가 못 봅니다).
+   ★ 우리 주소(inyeonjeom.kr)에서만 켭니다 — 검사기·로컬에서는 메타로 아무것도 안 나갑니다.
+     검사기는 window.__PIXEL_TEST__ 와 가짜 fbq 로 잽니다(checks-slow/meta_pixel.cjs).
+   ★ 설정의 '맞춤 광고 정보 보내지 않기'(STATE.adOptOut)를 켜면 그 기기에서는 스크립트도 안 불러옵니다.
+   ★ 관리자 화면(ADMIN_ROUTES)에서는 아무것도 안 보냅니다.
+===================================================================== */
+var PIXEL_ID = '739495668667523';
+var PIXEL = { loaded:false, pv:false, q:[] };
+function pixelAllowed(){
+  if(STATE && STATE.adOptOut) return false;
+  if(!(window.__PIXEL_TEST__ || /(^|\.)inyeonjeom\.kr$/.test(location.hostname))) return false;
+  if(typeof ADMIN_ROUTES !== 'undefined' && ADMIN_ROUTES[ROUTE]) return false;
+  return true;
+}
+function pixelUrlSafe(){
+  var p = location.pathname, h = location.hash;
+  if(!(p === '/' || p === '/fortune.html')) return false;
+  if(location.search) return false;
+  return !h || h === '#' || h === '#pricing' || h === '#refund';
+}
+function pixelLoad(){
+  if(PIXEL.loaded) return;
+  PIXEL.loaded = true;
+  if(!window.fbq){
+    var n = window.fbq = function(){ n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+    if(!window._fbq) window._fbq = n;
+    n.push = n; n.loaded = true; n.version = '2.0'; n.queue = [];
+    n.disablePushState = true;
+    var sc = document.createElement('script'); sc.async = true;
+    sc.src = 'https://connect.facebook.net/en_US/fbevents.js';
+    document.head.appendChild(sc);
+  }
+  window.fbq.disablePushState = true;
+  window.fbq('set', 'autoConfig', false, PIXEL_ID);
+  window.fbq('init', PIXEL_ID);
+}
+/* 사건을 줄에 세운다. 실제로 보내는 것은 pixelFlush 하나뿐 */
+function pixelTrack(name, params){
+  if(!pixelAllowed()) return;
+  PIXEL.q.push([name, params || {}]);
+  pixelFlush();
+}
+function pixelFlush(){
+  if(!pixelAllowed()){ PIXEL.q = []; return; }
+  if(!pixelUrlSafe()) return;
+  pixelLoad();
+  if(!PIXEL.pv){ PIXEL.pv = true; window.fbq('track', 'PageView'); }
+  while(PIXEL.q.length){ var e = PIXEL.q.shift(); window.fbq('track', e[0], e[1]); }
+}
+/* 결제 완료 — 결제창에서 돌아와 서버가 영수증을 확인한 그 한 번. 상품을 모르면 보내지 않는다.
+   ★ 이때 주소에는 ?receipt= 가 아직 있다 → pixelTrack 이 줄에 세워 두고, 주소를 걷어 낸 뒤 보낸다. */
+function pixelPurchase(productId){
+  if(productId && productDef(productId)) pixelTrack('Purchase', pixelProductParams(productId));
+}
+/* 상품 하나를 메타에 싣는 모양 — 상품 열쇠의 앞 이름(saju_full 등)과 값만 */
+function pixelProductParams(productId){
+  var def = productDef(productId), base = splitProductId(productId).base;
+  return { content_ids:[base], content_type:'product', value: def ? def.price : 0, currency:'KRW' };
+}
+
 function render(){
   CARD_TERM_HINT_DONE = false;   /* 새 화면을 그리므로 용어 안내를 다시 한 번 붙일 수 있게 한다 */
   /* R59 — 화면이 바뀌었으면 방문 기록에 한 칸 얹는다(뒤로가기용). */
@@ -27060,6 +27159,8 @@ function render(){
   var viewChanged = (viewKey !== LAST_VIEW_KEY);
   LAST_VIEW_KEY = viewKey;
   if(viewChanged && !POPPING) scrollToTopNow();
+  /* 메타 픽셀 — 그리기가 끝나 주소의 초대·영수증 흔적이 걷힌 뒤에 보낸다(pixelUrlSafe) */
+  trackTimeout(pixelFlush, 0);
   /* R25 — 그리기 전에 대표 오행 사본을 계산 결과에 맞춘다(위 syncAllProfileElements 주석 참고). */
   syncAllProfileElements();
   updateHeader();
@@ -27879,7 +27980,7 @@ try{
       MBTI_MATRIX: MBTI_MATRIX, MBTI_STACK: MBTI_STACK, MBTI_WORK_MATRIX: MBTI_WORK_MATRIX, mbtiFitReason: mbtiFitReason, groupVerdictLines: groupVerdictLines, groupElemFacts: groupElemFacts, groupElemText: groupElemText, groupMbtiLine: groupMbtiLine,
       COMPAT_RELATIONS: COMPAT_RELATIONS, COMPAT_TIER_LINE: COMPAT_TIER_LINE,
       COMPAT_NICK: COMPAT_NICK, PERSON_NICK: PERSON_NICK,
-      PRODUCTS: PRODUCTS, YEARLY_PRODUCTS: YEARLY_PRODUCTS, AI_QUOTA: AI_QUOTA, LAUNCH_PRICE_UNTIL: LAUNCH_PRICE_UNTIL, AFTER_LAUNCH_PRICE: AFTER_LAUNCH_PRICE, launchPriceActive: launchPriceActive,
+      PRODUCTS: PRODUCTS, YEARLY_PRODUCTS: YEARLY_PRODUCTS, AI_QUOTA: AI_QUOTA, LAUNCH_PRICE_UNTIL: LAUNCH_PRICE_UNTIL, AFTER_LAUNCH_PRICE: AFTER_LAUNCH_PRICE, launchPriceActive: launchPriceActive, pixelUrlSafe: pixelUrlSafe, pixelFlush: pixelFlush, PIXEL: PIXEL, pixelTrack: pixelTrack,
       buildSajuCompat: buildSajuCompat, zodiacScore: zodiacScore, elementScore: elementScore,
       compatSameness: compatSameness, compatNickname: compatNickname,
       compatTierLine: compatTierLine, personNickname: personNickname,
