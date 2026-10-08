@@ -11,8 +11,10 @@
    ⑤ 어느 사건에도 이름·생년이 안 실린다
    ⑥ 설정에서 끄면(adOptOut) 아무것도 안 보낸다
    ⑦ 우리 주소가 아니면(검사 표식 없음) 스크립트도 안 부른다
+   ⑧ 첫 프로필 저장 → CompleteRegistration · 잠긴 유료 화면 → ViewContent(다시 그려도 한 번)
+     · 궁합 링크 만들기 → trackCustom ShareInvite
 ===================================================================== */
-const { chromePath, puppeteer, serve, reporter, openPage, wait, makeState, ROOT } = require('../_lib.cjs');
+const { chromePath, puppeteer, serve, reporter, openPage, wait, makeState, clickText, ROOT } = require('../_lib.cjs');
 const R = reporter('메타 픽셀');
 const ID = '739495668667523';
 (async function(){
@@ -33,6 +35,7 @@ const ID = '739495668667523';
     p.on('request', function(req){
       const u = req.url();
       if(u.indexOf('facebook') >= 0){ fbNet++; return req.abort(); }
+      if(u.indexOf('/api/group') >= 0) return req.respond({status:200, contentType:'application/json', body:'{"id":"gTESTabcd1234","ownerToken":"t"}'});
       if(u.indexOf('/api/verify') >= 0) return req.respond({status:200, contentType:'application/json', body:'{"verified":true}'});
       if(u.indexOf('/api/entitlements') >= 0) return req.respond({status:200, contentType:'application/json', body: JSON.stringify({items:{compat_full:{purchasedAt:Date.now()}}, purchases:[]})});
       req.continue();
@@ -83,6 +86,26 @@ const ID = '739495668667523';
     p = await open({fake:false});
     const st = await p.evaluate(function(){ return {fbq: typeof window.fbq, loaded: window.__INYEON_TEST__.PIXEL.loaded}; });
     R.note(st.fbq === 'undefined' && !st.loaded && fbNet === 0, '⑦ 우리 주소가 아니면 스크립트도 안 부른다', JSON.stringify(st) + ' net=' + fbNet);
+    await p.close();
+    /* ⑧ */
+    p = await open({state:{profiles:[], activeProfileId:null}});
+    await p.evaluate(function(){ window.__INYEON_TEST__.startService('self'); }); await wait(500);
+    await p.evaluate(function(){ window.__INYEON_TEST__.setupFill({name:'새손님', mbti:'ENFP', gender:'F', year:1992, month:3, day:4, timeUnknown:true, birthLonKey:'seoul', birthLon:126.98}); }); await wait(600);
+    await clickText(p, /^저장하고 내 운세 보기$/); await wait(1200);
+    c = await calls(p);
+    R.note(tracks(c,'CompleteRegistration').length === 1, '⑧ 첫 프로필 저장 → CompleteRegistration 한 번', String(tracks(c,'CompleteRegistration').length));
+    await p.evaluate(function(){ window.__INYEON_TEST__.goRoute('report13'); }); await wait(900);
+    await p.evaluate(function(){ window.__INYEON_TEST__.goRoute('home'); }); await wait(500);
+    await p.evaluate(function(){ window.__INYEON_TEST__.goRoute('report13'); }); await wait(900);
+    c = await calls(p);
+    const vc = tracks(c,'ViewContent');
+    R.note(vc.length === 1 && vc[0].a[2].content_ids[0] === 'saju_full', '⑧ 잠긴 사주 풀이 → ViewContent 한 번(두 번 열어도)', JSON.stringify(vc.map(x=>x.a[2])));
+    await p.evaluate(function(){ var T = window.__INYEON_TEST__; T.openInviteLinkModal(T.activeProfile(), 'friend', false); }); await wait(900);
+    c = await calls(p);
+    const sh = c.filter(x => x.a[0]==='trackCustom' && x.a[1]==='ShareInvite');
+    R.note(sh.length === 1 && sh[0].a[2].kind === 'group' && sh[0].a[2].relation === 'friend', '⑧ 궁합 링크 만들기 → ShareInvite(맞춤)', JSON.stringify(sh.map(x=>x.a[2])));
+    const all8 = JSON.stringify(c.map(x=>x.a));
+    R.note(all8.indexOf('새손님') < 0 && all8.indexOf('1992') < 0, '⑧ 새 이벤트에도 이름·태어난 해가 안 실린다');
     await p.close();
     R.note(errs.length === 0, 'JS 오류 0건', errs.slice(0,2).join(' / ') || '없음');
   } finally { await browser.close(); site.close(); }

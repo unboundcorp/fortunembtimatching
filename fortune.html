@@ -7678,6 +7678,7 @@ function productPitch(product){
 }
 function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles, hookHtml){
   var wrap = el('div',{class:'locked-block'});
+  if(product && product.id) pixelViewContent(product.id);
   if(teaserHtml){
     var teaser = el('div',{class:'locked-teaser', html:teaserHtml, 'aria-hidden':'true'});
     wrap.appendChild(teaser);
@@ -8643,7 +8644,7 @@ function openPrivacyModal(){
   h('제5조 (자동 수집 정보 · 메타 픽셀)');
   p2('회사는 메타 광고(페이스북·인스타그램)의 성과를 재고 맞춤형 광고에 쓰기 위해 Meta Platforms, Inc.(미국)의 메타 픽셀을 사용합니다. 서비스를 열면 메타의 스크립트를 불러오며, 아래 정보가 메타로 전송됩니다.');
   ul([
-    '보내는 것 — 페이지를 연 것, 결제창을 연 것, 결제를 마친 것(상품 이름과 금액), 그리고 메타 스크립트가 함께 거두는 접속 정보(IP 주소, 브라우저·기기 정보, 메타의 쿠키 식별자, 그때의 페이지 주소).',
+    '보내는 것 — 페이지를 연 것, 첫 프로필을 저장한 것, 잠긴 유료 화면을 본 것(어느 상품인지), 궁합 링크를 만든 것(둘이서·여럿이서와 고른 사이), 결제창을 연 것, 결제를 마친 것(상품 이름과 금액), 그리고 메타 스크립트가 함께 거두는 접속 정보(IP 주소, 브라우저·기기 정보, 메타의 쿠키 식별자, 그때의 페이지 주소).',
     '보내지 않는 것 — 닉네임·생년월일·태어난 시각·성별·출생지·사주·성격유형·궁합 결과, 카카오 회원번호. 초대 링크나 영수증 번호가 주소에 담겨 있는 동안에는 아무것도 보내지 않습니다.',
     '국외 이전 — 받는 곳 Meta Platforms, Inc.(미국) · 서비스를 여는 때 정보통신망으로 전송 · 메타가 자기 데이터 정책에 따라 처리·보관합니다.',
     '거부하는 방법 — 설정 화면의 [맞춤 광고 정보 · 이 기기에서 보내지 않기]를 켜면 그 기기에서는 메타 스크립트를 불러오지 않고 아무것도 보내지 않습니다. 브라우저의 추적 방지·광고 차단 기능으로도 막을 수 있습니다. 거부해도 서비스 이용에는 아무 제한이 없습니다.',
@@ -17183,7 +17184,10 @@ function renderSetupStep3(){
       var idx=STATE.profiles.findIndex(function(p){return p.id===SETUP.editId;});
       if(idx>-1) STATE.profiles[idx]=profile;
     } else {
+      var firstProfile = !STATE.profiles.length;
       STATE.profiles.push(profile);
+      /* 메타 픽셀 '가입 완료' — 로그인 뒤 첫 프로필을 저장한 그 한 번(2026-10-08 대표님 지시) */
+      if(firstProfile) pixelTrack('CompleteRegistration', {content_name:'first_profile'});
     }
     STATE.activeId = profile.id;
     saveState();
@@ -25396,6 +25400,8 @@ function openInviteLinkModal(profile, relationKey, fromPair){
      "눌렀는데 아무 일도 안 난다"로 보였다. 이제 창을 먼저 띄우고 링크만 나중에 채운다.
      ★ 링크가 도착하면 applyInviteLink()가 채우고 자동으로 복사까지 한다. */
   armGestureCopy();                                   /* 누른 이 순간에 복사를 걸어 둔다 */
+  /* 메타 픽셀 맞춤 이벤트 — 궁합 링크를 만든 순간(2026-10-08). 사이·둘이서/여럿이서만 싣는다 */
+  pixelTrack('ShareInvite', {kind: asPair ? 'pair' : 'group', relation: relForLink || 'none'}, true);
   INVITE_LINK_CUR.groupId = null; INVITE_LINK_CUR.name = autoName; INVITE_LINK_CUR.wantName = null;
   showInviteModal(profile, null, true, 0, relForLink);
 
@@ -27083,7 +27089,8 @@ function viewKeyNow(){
 /* =====================================================================
    메타 픽셀 (2026-10-08 대표님 지시 "진행해" · 픽셀 ID 는 대표님이 이벤트 관리자 화면으로 확인해 주심)
    ---------------------------------------------------------------------
-   보내는 것은 셋뿐 — PageView · InitiateCheckout(결제창 열림) · Purchase(결제 완료 · 상품·금액).
+   보내는 것 — PageView · InitiateCheckout(결제창 열림) · Purchase(결제 완료 · 상품·금액)
+   · CompleteRegistration(첫 프로필 저장) · ViewContent(잠긴 유료 화면 · 상품마다 한 번) · ShareInvite(맞춤 · 궁합 링크 만듦).
    ★ 이름·생년월일·사주·성격유형·궁합 결과는 절대 싣지 않습니다. 방침 제5조가 그렇게 약속합니다.
    ★ 메타는 그때의 페이지 주소(dl)를 함께 가져갑니다. 초대 링크(#i1= #meet= /g/…/이름)에는 남의
      생년월일·이름이, 결제 복귀(?receipt=)에는 구매를 되찾는 열쇠가 실려 있습니다.
@@ -27097,7 +27104,7 @@ function viewKeyNow(){
    ★ 관리자 화면(ADMIN_ROUTES)에서는 아무것도 안 보냅니다.
 ===================================================================== */
 var PIXEL_ID = '739495668667523';
-var PIXEL = { loaded:false, pv:false, q:[] };
+var PIXEL = { loaded:false, pv:false, q:[], vc:{} };
 function pixelAllowed(){
   if(STATE && STATE.adOptOut) return false;
   if(!(window.__PIXEL_TEST__ || /(^|\.)inyeonjeom\.kr$/.test(location.hostname))) return false;
@@ -27126,18 +27133,25 @@ function pixelLoad(){
   window.fbq('set', 'autoConfig', false, PIXEL_ID);
   window.fbq('init', PIXEL_ID);
 }
-/* 사건을 줄에 세운다. 실제로 보내는 것은 pixelFlush 하나뿐 */
-function pixelTrack(name, params){
-  if(!pixelAllowed()) return;
-  PIXEL.q.push([name, params || {}]);
+/* 사건을 줄에 세운다. 실제로 보내는 것은 pixelFlush 하나뿐. custom 이면 trackCustom(맞춤 이벤트) */
+function pixelTrack(name, params, custom){
+  if(typeof PIXEL === 'undefined' || !PIXEL || !pixelAllowed()) return;
+  PIXEL.q.push([name, params || {}, !!custom]);
   pixelFlush();
+}
+/* 콘텐츠 조회 — 잠긴 유료 화면을 본 순간. 화면을 다시 그릴 때마다 보내지 않게 상품마다 한 번(문서 하나에서) */
+function pixelViewContent(productId){
+  var k = splitProductId(productId).base;
+  if(!k || PIXEL.vc[k]) return;
+  PIXEL.vc[k] = 1;
+  pixelTrack('ViewContent', pixelProductParams(productId));
 }
 function pixelFlush(){
   if(!pixelAllowed()){ PIXEL.q = []; return; }
   if(!pixelUrlSafe()) return;
   pixelLoad();
   if(!PIXEL.pv){ PIXEL.pv = true; window.fbq('track', 'PageView'); }
-  while(PIXEL.q.length){ var e = PIXEL.q.shift(); window.fbq('track', e[0], e[1]); }
+  while(PIXEL.q.length){ var e = PIXEL.q.shift(); window.fbq(e[2] ? 'trackCustom' : 'track', e[0], e[1]); }
 }
 /* 결제 완료 — 결제창에서 돌아와 서버가 영수증을 확인한 그 한 번. 상품을 모르면 보내지 않는다.
    ★ 이때 주소에는 ?receipt= 가 아직 있다 → pixelTrack 이 줄에 세워 두고, 주소를 걷어 낸 뒤 보낸다. */
