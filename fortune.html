@@ -1184,6 +1184,7 @@ button.today-iljin:active{opacity:.7;}
 .locked-titles li::before{content:'';position:absolute;left:4px;top:.62em;width:5px;height:5px;
   border-radius:50%;background:var(--gold);opacity:.55;}
 .was-price{opacity:.7;text-decoration-thickness:1px;}
+.pay-launch{display:inline-block;font-size:.8rem;font-weight:600;color:var(--brand);background:var(--gold-soft);border-radius:12px;padding:5px 12px;margin:2px 0 6px;line-height:1.5;}
 .pay-was{font-size:.84rem;color:var(--ink-dim);margin:6px 0 -4px;}
 .site-footer .biz-fold{margin-top:12px;}
 .site-footer .biz-fold summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;
@@ -6206,6 +6207,20 @@ function productIdFor(base, year){
   return base + ':' + year;
 }
 /* 연도가 붙어 와도 상품표에서 값(가격·이름)을 찾아 준다. 없는 조합이면 null. */
+/* =====================================================================
+   출시 기념가 — 2026-10-08 대표님 지시 "12/31까지로 하고 그날 지나면 자동으로 값바꿔" · "A로 가자"
+   PRODUCTS.price 는 기념가다. 한국 시각 2027-01-01 00:00 이 지나서 열면 아래 값으로 갈아 끼운다.
+   ★ 서버 api/_lib/products.js 의 LAUNCH_PRICE_UNTIL · AFTER_LAUNCH_PRICE 와 한 쌍이다(검사기가 대조).
+   ★ 자정을 넘겨 열어 둔 화면은 옛 값을 보이지만, 결제는 서버가 409('표시된 가격이 최신이 아닙니다')로 막는다.
+   ★ 기념가 기간에는 '출시 기념가 · 12월 31일까지'만 적는다 — 판 적 없는 정가를 취소선으로 적지 않는다. */
+var LAUNCH_PRICE_UNTIL = Date.UTC(2026, 11, 31, 15, 0, 0);   /* = KST 2027-01-01 00:00 */
+var AFTER_LAUNCH_PRICE = { saju_full:2900, mbti_full:2900, compat_full:1500, premium_pass:5900 };
+function launchPriceActive(now){ return (now == null ? Date.now() : now) < LAUNCH_PRICE_UNTIL; }
+function launchPriceNote(){ return '출시 기념가 · 12월 31일까지'; }
+(function applyLaunchPrice(){
+  if(launchPriceActive()) return;
+  Object.keys(AFTER_LAUNCH_PRICE).forEach(function(k){ if(PRODUCTS[k]) PRODUCTS[k].price = AFTER_LAUNCH_PRICE[k]; });
+})();
 function productDef(id){
   var sp = splitProductId(id), base = PRODUCTS[sp.base];
   if(!base) return null;
@@ -7679,7 +7694,7 @@ function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles, hookHtml){
   /* ★ 2026-10-04 QA — 한 줄로 쓰면 '…2026년 / 열기 · 1,900원'처럼 접혀서 낱말 중간이 끊겼다(320~390 전 폭).
        상품 이름과 값을 두 줄(btnLines)로 나눠 줄이 끊기는 자리를 우리가 정한다. */
   var btn = el('button',{class:'btn btn-buy btn-block', onclick:function(){ openPaywall(product); }},
-    [btnLines(PRODUCTS[splitProductId(product.id).base].name, (product.year ? product.year+'년 · ' : '')+formatWon(product.price)+'으로 열기')]);
+    [btnLines(PRODUCTS[splitProductId(product.id).base].name, (product.year ? product.year+'년 · ' : '')+(launchPriceActive() ? '출시 기념가 ' : '')+formatWon(product.price)+'으로 열기')]);
   cta.appendChild(btn);
   /* 2026-10-08 — 아래 '따로 셋을 구매하면 …원 덜 들어요' 문장은 같은 말이라 링크 안의 취소선 값으로 합쳤다. */
   var cmp = passCompareNodes(true);
@@ -7729,6 +7744,11 @@ function openPaywall(product){
     priceTail = '1회 결제';
   }
   head.appendChild(el('div',{class:'pay-price-sub'},[priceTail]));
+  /* 출시 기념가 — 끝나는 날과 그 뒤 값을 함께 적는다(미리 알리는 것이 사실 고지다). */
+  if(launchPriceActive()){
+    var after = AFTER_LAUNCH_PRICE[splitProductId(product.id).base];
+    head.appendChild(el('div',{class:'pay-launch'}, after ? [launchPriceNote(), el('br'), '1월 1일부터 ' + formatWon(after)] : [launchPriceNote()]));   /* 한 줄이면 390에서 값이 혼자 접혀서 뜻 단위로 끊음 */
+  }
   /* 2026-09-26 대표님 지시 — 결제창도 잠금 카드와 같은 한 줄 권유("올해 전체 사주를 깊게 알아 봐요")로 시작한다. */
   var pitch = productPitch(product);
   if(pitch) head.appendChild(el('div',{class:'pay-pitch'},[pitch]));
@@ -9453,6 +9473,10 @@ function renderPricing(){
     row.appendChild(el('h3',{},[d.name]));
     row.appendChild(el('span',{class:'pub-price'},[formatWon(d.price)]));
     card.appendChild(row);
+    if(launchPriceActive() && AFTER_LAUNCH_PRICE[key]){
+      card.appendChild(el('p',{class:'biz-hint', style:'margin:4px 0 0;'},
+        [launchPriceNote() + ' · 2027년 1월 1일부터 ' + formatWon(AFTER_LAUNCH_PRICE[key])]));
+    }
     if(YEARLY_PRODUCTS[key]){
       card.appendChild(el('p',{class:'biz-hint', style:'margin:4px 0 0;'},
         ['해마다 내용이 달라서 연도별로 따로 결제하는 상품이에요 (예: ' + kstYearOf(Date.now()) + '년).']));
@@ -27821,7 +27845,7 @@ try{
       MBTI_MATRIX: MBTI_MATRIX, MBTI_STACK: MBTI_STACK, MBTI_WORK_MATRIX: MBTI_WORK_MATRIX, mbtiFitReason: mbtiFitReason, groupVerdictLines: groupVerdictLines, groupElemFacts: groupElemFacts, groupElemText: groupElemText, groupMbtiLine: groupMbtiLine,
       COMPAT_RELATIONS: COMPAT_RELATIONS, COMPAT_TIER_LINE: COMPAT_TIER_LINE,
       COMPAT_NICK: COMPAT_NICK, PERSON_NICK: PERSON_NICK,
-      PRODUCTS: PRODUCTS, YEARLY_PRODUCTS: YEARLY_PRODUCTS, AI_QUOTA: AI_QUOTA,
+      PRODUCTS: PRODUCTS, YEARLY_PRODUCTS: YEARLY_PRODUCTS, AI_QUOTA: AI_QUOTA, LAUNCH_PRICE_UNTIL: LAUNCH_PRICE_UNTIL, AFTER_LAUNCH_PRICE: AFTER_LAUNCH_PRICE, launchPriceActive: launchPriceActive,
       buildSajuCompat: buildSajuCompat, zodiacScore: zodiacScore, elementScore: elementScore,
       compatSameness: compatSameness, compatNickname: compatNickname,
       compatTierLine: compatTierLine, personNickname: personNickname,

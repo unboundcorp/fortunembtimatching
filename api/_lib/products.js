@@ -121,10 +121,27 @@ export function productIdFor(base, year) {
   return base + ':' + year;
 }
 
+/* =====================================================================
+   출시 기념가 — 2026-10-08 대표님 지시 "12/31까지로 하고 그날 지나면 자동으로 값바꿔" · "A로 가자"
+   ---------------------------------------------------------------------
+   위 PRODUCTS.price 는 **출시 기념가**(지금 값)다. 한국 시각 2027-01-01 00:00 부터 아래 값으로 청구한다.
+   ★ 화면 fortune.html 의 LAUNCH_PRICE_UNTIL · AFTER_LAUNCH_PRICE 와 한 쌍이다. 한쪽만 고치면
+     화면 값과 청구액이 갈린다(checkout 이 409 로 막기는 하지만 표시광고 문제다).
+   ★ 결제창을 연 순간의 값이 주문(amount)에 적히고 승인은 그 값으로 한다 — 12/31 밤에 연 결제는 기념가 그대로.
+   ★ 판 적 없는 '정가'를 지어 적지 않는다: 기념가 기간에는 '출시 기념가 · 12월 31일까지'만 적고 취소선을 쓰지 않는다. */
+export const LAUNCH_PRICE_UNTIL = Date.UTC(2026, 11, 31, 15, 0, 0);   /* = KST 2027-01-01 00:00 */
+export const AFTER_LAUNCH_PRICE = { saju_full: 2900, mbti_full: 2900, compat_full: 1500, premium_pass: 5900 };
+export function priceAt(base, now = Date.now()) {
+  const p = PRODUCTS[base];
+  if (!p) return null;
+  if (now >= LAUNCH_PRICE_UNTIL && AFTER_LAUNCH_PRICE[base] != null) return AFTER_LAUNCH_PRICE[base];
+  return p.price;
+}
+
 export function productOf(id) {
   const { base, year } = splitProductId(id);
   if (!Object.prototype.hasOwnProperty.call(PRODUCTS, base)) return null;
-  const p = PRODUCTS[base];
+  const p = { ...PRODUCTS[base], price: priceAt(base) };   /* ★ 값은 그때그때 — 위 출시 기념가 */
   if (year === null) return p;                 /* 연도 없이 온 것 — 예전 주문도 여기로 온다 */
   if (!YEARLY[base]) return null;              /* 연도를 붙일 수 없는 상품 */
   if (!Number.isInteger(year) || year < YEAR_MIN || year > YEAR_MAX) return null;

@@ -197,7 +197,8 @@ const APP = BASE + '/fortune.html';
     return out;
   });
   let srv = null;
-  try{ srv = (await import('file://' + path.join(L.ROOT, 'api/_lib/products.js'))).PRODUCTS; }
+  let srvMod = null;
+  try{ srvMod = await import('file://' + path.join(L.ROOT, 'api/_lib/products.js')); srv = srvMod.PRODUCTS; }
   catch(e){ R.bad('서버 상품표 읽기', String(e.message).slice(0,100)); }
   if(srv){
     const keys = Array.from(new Set(Object.keys(cli).concat(Object.keys(srv))));
@@ -206,7 +207,9 @@ const APP = BASE + '/fortune.html';
       if(!a){ R.bad('상품 ' + k, '서버에만 있음'); return; }
       if(!b){ R.bad('상품 ' + k, '화면에만 있음'); return; }
       const diff = [];
-      if(a.price !== b.price) diff.push('값 ' + a.price + ' ≠ ' + b.price);
+      /* 2026-10-08 출시 기념가 — 서버는 그때그때 값(priceAt)을 청구한다. 화면 값과 그 값을 맞댄다 */
+      const bp = (srvMod && srvMod.priceAt) ? srvMod.priceAt(k) : b.price;
+      if(a.price !== bp) diff.push('값 ' + a.price + ' ≠ ' + bp);
       if(a.name !== b.name)   diff.push('이름 「' + a.name + '」 ≠ 「' + b.name + '」');
       if(a.kind !== b.kind)   diff.push('갈래 ' + a.kind + ' ≠ ' + b.kind);
       if((a.days||null) !== (b.days||null)) diff.push('기간 ' + a.days + ' ≠ ' + b.days);
