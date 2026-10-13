@@ -905,7 +905,7 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + var(--tabbar-h) + env(safe-are
 /* ★ 2026-08-25 — 700을 달라고 하고 있었다. 우리가 담은 명조는 600 한 벌뿐이라
    브라우저가 가짜 굵게를 만들어 첫 화면 제목('인연점') 획이 뭉개고 있었다.
    배포된 실제 화면에서 잡았다 — 로컬 검사기로는 안 잡히는 종류다. */
-.onboard h1{font-size:1.9rem;font-weight:600;letter-spacing:-.03em;color:var(--gold);}
+.onboard h1{font-size:1.9rem;font-weight:600;letter-spacing:-.03em;color:var(--brand);}  /* 2026-10-14 글자 로고 색은 어디서나 --brand (헤더·카드·og.png·결제 페이지) */
 .onboard p{color:var(--ink-dim);max-width:40ch;}
 
 /* 히스토리 리스트 — R22: 목록 한 줄도 "작은 카드"로 보이게 둥글리고 여백을 준다 */
@@ -1990,7 +1990,7 @@ body.has-fab main{padding-bottom:calc(110px + var(--tabbar-h) + env(safe-area-in
 .ad-brand{display:flex;align-items:center;gap:8px;padding:2px 8px 16px;}
 .ad-seal{width:24px;height:24px;border-radius:7px;border:1px solid var(--gold);
   display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--gold-2);flex:0 0 auto;}
-.ad-brand-name{font-size:15px;font-weight:600;letter-spacing:-.01em;}
+.ad-brand-name{font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--brand);}
 .ad-group{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-faint);
   padding:14px 10px 5px;}
 .ad-group:first-of-type{padding-top:10px;}
@@ -26775,7 +26775,7 @@ function drawShareCard(canvas, kind, profile, data){
        (헤더는 fortune.html 위쪽 `.brand-seal` 안의 <svg viewBox="0 0 48 48">다 — 한 쌍이다.) */
   drawLogoOnCanvas(ctx, w-84, 86, 62);
 
-  ctx.fillStyle=CARD_ACC; ctx.font='700 30px '+CARD_SANS; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle=CARD_SEAL; ctx.font='700 30px '+CARD_SANS; ctx.textAlign='left'; ctx.textBaseline='alphabetic';   /* 글자 로고 = 로고색(--brand) */
   ctx.fillText(COMPANY.serviceName, 50, 100);
 
   ctx.fillStyle=CARD_INK; ctx.font='400 17px '+CARD_SANS;

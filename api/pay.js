@@ -63,7 +63,7 @@ function page({ body, title }) {
   .note{font-size:.76rem;color:var(--ink-dim);margin-top:18px;}
   /* 브랜드 — 여기가 우리 화면이라는 것을 한눈에 알리는 자리 */
   .brand{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:14px;}
-  .brand span{font-size:1.05rem;font-weight:800;color:var(--gold);letter-spacing:-.02em;}
+  .brand span{font-size:1.05rem;font-weight:800;color:${LOGO_COLOR};letter-spacing:-.02em;}
   /* 테스트 키일 때만 뜨는 띠 — 눈에 안 띄면 뜻이 없으므로 맨 위에 크게 */
   .testbar{background:#8F2413;color:#fff;border-radius:12px;padding:12px 14px;margin-bottom:16px;
     font-size:.86rem;font-weight:700;line-height:1.6;text-align:left;}
@@ -80,7 +80,7 @@ function page({ body, title }) {
    fortune.html 의 `LOGO_PATH`(공유 카드)와 함께 세 곳이 한 벌이다 — 로고를 바꾸면 셋을 함께 고쳐라.
    파일을 부르지 않고 그려 넣는다 — 결제 페이지가 바깥 요청을 하나라도 더 하면 그만큼 느려지고,
    막히면 브랜드가 통째로 사라진다. */
-const LOGO_COLOR = '#98003C';
+const LOGO_COLOR = '#B41E30';   /* 2026-10-14 서비스 머리글 로고(--brand)와 같은 색 — 하트·글자 로고 모두 */
 const LOGO = '<svg width="28" height="28" viewBox="0 0 48 48" fill="none" aria-hidden="true">'
   + '<path d="M24 40.5C24 40.5 6.5 30.2 6.5 18.8c0-5.4 4.2-9.3 9-9.3 3.4 0 6.4 1.9 8.5 5 2.1-3.1 5.1-5 8.5-5 4.8 0 9 3.9 9 9.3 0 4.2-2.4 8.2-5.4 11.5"'
   + ' stroke="' + LOGO_COLOR + '" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>'
