@@ -22606,6 +22606,132 @@ function compatWhyEvidence(pA, pB, res){
   }
   return ev;
 }
+/* ★ 2026-10-13 대표님 지시 "그 아래 점수 반영되는 로직을 써두는 글귀 말고 설명이 더 있어야 할 거 같다
+   말이 잘 통하고 함께 있을 때 힘이 나는 편이면 그 이유를 써줘야지" — 모임 평균의 '왜 N점인가요?'.
+   평균에는 두 사람이 정해져 있지 않아 근거 줄이 통째로 빠져 있었다. 항목마다 그 항목이 가장 높은 짝과
+   가장 낮은 짝을 골라, 그 짝의 근거(compatWhyEvidence — 1:1 화면과 같은 문장)를 옮겨 적는다.
+   ★ 새 점수를 만들지 않는다. 한 쌍뿐이면 그 쌍의 근거를 그대로 쓴다. */
+/* ★ 같은 날 대표님 2차 "3쌍의 평균이고 누구랑 누구 몇점이고 이런 거는 지우고 '모임 내 이런 사람이 많고 저런 사람이 많아서
+   대화가 이렇게 풀린다' 이런식으로 복합적으로" — 짝 이름·점수를 빼고, 모임 전체의 구성(많은 쪽 · 섞인 쪽)으로 풀어 쓴다.
+   ★ 새 점수를 만들지 않는다 — 사람들의 글자·기운·띠와 짝들의 판정(computeCompat 이 이미 낸 값)을 세기만 한다.
+   ★ 두 분 모임은 1:1 화면과 같은 근거(compatWhyEvidence)를 그대로 쓴다. */
+var GROUP_WHY_LEAN = {
+  E:'먼저 말을 거는 사람이 많아 대화가 쉽게 시작돼요.',
+  I:'말수가 적은 사람이 많아 대화가 천천히, 대신 깊게 흘러가요.',
+  S:'현실적인 사람이 많아 이야기가 구체적이고 금방 결론이 나요.',
+  N:'상상하길 좋아하는 사람이 많아 이야기가 엉뚱한 데로 뻗어 가며 재미있어져요.',
+  T:'따져 보는 사람이 많아 문제가 생기면 해결책부터 찾아요.',
+  F:'공감을 잘하는 사람이 많아 서로 기분을 살피며 부드럽게 이야기해요.',
+  J:'계획을 세우는 사람이 많아 약속이 잘 잡히고 잘 지켜져요.',
+  P:'즉흥적인 사람이 많아 계획에 없던 재미있는 일이 자주 생겨요.'
+};
+var GROUP_WHY_SPLIT = [
+  '말 많은 사람과 조용한 사람이 섞여 있어 대화 속도가 서로 달라요.',
+  '현실파와 상상파가 섞여 있어 같은 이야기를 해도 먼저 보는 데가 달라요. 대화가 가장 많이 엇갈리는 부분이에요.',
+  '따지는 사람과 공감하는 사람이 섞여 있어 다툴 때 서로 바라는 게 달라요.',
+  '계획파와 즉흥파가 섞여 있어 약속을 잡을 때 엇갈리기 쉬워요.'
+];
+function groupWhyMbti(members, v){
+  var types = members.map(function(m){ return String((m && m.mbti) || '').toUpperCase(); })
+    .filter(function(t){ return /^[EI][SN][TF][JP]$/.test(t); });
+  if(types.length < 3) return '';
+  var lean = [], split = [];
+  GROUP_MBTI_AXES.forEach(function(ax, i){
+    var a = types.filter(function(t){ return t.charAt(i) === ax[0]; }).length, b = types.length - a;
+    var share = Math.max(a, b) / types.length;
+    if(share >= 2/3) lean.push({L: a >= b ? ax[0] : ax[1], share: share, i: i});
+    if(a && b) split.push(i);   /* 한 사람이라도 다른 쪽이면 '섞여 있다' */
+  });
+  lean.sort(function(x, y){ return y.share - x.share; });
+  lean = lean.slice(0, 2);
+  var out = lean.map(function(x){ return GROUP_WHY_LEAN[x.L]; });
+  /* 섞인 축은 하나만 짚는다 — 이 궁합표가 가장 무겁게 보는 S/N 이 섞였으면 그것부터,
+     아니면 위에서 '많다'고 말하지 않은 축부터(같은 축을 '많다'와 '섞였다'로 두 번 말하지 않게). */
+  if(split.length){
+    var usedAx = lean.map(function(x){ return x.i; });
+    var notUsed = split.filter(function(i){ return usedAx.indexOf(i) < 0; });
+    var pick = notUsed.indexOf(1) >= 0 ? 1 : notUsed[0];
+    if(typeof pick === 'number') out.push((out.length ? '다만 ' : '') + GROUP_WHY_SPLIT[pick]);
+  }
+  out.push(v >= 75 ? '그래서 대체로 말이 잘 통하는 모임이에요.'
+         : v >= 64 ? '그래서 대화가 무난하게 이어지는 모임이에요.'
+                   : '그래서 서로 한 번 더 설명해 줘야 할 때가 많은 모임이에요.');
+  return out.join(' ');
+}
+function groupWhyMost(cnt){
+  var keys = Object.keys(cnt), tot = keys.reduce(function(x,k){ return x + cnt[k]; }, 0);
+  if(!tot) return null;
+  var top = keys.reduce(function(m,k){ return cnt[k] > cnt[m] ? k : m; }, keys[0]);
+  return {key: top, many: cnt[top] / tot >= 0.5, tot: tot};
+}
+function groupWhySaju(pairs){
+  var el5 = {help:0, same:0, clash:0}, br = {fit:0, calm:0, bump:0};
+  pairs.forEach(function(pr){
+    var sj = pr.res && pr.res.saju; if(!sj) return;
+    var t = String(sj.elemTerm || '');
+    if(/상생/.test(t)) el5.help++; else if(/비화/.test(t)) el5.same++; else if(/상극/.test(t)) el5.clash++;
+    var b = sj.branchTerm;
+    if(b === '육합' || b === '삼합(반합)' || b === '방합(반합)' || b === '같은 글자') br.fit++;
+    else if(b === '충' || b === '형' || b === '파') br.bump++; else br.calm++;
+  });
+  var e = groupWhyMost(el5); if(!e) return '';
+  var out = [];
+  out.push(!e.many ? '타고난 기질은 서로 북돋는 사이, 닮은 사이, 부딪히는 사이가 고루 섞여 있어요.'
+    : e.key === 'help' ? '타고난 기질이 서로를 북돋는 사이가 많아, 함께 있으면 자연스럽게 힘이 돼요.'
+    : e.key === 'same' ? '타고난 기질이 닮은 사이가 많아, 말하지 않아도 편한 모임이에요.'
+                       : '타고난 기질이 서로 부딪히는 사이가 많아, 자극은 되지만 서로 배려가 필요해요.');
+  out.push(br.bump ? (br.fit ? '생활 습관은 잘 맞물리는 사이와 부딪히는 사이가 함께 있어, 사소한 데서 서운함이 생기지 않게 살펴야 해요.'
+                             : '생활 습관에서 부딪히는 사이가 섞여 있어, 사소한 데서 서운함이 생길 수 있어요.')
+         : br.fit ? '생활 습관도 서로 맞물리는 사이가 많아 함께 지내기 편해요.'
+                  : '생활 습관은 크게 부딪히는 사이가 없어 무난해요.');
+  return out.join(' ');
+}
+function groupWhyElem(members, pairs){
+  var mc = [0,0,0,0,0], n = 0;
+  members.forEach(function(m){ var i = m && m.person && m.person.elementIdx; if(typeof i === 'number'){ mc[i]++; n++; } });
+  var rel = {help:0, same:0, clash:0};
+  pairs.forEach(function(pr){
+    var a = pr.a.person && pr.a.person.elementIdx, b = pr.b.person && pr.b.person.elementIdx;
+    if(typeof a !== 'number' || typeof b !== 'number') return;
+    var d = ((b - a) + 5) % 5;
+    if(d === 0) rel.same++; else if(d === 1 || d === 4) rel.help++; else rel.clash++;
+  });
+  var r = groupWhyMost(rel); if(!n || !r) return '';
+  var top = mc.indexOf(Math.max.apply(null, mc)), out = [];
+  if(mc[top] >= 2) out.push('가장 진한 기운이 ' + ELEM_PROFILE[top].name + '(' + ELEMENTS[top] + ')인 사람이 많아요.');
+  out.push(!r.many ? '서로 살려주는 사이와 누르는 사이가 고루 섞여 있어, 누구와 붙느냐에 따라 편한 정도가 달라요.'
+    : r.key === 'help' ? '서로의 기운을 살려주는 사이가 많아, 한 사람이 지치면 다른 사람이 채워 줘요.'
+    : r.key === 'same' ? '기운이 닮은 사이가 많아 편하지만, 다 같이 부족한 부분은 아무도 안 채워요.'
+                       : '서로의 기운을 누르는 사이가 많아, 오래 붙어 있으면 지칠 수 있어요. 가끔 각자 쉬는 시간이 필요해요.');
+  return out.join(' ');
+}
+function groupWhyZod(pairs){
+  var good = 0, bad = 0, all = 0;
+  pairs.forEach(function(pr){
+    var a = pr.a.person && pr.a.person.zodiacIdx, b = pr.b.person && pr.b.person.zodiacIdx;
+    if(typeof a !== 'number' || typeof b !== 'number') return;
+    all++; var d = Math.abs(a - b); d = Math.min(d, 12 - d);
+    if(d === 4) good++; else if(d === 6) bad++;
+  });
+  if(!all) return '';
+  var head = good && bad ? '띠로는 예로부터 잘 맞는다는 사이와 부딪힌다는 사이가 함께 있어요.'
+    : good ? '띠로는 예로부터 잘 맞는다고 보는 사이가 있어요.'
+    : bad ? '띠로는 예로부터 부딪힌다고 보는 사이가 있어요.'
+          : '띠끼리는 특별히 좋지도 나쁘지도 않은 사이가 대부분이에요.';
+  return head + ' 넷 중 비중이 가장 작아 점수를 크게 흔들지는 않아요.';
+}
+function groupWhyEvidence(pairs, members, vals){
+  if(!pairs || !pairs.length) return {};
+  if(pairs.length === 1) return compatWhyEvidence(pairs[0].a.person, pairs[0].b.person, pairs[0].res);
+  members = members || [];
+  vals = vals || {};
+  return {
+    mbti: groupWhyMbti(members, vals.mbti),
+    saju: groupWhySaju(pairs),
+    elem: groupWhyElem(members, pairs),
+    zod:  groupWhyZod(pairs)
+  };
+}
 /* ★ 2026-10-07 — '왜 N점인가요?' 가 화면에 실제로 들어왔을 때 한 번 움직이게 한다(.nudge).
    관찰기는 한 번 붙이면 떼어 낸다. IntersectionObserver 가 없는 옛 브라우저면 바로 붙인다. */
 function whyNudgeWhenSeen(node){
@@ -22641,7 +22767,12 @@ function buildCompatWhyScores(total, vals, extraNote, ev, relationKey){
     if(ev && ev[r.it.key]) descKids.push(el('span',{class:'d3'},[ev[r.it.key]]));
     /* ★ 2026-08-26 (대표님 지시) — 넷째 줄. 셋째 줄이 "무엇으로 쟀나"라면 이건 "그래서 두 사람이
        실제로 어떻게 맞물리나"다. 숫자와 용어만 보고 끝나지 않게 한 줄 더 준다. */
-    if(ev && ev[r.it.key+'More']) descKids.push(el('span',{class:'d4'},[ev[r.it.key+'More']]));
+    /* ★ 2026-10-13 — 모임 평균은 [{who, text}] 낱낱으로 온다(가장 높은 짝 · 가장 낮은 짝). 짝 이름을 굵게. */
+    var more = ev && ev[r.it.key+'More'];
+    if(Array.isArray(more)) more.forEach(function(m){
+      descKids.push(el('span',{class:'d4'},[el('b',{},[m.who]), ' — '+m.text]));
+    });
+    else if(more) descKids.push(el('span',{class:'d4'},[more]));
     var desc = el('p',{class:'gc-why-desc hidden'}, descKids);
     var row = el('button',{class:'gc-why-row', type:'button', 'aria-expanded':'false'},[
       el('span',{class:'k'},[r.it.label]),
@@ -24858,14 +24989,15 @@ function renderGroupCompat(){
       if(!vs.length) return null;
       return Math.round(vs.reduce(function(x,y){ return x+y; },0)/vs.length);
     }
-    var why = buildCompatWhyScores(avgAll, {
+    var gWhyVals = {
       mbti: avgAllOf(function(pr){ return pr.res.mbtiScore; }),
       saju: avgAllOf(function(pr){ return pr.res.saju && pr.res.saju.score; }),
       elem: avgAllOf(function(pr){ return pr.res.elemScore; }),
       zod:  avgAllOf(function(pr){ return pr.res.zodScore; })
+    };
     /* ★ R98 (대표님 지시) — 평균 계산을 설명하는 문장은 뺐다.
        이 숫자 바로 위에 "N명 · 전체 평균 궁합 지수"라고 이미 적혀 있다. */
-    }, '', null, GC_RELATION);
+    var why = buildCompatWhyScores(avgAll, gWhyVals, '', groupWhyEvidence(pairs, members, gWhyVals), GC_RELATION);
     if(why) gaugeCard.appendChild(why);
   })();
   view.appendChild(gaugeCard);

@@ -67,6 +67,13 @@ async function openGroup(browser, srv, errs, extra){
     R.note(/고루 섞여/.test(mb[4]), 'MBTI — 반반이면 고루 섞였다고 한다', mb[4]);
     R.note(mb[5] === '', 'MBTI — 한 명뿐이면 말하지 않는다', JSON.stringify(mb[5]));
     R.note(top3.dots === 25, '세 사람 — 다섯 기운 점 25개', String(top3.dots));
+    /* ★ 2026-10-13 대표님 "말이 잘 통하고 함께 있을 때 힘이 나는 편이면 그 이유를 써줘야지" — 평균의 '왜 N점인가요?' 에 짝별 이유 */
+    const wy = await q.evaluate(function(){ var w = document.querySelector('#main .gc-why'); if(!w) return null;
+      return [...w.querySelectorAll('.gc-why-desc')].map(function(d){ return {d3: (d.querySelector('.d3')||{}).textContent || '', d4: [...d.querySelectorAll('.d4')].map(function(x){ return x.textContent; })}; }); });
+    R.note(wy && wy.length === 4 && wy.every(function(x){ return x.d3.length > 20 && !/undefined|null|NaN/.test(x.d3); }), '세 사람 — 평균의 네 줄마다 모임 구성으로 푼 이유가 붙는다', JSON.stringify(wy && wy.map(function(x){ return x.d3.slice(0,40); })));
+    /* ★ 대표님 2차 "3쌍의 평균이고 누구랑 누구 몇점이고 이런 거는 지우고" — 짝 이름·점수가 없다 */
+    R.note(wy && wy.every(function(x){ return !/×|\d+점|쌍의 평균/.test(x.d3) && x.d4.length === 0; }), '세 사람 — 이유에 짝 이름·점수가 없다', JSON.stringify(wy && wy.map(function(x){ return x.d3.slice(0,60); })));
+    R.note(wy && /많아|섞여/.test(wy[0].d3) && /모임이에요/.test(wy[0].d3), '세 사람 — 성격유형 줄은 "이런 사람이 많아 / 섞여 → 그래서 대화가" 로 푼다', wy && wy[0].d3);
     if(process.env.SHOT) await q.screenshot({path: process.env.SHOT + '/gv3.png'});
     await q.evaluate(function(){ document.querySelectorAll('#main .gc-node')[1].click(); }); await wait(500);
     const s1 = await q.evaluate(function(f){ return eval('('+f+')')(); }, visibleCards.toString());
