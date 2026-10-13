@@ -20507,15 +20507,15 @@ function renderCharDex(){
     view.appendChild(el('p',{class:'section-sub'},['프로필을 만들면 그 가운데 내 것이 어떤 건지 표시해 드려요.']));
   }
 
-  var elemCard = sectionCard(['오행 5종']);
-  elemCard.appendChild(buildNoteFold('이 다섯은 무엇인가요?',
-    '목·화·토·금·수. 태어난 날의 글자(일간)가 어떤 기운(오행)인지에 따라 만나는 캐릭터예요.'));
+  /* 2026-10-14 대표님 지시 — 접이식 '이 다섯은 무엇인가요?'를 빼고 제목의 '5종'을 누르면 같은 설명이 뜨게 했다 */
+  var elemWhat = el('button',{type:'button',class:'term-lite dex-what',onclick:function(){
+    openModal('오행 5종', el('p',{},['목·화·토·금·수. 태어난 날의 글자(일간)가 어떤 기운(오행)인지에 따라 만나는 캐릭터예요.']));
+  }},['5종']);
+  var elemCard = sectionCard(['오행 ', elemWhat]);
   elemCard.appendChild(buildElemDexRow(['e0','e1','e2','e3','e4'], myKeys));
   view.appendChild(elemCard);
 
-  var mbtiCard = sectionCard(['성격유형 16종']);
-  mbtiCard.appendChild(buildNoteFold('이 열여섯은 무엇인가요?',
-    '16유형 각각의 캐릭터예요. 남·여 두 컷씩 있고, 옷차림과 손에 든 것이 유형마다 달라요.'));
+  var mbtiCard = sectionCard(['성격유형 16종']);   /* 2026-10-14 대표님 지시로 '이 열여섯은 무엇인가요?' 접이식을 지웠다 */
   mbtiCard.appendChild(buildCharDexGrid(MBTI_TYPES.map(function(t){ return 'm'+t; }), myKeys));
   view.appendChild(mbtiCard);
 
