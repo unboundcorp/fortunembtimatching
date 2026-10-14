@@ -9,7 +9,7 @@ function ok(c, m, d){ console.log((c?'  ✓ ':'  ✗ ')+m+(d?'   '+d:'')); if(!c
 function meta(k){ const m = html.match(new RegExp('<meta (?:property|name)="'+k.replace(/[:]/g,'\\:')+'" content="([^"]*)"')); return m ? m[1] : null; }
 ['og:title','og:description','og:image','og:url','twitter:card'].forEach(function(k){ ok(!!meta(k), k+' 태그가 있다', meta(k)||''); });
 const img = meta('og:image') || '';
-ok(/^https:\/\/www\.inyeonjeom\.kr\/og\.png$/.test(img), 'og:image 가 https 절대주소', img);
+ok(/^https:\/\/www\.inyeonjeom\.kr\/og\.png(\?v=\d{8})?$/.test(img), 'og:image 가 https 절대주소', img);
 ok(meta('twitter:card') === 'summary_large_image', 'twitter:card 가 큰 그림');
 const f = path.join(ROOT, 'og.png');
 ok(fs.existsSync(f), 'og.png 가 있다');
