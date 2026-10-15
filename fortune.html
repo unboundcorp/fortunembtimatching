@@ -5941,6 +5941,44 @@ var KAKAO_BACK_KEY = 'inyeon.kakaoBack';
   }catch(e){ /* sessionStorage 를 못 쓰는 환경이면 예전과 같아질 뿐이다 */ }
 })();
 
+/* ★ 2026-10-15 대표님 지시 — "광고를 누르면 로그인하고 정보 입력하고 2027년 화면으로 바로 가는 주소"
+   광고 주소 `?go=2027` (연도 넷). 읽자마자 쪽지(localStorage · 2시간)에 적고 주소에서 걷어 낸다.
+   ★ localStorage 인 이유: 카카오 로그인이 카카오톡 앱을 거쳐 다른 탭으로 돌아와도 남아야 한다.
+   ★ 주소에서 걷는 이유: 픽셀은 모르는 꼬리가 붙은 주소로는 안 보낸다(pixelUrlSafe) — 광고 손님이 안 잡힌다.
+   ★ 쓰는 자리: 부팅(프로필 있음) · finishConsent(로그인 끝) · 마법사 저장. 사주 풀이 화면이 실제로
+     그려질 때(render 의 report13 갈래) 쪽지를 지운다 — 로그인 관문에 막혀 있는 동안은 남아 있어야 한다.
+   ★ 초대 링크(모임·궁합)를 들고 온 분은 초대가 이긴다. */
+var AD_GO_KEY = 'inyeon.adGo';
+(function readAdGo(){
+  try{
+    var q = new URLSearchParams(location.search);
+    var g = q.get('go');
+    if(g === null) return;
+    var y = /^(\d{4})$/.test(g) ? Number(g) : NaN;
+    if(isFinite(y)) localStorage.setItem(AD_GO_KEY, JSON.stringify({year:y, at:Date.now()}));
+    q.delete('go');
+    var s = q.toString();
+    history.replaceState(history.state, '', location.pathname + (s ? '?' + s : '') + location.hash);
+  }catch(e){}
+})();
+function adGoPending(){
+  try{
+    var o = JSON.parse(localStorage.getItem(AD_GO_KEY) || 'null');
+    if(!o || !o.at || Date.now() - o.at > 2*60*60*1000){ if(o) localStorage.removeItem(AD_GO_KEY); return null; }
+    var now = (new Date()).getFullYear();
+    /* 연도 고르기 줄에 있는 해(올해·내년)만 받는다. 아니면 올해로 */
+    var y = (o.year === now || o.year === now + 1) ? o.year : now;
+    return {year:y};
+  }catch(e){ return null; }
+}
+function adGoApply(){
+  var g = adGoPending();
+  if(!g || !activeProfile()) return false;
+  setMode('self'); VIEW_YEAR = g.year; ROUTE = 'report13';
+  return true;
+}
+function adGoDone(){ try{ localStorage.removeItem(AD_GO_KEY); }catch(e){} }
+
 var PATH_GROUP = (/^\/g\/([A-Za-z0-9_-]{8,})/.exec(location.pathname) || [])[1] || null;
 var PATH_GROUP_JOIN = (/^\/j\/([A-Za-z0-9_-]{8,})/.exec(location.pathname) || [])[1] || null;
 
@@ -7264,6 +7302,7 @@ function grantProductLocally(productId, receipt){
      같은 값을 본다. 한쪽만 고치면 다시 어긋난다 — 두 곳을 함께 본다. */
 function setupCameForCompat(){
   if(SETUP && SETUP.editId) return false;
+  if(adGoPending() && !(PENDING_GROUP_JOIN || PENDING_GROUP || PENDING_ROOM || PENDING_MEET || (PENDING_INVITE && !INVITE_CONSUMED))) return false;   /* 광고 주소(?go=) — 사주 풀이로 간다 */
   return !!(PENDING_GROUP_JOIN || PENDING_GROUP || PENDING_ROOM || PENDING_MEET
             || (PENDING_INVITE && !INVITE_CONSUMED) || PENDING_SERVICE === 'compat');
 }
@@ -17232,6 +17271,10 @@ function renderSetupStep3(){
     } else if(goInvite){
       ROUTE='inviteAccept';
       showToast('프로필을 저장했어요. 받은 초대장을 보여드릴게요.');
+    } else if(adGoApply()){
+      /* ★ 2026-10-15 — 광고 주소(?go=2027)로 오신 분은 그 해의 사주 풀이로 곧장 간다. */
+      PENDING_SERVICE = null;
+      showToast('프로필이 저장됐어요.');
     } else if(PENDING_SERVICE){
       /* ★ R50 — 홈에서 서비스를 고르다가 프로필을 만들게 된 경우다.
          여기서 홈으로 떨어뜨리면 방금 고른 것이 없던 일이 된다. */
@@ -19419,8 +19462,11 @@ function finishConsent(mode){
   }
   /* ★ 2026-09-22 대표님 지시("1,2,3 다해라" ③) — 프로필이 이미 있으면(다른 기기에서 로그인) 어느 카드를 골랐든
      **홈**에 선다. 프로필이 없으면 예전대로 고른 쪽으로 가는 마법사(PENDING_SERVICE)다. */
+  /* ★ 2026-10-15 — 광고 주소(?go=2027)로 오셨으면 어느 카드를 눌렀든 사주 풀이 쪽으로 간다. */
+  if(adGoPending()) mode = 'self';
   if(mode === 'self' || mode === 'compat'){
     if(!activeProfile()){ startService(mode); return; }
+    if(adGoApply()){ render(); return; }
     setMode(mode); ROUTE='home'; render(); return;
   }
   /* ★ 2026-09-09 대표님 지시 — "동의 버튼 누르고 바로 카카오 로그인되게 해라
@@ -19428,6 +19474,7 @@ function finishConsent(mode){
      ★ 예전에는 홈으로 보내 무엇을 볼지 먼저 고르게 했다(R50 — "무엇을 받는지 모른 채
        생년월일부터 넣으라고 하지 않는다"). 그 판단을 대표님이 바꾸셨다. 되돌리지 마십시오. */
   if(!activeProfile()){ startService('self'); return; }
+  if(adGoApply()){ render(); return; }
   ROUTE='home'; render();
 }
 function startService(mode){
@@ -27439,7 +27486,7 @@ function render(){
   else if(ROUTE==='today') renderHome();
   else if(ROUTE==='saju') renderSaju();
   else if(ROUTE==='monthlyFortune') renderMonthlyFortune();
-  else if(ROUTE==='report13') renderReport13();
+  else if(ROUTE==='report13'){ adGoDone(); renderReport13(); }
   else if(ROUTE==='mbtiReport') renderMbtiReport13();
   else if(ROUTE==='report') renderReport();
   else if(ROUTE==='compat') renderCompat();
@@ -27865,6 +27912,9 @@ if(PENDING_MEET && STATE.profiles.length>0){
   if(early && STATE.profiles.length>0){
     ROUTE = early.route;
     if(early.mode === 'self' || early.mode === 'compat') setMode(early.mode);
+  } else if(STATE.profiles.length>0 && !PENDING_GROUP_JOIN && !PENDING_GROUP && !PENDING_ROOM && !PENDING_MEET && !PENDING_INVITE){
+    /* ★ 2026-10-15 — 광고 주소로 이미 쓰시던 분이 오면 곧장 그 해의 사주 풀이로 */
+    adGoApply();
   }
 }
 fitPhoneViewport();
@@ -28156,7 +28206,7 @@ try{
       openPaywall: openPaywall,   /* 결제창 문구를 화면으로 재는 용도 (2026-09-21) */
       groupMyMemberIdx: groupMyMemberIdx, groupMyRowStale: groupMyRowStale,
       /* 2026-09-22 — 결제 취소 복귀 검사(checks-slow/pay_cancel.cjs)가 쓴다 */
-      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, screenTextForCopy: screenTextForCopy, startService: startService, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
+      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, screenTextForCopy: screenTextForCopy, startService: startService, finishConsent: finishConsent, adGoPending: adGoPending, viewYear: function(){ return VIEW_YEAR; }, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
       elemReadFacts: elemReadFacts, buildSajuHook: buildSajuHook, buildMbtiHook: buildMbtiHook, buildCompatWeave: buildCompatWeave,
       buildCompatHook: buildCompatHook, compatWeaveFacts: compatWeaveFacts, buildElemReading: function(sj){ var b = buildElemReading(sj, false); return b ? b.innerText : ''; },
       Interpreter: Interpreter, pairDeep: function(){ return PAIR_DEEP; }, compatSub: function(){ return COMPAT_SUB; },
