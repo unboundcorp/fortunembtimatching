@@ -2421,11 +2421,10 @@ body.admin-on .mode-fab{display:none !important;}
 /* ★ R99 — 심층 궁합 분석. 유료 자리이므로 눈에 띄게, 그러나 광고처럼 보이지 않게. */
 .deep-card{margin-top:10px;padding:12px;border:1px solid var(--brand);border-radius:var(--r-lg);
   background:var(--gold-soft);}
-.deep-card-head{display:flex;align-items:center;gap:8px;}
+.deep-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
 .deep-card-head b{font-size:.95rem;color:var(--gold);}
 .deep-badge{margin-left:auto;font-size:.68rem;padding:2px 8px;border-radius:20px;
   border:1px solid var(--brand);color:var(--gold);white-space:nowrap;}
-.deep-lead{margin:6px 0 10px;font-size:.76rem;line-height:1.7;color:var(--ink-dim);}
 .deep-body{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
 .deep-h{margin:14px 0 4px;font-size:.85rem;font-weight:700;color:var(--gold);}
 .deep-body > .deep-h:first-child{margin-top:0;}
@@ -2451,6 +2450,10 @@ body.admin-on .mode-fab{display:none !important;}
 /* ★ R98 — 사람 카드 안에서 쌍 하나가 차지하는 덩어리. 쌍끼리 선으로 끊어 준다. */
 .gc-pair-blk{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);}
 .gc-pair-blk:first-of-type{margin-top:10px;padding-top:0;border-top:0;}
+.pair-sum{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;}
+.pair-sum li{display:flex;gap:8px;align-items:flex-start;background:var(--panel-3);border-radius:10px;padding:8px 10px;font-size:.86rem;line-height:1.55;color:var(--ink);}
+.pair-sum-ic{flex:0 0 auto;font-size:1rem;line-height:1.4;letter-spacing:-2px;min-width:2.2em;}
+.pair-sum-txt b{color:var(--brand);font-weight:600;}
 .gc-pair-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
 .gc-pair-head b{font-size:.95rem;}
 .gc-why-row .bar{height:8px;border-radius:999px;background:var(--track);overflow:hidden;min-width:40px;}
@@ -14750,17 +14753,47 @@ function buildCompatWeave(pA, pB){
 }
 /* 궁합 결제 블록 걸이. 두 사람의 엮기 줄에서 '보이는 모습'만 꺼내 부딪히는 자리를 예고하고 끊는다.
    ★ '다툴 때 · 푸는 법'은 궁합 13장의 7·8장(사이와 상관없이 늘 있음)이 실제로 쓰는 이야기다. */
-function buildCompatHook(pA, pB){
+/* ★ 2026-10-15 대표님 지시 "같은 모임 내에서는 쌍마다 표현을 조금 바꿔봐! 예를 들면 고집스러워요, 주관이 강해요 이런식으로"
+   걸이의 '보이는 모습'은 사람마다 정해진 축(weaveOne)이라, 한 모임 안에서 같은 사람이 쌍마다 같은 말을 했다.
+   뜻은 같고 표현만 다른 말을 축·갈래마다 넷씩 둔다. 0번은 원래 문장(weave 의 lookEnd·oppLook)과 같다.
+   ★ 뜻을 바꾸지 마십시오 — 같은 계산에서 나온 같은 모습을 다른 말로 할 뿐입니다. */
+var HOOK_LOOK_ALT = {
+  'speed:both':  ['급해 보여요','서두르는 것처럼 보여요','마음이 앞서 보여요','기다리는 걸 힘들어해 보여요'],
+  'speed:opp':   ['속은 급해도 겉으로는 느긋해 보여요','속으로는 서둘러도 겉으로는 여유로워 보여요','마음은 바빠도 겉으로는 태평해 보여요','속은 조급해도 겉으로는 느긋한 척해 보여요'],
+  'heat:both':   ['감정이 크게 드러나요','감정 표현이 뜨거워 보여요','기분이 얼굴에 바로 드러나요','감정의 온도가 높아 보여요'],
+  'heat:opp':    ['속은 뜨거워도 겉으로는 차분해 보여요','속은 끓어도 겉으로는 담담해 보여요','마음은 뜨거워도 겉으로는 침착해 보여요','속으로는 뜨거워도 겉으로는 무덤덤해 보여요'],
+  'firm:both':   ['고집스러워 보여요','주관이 강해 보여요','자기 기준이 뚜렷해 보여요','한번 정하면 잘 안 굽혀 보여요'],
+  'firm:opp':    ['속으로 정한 건 안 바꿔도 겉으로는 잘 맞춰 주는 것처럼 보여요','속은 단단해도 겉으로는 유연해 보여요','속으로는 주관이 강해도 겉으로는 순하게 따라 주는 것처럼 보여요','마음속 기준은 확고해도 겉으로는 무던해 보여요'],
+  'hidden:both': ['속을 알기 어려워 보여요','속마음을 잘 안 보여 줘요','속내를 아껴 두는 것처럼 보여요','무슨 생각인지 잘 안 드러나요'],
+  'hidden:opp':  ['속얘기는 잘 안 해도 겉으로는 밝고 말이 많아 보여요','속은 꽁꽁 숨겨도 겉으로는 활발해 보여요','진짜 속마음은 아껴도 겉으로는 수다스러워 보여요','속얘기는 숨겨도 겉으로는 털털해 보여요'],
+  'worry:both':  ['결정이 느려 보여요','생각이 많아 보여요','고민이 길어 보여요','쉽게 정하지 못하는 것처럼 보여요'],
+  'worry:opp':   ['속으로는 곱씹어도 겉으로는 가볍게 넘기는 것처럼 보여요','속으로는 걱정이 많아도 겉으로는 쿨해 보여요','속은 생각이 많아도 겉으로는 대수롭지 않아 보여요','속으로는 오래 고민해도 겉으로는 시원시원해 보여요'],
+  'drift:both':  ['계획이 자주 바뀌어 보여요','이리저리 옮겨 다니는 것처럼 보여요','한곳에 오래 머물기 어려워 보여요','마음이 자주 바뀌는 것처럼 보여요'],
+  'drift:opp':   ['속은 이리저리 옮겨 가도 겉으로는 계획대로 움직이는 것처럼 보여요','속은 들썩여도 겉으로는 착실해 보여요','마음은 자주 바뀌어도 겉으로는 꾸준해 보여요','속은 갈팡질팡해도 겉으로는 계획적으로 보여요'],
+  'soft:both':   ['다 괜찮다고 하는 것처럼 보여요','싫은 소리를 잘 못하는 것처럼 보여요','거절을 어려워해 보여요','늘 맞춰 주는 것처럼 보여요'],
+  'soft:opp':    ['거절은 어려워도 겉으로는 할 말은 하는 것처럼 보여요','속은 여려도 겉으로는 똑 부러져 보여요','싫은 소리는 힘들어도 겉으로는 단호해 보여요','마음은 약해도 겉으로는 분명해 보여요']
+};
+/* 이 사람(i)에게 상대(j)가 모임 안 몇 번째 상대인가 — 자기 자신을 뺀 순번. 같은 사람의 쌍끼리는 늘 다르다. */
+function pairHookVariant(i, j){ return (typeof i === 'number' && typeof j === 'number') ? (j > i ? j - 1 : j) : 0; }
+function hookLookEnd(x, v){
+  var alts = HOOK_LOOK_ALT[x.axis + ':' + (x.kind === 'both' ? 'both' : 'opp')];
+  if(!alts || !(v > 0)) return x.lookEnd;
+  return alts[v % alts.length] + '.';
+}
+/* 걸이를 만든다. va·vb = 그 사람이 이 모임에서 몇 번째 상대와의 쌍인가(0부터). 같은 사람이 쌍마다 다른 말을 하게 한다.
+   1:1 화면처럼 안 주면 0 — 원래 문장. */
+function buildCompatHook(pA, pB, va, vb){
   try{
     var w = buildCompatWeave(pA, pB);
     var a = w.filter(function(x){ return x.who === 'a' && x.lookEnd; })[0];
     var b = w.filter(function(x){ return x.who === 'b' && x.lookEnd; })[0];
     var nA = escapeHtml((String(pA.name||'').trim() || '나') + '님'), nB = escapeHtml((String(pB.name||'').trim() || '상대') + '님');
     var body, two = false;
-    if(a && b && a.axis === b.axis && a.kind === b.kind) body = '두 분 다 ' + a.lookEnd + '<br>';
-    else if(a && b){                body = nA + '은 ' + a.lookEnd + '<br>' + nB + '은 ' + b.lookEnd + '<br>'; two = true; }
-    else if(a)                      body = nA + '은 ' + a.lookEnd + '<br>';
-    else if(b)                      body = nB + '은 ' + b.lookEnd + '<br>';
+    var la = a && hookLookEnd(a, va), lb = b && hookLookEnd(b, vb);
+    if(a && b && a.axis === b.axis && a.kind === b.kind) body = '두 분 다 ' + la + '<br>';
+    else if(a && b){                body = nA + '은 ' + la + '<br>' + nB + '은 ' + lb + '<br>'; two = true; }
+    else if(a)                      body = nA + '은 ' + la + '<br>';
+    else if(b)                      body = nB + '은 ' + lb + '<br>';
     else return '';
     return '<b>그런데 두 분 사이에 걸리는 게 하나 있어요.</b><br>' + body
       + (two ? '이 두 모습이' : '이 모습이') + ' <b>다툴 때</b> 어떻게 부딪히는지, 어떻게 <b>풀면</b> 되는지는 여기서부터 이어져요.';
@@ -23150,19 +23183,18 @@ function inlineCharAvatar(m, size){
   box.appendChild(buildCharSvg(ck, size || 34, {mini:true, gender: m && m.gender}));
   return box;
 }
-function buildDeepCompatCard(pA, pB, res, unlocked, titleName, onOpen){
+function buildDeepCompatCard(pA, pB, res, unlocked, titleName, onOpen, va, vb){
   var card = el('div',{class:'deep-card'});
   var headRow = el('div',{class:'deep-card-head'});
   headRow.appendChild(el('b',{},['심층 궁합 분석']));
   headRow.appendChild(el('span',{class:'deep-badge'},[unlocked ? '열림' : '유료']));
   card.appendChild(headRow);
-  card.appendChild(el('p',{class:'deep-lead'},
-    ['타고난 기운이 흐르는 방향 · 태어난 날 아랫글자 관계 · 상대가 나에게 어떤 자리인지 · 성격유형 네 축 대조 · 잘 맞는 점과 조심할 점 · 상황별 읽기']));
+  /* ★ 2026-10-15 대표님 "심층 궁합분석 밑에 글은 필요 없는 거 같아" — 목차 나열 줄(.deep-lead)을 뺐다. 되살리지 마십시오. */
   if(!unlocked){
     /* ★ 2026-09-26 — 결제 유도 문구(productPitch · PRODUCTS.desc). 위 목록은 무엇이 들었나의 고지라 그대로 둔다. */
     /* ★ 2026-09-26 대표님 지적(사진 "이 화면은 보이지도 않는다") — 링크로 모인 궁합은 이 카드가 결제 입구다.
        1:1 잠금 카드(lockedBlock)와 같은 순서로 걸이 → 권유 머리 → 권유 두 줄을 싣는다. */
-    var hook = buildCompatHook(pA, pB);
+    var hook = buildCompatHook(pA, pB, va, vb);
     if(hook){ var hk = el('div',{class:'locked-hook', style:'margin:12px 0 0;'}); hk.innerHTML = hook; card.appendChild(hk); }
     card.appendChild(el('div',{class:'locked-title', style:'text-align:left;margin-top:12px;'},[productPitch(PRODUCTS.compat_full)]));
     card.appendChild(el('div',{class:'locked-desc', style:'text-align:left;margin:6px 0 10px;'}, descNodes(PRODUCTS.compat_full.desc)));
@@ -23285,6 +23317,52 @@ function buildCompatReport13(pA, pB, res){
      무료: 이름 · 등급 배지 · 한 줄 요약(사주 관점 한 줄 + MBTI 인연 한 줄) · 최고/최저 상대(점수·등급)
      유료(compat_full): 쌍별 상세 — 종합/사주/MBTI 점수, 쌍마다의 오행 관계와 인연 문장
      잠긴 부분은 흐리게 가리는 게 아니라 아예 DOM에 만들지 않는다. */
+/* ★ 2026-10-15 대표님 지시 — "관계 총평은 MBTI랑 사주 금 토 목 화 수 기반으로 한줄씩은 의무로 넣어라
+   그리고 아이콘도 추가해서 넣고" (모임 쌍 카드 사진 · 예아×TS 코멘트가 짧다는 지적).
+   쌍마다 점수 아래 두 줄을 **반드시** 둔다: ① 오행 줄(두 분의 태어난 날 기운 아이콘 + 흐름)
+   ② 성격유형 줄(두 분의 네 글자 + 함께 있을 때의 결). 재료가 없어도 줄을 빼지 않고 이유를 적는다.
+   ★ 새 점수 없음 — buildSajuCompat·categories 가 이미 만든 문장을 다시 쓴다(AI 재료와 무관한 화면 글). */
+var ELEM_ICON = ['🌳','🔥','⛰️','⚙️','💧'];
+var ELEM_PLAIN = ['나무(목)','불(화)','흙(토)','쇠(금)','물(수)'];
+function pairElemIdx(p){
+  try{
+    var sj = p && (p.saju || (typeof getSajuResult === 'function' ? getSajuResult(p) : null));
+    if(!sj || !sj.day) return -1;
+    return SajuEngine.STEM_ELEM[sj.day.stemIdx];
+  }catch(e){ return -1; }
+}
+function buildPairSummaryLines(pA, pB, res){
+  var nA = (String(pA && pA.name || '').trim() || '이쪽') + '님', nB = (String(pB && pB.name || '').trim() || '상대') + '님';
+  var ul = el('ul',{class:'pair-sum'});
+  function row(icon, label, text){
+    ul.appendChild(el('li',{},[
+      el('span',{class:'pair-sum-ic', 'aria-hidden':'true'},[icon]),
+      el('span',{class:'pair-sum-txt'},[el('b',{},[label]), ' ', text])
+    ]));
+  }
+  /* ① 오행 */
+  var ea = pairElemIdx(pA), eb = pairElemIdx(pB), rs = res && res.saju;
+  if(ea >= 0 && eb >= 0 && rs && typeof rs.score === 'number'){
+    var mean = rs.elemMean || (rs.elemRel && rs.elemRel.indexOf(' — ')>=0 ? rs.elemRel.split(' — ')[1] : rs.elemRel) || '';
+    row(ELEM_ICON[ea] + ELEM_ICON[eb], '오행',
+      nA + '은 ' + ELEM_PLAIN[ea] + ', ' + nB + '은 ' + ELEM_PLAIN[eb] + ' 기운이에요. ' + endDot(pairNim(mean, pA, pB)));
+  } else {
+    row('☯️', '오행', '태어난 날 정보가 모자라 오행으로는 아직 못 봤어요.');
+  }
+  /* ② 성격유형 */
+  var ta = String(pA && pA.mbti || ''), tb = String(pB && pB.mbti || '');
+  var chem = (res && res.categories && res.categories.chemistry) || '';
+  if(ta && tb && MBTI_STACK[ta] && MBTI_STACK[tb]){
+    /* 두 유형 사이의 실제 이유(mbtiFitReason — 성격유형 순위 화면과 같은 문장). '내가/상대가'는 이름으로 바꾼다. */
+    var why = '';
+    try{ why = mbtiFitReason(ta, tb, (res && res.relation === 'coworker') ? 'work' : 'love'); }catch(e){}
+    why = String(why || '').replace('내가 서툰', nA + '이 서툰').replace('상대가 척척', nB + '이 척척');
+    row('🧠', '성격유형', ta + ' × ' + tb + ' — ' + endDot(why || chem || ''));
+  } else {
+    row('🧠', '성격유형', '성격유형 정보가 모자라 아직 못 봤어요.');
+  }
+  return ul;
+}
 function buildGroupCompatCards(members, pairs, unlocked){
   var wrap=el('div',{class:'gc-cards'});
   members.forEach(function(m, mi){
@@ -23321,9 +23399,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
       blk.appendChild(el('div',{class:'gc-score'},[
         el('b',{},[String(pr.res.combined)]), el('span',{},['점'])
       ]));
-      var ep = pr.res.saju.elemRel.indexOf(' — ')>=0 ? pr.res.saju.elemRel.split(' — ')[1] : pr.res.saju.elemRel;
-      blk.appendChild(el('p',{class:'section-sub', style:'margin-top:6px;'},
-        ['사주로는 '+endDot(ep)+' 성격유형으로는 '+pr.res.categories.chemistry]));
+      blk.appendChild(buildPairSummaryLines(pr.a.person, pr.b.person, pr.res));
       /* 1:1 화면과 같은 블록·같은 근거를 쓴다. 같은 두 사람에 대해 두 화면이 다른 말을 하지 않는다. */
       var pWhy = buildCompatWhyScores(pr.res.combined, {
         mbti: pr.res.mbtiScore,
@@ -23335,7 +23411,8 @@ function buildGroupCompatCards(members, pairs, unlocked){
       /* ★ R99 — 쌍마다 '심층 궁합 분석'을 바로 아래 붙인다. 예전에는 카드 맨 아래에
          '쌍별 상세 이어보기' 하나로 뭉쳐 있어서, 어느 쌍의 이야기인지도 흐릿했다. */
       blk.appendChild(buildDeepCompatCard(pr.a.person, pr.b.person, pr.res, unlocked, other.name,
-        (function(ai, bi){ return function(){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }; })(pr.ai, pr.bi)));
+        (function(ai, bi){ return function(){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }; })(pr.ai, pr.bi),
+        pairHookVariant(pr.ai, pr.bi), pairHookVariant(pr.bi, pr.ai)));
       card.appendChild(blk);
     });
 
@@ -24603,7 +24680,7 @@ function renderPairDeep(){
   }
   if(!hasAccess(PRODUCTS.compat_full.id)){
     view.appendChild(pageHead('심층 궁합 분석', pr.a.name+' × '+pr.b.name, null, {marginTop:'14px'}));
-    view.appendChild(lockedBlock(PRODUCTS.compat_full, '', '심층 궁합 분석', null, buildCompatHook(pr.a.person, pr.b.person)));
+    view.appendChild(lockedBlock(PRODUCTS.compat_full, '', '심층 궁합 분석', null, buildCompatHook(pr.a.person, pr.b.person, pairHookVariant(pr.ai, pr.bi), pairHookVariant(pr.bi, pr.ai))));
     main.appendChild(view); return;
   }
   var headRow = el('div',{class:'pd-head'});
@@ -25610,7 +25687,16 @@ function openInviteLinkModal(profile, relationKey, fromPair){
 
   if(!pending){ makeNew().catch(useFallback); return; }
 
-  /* 만들어 둔 링크가 아직 비어 있으면(나 혼자면) 그것을 그대로 쓴다. */
+  /* ★ 2026-10-15 대표님 지시 "1) 새 모임 만들어야지" — 비어 있는 링크라도 사이(또는 둘이서/여럿이서)가 다르면
+     다시 쓰지 않고 새 모임을 만든다. 다시 쓰면 먼저 보낸 링크(옛 사이)와 이번 링크(새 사이)가 한 모임을 가리켜
+     받은 분 화면과 보낸 분 화면의 사이가 어긋났다. 옛 빈 모임은 저장된 모임에 그대로 남는다. */
+  var wantRel = relForLink || (GC_RELATION_SET ? GC_RELATION : null);
+  var pendSaved = savedGroups().filter(function(x){ return x.id === pending; })[0];
+  if(pendSaved && ((pendSaved.rel || null) !== (wantRel || null) || isPairGroup(pendSaved) !== asPair)){
+    makeNew().catch(useFallback); return;
+  }
+
+  /* 만들어 둔 링크가 아직 비어 있고(나 혼자) 사이도 같으면 그것을 그대로 쓴다. */
   groupFetch({action:'get', groupId:pending})
     .then(function(d){
       var n = String((d && d.members) || '').split(';').filter(Boolean).length;

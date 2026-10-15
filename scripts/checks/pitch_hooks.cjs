@@ -92,6 +92,15 @@ for(let i = 0; i < 240; i++){
         const ch = strip(T.buildCompatHook(A, B));
         if(w.length && !ch) bad('엮기가 있는데 걸이가 없음', A.id);
         if(ch){ out.n.pairHook++; if(!/다툴 때 어떻게 부딪히는지/.test(ch) || /undefined|\.\./.test(ch)) bad('궁합 걸이', ch); }
+        /* 2026-10-15 대표님 "같은 모임 내에서는 쌍마다 표현을 조금 바꿔봐" — 같은 사람의 줄이 상대 순번(0~3)마다 다른 말인가 */
+        const wa = w.filter(x => x.who === 'a')[0];
+        if(wa){
+          out.n.varied = (out.n.varied||0) + 1;
+          const lines = [0,1,2,3].map(v => { const h = strip(T.buildCompatHook(A, B, v, 0)); const m = h.match(new RegExp(A.name+'님은 ([^.]+\\.)|두 분 다 ([^.]+\\.)')); return m ? (m[1]||m[2]) : h; });
+          if(new Set(lines).size !== 4) bad('쌍마다 표현이 안 바뀜', JSON.stringify(lines));
+          if(strip(T.buildCompatHook(A, B)) !== strip(T.buildCompatHook(A, B, 0, 0))) bad('순번 0 이 원래 문장과 다름', A.id);
+          if(lines.some(t => /undefined|null|NaN/.test(t))) bad('표현 바꾸기 빈 값', JSON.stringify(lines));
+        }
         /* AI 재료에는 이름이 없어야 한다(처리방침 제4조) */
         const facts2 = JSON.stringify(T.compatWeaveFacts(A, B));
         if(facts2.indexOf(A.name) >= 0 || facts2.indexOf(B.name) >= 0) bad('AI 재료에 이름', facts2);
@@ -109,6 +118,7 @@ for(let i = 0; i < 240; i++){
     ok('사주 걸이가 대부분의 사람에게 나옴(>=90%)', r.n.saju >= people.length * 0.9, r.n.saju+'/'+people.length);
     ok('성격유형 걸이 전원', r.n.mbti === people.length);
     ok('엮기 줄이 쌍의 80% 이상에서 나옴', r.n.pairHook >= r.n.pairs * 0.8, r.n.pairHook+'/'+r.n.pairs);
+    ok('쌍마다 표현 바꾸기를 잰 사람이 있음', (r.n.varied||0) >= 20, String(r.n.varied));
     ok('엮기 축이 셋 이상 쓰임(한 축만 도는 것 아님)', Object.keys(r.axes).length >= 3, JSON.stringify(r.axes));
     ok('불 기운이 많은 사람의 heat 축이 나옴', Object.keys(r.axes).some(k => /^heat\//.test(k)), JSON.stringify(r.axes));
     /* 권유 문구가 약속한 것이 실제로 열리는 것 안에 있는가 */

@@ -8,7 +8,8 @@
    옛 사이(친구)를 그대로 두었다. 링크 주소에는 #rel=lover 가 실려 나가는데 보낸 분 기기의 저장된 모임만 친구였다.
    초대 지켜보기(tickInviteWatch)도 직전에 본 다른 모임의 GC_RELATION 을 넘겨 덮을 수 있었다.
 
-   ① 옛 친구 모임(1명) + 연인으로 링크 만들기 → 저장된 모임 rel=lover · 링크에 #rel=lover
+   ① 옛 친구 모임(1명) + 연인으로 링크 만들기 → 2026-10-15 대표님 "1) 새 모임 만들어야지": 옛 빈 모임을 다시 쓰지 않고
+     새 모임(rel=lover · 둘이서)을 만든다. 옛 모임은 친구 그대로. 같은 사이로 다시 누르면 그 빈 모임을 다시 쓴다
    ② 상대가 들어온 뒤(2명) 그 모임을 열면 → 사이 lover · 칩 '연인 사이로 봤어요' · '전체 순위' 없음
    ③ 셋이 된 모임에는 '전체 순위'가 있다 (없는 것만 재면 늘 통과하므로 있는 쪽도 잰다)
    ④ 사람 더 받기 주소 — 연인 모임엔 사이를 안 싣고(셋째에게 연인은 성립 안 함), 친구 모임엔 싣는다
@@ -23,10 +24,10 @@ const R = reporter('보낸 분 화면의 사이');
   const site = base ? {url:base, close:function(){}} : await serve(ROOT, 0);
   const browser = await pptr.launch({executablePath: chrome, headless:'new', args:['--no-sandbox','--disable-dev-shm-usage']});
   try{
-    let roster = '';
+    let roster = '', creates = 0;
     const me = person({});
     const st = makeState({ profiles:[me], activeId:me.id, pendingInviteGroup:'g1',
-      savedGroups:[{id:'g1', name:'검사님의 궁합', at:Date.now()-3600e3, token:'tok', n:1, rel:'friend', profileId:me.id, pchk:1}] });
+      savedGroups:[{id:'g1', name:'옛 친구 링크', at:Date.now()-3600e3, token:'tok', n:1, rel:'friend', profileId:me.id, pchk:1}] });
     const p = await openPage(browser, {hook:true, state:st});
     await p.setRequestInterception(true);
     p.on('request', function(req){
@@ -34,6 +35,8 @@ const R = reporter('보낸 분 화면의 사이');
         let body = {}; try{ body = JSON.parse(req.postData() || '{}'); }catch(e){}
         if(body.action === 'get') return req.respond({status:200, contentType:'application/json',
           body: JSON.stringify({name:'검사님의 궁합', members:roster, ttlDays:365})});
+        if(body.action === 'create'){ creates++; return req.respond({status:200, contentType:'application/json',
+          body: JSON.stringify({groupId:'g' + (creates + 1), ownerToken:'tok' + creates})}); }
         return req.respond({status:200, contentType:'application/json', body:'{"ok":true}'});
       }
       req.continue();
@@ -53,16 +56,25 @@ const R = reporter('보낸 분 화면의 사이');
     const s1 = await p.evaluate(function(){
       const T = window.__INYEON_TEST__, box = document.querySelector('.modal-box');
       const inp = box && Array.from(box.querySelectorAll('input')).map(i => i.value).filter(v => /\/j\//.test(v))[0];
-      T.closeModal(); const g = T.savedGroups().filter(x => x.id === 'g1')[0];
-      return { rel: T.groupRelation('g1'), link: inp || '', pair: g && g.pair };
+      T.closeModal(); const g = T.savedGroups().filter(x => x.id === 'g2')[0];
+      return { rel: T.groupRelation('g2'), oldRel: T.groupRelation('g1'), link: inp || '', pair: g && g.pair,
+               pending: JSON.parse(localStorage.getItem('inyeonjeom.v2')||'{}').pendingInviteGroup };
     });
-    R.note(s1.rel === 'lover', '옛 친구 링크를 다시 써도 저장된 모임 사이가 연인', JSON.stringify(s1));
+    R.note(creates === 1 && s1.pending === 'g2', '사이가 다르면 옛 빈 모임을 안 쓰고 새 모임을 만듦', JSON.stringify({creates, pending:s1.pending}));
+    R.note(s1.rel === 'lover' && s1.oldRel === 'friend', '새 모임은 연인 · 옛 모임은 친구 그대로', JSON.stringify(s1));
     R.note(/#rel=lover&k=pair$/.test(s1.link), '링크 주소에 #rel=lover&k=pair (둘이서 표식)', s1.link);
     R.note(s1.pair === 1, '저장된 모임에 둘이서 표식', String(s1.pair));
 
+    /* ①-2 같은 사이로 다시 누르면 그 빈 모임을 다시 쓴다 */
+    await p.evaluate(function(){ const T = window.__INYEON_TEST__; T.openInviteLinkModal(T.activeProfile(), 'lover'); });
+    await wait(1500);
+    const s1b = await p.evaluate(function(){ const T = window.__INYEON_TEST__; T.closeModal();
+      return JSON.parse(localStorage.getItem('inyeonjeom.v2')||'{}').pendingInviteGroup; });
+    R.note(creates === 1 && s1b === 'g2', '같은 사이면 빈 모임을 다시 씀(새로 안 만듦)', JSON.stringify({creates, pending:s1b}));
+
     /* ② */
     roster = rows.me + ';' + rows.b;
-    await p.evaluate(function(){ window.__INYEON_TEST__.openSavedGroup('g1'); }); await wait(1800);
+    await p.evaluate(function(){ window.__INYEON_TEST__.openSavedGroup('g2'); }); await wait(1800);
     const s2 = await p.evaluate(function(){
       const T = window.__INYEON_TEST__, chip = document.querySelector('.compat-rel-chip');
       return { rel: T.gcRelation(), route: T.route(), chip: chip ? chip.textContent.trim() : '', text: document.querySelector('#main').innerText };
