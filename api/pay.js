@@ -116,16 +116,16 @@ function errorPage(res, status, message) {
 export default async function handler(req, res) {
   const url = new URL(req.url, `https://${req.headers.host}`);
   const orderId = url.searchParams.get('order');
-  if (!orderId) return errorPage(res, 400, '주문 정보가 없습니다.');
+  if (!orderId) return errorPage(res, 400, '주문 정보가 없어요.');
 
   let order;
   try {
     order = await getOrder(orderId);
   } catch (err) {
     console.error('pay 조회 실패:', err?.message);
-    return errorPage(res, 500, '주문을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    return errorPage(res, 500, '주문을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.');
   }
-  if (!order) return errorPage(res, 404, '주문을 찾을 수 없습니다.');
+  if (!order) return errorPage(res, 404, '주문을 찾지 못했어요.');
   if (order.status === 'paid') {
     res.statusCode = 302;
     res.setHeader('Location', `/fortune.html?receipt=${encodeURIComponent(orderId)}&product=${encodeURIComponent(order.product_id)}`);
@@ -139,7 +139,7 @@ export default async function handler(req, res) {
   const clientKey = process.env.TOSS_CLIENT_KEY;
   if (!clientKey) {
     console.error('TOSS_CLIENT_KEY 환경변수가 없습니다.');
-    return errorPage(res, 503, '결제 준비가 끝나지 않았습니다.');
+    return errorPage(res, 503, '결제 준비가 아직 안 끝났어요.');
   }
 
   const amount = order.amount; /* ★ 서버 원장의 값 */

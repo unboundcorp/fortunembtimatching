@@ -34,7 +34,7 @@ const look = p => p.evaluate(function(){
     R.note(a.pend && a.url.indexOf('go=') < 0, '① 쪽지를 적고 주소에서 go 를 걷었다', JSON.stringify(a));
     await p.evaluate(function(){ window.__INYEON_TEST__.startService('self'); }); await wait(500);
     await p.evaluate(function(){ window.__INYEON_TEST__.setupFill({name:'광고손님', mbti:'ENFP', gender:'F', year:1992, month:3, day:4, timeUnknown:true, birthLonKey:'seoul', birthLon:126.98}); }); await wait(600);
-    const clicked = await L.clickText(p, /^저장하고 내 운세 보기$/); await wait(1200);
+    const clicked = await L.clickText(p, /^저장하고 (시작하기|[0-9]+년 사주 풀이 보기)$/); await wait(1200);
     a = await look(p);
     R.note(!!clicked, '① 저장 단추를 눌렀다');
     R.note(a.route === 'report13' && a.year === NEXT, '① 저장하면 ' + NEXT + '년 사주 풀이로 간다', JSON.stringify(a));

@@ -48,7 +48,7 @@ const R = reporter('그룹 나가기(화면)');
             const rows = String(roster).split(';').filter(Boolean);
             const i = rows.indexOf(body.member);
             if(i < 0) return req.respond({status:404, contentType:'application/json',
-              body: JSON.stringify({ok:false, reason:'이 모임 명단에서 회원님을 찾지 못했어요.'})});
+              body: JSON.stringify({ok:false, reason:'이 모임 명단에서 내 정보를 찾지 못했어요.'})});
             rows.splice(i,1); roster = rows.join(';');
             return req.respond({status:200, contentType:'application/json',
               body: JSON.stringify({ok:true, emptied:!roster, members:roster})});

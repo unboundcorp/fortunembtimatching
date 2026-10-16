@@ -74,7 +74,7 @@ export default async function handler(req, res) {
       const r = await leaveGroup(body.groupId, body.member);
       if (!r.ok) {
         if (r.reason === 'not_member') {
-          return json(res, 404, { ok: false, reason: '이 모임 명단에서 회원님을 찾지 못했어요.' });
+          return json(res, 404, { ok: false, reason: '이 모임 명단에서 내 정보를 찾지 못했어요.' });
         }
         return json(res, 404, { ok: false, reason: '모임을 찾을 수 없거나 기간이 지났어요.' });
       }
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
       const r = await replaceMember(body.groupId, body.member, body.newMember);
       if (!r.ok) {
         if (r.reason === 'not_member') {
-          return json(res, 404, { ok: false, reason: '이 모임 명단에서 회원님을 찾지 못했어요.' });
+          return json(res, 404, { ok: false, reason: '이 모임 명단에서 내 정보를 찾지 못했어요.' });
         }
         if (r.reason === 'duplicate') {
           return json(res, 409, { ok: false, reason: '같은 정보가 이미 명단에 있어요.' });

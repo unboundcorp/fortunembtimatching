@@ -32,7 +32,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     await wait(1200);
     await L.clickText(p, /더보기/);      await wait(400);
     await L.clickText(p, /^설정$/);      await wait(600);
-    await L.clickText(p, /검사 \(활성\)/); await wait(500);
+    await L.clickText(p, /검사 \(지금 보는 중\)/); await wait(500);
     await L.clickText(p, /^정보 수정$/);  await wait(800);
 
     const step1 = await p.evaluate(function(){

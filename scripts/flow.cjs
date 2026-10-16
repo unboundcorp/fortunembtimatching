@@ -62,7 +62,7 @@ const HIST = [{
   R.head('[1] 프로필 마법사 — 단계를 넘길 때');
   await L.clickText(page, /^더보기/); await L.wait(700);
   await L.clickText(page, /^설정/);   await L.wait(1200);
-  await L.clickText(page, /\(활성\)/); await L.wait(1000);
+  await L.clickText(page, /\(지금 보는 중\)/); await L.wait(1000);
   const enter = await L.clickText(page, /^수정|고치기|정보 수정/);
   await L.wait(1600);
   if(enter === null){ R.bad('마법사 들어가기', '[수정] 버튼을 못 찾음'); }

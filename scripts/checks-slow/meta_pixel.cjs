@@ -100,7 +100,7 @@ const ID = '739495668667523';
     p = await open({state:{profiles:[], activeProfileId:null}});
     await p.evaluate(function(){ window.__INYEON_TEST__.startService('self'); }); await wait(500);
     await p.evaluate(function(){ window.__INYEON_TEST__.setupFill({name:'새손님', mbti:'ENFP', gender:'F', year:1992, month:3, day:4, timeUnknown:true, birthLonKey:'seoul', birthLon:126.98}); }); await wait(600);
-    await clickText(p, /^저장하고 내 운세 보기$/); await wait(1200);
+    await clickText(p, /^저장하고 (시작하기|[0-9]+년 사주 풀이 보기)$/); await wait(1200);
     c = await calls(p);
     R.note(tracks(c,'CompleteRegistration').length === 1, '⑧ 첫 프로필 저장 → CompleteRegistration 한 번', String(tracks(c,'CompleteRegistration').length));
     await p.evaluate(function(){ window.__INYEON_TEST__.goRoute('report13'); }); await wait(900);

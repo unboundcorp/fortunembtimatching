@@ -33,13 +33,13 @@ export default async function handler(req, res) {
   const amountRaw = url.searchParams.get('amount');
 
   if (!paymentKey || !orderId) {
-    return backTo(res, { pay: 'fail', reason: '결제 정보가 올바르지 않습니다.' });
+    return backTo(res, { pay: 'fail', reason: '결제 정보가 올바르지 않아요.' });
   }
 
   try {
     const order = await getOrder(orderId);
     if (!order) {
-      return backTo(res, { pay: 'fail', reason: '주문을 찾을 수 없습니다.' });
+      return backTo(res, { pay: 'fail', reason: '주문을 찾지 못했어요.' });
     }
 
     /* 이미 승인된 주문으로 다시 들어온 경우(새로고침 등) — 실패로 만들지 않고 그대로 성공 처리한다. */
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     if (amountRaw != null && Number(amountRaw) !== order.amount) {
       await markFailed(orderId);
       console.error('금액 불일치:', { orderId, expected: order.amount, got: amountRaw });
-      return backTo(res, { pay: 'fail', reason: '결제 금액이 주문과 일치하지 않아 취소했습니다.' });
+      return backTo(res, { pay: 'fail', reason: '결제 금액이 주문과 달라 취소했어요.' });
     }
 
     const result = await confirmPayment({ paymentKey, orderId, amount: order.amount });
@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     if (!result.ok) {
       await markFailed(orderId);
       console.error('토스 승인 실패:', result.code);
-      return backTo(res, { pay: 'fail', reason: result.message || '결제 승인에 실패했습니다.' });
+      return backTo(res, { pay: 'fail', reason: result.message || '결제 승인을 받지 못했어요.' });
     }
 
     const paid = await markPaid(orderId, paymentKey);
@@ -72,6 +72,6 @@ export default async function handler(req, res) {
     backTo(res, { receipt: orderId, product: (paid || order).product_id });
   } catch (err) {
     console.error('confirm 실패:', err?.message);
-    backTo(res, { pay: 'fail', reason: '결제 처리 중 문제가 생겼습니다. 결제되었다면 영수증 번호로 복원할 수 있습니다.' });
+    backTo(res, { pay: 'fail', reason: '결제 처리 중 문제가 생겼어요. 결제됐다면 영수증 번호로 되찾을 수 있어요.' });
   }
 }

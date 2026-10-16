@@ -870,6 +870,10 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + var(--tabbar-h) + env(safe-are
 /* ★ 2026-08-24 리디자인 2단계 — 알약(999px)에서 각진 3px으로. 지면이 종이라 알약이 겉돈다.
    면은 빼고 선으로만 세운다 — 배지가 여러 개 늘어설 때 색 면이 겹치면 화면이 얼룩진다. */
 .badge{display:inline-block;padding:5px 11px;border:1px solid currentColor;background:transparent;border-radius:3px;font-size:.76rem;color:var(--gold);line-height:1.6;letter-spacing:.01em;}
+.kw-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:4px 0 12px;}
+.kw-chips span{background:var(--panel-3);border-radius:999px;padding:5px 11px;font-size:.8rem;color:var(--ink);}
+.mh-note{font-size:.78rem;color:var(--ink-faint);margin-top:6px;}
+.badge.badge-soft{border-color:transparent;background:var(--panel-3);color:var(--ink);border-radius:999px;}
 .badge-row{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0;}
 /* R29 — 네 관계색을 밝은 바탕용으로 내렸다. 전부 카드 배경 대비 7:1 이상(합 7.7 / 충 8.3 / 형 8.1 / 파 7.6). */
 /* 공개 페이지(상품·환불) 전용 — 2026-09-16. 값과 이름을 한 줄에 놓고, 값은 오른쪽에 붙인다.
@@ -1367,7 +1371,8 @@ button.today-iljin:active{opacity:.7;}
 .elem-bar-row{display:flex;align-items:center;gap:10px;font-size:.8rem;}
 /* ★ 2026-09-02 리뉴얼 — 시안의 오행 줄. 굵은 알약 막대(10px, 둥근)를 얇고 각진 6px로.
    라벨에 한자를 병기한다(시안: 목(木)). */
-.elem-bar-row .lbl{width:56px;flex:none;font-family:var(--serif);font-size:.94rem;color:var(--ink);}
+.elem-bar-row .lbl{width:78px;flex:none;font-family:var(--serif);font-size:.94rem;color:var(--ink);}
+.elem-bar-row .lbl .lbl-ic{margin-right:4px;font-size:.9em;}
 .elem-bar-row .lbl small{font-family:var(--sans);font-size:.62em;opacity:.65;}
 .elem-bar-track{flex:1;height:6px;background:var(--track);border-radius:999px;overflow:hidden;}
 .elem-bar-fill{height:100%;border-radius:999px;transition:width .4s ease;min-width:2px;}
@@ -2450,6 +2455,7 @@ body.admin-on .mode-fab{display:none !important;}
 /* ★ R98 — 사람 카드 안에서 쌍 하나가 차지하는 덩어리. 쌍끼리 선으로 끊어 준다. */
 .gc-pair-blk{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);}
 .gc-pair-blk:first-of-type{margin-top:10px;padding-top:0;border-top:0;}
+.h-ic{display:inline-block;margin-right:6px;font-size:.95em;line-height:1;vertical-align:-1px;font-style:normal;}
 .pair-sum{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;}
 .pair-sum li{display:flex;gap:8px;align-items:flex-start;background:var(--panel-3);border-radius:10px;padding:8px 10px;font-size:.86rem;line-height:1.55;color:var(--ink);}
 .pair-sum-ic{flex:0 0 auto;font-size:1rem;line-height:1.4;letter-spacing:-2px;min-width:2.2em;}
@@ -3324,13 +3330,34 @@ var FORTUNE_CATS = [
    같은 말을 두 번 하고 있었다 — 작은 글씨 '학업·직장운' 바로 아래 '해야 할 일의 자리'가 붙어서,
    정작 알고 싶은 점수는 시적인 제목 옆에 딸려 있었다.
    ★ FORTUNE_CAT_HEADLINE을 여기서 지웠다. 되살릴 일이 생기면 이 주석 위치에 다시 두면 된다. */
+/* ★ 2026-10-16 대표님 지시("다 고쳐라" — 소비자 관점 검수) — 예전에는 다섯 카드 문장을 점수와 상관없이
+   한 묶음에서 무작위로 뽑았다. 금전운 40점인 날 "오랜 고민이던 지출을 결정지어도 좋아요"가 나올 수 있었다.
+   이제 그날 점수 구간(todayBand: hi 70+ · mid 60~69 · lo 60 미만 — 총평의 care 선 60과 같다)에서만 고른다.
+   문장마다 '그래서 무엇을 하면 좋은지'로 끝낸다. 총평 한마디(십이운성)와 부딪히지 않게
+   hi 문장에도 '새로 벌이라'는 말은 넣지 않았다. */
 var FORTUNE_PHRASES = {
-  total:['생각지 못한 곳에서 좋은 흐름이 시작돼요.','차분히 준비해온 일이 서서히 결실을 보여요.','작은 선택 하나가 하루 전체의 분위기를 바꿔요.','평소보다 직감이 예리해지는 하루예요.','무리하지 않는 선에서 하나씩 처리하면 무난해요.','주변 사람의 말 한마디가 힌트가 될 수 있어요.','계획보다 여유를 두는 편이 이로워요.','자신감을 갖되 한 번 더 확인하는 신중함이 필요해요.'],
-  love:['마음을 표현하기에 나쁘지 않은 타이밍이에요.','괜한 오해가 생기기 쉬우니 말을 아끼는 편이 좋아요.','오래된 인연에게서 뜻밖의 연락이 올 수 있어요.','혼자만의 시간을 존중받고 싶어지는 하루예요.','작은 배려가 관계를 한층 따뜻하게 만들어요.','솔직한 대화가 관계를 진전시켜요.','밀당보다는 담백한 태도가 유리해요.','새로운 만남의 기운이 은은하게 감돌아요.'],
-  money:['계획에 없던 지출을 조심해야 해요.','작은 절약이 나중에 큰 도움이 돼요.','투자보다는 지키는 데 집중할 때예요.','예상치 못한 수입의 기운이 보여요.','금전 거래는 문서로 꼼꼼히 남겨두세요.','충동구매를 부르는 유혹이 많은 날이에요.','오랜 고민이던 지출을 결정지어도 좋아요.','수입과 지출의 균형을 다시 점검해보세요.'],
-  work:['미뤄둔 일을 시작하기 좋은 흐름이에요.','협업에서 뜻밖의 좋은 아이디어가 나와요.','디테일을 놓치면 다시 손대야 할 수 있어요.','상사나 동료의 평가가 긍정적으로 따라와요.','새로운 제안이 들어올 수 있으니 준비하세요.','과욕보다 완급 조절이 필요한 하루예요.','묵묵히 해온 노력이 눈에 띄기 시작해요.','작은 실수는 빠르게 인정하는 편이 이로워요.'],
-  health:['컨디션 기복이 있을 수 있으니 무리한 일정은 피하는 게 좋아요.','충분한 수면이 하루의 균형을 잡아줘요.','평소보다 몸의 신호에 귀 기울이면 좋은 하루예요.','가벼운 스트레칭이나 산책이 컨디션을 끌어올려줘요.','과식이나 과음은 피하는 편이 이로워요.','작은 통증이라도 방치하지 말고 살펴보는 게 좋아요.','규칙적인 리듬이 몸과 마음을 함께 안정시켜줘요.','무리한 다이어트나 급격한 변화는 삼가는 게 좋아요.']
+  total:{
+    hi:['흐름이 순한 날이에요. 해 오던 일을 한 걸음 더 밀어 보세요.','막혀 있던 일이 풀릴 틈이 보여요. 미뤄 둔 연락 하나를 오늘 처리해 보세요.','주변과 손발이 잘 맞는 날이에요. 도움이 필요하면 오늘 부탁해 보세요.','작은 선택이 잘 맞아떨어지는 날이에요. 고민하던 것 하나를 정리해 보세요.'],
+    mid:['크게 튀지 않는 평범한 날이에요. 하던 리듬을 지키면 무난해요.','무리하지 않는 선에서 하나씩 처리해 보세요.','계획보다 여유를 조금 두고 움직여 보세요.','주변 사람의 말 한마디가 힌트가 될 수 있으니 귀를 열어 두세요.'],
+    lo:['힘이 잘 안 붙는 날이에요. 오늘은 할 일을 줄이고 꼭 필요한 것만 하세요.','엇갈림이 생기기 쉬운 날이에요. 중요한 일은 한 번 더 확인해 보세요.','서두르면 놓치는 게 생겨요. 속도를 반쯤 늦춰 보세요.','되돌리기 어려운 결정은 하루 두고 보세요.']},
+  love:{
+    hi:['마음이 잘 전해지는 날이에요. 고마운 사람에게 먼저 말을 건네 보세요.','솔직한 대화가 관계를 한 걸음 가깝게 해요. 하고 싶던 말을 꺼내 보세요.','작은 배려가 크게 닿는 날이에요. 안부 한 줄을 보내 보세요.','새로운 만남에 마음이 열리는 날이에요. 약속이 있다면 편하게 즐겨 보세요.'],
+    mid:['관계가 잔잔하게 흐르는 날이에요. 평소처럼 대하면 충분해요.','밀고 당기기보다 담백하게 대해 보세요.','상대의 말을 끝까지 들어 주는 것만으로도 좋은 하루가 돼요.','혼자만의 시간도 챙기면서 가까운 사람과 짧게 이야기 나눠 보세요.'],
+    lo:['말이 뜻과 다르게 닿기 쉬운 날이에요. 중요한 이야기는 내일로 미뤄 보세요.','작은 말에 서운해지기 쉬워요. 바로 답하기보다 한 번 숨을 고르세요.','오해가 생기면 문자보다 직접 말로 풀어 보세요.','오늘은 상대에게 바라기보다 내 마음을 먼저 다독여 보세요.']},
+  money:{
+    hi:['돈 흐름을 정리하기 좋은 날이에요. 미뤄 둔 지출 계획을 점검해 보세요.','들어오고 나가는 돈이 잘 보이는 날이에요. 가계부를 한 번 맞춰 보세요.','돈 이야기를 꺼내기에 무난한 날이에요. 미뤄 둔 정산이 있다면 정리해 보세요.','작은 절약이 잘 쌓이는 날이에요. 고정비 하나를 줄여 보세요.'],
+    mid:['돈 쪽은 평범한 날이에요. 계획한 만큼만 쓰면 무난해요.','큰 지출보다 작은 지출을 한 번 살펴보세요.','금전 거래가 있다면 문서나 메시지로 꼼꼼히 남겨 두세요.','사고 싶은 게 생기면 장바구니에 담아 두고 하루 뒤에 다시 보세요.'],
+    lo:['계획에 없던 지출이 생기기 쉬워요. 결제 전에 한 번 더 생각해 보세요.','돈 약속이나 큰 결제는 오늘 확정하지 말고 하루 두고 보세요.','충동구매를 부르는 유혹이 많은 날이에요. 장바구니만 채워 두세요.','빌려주거나 빌리는 이야기는 오늘은 미뤄 두세요.']},
+  work:{
+    hi:['집중이 잘 되는 날이에요. 어려운 일부터 먼저 붙잡아 보세요.','해 온 노력이 눈에 띄기 쉬운 날이에요. 결과물을 정리해 보여 주세요.','함께 일하는 사람과 손발이 잘 맞아요. 의견을 나눠 보세요.','막히던 문제에 실마리가 보여요. 오늘 한 번 더 파고들어 보세요.'],
+    mid:['일은 평소 속도로 흘러가요. 해야 할 일을 목록으로 적고 하나씩 지워 보세요.','큰 욕심보다 완급 조절이 필요해요. 쉬는 시간을 일정에 넣어 두세요.','세부 사항을 놓치기 쉬우니 마무리 전에 한 번 더 검토해 보세요.','새 제안이 오면 바로 답하기보다 내용을 정리한 뒤 답해 보세요.'],
+    lo:['일과 공부에 힘이 잘 안 붙어요. 새로 벌이기보다 하던 것을 마무리해 보세요.','실수가 생기기 쉬운 날이에요. 보내기 전에 한 번 더 확인하세요.','작은 실수는 빨리 인정하고 넘어가는 편이 나아요.','중요한 발표나 결정은 컨디션이 나은 날로 미뤄 보세요.']},
+  health:{
+    hi:['몸이 받쳐 주는 편이에요. 가벼운 운동을 하나 더해 보세요.','컨디션이 괜찮은 날이에요. 미뤄 둔 산책이나 스트레칭을 해 보세요.','에너지가 남는 날이에요. 잠들기 전 화면을 줄여 그 힘을 내일로 넘겨 보세요.','몸이 가벼운 날이에요. 물을 넉넉히 마시며 리듬을 이어 가세요.'],
+    mid:['평소 리듬을 지키면 무난한 날이에요. 끼니를 거르지 마세요.','충분한 수면이 하루의 균형을 잡아 줘요. 오늘은 조금 일찍 누워 보세요.','몸이 보내는 작은 신호에 귀를 기울여 보세요.','오래 앉아 있었다면 한 시간에 한 번은 일어나 몸을 펴 보세요.'],
+    lo:['몸이 쉽게 지치는 날이에요. 무리한 일정은 줄이고 일찍 쉬세요.','과식이나 과음은 피하는 편이 좋아요.','작은 통증이라도 이어지면 그냥 넘기지 말고 살펴보세요.','오늘은 운동 강도를 낮추고 가볍게 몸을 풀어 주세요.']}
 };
+function todayBand(score){ return score == null ? 'mid' : (score >= 70 ? 'hi' : (score >= 60 ? 'mid' : 'lo')); }
 /* v5-B 신규(기능19): 월별 운세 전용 문구뱅크 — 오늘의 운세(FORTUNE_PHRASES)와 달리 실제 계산된 관계(월지-원국 합충,
    월간-일간 십성)에 근거한 조회 키를 쓴다. 톤은 기능7과 동일하게 정중체("-습니다")로 통일.
 
@@ -3680,7 +3707,7 @@ var MBTI_FLAVOR = {
 };
 /* ★ 위 문장을 고치면 이 숫자를 올린다. 안 올리면 오늘 아침에 저장된 옛 문장이 그대로 나온다
    (근거값 undefined 사고와 똑같은 함정이다 — 2026-09-01). */
-var TODAY_TEXT_VERSION = 3;
+var TODAY_TEXT_VERSION = 4;
 var LUCKY_ITEMS = ['손목시계','만년필','손거울','열쇠고리','머그컵','스카프','노트','우산','반지','향초'];
 var LUCKY_COLORS = ['먹색','인주색','금색','쪽빛','옥색','자주색','상아색','회청색'];
 
@@ -6078,7 +6105,7 @@ var PRODUCTS = {
                      대표님 지시로 다시 뺐다("암시 문장은 빼자, 너무 상업적으로").
                      여기에 재구매·갱신을 부추기거나 암시하는 줄을 새로 넣지 마라.
                      이 목록은 '결제하면 무엇이 열리는가'만 적는 자리다. */
-                  opens:['성격유형 풀이 전체',
+                  opens:['타고난 기질부터 연애 · 돈 · 스트레스 대처까지 전체 풀이',
                          '강점과 그림자, 관계에서 반복되는 패턴',
                          '앞으로 어느 쪽으로 크면 좋을지'] },
   /* ★ 2026-09-07 대표님 지시 — 1,900 → 990. 그리고 **한 쌍이 990원**이다.
@@ -6094,8 +6121,8 @@ var PRODUCTS = {
                   opens:['두 분만을 위해 새로 쓰는 궁합 풀이 — 첫인상부터 돈과 생활 습관까지',
                          '두 사람의 기운이 어디서 맞물리고 어디서 부딪히는지 — 자세한 풀이',
                          '연애·우정·함께 있을 때·갈등 네 상황별 성격유형 궁합 해석',
-                         '사주로 본 나의 연애 성향',
-                         '그림 — 기운 견주기 · 성격유형 사분면 · 인연 매듭'] },
+                         '고른 사이(연애·우정·일·가족)에 맞춘 사주 이야기',
+                         '그림 — 기운 균형 · 성격유형 사분면 · 인연 매듭'] },
   /* ★ 2026-09-04 대표님 결정 — 7일 → 1년, 만드는 편수 10 → 1.
      대표님이 "사주·궁합·성격유형 한번에 4,900원 패키지"를 붙이자고 하셨는데
      이 상품이 이미 그것이었다. 새 상품을 만들지 않고 기간과 편수만 바꿨다.
@@ -6338,7 +6365,7 @@ function billingFetchJson(url, payload, timeoutMs){
          '새 해석을 만들 수 있는 횟수를 다 쓰셨어요'도 같이 사라지고 있었다.
          ★ 본문이 JSON이 아닐 수 있다(게이트웨이 오류 등). 그때는 예전처럼 숫자로 되돌아간다. */
       return res.json().catch(function(){ return null; }).then(function(d){
-        var e = new Error((d && d.reason) || ('서버 응답 오류 (HTTP '+res.status+')'));
+        var e = new Error((d && d.reason) || ('서버와 잠시 연결이 원활하지 않아요. 잠시 뒤 다시 시도해 주세요. (오류 '+res.status+')'));
         e.status = res.status;
         if(d && d.error) e.code = d.error;
         throw e;
@@ -6511,7 +6538,7 @@ function syncCall(body){
     credentials:'include', body: JSON.stringify(body)
   }).then(function(r){
     return r.json().catch(function(){ return null; }).then(function(d){
-      if(!r.ok) throw new Error((d && d.reason) || ('기기 사이 맞추기 오류 (HTTP '+r.status+')'));
+      if(!r.ok) throw new Error((d && d.reason) || ('기기 사이 맞추기가 잠시 안 되고 있어요. (오류 '+r.status+')'));
       return d;
     });
   });
@@ -7311,7 +7338,10 @@ function setupCameForCompat(){
 }
 function setupSaveLabel(){
   if(SETUP && SETUP.editId) return '수정 완료';
-  return setupCameForCompat() ? '저장하고 궁합 보기' : '저장하고 내 운세 보기';
+  /* ★ 2026-10-16 검수 — '저장하고 내 운세 보기'인데 실제로는 홈에 섰다(10-06 결정). 단추가 가는 곳을 말한다. */
+  if(setupCameForCompat()) return '저장하고 궁합 보기';
+  var ag = adGoPending();
+  return ag ? ('저장하고 ' + ag.year + '년 사주 풀이 보기') : '저장하고 시작하기';
 }
 function setupSaveHint(){
   return setupCameForCompat()
@@ -7607,11 +7637,11 @@ function openPayLoginModal(product){
   body.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},[
     /* ★ 2026-09-08 — "로그인 없이 결제하면 이 브라우저에서만 볼 수 있어요"를 뺐다.
        이 창은 로그인해야 결제가 되기 때문에 뜨는 창이다. 없는 길을 설명하고 있었다. */
-    '로그인하시면 결제하신 것이 카카오 계정에 남아요. 그래서 폰에서 사고 노트북에서 보셔도 되고, ' +
-    '브라우저 기록을 지우셔도 그대로 열립니다.'
+    '로그인하면 결제한 것이 카카오 계정에 남아요. 그래서 폰에서 구매하고 노트북에서 봐도 되고, ' +
+    '브라우저 기록을 지워도 그대로 열려요.'
   ]));
   body.appendChild(el('p',{class:'biz-hint'},[
-    '카카오에서 받는 것은 회원번호 하나뿐입니다. 이름·이메일·전화번호는 받지 않습니다.'
+    '카카오에서 받는 것은 회원번호 하나뿐이에요. 이름·이메일·전화번호는 받지 않아요.'
   ]));
   openModal('카카오 로그인이 필요해요', body, [
     {label:'카카오 계정으로 로그인', cls:'btn-kakao', kakao:true, onclick:function(){ kakaoStart(product && product.id); }},
@@ -7695,7 +7725,7 @@ function singleProductsTotal(){
   return PRODUCTS.saju_full.price + PRODUCTS.mbti_full.price + PRODUCTS.compat_full.price;
 }
 /* ★ 2026-09-26 대표님 지시 — 결제 유도 문구를 대표님이 보내신 결로.
-     "올해 전체 사주를 깊게 알아 봐요 / 금전운 건강운 월별 운세 인생운세까지!"
+     "올해 전체 사주를 깊게 알아봐요 / 금전운 건강운 월별 운세 인생운세까지!"
    머리(head)는 무엇을 알게 되나, 줄(PRODUCTS.desc)은 무엇까지 열리나.
    ★ 적는 것은 **실제로 열리는 것뿐**입니다. 사주: 금전운(13장 7장·월별) · 건강운(월별·대운 상세) ·
      월별 운세(sajuDetailUnlocked) · 10년 대운(10~12장·대운 상세). 성격유형: m3·m4·m5·m7·m9.
@@ -7712,11 +7742,11 @@ function productPitch(product){
   var base = splitProductId(product.id).base;
   if(base === 'saju_full'){
     var y = product.year || VIEW_YEAR;
-    return (y === kstYearOf(Date.now()) ? '올해' : y + '년') + ' 전체 사주를 깊게 알아 봐요';
+    return (y === kstYearOf(Date.now()) ? '올해' : y + '년') + ' 전체 사주를 깊게 알아봐요';
   }
   if(base === 'mbti_full') return '내 성격유형을 끝까지 파헤쳐 봐요';
-  if(base === 'compat_full') return '두 분 궁합을 끝까지 알아 봐요';
-  return '이용권 하나로 전부 깊게 알아 봐요';   /* ★ 2026-10-04 QA — '…알아 / 봐요' 로 접히고, 아래 두 줄과 '사주 · 성격유형 · 궁합'이 세 번 겹쳤다 */
+  if(base === 'compat_full') return '두 분 궁합을 끝까지 알아봐요';
+  return '이용권 하나로 전부 깊게 알아봐요';   /* ★ 2026-10-04 QA — '…알아 / 봐요' 로 접히고, 아래 두 줄과 '사주 · 성격유형 · 궁합'이 세 번 겹쳤다 */
 }
 function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles, hookHtml){
   var wrap = el('div',{class:'locked-block'});
@@ -7738,7 +7768,7 @@ function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles, hookHtml){
   if(hookHtml) cta.appendChild(el('div',{class:'locked-hook', html:hookHtml}));
   cta.appendChild(el('div',{class:'locked-title'},[productPitch(product)]));
   cta.appendChild(el('div',{class:'locked-desc'}, descNodes(product.desc)));
-  if(sectionTitle) cta.appendChild(el('div',{class:'locked-from'},['‘'+sectionTitle+'’부터 이어져요']));
+  if(sectionTitle) cta.appendChild(el('div',{class:'locked-from'},['‘'+sectionTitle+'’부터 잠겨 있어요']));
 
   /* 잠긴 이야기의 제목을 그대로 늘어놓는다 — 목차에 이미 있는 제목이라 새로 여는 것이 아니다. */
   if(lockedTitles && lockedTitles.length){
@@ -7799,10 +7829,11 @@ function openPaywall(product){
   var priceTail;
   if(product.kind === 'pass'){
     priceTail = (typeof product.year === 'number')
-      ? '12월 31일까지'
-      : (periodText(product.days) + ' 동안');
+      ? '12월 31일까지 이용 · 1회 결제 · 자동 결제 없음'
+      : (periodText(product.days) + ' 동안 · 1회 결제 · 자동 결제 없음');
   } else {
-    priceTail = '1회 결제';
+    /* ★ 2026-10-16 검수 — '정기 결제 없음'이 #pricing 에만 있고 결제창에는 없었다. */
+    priceTail = '1회 결제 · 자동 결제 없음';
   }
   head.appendChild(el('div',{class:'pay-price-sub'},[priceTail]));
   /* 출시 기념가 — 끝나는 날과 그 뒤 값을 함께 적는다(미리 알리는 것이 사실 고지다). */
@@ -7810,7 +7841,7 @@ function openPaywall(product){
     var after = AFTER_LAUNCH_PRICE[splitProductId(product.id).base];
     head.appendChild(el('div',{class:'pay-launch'}, after ? [launchPriceNote(), el('br'), '1월 1일부터 ' + formatWon(after)] : [launchPriceNote()]));   /* 한 줄이면 390에서 값이 혼자 접혀서 뜻 단위로 끊음 */
   }
-  /* 2026-09-26 대표님 지시 — 결제창도 잠금 카드와 같은 한 줄 권유("올해 전체 사주를 깊게 알아 봐요")로 시작한다. */
+  /* 2026-09-26 대표님 지시 — 결제창도 잠금 카드와 같은 한 줄 권유("올해 전체 사주를 깊게 알아봐요")로 시작한다. */
   var pitch = productPitch(product);
   if(pitch) head.appendChild(el('div',{class:'pay-pitch'},[pitch]));
   head.appendChild(el('div',{class:'pay-desc pay-desc-pitch'}, descNodes(product.desc)));
@@ -7894,7 +7925,7 @@ function openPaywall(product){
     }
     if(AI_QUOTA.pass > 1 && product.kind === 'pass'){
       q.appendChild(el('span',{class:'pay-quota-hint'},[
-        '다른 분 사주를 봐드리고 싶으면 화면 맨 위 이름 고르개에서 [＋ 다른 사람 추가]를 눌러 프로필을 만들면 돼요. 궁합은 프로필 없이 링크만 보내도 돼요.'
+        '다른 분 사주를 봐드리고 싶으면 화면 맨 위 이름 칸에서 [＋ 다른 사람 추가]를 눌러 프로필을 만들면 돼요. 궁합은 프로필 없이 링크만 보내도 돼요.'
       ]));
     }
     body.appendChild(q);
@@ -7958,9 +7989,9 @@ function openPaywall(product){
     if(payNeedsLogin()){
       body.appendChild(el('div',{class:'sup-verdict warn', style:'margin-top:12px;'},[
         el('strong',{},['결제 전에 카카오 로그인이 필요해요']),
-        el('span',{},['로그인하시면 결제하신 것이 카카오 계정에 남아요. 그래서 폰에서 사고 노트북에서 보셔도 되고, ' +
-          '브라우저 기록을 지우셔도 그대로 열려요.']),
-        el('span',{style:'margin-top:6px;'},['카카오에서 받는 것은 회원번호 하나뿐입니다. 이름·이메일·전화번호는 받지 않습니다.'])
+        el('span',{},['로그인하면 결제한 것이 카카오 계정에 남아요. 그래서 폰에서 구매하고 노트북에서 봐도 되고, ' +
+          '브라우저 기록을 지워도 그대로 열려요.']),
+        el('span',{style:'margin-top:6px;'},['카카오에서 받는 것은 회원번호 하나뿐이에요. 이름·이메일·전화번호는 받지 않아요.'])
       ]));
     }
     actions.push({ label: payNeedsLogin() ? '카카오로 로그인하고 결제하기' : '결제하기', cls:'btn-primary', onclick:function(){
@@ -7992,11 +8023,11 @@ function openPaywall(product){
              이 번호가 나중에 이용권을 되찾는 유일한 열쇠인데, 이 자리를 놓치면 이용자 손에 아무것도 안 남는다. */
           if(r && r.receiptId){
             rememberReceipt(r.receiptId);
-            openReceiptSavedModal(r.receiptId, {title: product.name+' 결제가 완료되었습니다.'});
+            openReceiptSavedModal(r.receiptId, {title: product.name+' 결제를 마쳤어요.'});
           }
         });
       }).catch(function(err){
-        showToast((err && err.message) || '결제를 시작하지 못했습니다.');
+        showToast((err && err.message) || '결제를 시작하지 못했어요.');
       });
     }});
   } else {
@@ -8019,7 +8050,7 @@ function openPaywall(product){
   /* ★ 2026-09-04 — 창 제목이 '전체 이용권'인데 바로 아래 상품 이름도 '전체 이용권 · 2026년'이라
      같은 말이 두 번 나왔다. 제목은 무엇을 하는 창인지만 말하게 둔다
      (대표님 지시: "중복 멘트들 다 한번만 써라"). */
-  openModal(product.kind==='pass' ? '한 번에 열기' : '더 자세히 보기', body, actions);
+  openModal(product.kind==='pass' ? '한 번에 열기' : '결제하고 열기', body, actions);
 }
 
 /* 결제를 열 수 없는 이유를 조합별로 정확히 적는다.
@@ -8031,7 +8062,7 @@ function buildPaywallBlockedNotice(gate){
   if(gate.mode === 'trial'){
     notice.appendChild(el('span',{class:'trial-badge'},['체험 모드 — 실제 결제가 아닙니다']));
     notice.appendChild(el('strong',{},['아직 결제가 연결되지 않았습니다.']));
-    notice.appendChild(el('p',{},['결제 서버가 하나도 연결되지 않은 상태라 실제로 결제되지 않고, 카드 정보도 받지 않습니다.']));
+    notice.appendChild(el('p',{},['결제 서버가 하나도 연결되지 않은 상태라 실제로 결제되지 않고, 카드 정보도 받지 않아요.']));
     notice.appendChild(el('p',{},['이용권은 이 브라우저에만 저장되는 체험용이며, 개발자도구로 위조할 수 있습니다.']));
   } else if(gate.mode === 'partial'){
     notice.appendChild(el('span',{class:'trial-badge'},['연동 미완료 — 결제를 열 수 없습니다']));
@@ -8064,9 +8095,12 @@ function buildPayLegalLine(){
      전자상거래법 제13조 제2항이 요구하는 것이라 바로 위 문장으로 그대로 남아 있다.
      여기서는 환불 방법을 적어둔 자주 묻는 질문으로 보낸다 — 없앤 것이 아니라 옮긴 것이다. */
   wrap.appendChild(el('p',{class:'pay-legal-line'},[
-    '환불은 '+companyValue(COMPANY.supportEmail)+' 로 요청하시면 돼요. 자세한 기준은 아래 [자주 묻는 질문]에 적어 두었어요.'
+    '환불은 [문의하기]의 환불 신청이나 '+companyValue(COMPANY.supportEmail)+' 로 요청하면 돼요. 기준은 아래 [환불 정책]에 있어요.'
   ]));
   var links = el('div',{class:'legal-links'});
+  links.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
+    closeModal(); setRoute('refund');
+  }},['환불 정책']));
   links.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
     closeModal(); setRoute('faq');
   }},['자주 묻는 질문']));
@@ -8088,7 +8122,7 @@ function buildPurchasePanel(){
     ]));
   } else if(ENT.error){
     card.appendChild(el('p',{class:'biz-hint', style:'color:var(--red-hi);'},[
-      '이용권 서버에 연결하지 못했어요('+ENT.error+'). 확인될 때까지 유료 구간은 잠긴 상태로 둬요.'
+      '지금 결제 정보를 확인하지 못했어요. 잠시 뒤 다시 열어 주세요. 확인될 때까지 유료 구간은 잠긴 상태로 둬요.'
     ]));
   } else if(!ENT.ready){
     card.appendChild(el('p',{class:'biz-hint'},['이용권을 서버에 확인하는 중이에요…']));
@@ -8129,8 +8163,9 @@ function buildPurchasePanel(){
 
   if(!passActive()){
     /* ★ 2026-08-26 — 아래쪽 여백이 없어 바로 다음 상자(카카오 로그인)에 딱 붙어 있었다. */
-    card.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin:12px 0 16px;',
-      onclick:function(){ openPaywall(passProduct()); }},['전체 이용권 보기 · '].concat(passCompareNodes(true) || [formatWon(PRODUCTS.premium_pass.price)])));
+    /* ★ 2026-10-16 검수 — 한 줄에 몰아 넣어 폭 390에서 2×2로 깨졌다. 두 줄로 나누고, 결제 입구라 옅은 단추(.btn-buy)로 (10-08 방침). */
+    card.appendChild(el('button',{class:'btn btn-buy btn-block', style:'margin:12px 0 16px;',
+      onclick:function(){ openPaywall(passProduct()); }},[btnLines('전체 이용권 보기', el('span',{},passCompareNodes(true) || [formatWon(PRODUCTS.premium_pass.price)]))]));
   }
 
   /* ★ 구매 복원 진입점.
@@ -8308,8 +8343,8 @@ function openKakaoModal(){
       body.appendChild(el('p',{class:'biz-hint warn-text'},['지금은 기기 사이 맞추기가 안 되고 있어요 — ' + SYNC.err]));
     }
     body.appendChild(el('p',{class:'biz-hint'},[
-      '카카오에서 받는 것은 회원번호 하나뿐입니다. 이름·이메일·전화번호는 받지 않았습니다. ' +
-      '로그인하시면 프로필(닉네임·생년월일·태어난 시각·성별·출생지·성격유형)과 지난 기록이 회사 서버에 저장됩니다.'
+      '카카오에서 받는 것은 회원번호 하나뿐이에요. 이름·이메일·전화번호는 받지 않았어요. ' +
+      '로그인하면 프로필(닉네임·생년월일·태어난 시각·성별·출생지·성격유형)과 지난 기록이 회사 서버에 저장돼요.'
     ]));
     body.appendChild(el('p',{class:'biz-hint'},[
       '로그아웃하셔도 이 브라우저에서는 계속 보입니다. 다만 기기를 바꾸면 영수증 번호로만 되찾을 수 있어요. ' +
@@ -8336,8 +8371,8 @@ function openKakaoModal(){
     '지금은 이 브라우저 안에만 있어서, 기기를 바꾸거나 브라우저 기록을 지우면 사라져요.'
   ]));
   body.appendChild(el('p',{class:'biz-hint'},[
-    '카카오에서 받는 것은 회원번호 하나뿐입니다. 이름·이메일·전화번호는 받지 않습니다. ' +
-    '로그인하시면 프로필과 기록이 회사 서버에 저장되고, 언제든 로그아웃하실 수 있습니다.'
+    '카카오에서 받는 것은 회원번호 하나뿐이에요. 이름·이메일·전화번호는 받지 않아요. ' +
+    '로그인하면 프로필과 기록이 회사 서버에 저장되고, 언제든 로그아웃할 수 있어요.'
   ]));
   openModal('카카오 로그인', body, [
     {label:'카카오로 로그인', cls:'btn-kakao', kakao:true, onclick:kakaoStart},
@@ -8384,7 +8419,7 @@ function offerLoginForInvite(){
     '브라우저 기록을 지우셔도 그대로 열려요. 안 하시면 이 브라우저 안에만 남아요.'
   ]));
   body.appendChild(el('p',{class:'biz-hint'},[
-    '카카오에서 받는 것은 회원번호 하나뿐입니다. 이름·이메일·전화번호는 받지 않습니다.'
+    '카카오에서 받는 것은 회원번호 하나뿐이에요. 이름·이메일·전화번호는 받지 않아요.'
   ]));
   openModal('카카오 로그인', body, [
     {label:'카카오로 로그인', cls:'btn-kakao', kakao:true, onclick:function(){ kakaoStart(); }},
@@ -8643,13 +8678,13 @@ function openPrivacyModal(){
     '모임을 쓰실 때 — 모임 이름, 관리용 PIN(설정하신 경우).',
     '결제하실 때 — 주문·결제 기록. 카드번호 등 결제수단 정보는 결제대행사가 직접 처리하며 회사는 받지도, 보관하지도 않습니다. 휴대폰 번호는 수집하지 않습니다.',
     '"카카오 로그인"을 하신 경우 (2026-09-09부터 서비스 이용에 필요합니다) — 카카오 회원번호. 여러 기기에서 같은 내용을 보시고, 결제하신 이용권을 되찾는 데에 씁니다. 카카오 로그인으로 이름·이메일·전화번호·프로필 사진은 받지 않으며, 이 번호는 회사 서비스 전용 식별자라 그 값만으로는 개인을 알아볼 수 없습니다.',
-    '카카오로 로그인하신 경우 함께 저장되는 것 — 프로필(닉네임·생년월일·태어난 시각·출생지·성별·성격유형), 서비스 안에 쌓인 기록(오늘의 운세·궁합·풀이 열람 기록), 그리고 참여하신 모임 목록(모임 번호·이름·인원·고르신 사이와, 만드신 모임이면 그 모임의 관리 권한 표시). 다른 기기에서 그대로 보시고 관리하시게 하는 데에만 씁니다. 로그인하지 않으시면 이 항목은 회사 서버로 전송되지 않습니다.',
+    '카카오 로그인 후 함께 저장되는 것 — 프로필(닉네임·생년월일·태어난 시각·출생지·성별·성격유형), 서비스 안에 쌓인 기록(오늘의 운세·궁합·풀이 열람 기록), 그리고 참여하신 모임 목록(모임 번호·이름·인원·고르신 사이와, 만드신 모임이면 그 모임의 관리 권한 표시). 다른 기기에서 그대로 보시고 관리하시게 하는 데에만 씁니다. 2026년 9월 9일부터 서비스 이용에 카카오 로그인이 필요하므로, 이 항목은 이용하시는 동안 회사 서버에 저장됩니다. 설정에서 프로필이나 기록을 지우시면 서버 사본에서도 함께 지워지고, 저장된 내용 전체를 지우시려면 [문의하기]로 요청해 주시면 됩니다.',
     /* ★ R84 — 개선 의견 창구를 서비스 안에 만들면서 추가한 항목이다(2026-08-14).
        연락처는 답을 받고 싶은 분만 스스로 적는 값이고, 형식도 따지지 않는다.
        받는 것을 만들었으면 여기에도 반드시 적어야 한다 — 화면과 방침이 어긋나면 그게 문제다. */
     '문의를 보내실 때 (연락처는 선택 · 안 적으셔도 접수됨) — 보내주신 내용과 어느 화면에서 겪으셨는지, 결제·환불 문의에서 적어주신 경우에 한해 주문번호, 그리고 적어주신 경우에 한해 연락처(카카오톡 아이디·메일주소·전화번호 중 적으신 것). 문의에 답을 드리는 데에만 씁니다. 접수한 문의의 처리 상태와 답변은 이용자가 서비스의 [내 문의 내역]에서 다시 보실 수 있도록 함께 보관합니다.'
   ]);
-  p2('입력하신 정보는 기본적으로 이용자의 브라우저에만 저장되고 회사 서버로 보내지 않습니다. 궁합 링크·모임·유료 AI 해석·결제를 이용하실 때, 그리고 카카오로 로그인하신 경우에만 서버에 저장됩니다.');
+  p2('입력하신 정보는 이용자의 브라우저와, 카카오 계정에 연결된 회사 서버에 함께 저장됩니다(서비스 이용에 카카오 로그인이 필요합니다). 궁합 링크·모임·유료 AI 해석·결제를 이용하실 때에는 그 기능에 필요한 항목이 추가로 서버에 저장됩니다.');
 
   h('제2조 (보유 및 이용 기간)');
   p2('서버에 저장되는 정보의 보유 기간은 모두 처음 만들어진 날부터 셉니다. 이용 여부에 따라 늘어나지 않습니다.');
@@ -8705,7 +8740,7 @@ function openPrivacyModal(){
   ]);
 
   h('제8조 (안전을 위해 하는 일)');
-  p2('비밀번호를 받지 않습니다(회원가입이 없고, 카카오 로그인을 쓰셔도 비밀번호는 카카오가 처리합니다). 외부로 나가는 요청은 https만 허용합니다. 관리용 PIN은 복원할 수 없는 형태로만 보관합니다. 서버로 보내는 항목은 기능에 필요한 최소한으로 제한합니다.');
+  p2('비밀번호를 받지 않습니다(별도 회원가입 없이 카카오 로그인만 쓰며, 비밀번호는 카카오가 처리합니다). 외부로 나가는 요청은 https만 허용합니다. 관리용 PIN은 복원할 수 없는 형태로만 보관합니다. 서버로 보내는 항목은 기능에 필요한 최소한으로 제한합니다.');
 
   h('제9조 (만 14세 미만)');
   p2('만 14세 미만은 서비스를 이용할 수 없으며, 회사는 만 14세 미만 아동의 개인정보를 알면서 수집하지 않습니다.');
@@ -8977,7 +9012,7 @@ function renderFaq(){
          '링크에 담긴 사람의 닉네임·성격유형·생년월일·태어난 시각·성별·출생지가 상대방 화면에 나타나요. 궁합을 계산하는 데 필요한 값이에요. 링크를 만들기 전에 화면에서 같은 내용을 알려드려요.'],
         ['모임이나 멤버를 삭제·수정하고 싶어요',
          '모임 화면 아래 [모임 관리]를 눌러주세요. 모임을 만든 기기에서는 PIN 없이 바로 이름을 바꾸거나, 지금 화면에 있는 사람들로 명단을 다시 저장하거나, 모임을 지울 수 있어요. 다른 기기에서도 관리하시려면 [모임 관리]에서 관리용 PIN을 정해 두시면 돼요.',
-         '내 정보만 빼고 싶으시면 PIN 없이 [이 모임에서 나가기]를 누르시면 돼요. 회원님 줄만 명단에서 빠지고 모임은 그대로 남아요. 마지막 한 분이 나가시면 모임도 함께 사라져요.'],
+         '내 정보만 빼고 싶으시면 PIN 없이 [이 모임에서 나가기]를 누르시면 돼요. 내 줄만 명단에서 빠지고 모임은 그대로 남아요. 마지막 한 분이 나가시면 모임도 함께 사라져요.'],
         ['모임 PIN을 잊어버렸어요',
          'PIN은 되돌릴 수 없는 형태로만 보관해서 저희도 알 수 없어요. 알려드릴 방법이 원리적으로 없어요. 새로 모임을 만들어 링크를 다시 보내주시는 편이 빨라요. 다만 모임을 지우고 싶으신 경우에는 모임 주소와 함께 '+companyValue(COMPANY.supportEmail)+' 로 알려주시면 확인 후 지워드려요.'],
         ['모임에 사람을 더 받고 싶어요',
@@ -9007,7 +9042,7 @@ function renderFaq(){
          '다시 결제하지 마세요. 결제하실 때 쓰신 카카오 계정으로 로그인하시면 그대로 열려요. 기기를 바꾸셨든 브라우저 데이터를 지우셨든 같습니다 — 결제하신 것은 브라우저가 아니라 카카오 계정에 붙어 있어요.',
          '로그인이 어려우면 두 번째 길이 있어요. 결제할 때 영수증 번호를 알려드리는데, 설정 화면의 [구매 내역 복원]에 그 번호를 넣으면 되살아나요. 번호를 몰라도 괜찮아요 — 화면 아래 [문의하기] → [결제했는데 결과가 안 보여요]로 알려주시면 저희가 찾아드려요.'],
         ['유료 콘텐츠는 얼마나 볼 수 있나요?',
-         '한 번 만든 해석은 계속 볼 수 있어요 — 건별로 샀든 이용권으로 만들었든 같아요. 결제할 때 쓴 카카오 계정으로 로그인하면 어느 기기에서나 열려요. 전체 이용권은 결제일로부터 '+passPeriodText()+' 동안 세 가지를 다 만드실 수 있고, 그 기간이 끝나도 만들어 두신 글은 그대로 열려요.'],
+         '한 번 만든 해석은 계속 볼 수 있어요 — 건별로 구매했든 이용권으로 만들었든 같아요. 결제할 때 쓴 카카오 계정으로 로그인하면 어느 기기에서나 열려요. 전체 이용권은 결제일로부터 '+passPeriodText()+' 동안 세 가지를 다 만드실 수 있고, 그 기간이 끝나도 만들어 두신 글은 그대로 열려요.'],
         ['해석을 몇 번이나 만들 수 있나요?',
          '상세 해석 중 일부는 사주 계산 결과를 AI가 읽고 새로 써 드리는 글이에요. 새로 만드는 횟수는 결제 한 번에 '+AI_QUOTA.once+'편, 전체 이용권은 기간 중 상품마다 '+AI_QUOTA.pass+'편이에요. 더 보고 싶으면 같은 상품을 한 번 더 결제하면 그만큼 늘어나요 — 궁합은 한 쌍이 한 편이라, 다른 분과도 보려면 한 쌍씩 더 열면 돼요. 한 번 만든 해석을 다시 보는 것은 횟수에 들어가지 않고 얼마든지 볼 수 있어요. 만들다 실패한 것도 세지 않아요.'],
         ['같은 사주인데 다시 보면 내용이 달라지나요?',
@@ -9543,7 +9578,7 @@ function renderPricing(){
     card.appendChild(row);
     if(launchPriceActive() && AFTER_LAUNCH_PRICE[key]){
       card.appendChild(el('p',{class:'biz-hint', style:'margin:4px 0 0;'},
-        [launchPriceNote() + ' · 2027년 1월 1일부터 ' + formatWon(AFTER_LAUNCH_PRICE[key])]));
+        [launchPriceNote(), el('br'), '2027년 1월 1일부터 ' + formatWon(AFTER_LAUNCH_PRICE[key])]));
     }
     if(YEARLY_PRODUCTS[key]){
       card.appendChild(el('p',{class:'biz-hint', style:'margin:4px 0 0;'},
@@ -10152,7 +10187,7 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
   function paint(){
     host.innerHTML = '';
     host.appendChild(buildGatedToc(state.sections, product, tocLabel, state.locked));
-    if(!state.locked) host.appendChild(interpreterNotice(state));
+    if(!state.locked) host.appendChild(interpreterNotice(state, product));
     /* ★ 2026-09-09 — 저장 열쇠가 안 맞아 **먼저 만들어 드린 글을 되찾아 온** 경우다.
        아무 말 없이 옛 글을 띄우면 "왜 지금 화면 점수랑 글이 다르지?"가 된다.
        서버가 알려줄 때만 적는다(state.recovered) — 우리가 짐작해서 적지 않는다. */
@@ -10545,7 +10580,7 @@ function renderGatedSections(view, sections, product, opts){
     var lockedTitles = sections.slice(freeCount).map(function(x){ return x.title.split(' · ')[0]; });
     var block = lockedBlock(product, teaser ? '<p>'+escapeHtml(teaser)+'…</p>' : '',
                             next.title.split(' · ')[0], null, opts.hook || '');   /* ★ 2026-10-04 QA — 바로 위 목차가 잠긴 제목을 이미 보여 준다 */
-    block.insertBefore(el('div',{class:'locked-count'},['목차에서 잠긴 이야기 '+remain+'개가 이어져요']), block.firstChild);
+    block.insertBefore(el('div',{class:'locked-count'},['목차에서 잠긴 이야기가 '+remain+'개 남아 있어요']), block.firstChild);
     view.appendChild(block);
   }
 }
@@ -10560,7 +10595,7 @@ function quotaLockBlock(product, code, remain){
   var wrap = el('div',{class:'locked-block'});
   var cta = el('div',{class:'locked-cta'});
   cta.appendChild(el('div',{class:'locked-icon'},[lockIcon('잠김')]));
-  cta.appendChild(el('div',{class:'locked-count'},['목차에서 잠긴 이야기 '+remain+'개가 이어져요']));
+  cta.appendChild(el('div',{class:'locked-count'},['목차에서 잠긴 이야기가 '+remain+'개 남아 있어요']));
   cta.appendChild(el('p',{class:'locked-title'},[code === 'quota_exceeded'
     ? '새 풀이를 만들 수 있는 횟수를 다 썼어요'
     : '이 풀이는 결제하면 바로 만들어져요']));
@@ -10575,7 +10610,7 @@ function quotaLockBlock(product, code, remain){
 
 /* 지금 풀이가 어떻게 만들어지고 있는지 알린다.
    "왜 Claude에 직접 물어볼 때보다 얕은가"에 대한 정직한 답이기도 하다. */
-function interpreterNotice(state){
+function interpreterNotice(state, product){
   /* =====================================================================
      R42 — 무엇으로 쓴 풀이인지 사실대로 말한다
      ---------------------------------------------------------------------
@@ -10586,13 +10621,18 @@ function interpreterNotice(state){
   ===================================================================== */
   var box = el('div',{class:'interp-notice'});
   var st = state || {};
+  /* ★ 2026-10-16 검수 — 성격유형 풀이에 "사주팔자 계산은…" 사주 설명이 떠 있었다. 상품에 맞는 말을 고른다. */
+  var kindOf = String((product && typeof product === 'object') ? product.id : (product || '')).split(':')[0];
+  var isMbti = kindOf === 'mbti_full', isCompat = kindOf === 'compat_full';
+  var whatReads = isMbti ? '성격유형 네 글자를' : (isCompat ? '두 분의 사주와 성격유형을' : '사주 여덟 글자를');
+  var whatCalc  = isMbti ? '이 성격유형의 특징을' : (isCompat ? '두 분의 궁합 계산 결과를' : '이 사주의 계산 결과를');
 
   if(st.source === 'api'){
     box.classList.add('on');
     box.appendChild(el('span',{class:'interp-badge'},[st.loading ? 'AI 해석 쓰는 중' : 'AI 해석']));
     box.appendChild(el('span',{},[st.loading
-      ? '사주 여덟 글자를 읽고 쓰는 중이에요. 보통 2분, 길면 3분쯤 걸리니 먼저 온 부분부터 읽으셔도 돼요.'
-      : '이 풀이는 이 사주의 계산 결과를 직접 읽고 쓴 것이에요.']));
+      ? whatReads + ' 읽고 쓰는 중이에요. 보통 2분, 길면 3분쯤 걸리니 먼저 온 부분부터 읽어도 돼요.'
+      : '이 풀이는 ' + whatCalc + ' 직접 읽고 쓴 것이에요.']));
     return box;
   }
 
@@ -10619,7 +10659,10 @@ function interpreterNotice(state){
     box.appendChild(el('span',{},['— 지금은 기본 해석표로 보여드리고 있어요. 이용권은 그대로 남아 있어요.']));
     return box;
   }
-  box.appendChild(el('span',{},['사주팔자 계산은 이 서비스가 직접 해요. 풀이 문장은 사주 여덟 글자와 오행·십신 관계에 따라 미리 준비된 해석표를 조합해 만들어요.']));
+  box.appendChild(el('span',{},[isMbti
+    ? '풀이 문장은 성격유형 네 글자와 그 유형이 주로 쓰는 생각의 순서에 따라 미리 준비된 해석표를 조합해 만들어요.'
+    : (isCompat ? '궁합 점수는 이 서비스가 직접 계산해요. 풀이 문장은 두 분의 사주 관계와 성격유형 조합에 따라 미리 준비된 해석표를 조합해 만들어요.'
+                : '사주팔자 계산은 이 서비스가 직접 해요. 풀이 문장은 사주 여덟 글자와 오행·십신 관계에 따라 미리 준비된 해석표를 조합해 만들어요.')]));
   return box;
 }
 
@@ -10816,7 +10859,7 @@ var Interpreter = {
         dayStemRelation: rs.elemTerm || null,     /* 비화 · 상생 · 상극 */
         dayBranchRelation: rs.branchTerm || null, /* 육합·삼합·방합·충·형·파·같은 글자·해당 없음 */
         /* ★ 2026-08-25 — 화면이 보여주는 다섯 칸 점수 중 둘이 여기 없었다.
-           화면에는 '서로 부족한 걸 채워줘요'와 '하루 생활 리듬이 맞아요'가 점수와 막대로 떠 있는데
+           화면에는 '서로 채워 주는 힘'와 '생활 리듬이 맞는 정도'가 점수와 막대로 떠 있는데
            (COMPAT_METRICS의 elemScore60 · branchScore), AI에게는 그 두 숫자를 준 적이 없다.
            사주 쪽에서 대운을 안 넘겨 세 섹션이 비었던 것과 같은 종류의 구멍이다.
            숫자를 모르면 AI는 그 자리를 비우거나 두루뭉술하게 넘기고, 그러면 바로 위 막대와
@@ -10931,7 +10974,7 @@ var Interpreter = {
            그 말을 그대로 화면에 보여준다 — 우리가 다시 지어내면 실제와 어긋난다. */
         return res.json().catch(function(){ return null; }).then(function(d){
           done();
-          var e = new Error((d && d.reason) || ('해석 서버 응답 오류 (HTTP '+res.status+')'));
+          var e = new Error((d && d.reason) || ('풀이 서버와 잠시 연결이 원활하지 않아요. (오류 '+res.status+')'));
           e.status = res.status;
           if(d && d.error) e.code = d.error;   /* no_access · quota_exceeded — 화면이 갈래를 가른다 (2026-09-21) */
           throw e;
@@ -11028,7 +11071,7 @@ var Interpreter = {
       signal: ctrl ? ctrl.signal : undefined
     }).then(function(res){
       if(timer) clearTimeout(timer);
-      if(!res.ok) throw new Error('해석 서버 응답 오류 (HTTP '+res.status+')');
+      if(!res.ok) throw new Error('풀이 서버와 잠시 연결이 원활하지 않아요. (오류 '+res.status+')');
       return res.json();
     }).then(function(data){
       if(!data || !Array.isArray(data.sections)) throw new Error('해석 결과 형식이 올바르지 않습니다.');
@@ -11054,17 +11097,15 @@ var ELEMENTS_H = ['木','火','土','金','水'];
    ELEMENT_TRAIT("뻗어나가려는 성장의 기운 —")과 **다른 것을 말합니다** — 저쪽은 기운의 설명이고
    이쪽은 비유입니다. 두 줄이 같은 말을 하게 되면 한 줄을 지우십시오.
    ★ 무작위로 고르지 마세요. 같은 분은 볼 때마다 같은 별명이 나와야 합니다. */
+/* ★ 2026-10-16 검수 — 같은 분이 한 화면에서 '항아리 같은 사람'(별명) · '논밭 같은 사람'(사주 풀이 1장)처럼
+   비유를 둘 받았다. 별명을 사주 풀이의 일간 그림(PB 의 img — 갑 큰 나무 … 계 새벽 이슬)과 같은 것으로 맞췄다.
+   한 일간에 한 별명이다(예전엔 둘 중 하나를 골랐다). */
 var PERSON_NICK = {
-  '목': { 양:['🌳 하늘로 곧게 뻗는 나무 같은 사람', '🪵 굽지 않고 자라는 큰 나무 같은 사람'],
-          음:['🌿 바람에 눕되 꺾이지는 않는 풀 같은 사람', '🍃 틈만 있으면 뿌리내리는 덩굴 같은 사람'] },
-  '화': { 양:['☀️ 들어서면 방에 불이 켜지는 사람', '🔥 불씨 하나로 방을 데우는 사람'],
-          음:['🕯 오래 켜 두어도 뜨겁지 않은 촛불 같은 사람', '🏮 어두울수록 잘 보이는 등불 같은 사람'] },
-  '토': { 양:['⛰ 옮기지 않아도 기준이 되는 산 같은 사람', '🧱 밟고 서도 흔들리지 않는 땅 같은 사람'],
-          음:['🌾 아무 씨나 받아 키우는 밭 같은 사람', '🍶 오래 담글수록 깊어지는 항아리 같은 사람'] },
-  '금': { 양:['🗡 한 번에 잘라 내는 칼 같은 사람', '⚒ 두드릴수록 단단해지는 쇠 같은 사람'],
-          음:['💍 작아도 눈에 걸리는 보석 같은 사람', '🪡 가늘어도 정확히 꿰는 바늘 같은 사람'] },
-  '수': { 양:['🌊 조용한데 깊은 물 같은 사람', '🌫 형태가 없어 어디든 스미는 사람'],
-          음:['💧 바위도 뚫는 낙숫물 같은 사람', '❄️ 소리 없이 쌓이는 눈 같은 사람'] }
+  '목': { 양:['🌳 하늘로 곧게 뻗는 큰 나무 같은 사람'], 음:['🌿 틈만 있으면 뿌리내리는 덩굴 같은 사람'] },
+  '화': { 양:['☀️ 들어서면 방이 환해지는 한낮의 태양 같은 사람'], 음:['🏮 어두울수록 빛나는 화롯불 같은 사람'] },
+  '토': { 양:['⛰ 옮기지 않아도 기준이 되는 산 같은 사람'], 음:['🌾 뿌린 걸 묵묵히 길러내는 논밭 같은 사람'] },
+  '금': { 양:['⚒ 두드릴수록 단단해지는 무쇠 같은 사람'], 음:['💍 다듬을수록 빛나는 보석 같은 사람'] },
+  '수': { 양:['🌊 조용한데 깊고 넓은 바다 같은 사람'], 음:['💧 소리 없이 내려앉는 새벽 이슬 같은 사람'] }
 };
 function personNickname(saju){
   if(!saju || !saju.day || typeof saju.day.stemIdx !== 'number') return '';
@@ -11763,41 +11804,60 @@ var MBTI_FIT_TAB = 'love';   /* 성격유형 화면 순위 칸 — 'love' | 'wor
 /* 순위 줄마다 붙는 한 줄 이유 (2026-10-07 대표님 "잘맞는 순위에 이유 한줄 간단히 써주자").
    ★ 새 점수를 만들지 않는다 — 표를 만들 때 본 사실(mbtiPairFacts · 네 글자)을 다시 읽어 문장만 고른다.
      앞 갈래가 이긴다. 표가 무겁게 보는 것부터 말한다(연애=채움·거울, 일=J/P·S/N). */
-function mbtiFitReason(me, t, kind){
-  /* ★ 2026-10-07 대표님 "문장이 어색하다 '둘 다 앞일을 보되?' 더 사람 언어로써 써봐봐" — 용어 없이 말하듯 쓴다. */
-  if(me === t) return kind === 'work' ? '일하는 방식이 똑같아 손발이 맞지만, 놓치는 것도 같아요'
-                                      : '닮아서 편하지만, 둘 다 놓치는 부분도 같아요';
+function mbtiFitReason(me, t, kind, used){
+  /* ★ 2026-10-07 대표님 "문장이 어색하다 '둘 다 앞일을 보되?' 더 사람 언어로써 써봐봐" — 용어 없이 말하듯 쓴다.
+     ★ 2026-10-16 검수 — 한 순위 목록에 같은 이유가 세 번(7·8·10등) 나오고, "내가 서툰 꼼꼼히 챙기는 일을…"이 비문이었다.
+       이제 맞는 이유를 **여럿** 모아(mbtiFitReasons) 순서대로 두고, 목록에서 이미 쓴 문장(used)은 건너뛴다.
+       새 점수는 없다 — 표를 만들 때 본 사실(거울·채움·S/N·J/P·T/F)을 다시 읽어 문장만 고른다. */
+  var list = mbtiFitReasons(me, t, kind);
+  for(var i=0;i<list.length;i++){ if(!used || !used[list[i]]){ if(used) used[list[i]] = 1; return list[i]; } }
+  return list[0];
+}
+function mbtiFitReasons(me, t, kind){
+  if(me === t) return [kind === 'work' ? '일하는 방식이 똑같아 손발이 맞지만, 놓치는 것도 같아요'
+                                       : '닮아서 편하지만, 둘 다 놓치는 부분도 같아요'];
   var f = mbtiPairFacts(me, t) || {axis2:0, share:0, cover:0, mirror:0};
   var sn = me[1]===t[1], jp = me[3]===t[3], tf = me[2]===t[2], ei = me[0]!==t[0];
-  if(kind === 'work'){
-    if(sn && jp) return '일을 보는 눈도, 마무리하는 속도도 비슷해요';
-    if(jp && tf) return '마감 지키는 방식도, 결정하는 기준도 비슷해요';
-    if(jp) return '일을 마무리하는 속도가 비슷해 일정으로 덜 부딪혀요';
-    if(sn) return '보는 눈이 비슷해 설명이 짧아도 통해요';
-    if(tf) return '결정하는 기준이 비슷해 결론이 빨라요';
-    return '방식은 달라도 서로 놓친 걸 짚어 줘요';
-  }
   var A = MBTI_STACK[me], B = MBTI_STACK[t];
+  /* 앞에 쓰는(잘하는) 힘을 사람 말로 */
+  var SKILL = {Se:'그때그때 즐기는 일', Si:'꼼꼼히 챙기는 일', Ne:'새 아이디어를 내는 일', Ni:'멀리 내다보는 일',
+               Te:'계획을 세워 밀고 가는 일', Ti:'차근차근 따져 보는 일', Fe:'분위기를 챙기는 일', Fi:'속마음을 헤아리는 일'};
+  var out = [];
+  if(kind === 'work'){
+    if(sn && jp) out.push('일을 보는 눈도, 마무리하는 속도도 비슷해요');
+    if(jp && tf) out.push('마감 지키는 방식도, 결정하는 기준도 비슷해요');
+    if(jp) out.push('일을 마무리하는 속도가 비슷해 일정으로 덜 부딪혀요');
+    if(sn) out.push('보는 눈이 비슷해 설명이 짧아도 통해요');
+    if(tf) out.push('결정하는 기준이 비슷해 결론이 빨라요');
+    if(A && B && f.cover >= 1){
+      [B[0],B[1]].forEach(function(x){ if(A[2]===x || A[3]===x) out.push(SKILL[x]+'은 상대 몫으로 맡기면 일이 빨라져요'); });
+    }
+    if(B) out.push('상대가 잘하는 '+SKILL[B[0]]+'이 일에 보탬이 돼요');
+    out.push('방식은 달라도 서로 놓친 걸 짚어 줘요');
+    return out;
+  }
   /* 같은 쪽을 보되 방향이 반대인 짝(거울) — 축마다 사람 말 한 줄 */
   var MIRROR = {N:'둘 다 상상하길 좋아하는데, 생각을 풀어 가는 방식이 달라 대화가 끝이 없어요',
                 S:'둘 다 현실적인데, 한쪽은 지금을 즐기고 한쪽은 꼼꼼히 챙겨요',
                 T:'둘 다 따져 보는 편인데, 한쪽은 밀어붙이고 한쪽은 차근차근 짚어 줘요',
                 F:'둘 다 마음을 중요하게 여기는데, 한쪽은 분위기를 챙기고 한쪽은 속마음을 헤아려요'};
-  /* 상대가 앞에 쓰는 힘 중 내가 뒤에 둔(서툰) 것 */
-  var SKILL = {Se:'그때그때 즐기는 일', Si:'꼼꼼히 챙기는 일', Ne:'새 아이디어를 내는 일', Ni:'멀리 내다보는 일',
-               Te:'계획 세워 밀고 가는 일', Ti:'차근차근 따져 보는 일', Fe:'분위기를 챙기는 일', Fi:'속마음을 헤아리는 일'};
   if(f.mirror >= 1 && f.axis2 === 2 && A && B){
     var mf = [A[0],A[1]].filter(function(x){ return [B[0],B[1]].some(function(y){ return y.charAt(0)===x.charAt(0) && y!==x; }); })[0];
-    if(mf) return MIRROR[mf.charAt(0)];
+    if(mf) out.push(MIRROR[mf.charAt(0)]);
   }
   if(f.cover >= 1 && A && B){
-    var cf = [B[0],B[1]].filter(function(x){ return A[2]===x || A[3]===x; })[0];
-    if(cf) return '내가 서툰 '+SKILL[cf]+'을 상대가 척척 해 줘요';
+    [B[0],B[1]].forEach(function(x){ if(A[2]===x || A[3]===x) out.push(SKILL[x]+'은 내가 서툰데, 상대가 척척 해 줘요'); });
+    [A[0],A[1]].forEach(function(x){ if(B[2]===x || B[3]===x) out.push(SKILL[x]+'은 내가 잘해서, 상대에게 힘이 돼 줘요'); });
   }
-  if(sn && ei) return '보는 눈이 같아 말이 잘 통하고, 한쪽이 말하면 한쪽이 잘 들어 줘요';
-  if(sn) return '보는 눈이 같아 말이 잘 통해요';
-  if(f.axis2 >= 1) return '관심사가 겹쳐 대화가 잘 이어져요';
-  return ei ? '한쪽이 말하면 한쪽이 잘 들어 주는 사이예요' : '서로 달라서 배울 게 많아요';
+  if(sn && ei) out.push('보는 눈이 같아 말이 잘 통하고, 한쪽이 말하면 한쪽이 잘 들어 줘요');
+  if(sn) out.push('보는 눈이 같아 말이 잘 통해요');
+  if(f.axis2 >= 1) out.push('관심사가 겹쳐 대화가 잘 이어져요');
+  if(tf) out.push(me[2]==='F' ? '마음 쓰는 방식이 비슷해 서운할 일이 적어요' : '따지는 방식이 비슷해 다퉈도 짧게 끝나요');
+  if(jp) out.push(me[3]==='J' ? '약속을 잡고 지키는 방식이 비슷해요' : '즉흥적으로 움직이는 박자가 맞아요');
+  if(ei) out.push('한쪽이 말하면 한쪽이 잘 들어 주는 사이예요');
+  if(B) out.push('상대가 잘하는 '+SKILL[B[0]]+'이 내 하루에 새 바람을 넣어 줘요');
+  out.push('서로 달라서 배울 게 많아요');
+  return out;
 }
 
 /* 위 표가 이 두 사람에게서 실제로 무엇을 봤는지 되돌려준다.
@@ -12225,6 +12285,8 @@ var DAEUN_HEALTH_LINES = {
    기능5 타임라인(renderSaju)과 기능6 리포트(s10~s12)가 같은 대운 구간에 대해 동일한 근거로 서술하도록
    공용 함수로 분리했다(서로 다른 얘기를 하지 않게). 새 계산 없음: sipseongOf(십성)·counts(오행 카운트, 이미 계산됨)·
    ELEM_ORGAN(v5-A 룩업)만 조합한다. */
+/* ★ 2026-10-16 검수 — 대운 상세 창과 사주 풀이 대운 장의 금전·건강 문장 옆에 참고용 고지가 없었다. */
+var DAEUN_MH_NOTE = '금전·건강 문장은 전통 오행 해석에 기댄 참고용이에요. 의학적 진단이나 투자 판단을 대신하지 않아요.';
 function daeunMoneyHealthLines(dayStemIdx, ganji, counts, slot){
   var sipName = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[ganji.stemIdx], SajuEngine.STEM_YY[ganji.stemIdx]);
   var moneyLine = DAEUN_MONEY_LINE[sipName];
@@ -12645,7 +12707,7 @@ PB.monthImpression = { // 월지 12종 사회적 인상
 PB.seasonStrength = {
   strong:'이 계절 기운이 아주 진하게 실려서, 처음 만나는 사람도 대번에 그 인상을 느낄 정도예요. 굳이 애쓰지 않아도 이 색깔이 자연스럽게 배어나오는 편이라, 스스로를 숨기려 해도 잘 감춰지지 않을 거예요.',
   mid:'이 계절 기운이 적당히 실려서, 알아갈수록 그 결이 서서히 드러나는 편이에요. 처음엔 특별한 인상을 남기지 않다가도, 시간을 두고 지켜본 사람일수록 이 색깔을 뚜렷하게 느끼게 돼요.',
-  weak:'이 계절 기운이 은은하게만 실려서, 겉모습보다 실제 성격이 다르다는 말을 종종 들었을 거예요. 첫인상만으로 판단한 사람들은 나중에 "생각보다 다른 면이 있네"라며 다시 보게 되는 경우가 많아요.'
+  weak:'이 계절 기운이 은은하게만 실려서, 겉모습보다 실제 성격이 다르다는 말을 종종 들었을 수 있어요. 첫인상만으로 판단한 사람들은 나중에 "생각보다 다른 면이 있네"라며 다시 보게 되는 경우가 많아요.'
 };
 PB.iljiInner = { // 일지 12종 내면(겉과 속 차이)
   0:'겉으론 침착해 보여도 속으론 자시(子)의 밤바다처럼 쉴 새 없이 생각이 돌아가는 사람이에요. 겉모습만 보고 여유롭다고 오해받기 쉽지만, 머릿속에서는 이미 몇 수 앞을 재고 있는 경우가 많아요.',
@@ -12783,11 +12845,11 @@ PB.lovePattern = { // 연애운 5패턴
    뜻을 먼저 적고 용어는 괄호로 뒤따른다. 월별 운세 첫 문장들과 같은 말이다. */
 var SIPSEONG_GROUP_PLAIN = { 비겁:'내 힘으로 밀고 나가는', 식상:'표현하고 만들어내는', 재성:'돈과 결실의', 관성:'책임과 규칙의', 인성:'배우고 도움받는' };
 PB.dohwaExtra = [ // 홍염/도화 유무 관련 8종
-  '거기에 사람을 끄는 기운(도화)까지 겹쳐 있어서, 본인 의도와 상관없이 유독 시선을 끄는 매력이 있었을 거예요.',
+  '거기에 사람을 끄는 기운(도화)까지 겹쳐 있어서, 본인 의도와 상관없이 유독 시선을 끄는 매력이 있었을 수 있어요.',
   '사람을 끄는 기운(도화)이 있어서 인연이 끊이지 않는 편이지만, 그만큼 마음을 정하는 데는 더 신중해야 해요.',
-  '주변에서 "인기 많겠다"는 말을 종종 들었을 텐데, 그게 다 이 사람을 끄는 기운(도화) 때문이에요.',
+  '주변에서 "인기 많겠다"는 말을 들어 봤다면, 사람을 끄는 기운(도화)과도 이어진다고 봐요.',
   '매력이 자연스럽게 흘러나오는 편이라, 원치 않는 오해를 사는 것도 조심해야 해요.',
-  '이 기운은 사람을 끄는 힘인 동시에, 관계를 오래 붙잡아두는 힘은 아닐 수 있다는 것도 함께 기억해줘요.',
+  '다만 처음 끌리는 힘과 오래 가는 힘은 달라요. 이 끌림이 오래가는지는 함께 쌓는 시간에 달려 있어요.',
   '누군가를 볼 때 첫인상만으로 마음을 정하기 쉬우니, 한 박자 천천히 알아가는 연습도 필요해요.',
   '이 기운 덕에 새로운 인연이 자주 스치겠지만, 진짜 인연은 그중에서 신중히 골라내야 해요.',
   '매력이 넘치는 만큼, 정작 스스로에게 맞는 사람을 알아보는 눈은 따로 길러야 해요.'
@@ -12833,32 +12895,32 @@ PB.daeunInflow = {
   no:'가까운 대운에서는 이 기운이 크게 채워지진 않지만, 스스로 의식적으로 챙기면 그만큼 더 값진 성장이 될 거예요. 저절로 채워지는 시기가 아닌 만큼 오히려 스스로 노력한 만큼 정직하게 성장이 쌓이는 구간이니, 작은 습관부터 하나씩 시작해보는 게 의미 있어요.'
 };
 PB.patternElem = {
-  0:'같은 종류의 결정을 앞두고 자꾸 새로 시작만 벌이고 마무리는 미루는 패턴이 있었을 거예요. 목(木) 기운이 몰려 있어서 그래요. 새로운 걸 벌이는 순간의 설렘엔 강하지만 지루한 마무리 구간에서 힘이 빠지는 편이라, 시작한 일 목록을 눈에 보이게 적어두고 하나씩 지워나가는 방식이 도움이 될 거예요.',
+  0:'같은 종류의 결정을 앞두고 자꾸 새로 시작만 벌이고 마무리는 미루는 패턴이 있었을 수 있어요. 목(木) 기운이 몰려 있어서 그래요. 새로운 걸 벌이는 순간의 설렘엔 강하지만 지루한 마무리 구간에서 힘이 빠지는 편이라, 시작한 일 목록을 눈에 보이게 적어두고 하나씩 지워나가는 방식이 도움이 될 거예요.',
   1:'감정이 확 타올랐다가 금방 식어버리는 패턴을 반복해왔을 수 있어요. 화(火) 기운이 몰려 있어서 그래요. 관계든 일이든 초반의 뜨거운 몰입이 오래가지 않는 편이라, 열기가 식은 뒤에도 관계나 목표를 유지할 나름의 장치를 미리 마련해두는 게 좋아요.',
-  2:'변화가 필요한 순간에도 익숙한 자리를 고수하려는 패턴이 있었을 거예요. 토(土) 기운이 몰려 있어서 그래요. 안정감을 주는 익숙함을 놓기가 유독 힘든 편이라, 변화를 큰 결단이 아니라 아주 작은 단위로 쪼개서 시도하면 훨씬 수월하게 받아들일 수 있어요.',
+  2:'변화가 필요한 순간에도 익숙한 자리를 고수하려는 패턴이 있었을 수 있어요. 토(土) 기운이 몰려 있어서 그래요. 안정감을 주는 익숙함을 놓기가 유독 힘든 편이라, 변화를 큰 결단이 아니라 아주 작은 단위로 쪼개서 시도하면 훨씬 수월하게 받아들일 수 있어요.',
   3:'맞다고 생각하면 좀처럼 물러서지 않아 관계가 팽팽해지는 패턴이 있었을 수 있어요. 금(金) 기운이 몰려 있어서 그래요. 옳고 그름이 분명한 만큼 타협이 어려운 편이라, 관계에서는 가끔 "내가 맞다"보다 "이 관계가 더 중요하다"는 쪽으로 무게중심을 옮겨보는 연습이 필요해요.',
-  4:'생각은 깊어지는데 정작 행동으로 옮기지 못하고 흘려보내는 패턴이 있었을 거예요. 수(水) 기운이 몰려 있어서 그래요. 머릿속 시뮬레이션은 누구보다 정교한데 실제 행동으로 옮기는 첫걸음이 유독 무거운 편이라, 완벽한 계획을 기다리기보다 일단 작게 시작하는 연습이 도움이 될 거예요.'
+  4:'생각은 깊어지는데 정작 행동으로 옮기지 못하고 흘려보내는 패턴이 있었을 수 있어요. 수(水) 기운이 몰려 있어서 그래요. 머릿속 시뮬레이션은 누구보다 정교한데 실제 행동으로 옮기는 첫걸음이 유독 무거운 편이라, 완벽한 계획을 기다리기보다 일단 작게 시작하는 연습이 도움이 될 거예요.'
 };
 PB.patternSipseong = {
-  비겁:'혼자 다 짊어지려다가 정작 도움을 청해야 할 때 못 청하는 게 반복되는 고민이었을 거예요. 남에게 약한 모습을 보이기 싫어하는 마음이 강해서, 정작 힘들 때조차 괜찮은 척하다가 뒤늦게 지치는 패턴이 반복됐을 수 있어요.',
+  비겁:'혼자 다 짊어지려다가 정작 도움을 청해야 할 때 못 청하는 게 반복되는 고민이었을 수 있어요. 남에게 약한 모습을 보이기 싫어하는 마음이 강해서, 정작 힘들 때조차 괜찮은 척하다가 뒤늦게 지치는 패턴이 반복됐을 수 있어요.',
   식상:'하고 싶은 말은 많은데 막상 중요한 순간엔 삼키고 후회하는 패턴이 있었을 수 있어요. 평소엔 표현이 자유로운 편인데 정작 결정적인 순간엔 눈치를 보며 말을 아끼다가, 지나고 나서 "그때 말할걸" 하고 후회하는 경우가 잦았을 거예요.',
-  재성:'가진 걸 지키려다가 정작 놓치고 싶지 않은 사람을 놓치는 순간이 있었을 거예요. 손에 쥔 걸 잃지 않으려는 마음이 앞서다 보니, 정작 더 소중한 관계나 기회 앞에서 계산이 앞서 망설이다 타이밍을 놓친 적이 있었을 거예요.',
+  재성:'가진 걸 지키려다가 정작 놓치고 싶지 않은 사람을 놓치는 순간이 있었을 수 있어요. 손에 쥔 걸 잃지 않으려는 마음이 앞서다 보니, 정작 더 소중한 관계나 기회 앞에서 계산이 앞서 망설이다 타이밍을 놓친 적이 있었을 수 있어요.',
   관성:'남의 기준에 맞추려다 정작 내가 뭘 원하는지 잊어버리는 순간이 반복됐을 수 있어요. 규칙과 평가에 예민한 만큼 "내가 원하는 것"보다 "남들이 기대하는 것"을 먼저 따르다가, 문득 스스로가 뭘 원했는지조차 헷갈리는 순간이 찾아오곤 해요.',
-  인성:'배우고 준비하는 데 시간을 너무 오래 쓰다가 정작 시작할 타이밍을 놓치는 패턴이 있었을 거예요. 충분히 준비됐다고 느낄 때까지 기다리는 성향이 강해서, 남들은 이미 시작한 일을 여전히 준비만 하고 있는 스스로를 발견하곤 해요.'
+  인성:'배우고 준비하는 데 시간을 너무 오래 쓰다가 정작 시작할 타이밍을 놓치는 패턴이 있었을 수 있어요. 충분히 준비됐다고 느낄 때까지 기다리는 성향이 강해서, 남들은 이미 시작한 일을 여전히 준비만 하고 있는 스스로를 발견하곤 해요.'
 };
 PB.sipseongLine = { // 대운 십성 서술(과거) 10종
-  비견:'또래나 동료와 어깨를 나란히 하며 스스로의 힘을 시험하던 시기였을 거예요. 경쟁이든 협력이든 나와 비슷한 위치의 사람들과 부대끼며 스스로의 실력을 가늠해보던 시기였고, 그 안에서 은근한 자립심이 자라났을 거예요.',
-  겁재:'가진 걸 나누거나 뜻밖의 경쟁에 부딪히며 마음을 다잡아야 했던 시기였을 거예요. 예상 못한 순간에 누군가와 겹치거나 부딪히는 일이 잦았을 텐데, 그 과정에서 내 것과 남의 것을 구분하는 감각이 단단해졌을 거예요.',
-  식신:'하고 싶은 걸 편안하게 풀어내며 스스로에게 여유를 허락하던 시기였을 거예요. 결과를 크게 의식하지 않고 좋아하는 걸 편하게 풀어냈던 시기라, 돌아보면 마음의 여유가 가장 풍요로웠던 구간 중 하나였을 거예요.',
-  상관:'틀을 깨고 싶은 마음이 유독 커서, 부딪히더라도 하고 싶은 말은 하고 살았던 시기였을 거예요. 정해진 틀에 순응하기보다 스스로의 방식을 고집했던 시기라, 마찰도 있었겠지만 그만큼 자기 색깔을 뚜렷하게 다진 시간이었을 거예요.',
-  편재:'여러 기회가 스치듯 지나가며 활동 반경이 넓어지던 시기였을 거예요. 한자리에 머물기보다 여기저기 발을 넓히며 다양한 사람과 기회를 만났던 시기라, 그 경험들이 지금의 시야를 넓혀준 자산이 됐을 거예요.',
-  정재:'차곡차곡 쌓아가는 재미를 알아가며 안정을 다지던 시기였을 거예요. 화려하진 않아도 꾸준히 쌓아올린 결과가 눈에 보이기 시작하면서, 안정이라는 감각을 처음으로 제대로 느꼈던 시기였을 거예요.',
-  편관:'예상 밖의 압박이나 긴장 속에서도 맷집을 키워야 했던 시기였을 거예요. 만만치 않은 상황들이 연달아 찾아왔겠지만, 그걸 하나씩 통과하면서 웬만한 일엔 흔들리지 않는 맷집이 붙었을 거예요.',
-  정관:'책임과 역할이 늘어나며 스스로를 증명해야 했던 시기였을 거예요. 주어진 역할이 무거워지는 만큼 스스로를 증명해야 하는 순간이 잦았을 텐데, 그 과정에서 신뢰라는 자산을 착실히 쌓았을 거예요.',
-  편인:'혼자 생각에 잠기는 시간이 늘고, 남과 다른 시선으로 세상을 보던 시기였을 거예요. 남들과는 다른 각도에서 세상을 바라보며 혼자만의 시간을 늘려간 시기라, 그 시선이 지금의 독특한 통찰력으로 이어졌을 거예요.',
-  정인:'누군가로부터 배우고 보호받으며 기반을 다지던 시기였을 거예요. 좋은 스승이나 배경의 도움을 받으며 기초를 단단히 다졌던 시기라, 지금 갖고 있는 실력의 상당 부분이 이때 뿌리내렸을 거예요.'
+  비견:'또래나 동료와 어깨를 나란히 하며 스스로의 힘을 시험하던 시기였을 수 있어요. 경쟁이든 협력이든 나와 비슷한 위치의 사람들과 부대끼며 스스로의 실력을 가늠해보던 시기였고, 그 안에서 은근한 자립심이 자라났을 거예요.',
+  겁재:'가진 걸 나누거나 뜻밖의 경쟁에 부딪히며 마음을 다잡아야 했던 시기였을 수 있어요. 예상 못한 순간에 누군가와 겹치거나 부딪히는 일이 잦았을 텐데, 그 과정에서 내 것과 남의 것을 구분하는 감각이 단단해졌을 거예요.',
+  식신:'하고 싶은 걸 편안하게 풀어내며 스스로에게 여유를 허락하던 시기였을 수 있어요. 결과를 크게 의식하지 않고 좋아하는 걸 편하게 풀어냈던 시기라, 돌아보면 마음의 여유가 가장 풍요로웠던 구간 중 하나였을 수 있어요.',
+  상관:'틀을 깨고 싶은 마음이 유독 커서, 부딪히더라도 하고 싶은 말은 하고 살았던 시기였을 수 있어요. 정해진 틀에 순응하기보다 스스로의 방식을 고집했던 시기라, 마찰도 있었겠지만 그만큼 자기 색깔을 뚜렷하게 다진 시간이었을 수 있어요.',
+  편재:'여러 기회가 스치듯 지나가며 활동 반경이 넓어지던 시기였을 수 있어요. 한자리에 머물기보다 여기저기 발을 넓히며 다양한 사람과 기회를 만났던 시기라, 그 경험들이 지금의 시야를 넓혀준 자산이 됐을 거예요.',
+  정재:'차곡차곡 쌓아가는 재미를 알아가며 안정을 다지던 시기였을 수 있어요. 화려하진 않아도 꾸준히 쌓아올린 결과가 눈에 보이기 시작하면서, 안정이라는 감각을 처음으로 제대로 느꼈던 시기였을 수 있어요.',
+  편관:'예상 밖의 압박이나 긴장 속에서도 맷집을 키워야 했던 시기였을 수 있어요. 만만치 않은 상황들이 연달아 찾아왔겠지만, 그걸 하나씩 통과하면서 웬만한 일엔 흔들리지 않는 맷집이 붙었을 수 있어요.',
+  정관:'책임과 역할이 늘어나며 스스로를 증명해야 했던 시기였을 수 있어요. 주어진 역할이 무거워지는 만큼 스스로를 증명해야 하는 순간이 잦았을 텐데, 그 과정에서 신뢰라는 자산을 착실히 쌓았을 거예요.',
+  편인:'혼자 생각에 잠기는 시간이 늘고, 남과 다른 시선으로 세상을 보던 시기였을 수 있어요. 남들과는 다른 각도에서 세상을 바라보며 혼자만의 시간을 늘려간 시기라, 그 시선이 지금의 독특한 통찰력으로 이어졌을 거예요.',
+  정인:'누군가로부터 배우고 보호받으며 기반을 다지던 시기였을 수 있어요. 좋은 스승이나 배경의 도움을 받으며 기초를 단단히 다졌던 시기라, 지금 갖고 있는 실력의 상당 부분이 이때 뿌리내렸을 거예요.'
 };
-PB.daeunToneA = '돌아보면 힘들었던 순간도 있었겠지만, 그 시간이 지금을 만든 밑거름이었을 거예요. 그때는 왜 하필 나에게 이런 시기가 왔나 싶었을 수도 있지만, 지나고 보면 지금의 단단함 중 상당 부분이 그 시절에서 왔다는 걸 알게 될 거예요.';
+PB.daeunToneA = '돌아보면 힘들었던 순간도 있었겠지만, 그 시간이 지금을 만든 밑거름이었을 수 있어요. 그때는 왜 하필 나에게 이런 시기가 왔나 싶었을 수도 있지만, 지나고 보면 지금의 단단함 중 상당 부분이 그 시절에서 왔다는 걸 알게 될 거예요.';
 PB.daeunToneB = '그때는 몰랐어도, 지나고 보니 꼭 필요했던 시간이었다는 걸 알게 됐을 수도 있어요. 당시엔 의미를 알기 어려웠던 선택이나 사건도, 지금 돌아보면 결국 다음 단계로 넘어가기 위한 디딤돌이었다는 걸 깨닫게 되는 경우가 많아요.';
 PB.futureSipseongLine = { // 다가올 대운 십성 서술 10종 (과거와 결을 다르게, 미래형)
   비견:'앞으로는 혼자서도 단단히 설 수 있는 힘이 붙는 시기가 다가오고 있어요. 누군가에게 기대지 않아도 스스로 판단하고 밀고 나갈 수 있는 자신감이 자라나는 시기라, 독립적인 결정을 내려야 할 때 오히려 더 잘 풀릴 거예요.',
@@ -12873,18 +12935,18 @@ PB.futureSipseongLine = { // 다가올 대운 십성 서술 10종 (과거와 결
   정인:'앞으로는 배움과 지원이 자연스럽게 따라붙는 시기가 다가오고 있어요. 좋은 스승이나 기회, 배경의 도움을 받기 좋은 흐름이니, 배우고 싶었던 걸 미루지 말고 이 시기에 시작해보는 게 좋아요.'
 };
 /* 2026-09-22 — 지금 지나는 대운은 현재형으로 쓴다. 예전에는 과거형(sipseongLine)을 그대로 빌려 써서
-   '지나는 중이에요' 바로 뒤에 '시기였을 거예요'가 붙었다. */
+   '지나는 중이에요' 바로 뒤에 '시기였을 수 있어요'가 붙었다. */
 PB.currentDaeunLine = {
-  비견:'또래나 동료와 어깨를 나란히 하며 스스로의 힘을 시험하는 시기예요. 경쟁이든 협력이든 비슷한 위치의 사람들과 부대끼며 실력을 가늠하게 되고, 그 안에서 자립심이 자라요.',
-  겁재:'가진 걸 나누거나 뜻밖의 경쟁에 부딪히며 마음을 다잡아야 하는 시기예요. 누군가와 겹치거나 부딪히는 일이 잦을 수 있는데, 그 과정에서 내 것과 남의 것을 가르는 감각이 단단해져요.',
-  식신:'하고 싶은 걸 편안하게 풀어내며 스스로에게 여유를 허락하는 시기예요. 결과를 크게 의식하지 않고 좋아하는 걸 풀어내기 좋아서, 마음의 여유가 넉넉해지기 쉬워요.',
-  상관:'틀을 깨고 싶은 마음이 유독 커지는 시기예요. 정해진 틀에 맞추기보다 내 방식을 고집하게 되어 마찰도 생기지만, 그만큼 자기 색깔이 뚜렷해져요.',
-  편재:'여러 기회가 스치듯 지나가며 활동 반경이 넓어지는 시기예요. 한자리에 머물기보다 여기저기 발을 넓히게 되고, 다양한 사람과 기회를 만나며 시야가 넓어져요.',
-  정재:'차곡차곡 쌓아가는 재미를 알아가며 안정을 다지는 시기예요. 화려하진 않아도 꾸준히 쌓은 결과가 눈에 보이기 시작하고, 안정이라는 감각을 제대로 느끼게 돼요.',
-  편관:'예상 밖의 압박이나 긴장 속에서 맷집을 키우는 시기예요. 만만치 않은 상황이 이어질 수 있지만, 하나씩 통과하면서 웬만한 일엔 흔들리지 않는 단단함이 붙어요.',
-  정관:'책임과 역할이 늘어나며 스스로를 증명해야 하는 시기예요. 주어진 역할이 무거워지는 만큼 증명할 순간도 잦은데, 그 과정에서 신뢰가 착실히 쌓여요.',
-  편인:'혼자 생각에 잠기는 시간이 늘고, 남과 다른 시선으로 세상을 보게 되는 시기예요. 혼자만의 시간이 늘어나는 대신, 그 시선이 남다른 통찰로 이어져요.',
-  정인:'누군가에게 배우고 보호받으며 기반을 다지는 시기예요. 좋은 스승이나 배경의 도움을 받아 기초를 단단히 다지기 좋고, 여기서 뿌리내린 실력이 오래 가요.'
+  비견:'또래나 동료와 어깨를 나란히 하며 스스로의 힘을 시험하는 시기예요. 경쟁이든 협력이든 비슷한 위치의 사람들과 부대끼며 실력을 가늠하게 되고, 그 안에서 자립심이 자라요. 비교에 흔들리기보다, 이번 10년에 내 힘으로 해낼 목표 하나를 정해 두세요.',
+  겁재:'가진 걸 나누거나 뜻밖의 경쟁에 부딪히며 마음을 다잡아야 하는 시기예요. 누군가와 겹치거나 부딪히는 일이 잦을 수 있는데, 그 과정에서 내 것과 남의 것을 가르는 감각이 단단해져요. 돈이나 사람 문제로 겹칠 때는 선을 먼저 분명히 해 두세요.',
+  식신:'하고 싶은 걸 편안하게 풀어내며 스스로에게 여유를 허락하는 시기예요. 결과를 크게 의식하지 않고 좋아하는 걸 풀어내기 좋아서, 마음의 여유가 넉넉해지기 쉬워요. 좋아하는 일 하나를 꾸준히 이어 가는 습관을 만들어 보세요.',
+  상관:'틀을 깨고 싶은 마음이 유독 커지는 시기예요. 정해진 틀에 맞추기보다 내 방식을 고집하게 되어 마찰도 생기지만, 그만큼 자기 색깔이 뚜렷해져요. 하고 싶은 말은 하되, 전하는 방식만 한 번 다듬어 보세요.',
+  편재:'여러 기회가 스치듯 지나가며 활동 반경이 넓어지는 시기예요. 한자리에 머물기보다 여기저기 발을 넓히게 되고, 다양한 사람과 기회를 만나며 시야가 넓어져요. 기회가 많을수록 하나를 골라 끝까지 붙잡아 보세요.',
+  정재:'차곡차곡 쌓아가는 재미를 알아가며 안정을 다지는 시기예요. 화려하진 않아도 꾸준히 쌓은 결과가 눈에 보이기 시작하고, 안정이라는 감각을 제대로 느끼게 돼요. 쌓는 흐름을 지키려면 고정 지출부터 한 번 점검해 두세요.',
+  편관:'예상 밖의 압박이나 긴장 속에서 맷집을 키우는 시기예요. 만만치 않은 상황이 이어질 수 있지만, 하나씩 통과하면서 웬만한 일엔 흔들리지 않는 단단함이 붙어요. 버거울 때는 혼자 견디기보다 도움을 청하는 쪽을 택해 보세요.',
+  정관:'책임과 역할이 늘어나며 스스로를 증명해야 하는 시기예요. 주어진 역할이 무거워지는 만큼 증명할 순간도 잦은데, 그 과정에서 신뢰가 착실히 쌓여요. 맡은 일 하나를 끝까지 마무리하는 데 힘을 써 보세요.',
+  편인:'혼자 생각에 잠기는 시간이 늘고, 남과 다른 시선으로 세상을 보게 되는 시기예요. 혼자만의 시간이 늘어나는 대신, 그 시선이 남다른 통찰로 이어져요. 혼자 얻은 생각을 글이나 말로 한 번 꺼내 보세요.',
+  정인:'누군가에게 배우고 보호받으며 기반을 다지는 시기예요. 좋은 스승이나 배경의 도움을 받아 기초를 단단히 다지기 좋고, 여기서 뿌리내린 실력이 오래 가요. 배운 것을 바로 써먹을 자리를 하나 만들어 보세요.'
 };
 PB.saeunPattern = {
   hap:'게다가 올해는 타고난 사주와 짝이 맞아 떨어지는 기운(합)이 들어오는 해라, 새로운 인연이나 기회가 자연스럽게 스며들 가능성이 커요. 억지로 찾아 나서지 않아도 좋은 인연이나 기회가 자연스럽게 다가오는 흐름이니, 마음을 조금 열어두는 것만으로도 충분해요.',
@@ -12898,8 +12960,8 @@ PB.closingBase = {
 PB.closingFlavor = {
   비겁:'스스로의 힘으로 여기까지 온 걸 스스로 좀 더 인정해줘도 괜찮아요. 남들에게는 쉽게 인정받으면서 정작 스스로에게는 인색했을 텐데, 이제는 그 노력을 스스로도 알아줄 차례예요.',
   식상:'하고 싶은 말과 표현을 너무 오래 눌러두지 않았으면 해요. 마음속에 담아둔 이야기가 있다면, 완벽한 타이밍을 기다리기보다 지금이라도 조금씩 꺼내보는 연습을 시작해봐요.',
-  재성:'쌓아온 것들을 지키는 동시에, 가끔은 내려놓는 연습도 필요해요. 손에 쥔 걸 놓치지 않으려는 마음도 소중하지만, 가끔은 움켜쥔 손을 펴야 더 좋은 게 들어올 자리가 생긴다는 것도 기억해줘요.',
-  관성:'남의 기준 말고 스스로 세운 기준으로도 자신을 평가해 보셨으면 해요. 남들의 평가에 부응하느라 정작 스스로가 만족하는지는 잊고 지냈을 텐데, 이제는 스스로의 기준에서도 합격점을 줄 수 있는지 한 번쯤 물어봐줘요.',
+  재성:'쌓아온 것들을 지키는 동시에, 가끔은 내려놓는 연습도 필요해요. 손에 쥔 걸 놓치지 않으려는 마음도 소중하지만, 가끔은 움켜쥔 손을 펴야 더 좋은 게 들어올 자리가 생긴다는 것도 기억해 두세요.',
+  관성:'남의 기준 말고 스스로 세운 기준으로도 자신을 평가해 보셨으면 해요. 남들의 평가에 부응하느라 정작 스스로가 만족하는지는 잊고 지냈을 텐데, 이제는 스스로의 기준에서도 합격점을 줄 수 있는지 한 번쯤 물어봐 주세요.',
   인성:'이제는 배우기만 하지 말고, 배운 걸 세상에 꺼내볼 때예요. 충분히 준비된 순간은 생각보다 이미 지나 있을 수 있으니, 완벽을 기다리지 말고 지금 가진 것부터 세상에 꺼내보는 용기를 내봐요.'
 };
 PB.closingTail = '오늘을 만든 것도, 앞날을 만들어갈 것도 결국 스스로라는 걸 잊지 마세요.';
@@ -13046,7 +13108,7 @@ function buildReport13(profile, saju){
   var jaego = rel.samhap.length>0 || rel.banghap.length>0; // 간이: 지지 국(局)이 있으면 재고 흐름 있음으로 취급
   add('s7','금전운 · 재물운','M10 3 L10 17 M5 6 C5 6 6.5 5 10 5 C13.5 5 14.5 7 12 8 C9.5 9 6.5 10.5 9 12 C11 13 15 12.5 15 12.5',
     '<p>'+PB.moneyType[moneyKey]+'</p><p>'+PB.jaegoText[jaego?'yes':'no']+'</p><p>'+PB.moneyShingang[sg]+'</p><p>'+PB.moneyPsych[moneyKey]+'</p>'+
-    '<p>큰돈이 오가는 계약이나 투자 결정은 이 풀이가 아니라 반드시 실제 자료와 전문가 조언을 함께 참고해줘요 — 여긴 어디까지나 성향을 짚어보는 참고용이에요.</p>');
+    '<p>큰돈이 오가는 계약이나 투자 결정은 이 풀이가 아니라 반드시 실제 자료와 전문가 조언을 함께 참고해 주세요 — 여긴 어디까지나 성향을 짚어보는 참고용이에요.</p>');
 
   // 대운 목록 계산 (8·10~12 섹션 공용) — s8이 "다가올 대운"을 실제로 보므로 s8보다 먼저 구한다.
   var dw = null;
@@ -13082,7 +13144,7 @@ function buildReport13(profile, saju){
   var mostElem = counts.indexOf(maxCount);
   var healthHtml;
   if(mostElem !== weakestElem){
-    healthHtml = '<p>오행은 몸의 장부와도 이어진다고 봐요 — 전통 한의학에서는 목(木)은 간·담, 화(火)는 심장·소장, 토(土)는 비장·위장, 금(金)은 폐·대장, 수(水)는 신장·방광과 연결된다고 보거든요. '+josa(safeName,'은','는')+' 오행 중 <strong>'+ELEMENTS[mostElem]+'</strong> 기운이 가장 진해서 <strong>'+ELEM_ORGAN[mostElem]+'</strong> 쪽에 무리가 가기 쉽고, 반대로 가장 여린 <strong>'+ELEMENTS[weakestElem]+'</strong> 기운 쪽인 <strong>'+ELEM_ORGAN[weakestElem]+'</strong>도 평소보다 챙겨주면 좋아요. 이건 전통 오행 이론에 기반한 참고용 근사일 뿐 의학적 진단이 아니니, 몸 상태가 계속 안 좋다면 반드시 병원에 가서 정확한 진단을 받아야 해요.</p>';
+    healthHtml = '<p>오행은 몸의 장부와도 이어진다고 봐요 — 전통 한의학에서는 목(木)은 간·담, 화(火)는 심장·소장, 토(土)는 비장·위장, 금(金)은 폐·대장, 수(水)는 신장·방광과 연결된다고 보거든요. '+josa(safeName,'은','는')+' 오행 중 <strong>'+ELEMENTS[mostElem]+'</strong> 기운이 가장 진해서 <strong>'+ELEM_ORGAN[mostElem]+'</strong> 쪽을 평소보다 아껴 주면 좋다고 봐요. 반대로 가장 여린 <strong>'+ELEMENTS[weakestElem]+'</strong> 기운 쪽인 <strong>'+ELEM_ORGAN[weakestElem]+'</strong>도 평소보다 챙겨주면 좋아요. 이건 전통 오행 이론에 기반한 참고용 근사일 뿐 의학적 진단이 아니니, 몸 상태가 계속 안 좋다면 반드시 병원에 가서 정확한 진단을 받아야 해요.</p>';
   } else {
     healthHtml = '<p>오행은 몸의 장부와도 이어진다고 봐요 — 전통 한의학에서는 목(木)은 간·담, 화(火)는 심장·소장, 토(土)는 비장·위장, 금(金)은 폐·대장, 수(水)는 신장·방광과 연결된다고 보거든요. '+josa(safeName,'은','는')+' 오행 중 <strong>'+ELEMENTS[weakestElem]+'</strong> 기운이 가장 여려서 <strong>'+ELEM_ORGAN[weakestElem]+'</strong> 쪽을 평소보다 챙겨주면 좋아요. 이건 전통 오행 이론에 기반한 참고용 근사일 뿐 의학적 진단이 아니니, 몸 상태가 계속 안 좋다면 반드시 병원에 가서 정확한 진단을 받아야 해요.</p>';
   }
@@ -13115,6 +13177,7 @@ function buildReport13(profile, saju){
         '<p>'+pastMH.stageLine+'</p>'+
         '<p>'+pastMH.moneyLine+' '+pastMH.healthLine+'</p>';
     }
+    if(pastHtml) pastHtml += '<p class="mh-note">'+DAEUN_MH_NOTE+'</p>';
     add('s10','지나온 10년 흐름 · 대운','M2 10 L18 10 M14 6 L18 10 L14 14', pastHtml || '<p><strong>아직 첫 대운</strong>을 지나는 중이라, 지나온 대운 흐름은 다음 리포트에서 더 길게 짚어볼 수 있어요.</p>');
   } else {
     add('s10','지나온 10년 흐름 · 대운','M2 10 L18 10 M14 6 L18 10 L14 14', '<p><strong>아직 첫 대운 이전이거나 갓 지나는 시기</strong>라, 지나온 흐름보다 지금부터의 흐름이 더 중요한 때예요.</p>');
@@ -13135,6 +13198,7 @@ function buildReport13(profile, saju){
       '<p><strong>'+cur.startAge+'세부터 시작된 '+cur.ganji.text+'('+cur.ganji.textH+') 대운</strong>을 지나는 중이에요. '+PB.currentDaeunLine[curSip]+' '+daeunSeasonLine(curSip)+'</p>'+
       '<p>'+curMH.stageLine+'</p>'+
       '<p>'+curMH.moneyLine+' '+curMH.healthLine+'</p>'+
+      '<p class="mh-note">'+DAEUN_MH_NOTE+'</p>'+
       '<p>올해('+thisYear+'년, '+saeun.text+' 해)는 — '+PB.saeunPattern[saeunKey]+'</p>');
   }
 
@@ -13144,9 +13208,10 @@ function buildReport13(profile, saju){
     var nxtSip = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[nxt.ganji.stemIdx], SajuEngine.STEM_YY[nxt.ganji.stemIdx]);
     var nxtMH = daeunMoneyHealthLines(dayStemIdx, nxt.ganji, counts, curIdx+1); // v5-C: 기능5 타임라인과 동일한 함수 재사용(R16: slot=curIdx+1)
     add('s12','다가올 10년 · 대운','M10 18 L2 8 M6 4 L2 8 L6 12',
-      '<p><strong>'+nxt.startAge+'세부터 '+nxt.ganji.text+'('+nxt.ganji.textH+') 대운</strong>이 다가오고 있어요. '+PB.futureSipseongLine[nxtSip]+' '+(curIdx%2===0?PB.daeunToneA:PB.daeunToneB)+' '+daeunSeasonLine(nxtSip)+'</p>'+
+      '<p><strong>'+nxt.startAge+'세부터 '+nxt.ganji.text+'('+nxt.ganji.textH+') 대운</strong>이 다가오고 있어요. '+PB.futureSipseongLine[nxtSip]+' '+daeunSeasonLine(nxtSip)+'</p>'+
       '<p>'+nxtMH.stageLine+'</p>'+
-      '<p>'+nxtMH.moneyLine+' '+nxtMH.healthLine+'</p>');
+      '<p>'+nxtMH.moneyLine+' '+nxtMH.healthLine+'</p>'+
+      '<p class="mh-note">'+DAEUN_MH_NOTE+'</p>');
   } else {
     add('s12','다가올 10년 · 대운','M10 18 L2 8 M6 4 L2 8 L6 12',
       '<p><strong>지금 이후로도 대운은 계속 이어져요</strong>. 다음 리포트에서 그 다음 흐름을 이어서 짚어볼 수 있어요.</p>');
@@ -13248,7 +13313,7 @@ var MBTI_SUFFIX = {
   closing:[
     '오늘 이 풀이가 다 맞지 않아도 괜찮아, 그중 한두 줄만 마음에 남아도 충분해요.',
     '지금의 모습도, 앞으로 달라질 모습도 다 나다운 것이라는 걸 잊지 마세요.',
-    '이 성향은 고쳐야 할 문제가 아니라, 살면서 계속 다듬어가는 고유한 색깔이라는 것만 기억해줘요.'
+    '이 성향은 고쳐야 할 문제가 아니라, 살면서 계속 다듬어가는 고유한 색깔이라는 것만 기억해 두세요.'
   ]
 };
 /* v4-B 신규: 16유형 인지기능 스택(주기능-부기능-3차기능-열등기능) — 공개된 고정 이론표.
@@ -13296,7 +13361,7 @@ var MBTI_PB = {
     career:'규칙과 절차가 분명한 환경에서 <strong>가장 안정적으로 실력을 발휘</strong>해요. 반대로 원칙 없이 즉흥적으로 흘러가는 조직에서는 스트레스가 쉽게 쌓이니, 나만의 체계를 만들어두는 게 도움이 돼요.',
     money:'계획한 대로 차곡차곡 모으는 <strong>안정 지향형 소비</strong>를 선호해서, 충동구매보다 후회 없는 지출을 더 중요하게 여겨요.',
     relationship:'새로운 사람과 친해지는 데는 시간이 걸리지만, 한번 <strong>곁을 내준 사람에게는 끝까지 의리</strong>를 지켜요.',
-    stress:'감정을 잘 드러내지 않다가 한계에 다다르면 갑자기 말수가 줄어드는 게 번아웃 신호일 수 있어요. 그 신호를 알아챘다면 <strong>혼자 해결하려 하지 말고</strong> 잠시 멈춰줘요. 심리학에서 말하는 \'그립(grip)\' 현상인데, 눌러뒀던 <strong>Ne</strong>가 튀어나와 근거 없는 걱정과 상상에 휘둘리는 거예요. 그럴 땐 낯선 상상을 좇기보다 손에 잡히는 익숙한 루틴으로 돌아가는 게 가장 빠른 회복법이에요.',
+    stress:'감정을 잘 드러내지 않다가 한계에 다다르면 갑자기 말수가 줄어드는 게 번아웃 신호일 수 있어요. 그 신호를 알아챘다면 <strong>혼자 해결하려 하지 말고</strong> 잠시 멈춰 보세요. 심리학에서 말하는 \'그립(grip)\' 현상인데, 눌러뒀던 <strong>Ne</strong>가 튀어나와 근거 없는 걱정과 상상에 휘둘리는 거예요. 그럴 땐 낯선 상상을 좇기보다 손에 잡히는 익숙한 루틴으로 돌아가는 게 가장 빠른 회복법이에요.',
     growth:'가끔은 계획에 없던 선택도 스스로에게 허락해주는 연습이 필요해요. <strong>완벽하지 않아도 괜찮다는 감각</strong>을 조금씩 늘려가 봐요.',
     activities:'정해진 루틴 안에서 즐기는 취미(등산, 규칙적인 운동, 자료 정리 같은 것)가 유독 잘 맞을 거예요. <strong>몸을 움직이는 반복 활동</strong>이 마음을 가장 잘 정돈해줘요.',
     closing:'<strong>믿음직한 뚝심</strong>이 가장 큰 자산이에요. 그 힘을 스스로를 몰아붙이는 데만 쓰지 말고, 가끔은 스스로에게도 나눠줘요.'
@@ -13335,7 +13400,7 @@ var MBTI_PB = {
     stress:'혼자 문제를 다 해결하려다 벽에 부딪히는 게 번아웃 신호일 수 있어요. 그럴 땐 <strong>완벽하지 않은 도움도 받아들이는 연습</strong>이 필요해요. 심리학에서 말하는 \'그립(grip)\' 현상인데, 눌러뒀던 <strong>Se</strong>가 튀어나와 평소와 다른 충동적인 행동으로 이어지는 거예요. 그럴 땐 몸으로 부딪히기보다 익숙한 생각의 공간(혼자만의 시간)으로 잠시 물러나는 게 회복에 도움이 돼요.',
     growth:'논리 뒤에 감춰둔 감정을 <strong>가끔은 말로 꺼내보는 것</strong>부터 시작해봐요.',
     activities:'전략 게임, 독서, 혼자 몰입할 수 있는 프로젝트가 마음을 채워줄 거예요.',
-    closing:'<strong>멀리 보는 눈</strong>이 가장 큰 강점이에요. 그 눈으로 미래만이 아니라, 지금 스스로의 마음도 한 번씩 들여다봐줘요.'
+    closing:'<strong>멀리 보는 눈</strong>이 가장 큰 강점이에요. 그 눈으로 미래만이 아니라, 지금 스스로의 마음도 한 번씩 들여다봐 주세요.'
   },
   ISTP:{
     strengths:['<strong>문제가 생기면 침착하게 원리부터 파고드는 힘</strong>이 있어서, 위기 상황에서 오히려 더 빛나는 편이에요.','말보다 행동으로 증명하는 실용적인 감각이 있어요.','필요 없는 감정 소모 없이 효율적으로 움직여요.','이건 <strong>주기능인 Ti(내향 사고)</strong>가 스스로 납득할 때까지 논리를 파고들어 원리를 꿰뚫는 능력을 발휘하기 때문이에요.'],
@@ -13452,7 +13517,7 @@ var MBTI_PB = {
     career:'사람들과 협력하고 조율하는 역할에서 <strong>가장 빛나요</strong>. 혼자 고립되어 일해야 하는 환경에서는 유독 힘들어해요.',
     money:'주변 사람을 위한 소비에는 아끼지 않지만, <strong>자신을 위한 지출</strong>은 뒤로 미루는 편이에요.',
     relationship:'넓은 인간관계를 유지하면서도, 그 안의 사람들을 하나하나 진심으로 챙겨요.',
-    stress:'남을 챙기느라 정작 자기 마음을 못 챙기는 게 번아웃 신호일 수 있어요. 그럴 땐 <strong>잠시 혼자만의 시간</strong>을 스스로에게 허락해줘요. 심리학에서 말하는 \'그립(grip)\' 현상인데, 눌러뒀던 <strong>Ti</strong>가 튀어나와 사소한 논리 오류에 집착하게 되는 거예요. 그럴 땐 혼자 따지고 들기보다 믿는 사람과 마음을 나누는 대화로 돌아가는 게 회복에 도움이 돼요.',
+    stress:'남을 챙기느라 정작 자기 마음을 못 챙기는 게 번아웃 신호일 수 있어요. 그럴 땐 <strong>잠시 혼자만의 시간</strong>을 스스로에게 허락해 주세요. 심리학에서 말하는 \'그립(grip)\' 현상인데, 눌러뒀던 <strong>Ti</strong>가 튀어나와 사소한 논리 오류에 집착하게 되는 거예요. 그럴 땐 혼자 따지고 들기보다 믿는 사람과 마음을 나누는 대화로 돌아가는 게 회복에 도움이 돼요.',
     growth:'<strong>남의 인정 없이도 스스로를 인정하는 연습</strong>이 필요해요.',
     activities:'친한 사람들과의 모임, 함께 요리하기, 봉사활동이 마음을 채워줄 거예요.',
     closing:'<strong>따뜻한 온기</strong>가 가장 큰 힘이에요. 그 온기를 스스로에게도 나눠줘요.'
@@ -13547,7 +13612,7 @@ function buildMbtiReport16(profile){
 
   // 7. 금전관
   add('m7','금전관', MBTI_ICONS.river,
-    '<p>'+pb.money+'</p><p>'+pick('money')+'</p><p>다만 큰돈이 오가는 결정은 이 풀이가 아니라 실제 상황과 전문가 조언을 먼저 참고해줘요 — 여긴 성향을 짚어보는 참고용이에요.</p>');
+    '<p>'+pb.money+'</p><p>'+pick('money')+'</p><p>다만 큰돈이 오가는 결정은 이 풀이가 아니라 실제 상황과 전문가 조언을 먼저 참고해 주세요 — 여긴 성향을 짚어보는 참고용이에요.</p>');
 
   // 8. 인간관계 패턴
   add('m8','인간관계 패턴', MBTI_ICONS.field, '<p>'+pb.relationship+'</p><p>'+pick('relationship')+'</p>');
@@ -13822,7 +13887,7 @@ var TODAY_BASIS_VERSION = 3;
    붙이지 않아도 무슨 이야기인지 알 수 있어야 한다. 되돌리기 어려운 결정에는 보기를 든다
    (계약 · 큰 지출 · 중요한 답장) — "큰 결정"만으로는 무엇이 큰 결정인지 사람마다 다르다. */
 var TODAY_CAT_HIGH = {
-  total:  '전체적으로 순하게 흘러요. 미뤄 둔 일을 꺼내기에 나쁘지 않은 날이에요.',
+  total:  '전체적으로 순하게 흘러요. 해 오던 일을 차근차근 이어 가기 좋은 날이에요.',
   love:   '마음을 표현하거나 먼저 연락하기에 무리가 없어요.',
   money:  '돈 이야기를 꺼내거나 정리하기에 무난해요.',
   work:   '일과 공부는 잘 풀려요. 집중해야 하는 일이 있다면 오늘로 당겨서 하세요.',
@@ -14070,8 +14135,12 @@ function getTodayFortune(profile){
     var flavorKey = profile.mbti[ (ci + (seedBase >>> 2)) % 4 ];
     /* ★ 2026-09-01 — 문구 판이 바뀌었으면 저장된 문장을 그대로 쓰지 않고 다시 뽑는다.
        같은 씨앗에서 뽑으므로 뒤 문장은 그대로고, 앞 문장만 새 판으로 바뀐다. */
+    /* ★ 2026-10-16 — 문장은 그날 점수 구간에서 고른다(FORTUNE_PHRASES 위 설명).
+       성격유형 한마디는 총운·애정운·학업·직장운에만 붙인다 — 건강운에 "떠오르는 생각을 믿어 보세요"가 붙었었다. */
+    var band = todayBand(calc ? calc.scores[cat.key] : null);
+    var flav = (cat.key === 'health' || cat.key === 'money') ? '' : (MBTI_FLAVOR[ flavorKey ][ (ci < 4) ? 0 : 1 ] + ' ');
     var text = (prev && result.textV === TODAY_TEXT_VERSION) ? prev.text
-                    : (MBTI_FLAVOR[ flavorKey ][ (ci < 4) ? 0 : 1 ] + ' ' + seededPick(seed, FORTUNE_PHRASES[cat.key]));
+                    : (flav + seededPick(seed, FORTUNE_PHRASES[cat.key][band]));
     /* ★ 별점: 예전 `1 + (seed % 5)`(난수)를 버리고 계산된 점수에서 뽑는다.
        사주를 못 구해 계산이 안 되면(생년월일 정보 부족 등) 점수를 지어내지 않고
        stars를 null로 두어 화면이 "아직 계산할 수 없음"을 말하게 한다. */
@@ -15083,7 +15152,7 @@ function compatWeightSentence(res, head){
 
    종합 점수(res.combined)는 이 중 넷을 합친 값이고, 그 비중은 '어떤 사이인가'에 따라 다르다
    (COMPAT_RELATIONS 참고 — 친구 4:4:1:1 · 연인 3:5:1:1 · 직장 동료 5:3:1:1).
-   ※ '서로 부족한 걸 채워줘요'와 '하루 생활 리듬'을 합쳐 0.6:0.4로 묶은 것이 res.saju.score다.
+   ※ '서로 채워 주는 힘'와 '하루 생활 리듬'을 합쳐 0.6:0.4로 묶은 것이 res.saju.score다.
 
    ★ 2026-09-07 — 일지 점수표(buildSajuCompat). 앞 갈래가 이긴다.
      육합 90 · 삼합(반합) 88 · 방합(반합) 72 · 같은 글자 70 · 해당 없음 65 · 파 55 · 형 52 · 충 40
@@ -15092,19 +15161,19 @@ function compatWeightSentence(res, head){
      res.saju.score 범위는 43~91 그대로이고 값의 가짓수만 9 → 21로 늘었다.
 ===================================================================== */
 var COMPAT_METRICS = [
-  { key:'talk', label:'대화가 잘 통해요', src:'성격 유형',
+  { key:'talk', label:'대화가 통하는 정도', src:'성격 유형',
     pick:function(r){ return r.mbtiScore; },
     words:['말이 잘 통하는 편이에요','대화의 결이 무난히 맞아요','말이 어긋날 때가 있어요'] },
-  { key:'fill', label:'서로 부족한 걸 채워줘요', src:'사주 · 타고난 기운',
+  { key:'fill', label:'서로 채워 주는 힘', src:'사주 · 타고난 기운',
     pick:function(r){ return r.saju.elemScore60; },
     words:['한쪽이 비면 다른 쪽이 채워줘요','있는 그대로 편한 사이예요','서로 눌러 지치게 할 수 있어요'] },
-  { key:'rhythm', label:'하루 생활 리듬이 맞아요', src:'사주 · 생활 자리',
+  { key:'rhythm', label:'생활 리듬이 맞는 정도', src:'사주 · 생활 자리',
     pick:function(r){ return r.saju.branchScore; },
     words:['같이 지내는 하루가 잘 맞아요','맞춰가면 무난한 편이에요','생활 속도가 어긋나기 쉬워요'] },
-  { key:'calm', label:'곁에 있으면 편안해요', src:'사주 · 기운 균형',
+  { key:'calm', label:'곁에 있을 때 편안함', src:'사주 · 기운 균형',
     pick:function(r){ return r.elemScore; },
     words:['같이 있으면 기운이 편해요','무난하게 지낼 수 있어요','오래 붙어 있으면 지칠 수 있어요'] },
-  { key:'heal', label:'티격태격해도 금방 풀려요', src:'태어난 해(띠)',
+  { key:'heal', label:'다툰 뒤 풀리는 속도', src:'태어난 해(띠)',
     pick:function(r){ return r.zodScore; },
     words:['다퉈도 오래 끌지 않는 편이에요','풀리는 데 시간이 조금 걸려요','한 번 어긋나면 길어질 수 있어요'] }
 ];
@@ -15217,7 +15286,7 @@ var COMPAT_NICK = {
                 '🎼 같은 조로 연주하는 두 악기 같은 인연'],
     mixed:     ['🧩 모양은 다른데 딱 맞물리는 조각 같은 인연',
                 '🔐 서로가 서로의 열쇠인 인연',
-                '☕ 같은 속도로 식어가는 커피 같은 사이'],
+                '☕ 같은 온도로 오래 마시는 커피 같은 사이'],
     different: ['🧲 반대라서 더 붙는, 자석 같은 인연',
                 '🌗 낮과 밤이 만나 하루가 되는 인연',
                 '🧤 왼손과 오른손 장갑 같은 사이']
@@ -15257,12 +15326,12 @@ var COMPAT_NICK = {
   },
   '상극 인연': {
     same:      ['🥊 같은 자리를 두고 겨루는 사이',
-                '🪨 부딪히면 둘 다 깎이는 돌 같은 사이',
+                '🪨 부딪히며 서로를 다듬는 돌 같은 사이',
                 '🔁 매번 같은 지점에서 걸리는 사이'],
-    mixed:     ['🧊 얼음과 불, 만나면 둘 다 사라지는 인연',
-                '🧯 불이 나기 전에 미리 꺼야 하는 사이',
+    mixed:     ['🧊 녹는 온도가 달라 맞춰 갈 게 많은 인연',
+                '🧯 작은 불씨를 미리 알아채면 되는 사이',
                 '📡 채널을 맞춰야 겨우 들리는 사이'],
-    different: ['🌑 지구와 달만큼 떨어진 인연',
+    different: ['🌑 멀리서도 서로를 비추는 지구와 달 같은 인연',
                 '🈳 같은 말을 다른 뜻으로 쓰는 사이',
                 '🧭 나침반이 서로를 반대로 가리키는 사이']
   }
@@ -15322,7 +15391,7 @@ function buildCompatMetricBars(res){
 function buildCompatWhyPanel(p, r){
   /* ★ R84 — '왜 이런 결과가 나왔나요?'도 만든 사람 말투다(테스터 지적). 이 칸은 접혀 있는
      선택 항목이므로, 여는 사람이 스스로 궁금해서 누르는 말로 적는다. */
-  var fold = buildFoldPanel({id:'compatWhy', label:'점수가 어떻게 나왔는지 궁금하다면', openLabel:'다시 접기',
+  var fold = buildFoldPanel({id:'compatWhy', label:'점수 계산 근거 펼쳐 보기', openLabel:'다시 접기',
     regionLabel:'궁합 계산 근거'});
   var panel = fold.panel;
 
@@ -15330,12 +15399,12 @@ function buildCompatWhyPanel(p, r){
   /* R30 — 한 줄에 용어 버튼이 넷까지 들어가 있었다("두 사람 일간(日干) 오행 — 비화(같은 오행)").
      값은 그대로 두고 앞머리만 일상어로 바꾼다. 뒤에 붙는 용어(비화·육합 등)는 계산 결과라 남긴다. */
   var rows = [
-    ['대화가 잘 통해요', r.pA.mbti+' × '+r.pB.mbti+' 유형 대조 · '+r.res.mbtiScore+'점'],
-    ['서로 부족한 걸 채워줘요', '태어난 날의 윗글자끼리 — '+(r.res.saju.elemTerm||'정보 부족')+' · '+(r.res.saju.elemScore60!=null?r.res.saju.elemScore60+'점':'—')],
-    ['하루 생활 리듬이 맞아요', '태어난 날의 아랫글자끼리 — '+(r.res.saju.branchTerm||'정보 부족')+' · '+(r.res.saju.branchScore!=null?r.res.saju.branchScore+'점':'—')],
-    ['곁에 있으면 편안해요', '여덟 글자 중 가장 진한 기운 '+r.pA.element+' × '+r.pB.element+' · '+r.res.elemScore+'점'],
+    ['대화가 통하는 정도', r.pA.mbti+' × '+r.pB.mbti+' 유형 대조 · '+r.res.mbtiScore+'점'],
+    ['서로 채워 주는 힘', '태어난 날의 윗글자끼리 — '+(r.res.saju.elemTerm||'정보 부족')+' · '+(r.res.saju.elemScore60!=null?r.res.saju.elemScore60+'점':'—')],
+    ['생활 리듬이 맞는 정도', '태어난 날의 아랫글자끼리 — '+(r.res.saju.branchTerm||'정보 부족')+' · '+(r.res.saju.branchScore!=null?r.res.saju.branchScore+'점':'—')],
+    ['곁에 있을 때 편안함', '여덟 글자 중 가장 진한 기운 '+r.pA.element+' × '+r.pB.element+' · '+r.res.elemScore+'점'],
     /* ★ R85 — 예전에는 띠가 없으면 "띠 undefined × 소 · 65점"이라고 찍혔다(실측). */
-    ['티격태격해도 금방 풀려요',
+    ['다툰 뒤 풀리는 속도',
       (typeof r.res.zodScore === 'number')
         ? ('띠 '+(r.pA.zodiac||'?')+' × '+(r.pB.zodiac||'?')+' · '+r.res.zodScore+'점')
         : '태어난 해 정보가 없어 띠는 계산에서 뺐어요']
@@ -16103,7 +16172,7 @@ function buildTimeAdjustTable(spec){
             /* ★ 2026-08-31 점검 — 이 화면에서 이 문장만 합니다체였다('입니다' · '계산했습니다').
                같은 함수의 아래 갈래는 '계산했어요'다. 서비스 전체가 해요체다. */
             josaNum(ta.eff.minute,'이에요.','예요.')+' 이 시각으로 계산했어요.';
-    plain += changeWord ? (' 맞추지 않으면 '+changeWord) : ' 맞추지 않아도 결과는 같은 시각이에요.';
+    plain += changeWord ? (' 맞추지 않으면 '+changeWord) : ' 맞추지 않아도 시주는 그대로예요.';
   } else {
     plain = '지금은 맞추기를 꺼 두셔서, 입력하신 '+pad2(spec.hour)+':'+pad2(spec.minute)+'을 그대로 써서 계산했어요.';
     plain += changeWord ? (' 맞추기를 켜면 '+changeWord) : ' 맞추기를 켜도 결과는 같아요.';
@@ -16598,8 +16667,11 @@ function renderOnboarding(){
     if(!consentOk()) return;
     beginAfterConsent(invited ? 'invited' : null);
   }},[kakaoMark(17), '카카오로 로그인하기']);
+  /* ★ 2026-10-16 검수 — 잠긴 노란 단추가 배경처럼 흐려 왜 안 눌리는지 알 수 없었다. 체크 전에는 한 줄로 알려 준다. */
+  var startHint = el('p',{class:'section-sub', style:'text-align:center;margin:6px 0 0;'},['위 두 칸에 체크하면 눌러져요.']);
   function syncConsentUi(){
     var ok = consentOk();
+    startHint.style.display = ok ? 'none' : '';
     if(ok) startBtn.removeAttribute('disabled'); else startBtn.setAttribute('disabled','disabled');
     /* ★ R90 — 카드도 같이 열고 닫는다. 확인 전에 눌리면 안 물어본 것과 같다.
        ★ 2026-08-28 — disabled 대신 aria-disabled를 쓴다(위 onbCard 주석 참고). */
@@ -16628,6 +16700,7 @@ function renderOnboarding(){
      카카오 로그인으로 넘어가는 자리이기 때문이다(대표님 지시). 카드는 무엇을 볼지
      고르는 자리로 그대로 두고, 카드를 눌러도 같은 곳(beginAfterConsent)으로 간다. */
   wrap.appendChild(startBtn);
+  wrap.appendChild(startHint);
   /* ★ 2026-09-09 대표님 지시 — "카카오 브라우저에서 여는 상황 대비해서 안내가 있어야지
      않냐? 카카오로그인이 자동으로 된다고 해야지"
      ---------------------------------------------------------------------
@@ -16671,6 +16744,15 @@ function renderOnboarding(){
        그 자리에서 열 수 있어야 고지가 성립합니다. */
   wrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:6px;'},[
     '개인정보처리방침에 따라 개인정보가 수집·이용됩니다.'
+  ]));
+  /* ★ 2026-10-16 검수(대표님 "다 고쳐라") — 위 두 줄(대표님 문장)은 그대로 두고, 동의할 때 알아야 할 것
+     (받는 항목 · 보관 · 거부하면 · 메타 픽셀)을 쉬운 말로 한 덩이 더한다. 처리방침 제1조·제5조와 같은 내용이다. */
+  wrap.appendChild(el('p',{class:'biz-hint', style:'margin-top:6px;'},[
+    '받는 것: 닉네임·생년월일·성별·성격유형', el('br'),
+    '태어난 시각·출생지는 아는 경우만 받아요.', el('br'),
+    '계정에 보관하고 설정에서 지울 수 있어요.', el('br'),
+    '광고 성과를 재는 메타 픽셀을 써요.', el('br'),
+    '(설정에서 끌 수 있어요)'
   ]));
   var docRow = el('div',{style:'display:flex;gap:10px;justify-content:center;margin-top:4px;flex-wrap:wrap;'});
   docRow.appendChild(el('button',{class:'fl', type:'button', onclick:function(){ ROUTE='pricing'; render(); }},['상품과 가격']));
@@ -16901,7 +16983,7 @@ function renderSetupBirth(){
   });
   var dBody = dPick.node;
   var dField = setupField('생년월일',
-    SETUP._set.date ? (SETUP.year+'. '+SETUP.month+'. '+SETUP.day) : '숫자 여덟 자리', dBody,
+    SETUP._set.date ? (SETUP.year+'. '+SETUP.month+'. '+SETUP.day) : '예) 19900101', dBody,
     '숫자만 치시면 돼요. 1990년 1월 1일이면 19900101.');
   dateHeadVal = dField.querySelector('.inline-pick-val');
   box.appendChild(dField);
@@ -16949,12 +17031,22 @@ function renderSetupBirth(){
     tRow.appendChild(el('div',{},[hSel]));
     tRow.appendChild(el('div',{},[miSel]));
     tBody.appendChild(tRow);
+    /* ★ 2026-10-16 검수(체크리스트 '시진 함께 보여주기') — 고른 시각이 어느 시(時)에 드는지 바로 보여 준다.
+       시계 시각 기준(23시부터 자시)이다. 출생지에 맞춘 실제 시주는 3단계 확인 화면이 보여 준다. */
+    if(timePicked){
+      var bi = Math.floor(((SETUP.hour + 1) % 24) / 2);
+      var st = (bi * 2 + 23) % 24, en = (st + 2) % 24;
+      tBody.appendChild(el('p',{class:'section-sub', style:'margin:8px 0 0;'},
+        ['→ ' + HOUR_BRANCH_LABEL[bi] + ' (' + pad2(st) + ':00~' + pad2(en) + ':00) 무렵이에요. 경계 시각이면 3단계에서 태어난 곳에 맞춘 시주를 확인할 수 있어요.']));
+    }
   }
   tBody.appendChild(el('div',{class:'chk-row', style:'margin-top:10px;'},[
     el('input',{type:'checkbox', id:'timeUnknownInline', checked: SETUP.timeUnknown?'checked':null,
       onchange:function(e){ SETUP.timeUnknown=e.target.checked; SETUP._set.time=true; renderKeepScroll(); }}),
     el('label',{for:'timeUnknownInline'},['시간을 몰라요 (시주는 계산에서 빼요)'])
   ]));
+  if(SETUP.timeUnknown) tBody.appendChild(el('p',{class:'section-sub', style:'margin:6px 0 0;'},
+    ['시간을 모르면 출생지로 시각을 맞출 일이 없어서 출생지는 묻지 않아요.']));
   box.appendChild(setupField('태어난 시각',
     SETUP._set.time ? (SETUP.timeUnknown ? '시간 모름' : (pad2(SETUP.hour)+':'+pad2(SETUP.minute))) : '눌러서 고르기',
     tBody));
@@ -16967,7 +17059,7 @@ function renderSetupBirth(){
       onclick:function(){ SETUP.gender=pair[0]; SETUP._set.gender=true; renderKeepScroll(); }},[pair[1]]));
   });
   box.appendChild(setupField('성별',
-    SETUP._set.gender ? (SETUP.gender==='F'?'여자':'남자') : '눌러서 고르기', gSeg,
+    SETUP._set.gender ? (SETUP.gender==='F'?'여자':'남자') : '골라 주세요', gSeg,
     '10년 단위 흐름(대운)이 어느 방향으로 도는지를 정할 때 쓰여요. 잘못 고르면 흐름이 반대로 나와요.'));
 
   /* ── 출생지 ── 시간을 모르면 보정할 시각 자체가 없으므로 묻지 않는다 ── */
@@ -17041,7 +17133,7 @@ function renderSetupBirth(){
 function renderSetupMbti(){
   var box=el('div',{});
   box.appendChild(pageHead(SETUP.editId?'프로필 수정':'프로필 만들기', '성격유형을 골라주세요',
-    '알면 바로 고르고, 모르면 아래 8문항으로 알아볼 수 있어요.'));
+    '알면 바로 고르고, 모르면 아래에서 알아봐요.'));
 
   if(!SETUP.testMode){
     var grid=el('div',{class:'mbti-grid'});
@@ -17089,13 +17181,11 @@ function renderSetupMbti(){
   }
   box.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:12px;',
     disabled: SETUP.mbti?null:'disabled',
-    onclick:function(){ if(!SETUP.mbti) return; gotoSetupStep(3); }},['다음 · 확인하고 저장']));
+    onclick:function(){ if(!SETUP.mbti) return; gotoSetupStep(3); }},['다음 · 입력한 정보 확인']));
   box.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;',
     onclick:function(){ gotoSetupStep(1); }},['이전']));
   /* R20 — 이 단계에서 고른 값이 아직 저장된 것이 아니라는 사실을 분명히 적는다.
      (마법사 전체가 "작성 중인 사본"이고, 실제 저장은 3단계의 저장 버튼 한 번뿐이다.) */
-  box.appendChild(el('p',{class:'section-sub', style:'text-align:center;margin:8px 0 0;'},
-    ['여기서 고른 값은 아직 저장된 게 아니에요. 3단계에서 저장을 눌러야 반영돼요.']));
   box.appendChild(setupExitRow());
   return box;
 }
@@ -17140,6 +17230,15 @@ function computeSetupSaju(){
 function renderSetupStep3(){
   var box=el('div',{});
   box.appendChild(pageHead(SETUP.editId?'프로필 수정':'프로필 만들기', '이 정보가 맞나요?'));
+  /* ★ 2026-09-19 — 수정할 때는 이름 칸이 1단계 맨 위에 있다(renderSetupBirth 주석).
+     여기에 또 두면 같은 칸이 두 개가 된다. 만들 때만 이 자리에 둔다.
+     ★ 2026-10-16 검수 — 필수 칸이 진태양시 표 아래 맨 끝에 있어 못 보고 지나쳤다. 확인 화면 맨 위로 올렸다. */
+  if(!SETUP.editId){
+    box.appendChild(el('div',{class:'field'},[
+      el('label',{for:'profName'},['프로필 이름 (닉네임) · 필수']),
+      el('input',{type:'text',id:'profName',maxlength:'20',value:SETUP.name||'', placeholder:'예: 나, 민지 등', oninput:function(e){ SETUP.name=e.target.value; }})
+    ]));
+  }
   var computed = computeSetupSaju();
   if(!computed){
     box.appendChild(el('p',{class:'warn-box'},['입력한 음력 날짜를 변환할 수 없어요. 이전 단계로 돌아가 날짜를 다시 확인해주세요.']));
@@ -17187,14 +17286,6 @@ function renderSetupStep3(){
   }
   box.appendChild(tsCard);
 
-  /* ★ 2026-09-19 — 수정할 때는 이름 칸이 1단계 맨 위에 있다(renderSetupBirth 주석).
-     여기에 또 두면 같은 칸이 두 개가 된다. 만들 때만 이 자리에 둔다. */
-  if(!SETUP.editId){
-    box.appendChild(el('div',{class:'field'},[
-      el('label',{for:'profName'},['프로필 이름 (닉네임) · 필수']),
-      el('input',{type:'text',id:'profName',maxlength:'20',value:SETUP.name||'', placeholder:'예: 나, 민지 등', oninput:function(e){ SETUP.name=e.target.value; }})
-    ]));
-  }
 
   box.appendChild(el('p',{class:'section-sub', style:'margin:12px 0 0;'},
     [setupSaveHint()]));
@@ -17388,7 +17479,7 @@ function buildElemBars(counts){
   var wrap=el('div',{class:'elem-bars'});
   ELEMENTS.forEach(function(name,i){
     var row=el('div',{class:'elem-bar-row'});
-    row.appendChild(el('span',{class:'lbl'},[name, el('small',{},['('+ELEMENTS_H[i]+')'])]));
+    row.appendChild(el('span',{class:'lbl'},[el('span',{class:'lbl-ic copy-skip','aria-hidden':'true'},[ELEM_ICON[i]]), name, el('small',{},['('+ELEMENTS_H[i]+')'])]));   /* 2026-10-15 오행 아이콘 */
     var track=el('div',{class:'elem-bar-track'});
     track.appendChild(el('div',{class:'elem-bar-fill', style:'width:'+Math.round(counts[i]/total*100)+'%;background:'+ELEMENT_COLOR_ARR[i]+';'}));
     row.appendChild(track);
@@ -17466,7 +17557,7 @@ function buildTypedDateInput(o){
   var ok = !!o.isSet;
   var input = el('input',{ type:'tel', inputmode:'numeric', maxlength:'10',
     class:'biz-input', 'aria-label':(o.ariaLabel || '생년월일 여덟 자리'),
-    placeholder:'예) 1990-01-01', autocomplete:'bday',
+    placeholder:'예) 19900101', autocomplete:'bday',
     value: o.isSet ? (o.year+'-'+pad2(o.month)+'-'+pad2(o.day)) : '' });
   var msg = el('p',{class:'biz-hint', style:'margin-top:8px;', role:'status'},['']);
   function fail(text){
@@ -19206,7 +19297,7 @@ function renderHomeDash(p){
       top.appendChild(fig);
     }
     var head = el('div',{class:'hd-head'});
-    head.appendChild(el('p',{class:'hd-who'},[ownerLabel(p.name)+' 오늘']));
+    head.appendChild(el('p',{class:'hd-who'},[ownerLabel(p.name)+' 오늘 종합']));   /* 2026-10-16 검수 — 아래 '총운 81'과 다른 숫자라 '종합'을 밝힌다 */
     head.appendChild(el('div',{class:'hd-score', role:'img',
       'aria-label':'오늘의 종합 점수 '+fortune.overall+'점 (100점 만점)'},[
       el('b',{'aria-hidden':'true'},[String(fortune.overall)]),
@@ -19327,16 +19418,16 @@ function renderHomeDash(p){
   var sajuOpen = hasAccess(sajuProductId());
   var dayKey = saju ? charKeyForDayStem(saju) : null;
   var mbtiKey = charKeyForMbti(p.mbti);
-  menu.appendChild(hdCard({ chip:'나 1명', title:'내 사주 전체 풀이', sub:'성격·재물·건강 · 월별 운세 · 대운 구간',
+  menu.appendChild(hdCard({ chip:'나', title:'내 사주 전체 풀이', sub:'성격·재물·건강 · 월별 운세 · 대운 구간',
     price: sajuOpen ? '열려 있어요' : '자세히 보기', open:sajuOpen,
     art:[dayKey ? buildCharSvg(dayKey, 72, {gender:p.gender}) : null],
     go:function(){ setMode('self'); ROUTE='report13'; render(); } }));
   var mbtiOpen = hasAccess(PRODUCTS.mbti_full.id);
-  menu.appendChild(hdCard({ chip:'나 1명', title:'내 성격유형 풀이', sub:'강점·그림자·연애 스타일·관계 패턴',
+  menu.appendChild(hdCard({ chip:'나', title:'내 성격유형 풀이', sub:'강점·그림자·연애 스타일·관계 패턴',
     price: mbtiOpen ? '열려 있어요' : '자세히 보기', open:mbtiOpen,
     art:[mbtiKey ? buildCharSvg(mbtiKey, 72, {gender:p.gender}) : null],
     go:function(){ setMode('self'); ROUTE='mbtiReport'; render(); } }));
-  menu.appendChild(hdCard({ chip:'두 사람 · 여럿', title:'궁합 보기', sub:'링크 하나로 가족 · 친구 · 연인과',
+  menu.appendChild(hdCard({ chip:'둘이서 · 여럿이서', title:'궁합 보기', sub:'링크 하나로 가족 · 친구 · 연인과',
     price:'무료로 시작',
     art:[mbtiKey ? buildCharSvg(mbtiKey, 52, {gender:p.gender}) : null, buildCharSvg('mENFJ', 52, {gender:(p.gender==='F'?'M':'F')})],
     go:function(){ setMode('compat'); ROUTE='compat'; render(); } }));
@@ -19399,7 +19490,7 @@ function renderLandingIntro(){
   if(p){
     view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:14px;', onclick:function(){
       setMode('self'); ROUTE='today'; render();
-    }},[ownerLabel(p.name)+' 오늘의 운세 바로 보기']));
+    }},[ownerLabel(p.name)+' 오늘 운세 바로 보기']));
   }
   main.appendChild(autoTermify(view));
 }
@@ -19557,7 +19648,7 @@ function renderHome(){
      둘 다 맞는 값이지만 앞의 것을 그냥 "○ 기운"이라고만 쓰면
      같은 화면에서 두 줄이 서로 다른 오행을 말하는 것처럼 읽힌다(실제로 그렇게 보였다).
      그래서 값은 그대로 두고 무엇을 센 값인지 문장에 밝힌다. */
-  view.appendChild(screenHead(ownerLabel(p.name)+' 오늘의 운세', {right: todayStr()}));
+  view.appendChild(screenHead(ownerLabel(p.name)+' 오늘 운세', {right: todayStr()}));
 
   /* 시안의 히어로 — 일진 동그라미 · 한 줄 제목 · 설명 한 줄. */
   var hero = el('div',{class:'today-hero stamp-in'});
@@ -19683,15 +19774,20 @@ function renderHome(){
     if(item.why) card.appendChild(buildNoteFold('근거 보기', [item.why]));
     else if(item.stars == null) card.appendChild(buildNoteFold('근거 보기',
       ['생년월일시 정보가 모자라 오늘 일진과 맞대어 볼 수 없었어요. 설정에서 태어난 정보를 채우면 점수가 계산돼요.']));
+    /* ★ 2026-10-16 검수 — 건강·금전 카드에 참고용 고지 한 줄 */
+    if(cat.key === 'health') card.appendChild(el('p',{class:'mh-note copy-skip'},['참고용 운세예요. 몸이 계속 불편하면 진료를 받아 보세요.']));
+    if(cat.key === 'money') card.appendChild(el('p',{class:'mh-note copy-skip'},['참고용 운세예요. 큰돈이 오가는 결정은 실제 자료와 전문가 조언을 함께 보세요.']));
     view.appendChild(card);
   });
 
   var luckyCard=el('div',{class:'scroll-card'});
-  luckyCard.appendChild(el('p',{class:'card-eyebrow'},['오늘의 행운']));
+  /* ★ 2026-10-16 — 행운 아이템·색은 계산 근거가 없는 재미 요소다. 근거가 있는 듯 읽히지 않게 '재미로 보는'을 밝히고,
+     경고처럼 보이던 붉은 테두리 배지를 옅은 회색 알약(.badge-soft)으로 바꿨다. */
+  luckyCard.appendChild(el('p',{class:'card-eyebrow'},['재미로 보는 오늘의 행운']));
   luckyCard.appendChild(el('h3',{},['오늘 곁에 두면 좋은 것']));
   var badges=el('div',{class:'badge-row'});
-  badges.appendChild(el('span',{class:'badge'},['행운 아이템 · '+fortune.luckyItem]));
-  badges.appendChild(el('span',{class:'badge'},['행운 색상 · '+fortune.luckyColor]));
+  badges.appendChild(el('span',{class:'badge badge-soft'},['행운 아이템 · '+fortune.luckyItem]));
+  badges.appendChild(el('span',{class:'badge badge-soft'},['행운 색상 · '+fortune.luckyColor]));
   luckyCard.appendChild(badges);
   view.appendChild(luckyCard);
 
@@ -19791,6 +19887,7 @@ function renderReport(){
         ? '같은 속도로 일을 매듭짓는지, 같은 눈으로 정보를 보는지를 무겁게 봤어요.'
         : '서로의 빈자리를 채워 주는지, 말이 통하는지를 무겁게 봤어요. 궁합 화면의 성격유형 점수와 같은 값이에요.';
       listBox.innerHTML = '';
+      var usedWhy = {};   /* ★ 2026-10-16 — 한 목록 안에서 같은 이유를 두 번 쓰지 않는다 */
       rankOf(work ? MBTI_WORK_MATRIX : MBTI_MATRIX).forEach(function(it, i){
         var row2 = el('div',{class:'fit-row good rank'+(i===0?' first':'')});
         row2.appendChild(el('div',{class:'fit-top'},[
@@ -19801,7 +19898,7 @@ function renderReport(){
           ]),
           el('span',{class:'fit-score'},[it.v+'점'])
         ]));
-        row2.appendChild(el('div',{class:'fit-why'},[mbtiFitReason(p.mbti, it.t, work ? 'work' : 'love')]));
+        row2.appendChild(el('div',{class:'fit-why'},[mbtiFitReason(p.mbti, it.t, work ? 'work' : 'love', usedWhy)]));
         row2.appendChild(el('div',{class:'fit-bar','aria-hidden':'true'},[
           el('i',{style:'width:'+Math.max(0,Math.min(100,it.v))+'%;'})
         ]));
@@ -19886,6 +19983,16 @@ function buildAdvice(mbti){
    다섯 기운 막대 바로 아래에 '넘치는 기운 / 모자란 기운'을 풀어 쓴다. 무료다.
    ★ 목록은 ul/li 로 짠다 — [이 화면 글 전체 복사](copyPackRows)가 li 마다 가운뎃점을 붙인다.
    ★ 결제 전이면 끝에 한 줄 끊고 풀이로 보낸다. 그 줄이 말하는 것(돈·연애·달마다)은 사주 풀이에 실제로 있다. */
+/* ★ 2026-10-16 검수 — 넘치는 기운과 모자란 기운의 문장이 서로 반대로 읽히는 짝이 있었다.
+   예) 흙이 넘치고 물이 없음: '결정이 느려질 수 있어요' 바로 아래 '급하다는 말을 들을 수 있어요'.
+   두 기운이 함께 있을 때 실제로 어떻게 겹쳐 보이는지로 모자란 기운 문장만 바꿔 쓴다.
+   ★ ELEM_PROFILE 의 문장은 AI 재료(elementReading)라 고치면 저장 열쇠가 바뀐다 — 화면 문장만 여기서 덮는다. */
+var ELEM_LACK_VIEW = {
+  '2-4':'고민은 오래 하는데, 막상 정하고 나면 한 박자 쉬지 않고 밀어붙이는 쪽으로 기울 수 있어요. 그 순간 놓치는 게 생기기 쉬워요.',
+  '1-0':'마음은 금방 달아오르는데, 정작 새로 시작하는 첫발은 오래 망설이는 편이에요.',
+  '3-0':'기준은 분명한데, 처음 벌이는 일 앞에서는 첫발이 무거운 편이에요. 정해진 일은 잘 해내지만 새 일은 오래 재요.',
+  '0-4':'일단 움직이고 보는 힘이 센 만큼, 멈춰서 한 번 거르는 힘이 약해요. 서두르다 놓치는 게 생길 수 있어요.'
+};
 function buildElemReading(saju, unlocked){
   try{
     var f = elemReadFacts(saju);
@@ -19898,14 +20005,14 @@ function buildElemReading(saju, unlocked){
       box.appendChild(ul);
     }
     if(f.many){
-      part('good', '넘치는 기운 · ' + elemLabel(f.strongest) + ' ' + f.strongCount + '개', [S.trait, S.shadow]);
+      part('good', ELEM_ICON[f.strongest] + ' 넘치는 기운 · ' + elemLabel(f.strongest) + ' ' + f.strongCount + '개', [S.trait, S.shadow]);
     } else {
-      part('good', '가장 진한 기운 · ' + elemLabel(f.strongest) + ' ' + f.strongCount + '개', [S.trait]);
+      part('good', ELEM_ICON[f.strongest] + ' 가장 진한 기운 · ' + elemLabel(f.strongest) + ' ' + f.strongCount + '개', [S.trait]);
     }
     if(f.lack !== f.strongest){
       var others = f.missing.filter(function(i){ return i !== f.lack; }).map(elemLabel);
-      part('care', '모자란 기운 · ' + elemLabel(f.lack) + ' ' + (f.lackCount === 0 ? '없음' : f.lackCount + '개'),
-        [L.lack, '채우는 법 — ' + L.fill,
+      part('care', ELEM_ICON[f.lack] + ' 모자란 기운 · ' + elemLabel(f.lack) + ' ' + (f.lackCount === 0 ? '없음' : f.lackCount + '개'),
+        [(ELEM_LACK_VIEW[f.strongest + '-' + f.lack] || L.lack), '채우는 법 — ' + L.fill,
          others.length ? ('그 밖에 ' + others.join(' · ') + ' 기운도 사주에 없어요.') : '']);
     }
     if(!unlocked){
@@ -19937,9 +20044,18 @@ function renderSaju(){
   /* ★ 2026-09-07 — 캐릭터 위에 한 줄 별명. 아래 '기운이에요' 줄과 다른 것을 말한다(비유). */
   var myNick = personNickname(saju);
   if(myNick) view.appendChild(el('p',{class:'nick-line'},[myNick]));
+  /* ★ 2026-10-16 검수(체크리스트 '한 줄 요약 + 키워드 3개') — 새 계산 없이 이미 있는 판정(가장 진한 기운 ·
+     모자란 기운 · 신강/신약)을 칩 셋으로 먼저 보여 준다. 자세한 풀이는 아래 다섯 기운 카드에 있다. */
+  try{
+    var kf = elemReadFacts(saju), kw = el('div',{class:'kw-chips'});
+    kw.appendChild(el('span',{},[ELEM_ICON[kf.strongest]+' '+ELEM_PROFILE[kf.strongest].name+' 기운이 가장 진함']));
+    if(kf.lack !== kf.strongest) kw.appendChild(el('span',{},[ELEM_ICON[kf.lack]+' '+ELEM_PROFILE[kf.lack].name+' 기운 '+(kf.lackCount===0?'없음':'옅음')]));
+    kw.appendChild(el('span',{},[sinGangJak(saju)==='strong' ? '💪 스스로 버티는 힘이 센 편' : '🤝 곁의 도움으로 커지는 편']));
+    view.appendChild(kw);
+  }catch(e){}
   if(dayCharKey){
     view.appendChild(buildCharHero(dayCharKey, 118,
-      '태어난 날의 나를 가리키는 글자, 일간 '+saju.day.stem+'('+saju.day.stemH+')의 기운이에요. 전체는 캐릭터 도감에서 볼 수 있어요.'));
+      '태어난 날의 나를 가리키는 글자, 일간 '+saju.day.stem+'('+saju.day.stemH+')의 기운을 그린 캐릭터예요. 다섯 기운 캐릭터는 캐릭터 도감에서 다 볼 수 있어요.'));
   }
 
   var pillarCard=el('div',{class:'scroll-card stamp-in'});
@@ -20016,17 +20132,18 @@ function renderSaju(){
     li.appendChild(Array.isArray(body) ? el('span',{class:'dw-txt'},body) : el('span',Object.assign({class:'dw-txt'},body)));
     peakList.appendChild(li);
   }
-  dwRow('best','가장 큰 때',{html:'이 계산으로는 <strong>'+dwBest.startAge+'세~'+dwBest.endAge+'세</strong>가 기운이 가장 크게 열리는 구간이에요. 정해진 결과가 아니라, 아래 네 가지만 놓고 봤을 때 상대적으로 높다는 뜻이에요.'});
+  dwRow('best','가장 큰 때',{html:'이 계산으로는 <strong>'+dwBest.startAge+'세~'+dwBest.endAge+'세</strong>의 기운이 가장 커요. 정해진 결과가 아니라, 아래 네 가지만 놓고 봤을 때 상대적으로 높다는 뜻이에요.'});
   /* ★ 2026-10-04 QA — [지금] 칩 · '지금은' · '지금 지나는 구간'으로 '지금'이 세 번 겹쳤다. 나이는 구간 첫해와 다를 때만 붙인다. */
   dwRow('now','지금',[dwCur.startAge+'세~'+dwCur.endAge+'세 구간(강도 '+dwCur.total+')을 지나고 있어요'+(ageNow !== dwCur.startAge ? ' (올해 '+ageNow+'세)' : '')+'.'+
-    (dwStr.bestIdx===curIdx ? ' 기운이 가장 크게 열리는 바로 그 구간이에요.' : (dwStr.bestIdx>curIdx ? ' 가장 큰 구간은 아직 앞에 있어요.' : ' 가장 큰 구간은 이미 지나온 자리예요.'))]);
+    (dwStr.bestIdx===curIdx ? ' 바로 지금이 가장 큰 구간이에요.' : (dwStr.bestIdx>curIdx ? ' 가장 큰 구간은 아직 앞에 있어요.' : ' 가장 큰 구간은 이미 지나온 자리예요.'))]);
   /* 전체 최고 구간이 이미 지나갔거나 지금이면, 앞으로 남은 구간 중 가장 큰 곳도 함께 알려준다.
      "가장 컸던 때는 이미 지났다"만 남기면 정작 알고 싶은 다음 자리가 안 보인다. */
   if(dwStr.bestIdx <= curIdx && curIdx < dwStr.list.length-1){
     var aheadIdx = curIdx+1;
     for(var ai=curIdx+2; ai<dwStr.list.length; ai++){ if(dwStr.list[ai].total > dwStr.list[aheadIdx].total) aheadIdx = ai; }
     var ah = dwStr.list[aheadIdx];
-    dwRow('next','다음',['앞으로 남은 구간 중에서는 '+ah.startAge+'세~'+ah.endAge+'세(강도 '+ah.total+')가 가장 크게 열리는 편이에요.']);
+    /* ★ 2026-10-16 검수 — 지금보다 낮은 구간인데 '가장 크게 열리는 편'이라 적혀 그래프(내려가는 선)와 어긋났다. */
+    dwRow('next','다음',['앞으로 남은 구간 중에서는 '+ah.startAge+'세~'+ah.endAge+'세(강도 '+ah.total+')가 가장 높아요'+(ah.total < dwCur.total ? '. 지금보다는 조금 낮아요.' : '.')]);
   }
   dwCard.appendChild(peakBox);
   dwCard.appendChild(buildDaeunFlowSvg(dwStr, curIdx, ageNow));
@@ -20037,7 +20154,7 @@ function renderSaju(){
   var dwUnlocked = sajuDetailUnlocked();
   dwCard.appendChild(el('p',{class:'section-sub', style:'margin-top:14px;'},[ dwUnlocked
     ? '구간을 탭하면 그 시기의 흐름·금전운·건강운을 자세히 볼 수 있어요.'
-    : '구간마다의 두 글자와 나에게 어떤 자리인지, 기운 강도는 모두 볼 수 있어요. 구간을 눌렀을 때 나오는 자세한 풀이는 지금 지나는 구간을 열어두었어요.' ]));
+    : '구간마다의 두 글자와 나에게 어떤 자리인지, 기운 강도는 모두 볼 수 있어요. 구간을 누르면 나오는 자세한 풀이는 지금 지나는 구간만 미리 열어 두었어요.' ]));
   /* 위 문장은 "어디까지 무료인가"를 말한다 — 결제 전에 반드시 보여야 하므로 접지 않는다. */
   var scroll=el('div',{class:'daewoon-scroll'});
   dw.list.forEach(function(item,i){
@@ -20065,7 +20182,8 @@ function renderSaju(){
         /* 2026-09-22 — 지나온 구간은 과거형, 지금 구간은 현재형, 다가올 구간은 미래형. 예전엔 전부 과거형이었다. */
         el('p',{},[(i<curIdx ? PB.sipseongLine : (i===curIdx ? PB.currentDaeunLine : PB.futureSipseongLine))[sipName]]),
         el('p',{html: mh.stageLine}),
-        el('p',{html: mh.moneyLine+' '+mh.healthLine})
+        el('p',{html: mh.moneyLine+' '+mh.healthLine}),
+        el('p',{class:'mh-note'},[DAEUN_MH_NOTE])
       ]);
       openModal(item.startAge+'세부터 10년 흐름 · '+item.ganji.text+'('+item.ganji.textH+')', autoTermify(body), [{label:'닫기',cls:'btn-ghost',onclick:closeModal}]);
     }});
@@ -20114,6 +20232,28 @@ function renderSaju(){
   /* ★ 2026-10-04 대표님 지시(UI 개선) — 잠금 카드가 대운 카드 안에 들어가 있어(상자 속 상자) 320 폭에서
        글이 많이 접혔다. 카드 바로 아래로 꺼낸다. */
   if(dBlock) view.appendChild(dBlock);
+
+  /* ★ 2026-10-16 검수(체크리스트 '대운과 세운을 가로 타임라인으로, 지금 위치 표시') — 해마다의 흐름(세운) 띠.
+     새 점수는 없다. 그해 두 글자와, 그 윗글자가 나에게 어떤 자리(십성)인지만 적는다. 올해를 가운데로 끌어온다. */
+  try{
+    var syNow = (new Date()).getFullYear();
+    var syCard = sectionCard(['해마다 바뀌는 흐름 · 세운'], ['올해를 가운데 두고 앞뒤 해의 기운을 나란히 놓았어요. 달마다 자세한 흐름은 월별 운세에 있어요.']);
+    var syScroll = el('div',{class:'daewoon-scroll'});
+    for(var sy = syNow - 2; sy <= syNow + 4; sy++){
+      var sg = SajuEngine.saeunPillar(sy);
+      var ssName = SajuEngine.sipseongOf(saju.day.stemIdx, SajuEngine.STEM_ELEM[sg.stemIdx], SajuEngine.STEM_YY[sg.stemIdx]);
+      syScroll.appendChild(el('div',{class:'daewoon-item'+(sy===syNow?' current':'')},[
+        el('div',{class:'age'},[(sy===syNow?'올해 ':'')+sy]),
+        el('div',{class:'gz'},[sg.text]),
+        el('div',{class:'ss'},[termMini(ssName)]),
+        el('div',{class:'ss-term'},[ssName + ' · ' + (sy - p.year + 1) + '세'])
+      ]));
+    }
+    syCard.appendChild(syScroll);
+    view.appendChild(syCard);
+    setTimeout(function(){ try{ var c = syScroll.querySelector('.current'); if(c && syScroll.scrollWidth > syScroll.clientWidth)
+      syScroll.scrollLeft = Math.max(0, c.offsetLeft - (syScroll.clientWidth - c.offsetWidth)/2); }catch(e){} }, 0);
+  }catch(e){ console.warn('세운 띠 실패', e); }
 
   view.appendChild(circleCTA(CTA_ICON.arrow, '내 사주 풀이 읽어보기', function(){ ROUTE='report13'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ ROUTE='monthlyFortune'; render(); }},['올해 월별 운세 보기']));
@@ -20173,7 +20313,7 @@ function renderMonthlyFortune(){
     : (previewMonth>0
         /* ★ R52 — '무료/유료'로 나눠 말하지 않는다(대표님 지시). 값은 버튼에 적혀 있어 다들 안다.
            여기서는 '무엇을 볼 수 있는지'만 말한다. */
-        ? '달마다의 두 글자(간지)와 총운 별점은 모두 볼 수 있어요. 상세 다섯 가지(총운·애정운·금전운·학업·직장운·건강운)는 이번 '+previewMonth+'월을 열어두었어요.'
+        ? '달마다의 두 글자(간지)와 총운 별점은 모두 볼 수 있어요. 총운·애정운·금전운·학업·직장운·건강운 자세한 풀이는 이번 달('+previewMonth+'월)만 미리 열어 두었어요.'
         : '달마다의 두 글자(간지)와 총운 별점은 모두 볼 수 있어요.') )}));
 
   if(mf.daeunIntro){
@@ -20217,7 +20357,7 @@ function renderMonthlyFortune(){
     /* role='img'가 없으면 낭독기가 div의 aria-label을 무시할 수 있다.
        안의 '★'은 aria-hidden이라, role이 빠지면 점수가 통째로 안 읽힌다. */
     box.appendChild(el('div',{class:'mc-st', role:'img', 'aria-label':'운세 '+mo.stars+'점 (5점 만점)'},[
-      el('span',{'aria-hidden':'true'},[mo.stars+'★'])
+      el('span',{'aria-hidden':'true'},['★'.repeat(mo.stars)+'☆'.repeat(Math.max(0,5-mo.stars))])
     ]));
     grid.appendChild(box);
   });
@@ -20376,7 +20516,7 @@ function buildYearPicker(){
   wrap.appendChild(el('p',{class:'biz-hint', style:'margin:0 0 16px;'},[
     hasAccess(sajuProductId())
       ? VIEW_YEAR + '년 풀이는 열려 있어요. 다른 해는 그 해마다 따로 결제가 필요해요.'
-      : '해마다 흐름이 달라서 ' + VIEW_YEAR + '년 풀이는 따로 결제가 필요해요. 한 번 구매하면 해당 년도 사주는 그대로 다시 볼 수 있어요.'
+      : '해마다 흐름이 달라서 ' + VIEW_YEAR + '년 풀이는 따로 결제가 필요해요. 한 번 구매하면 해당 연도 사주는 그대로 다시 볼 수 있어요.'
   ]));
   return wrap;
 }
@@ -20415,7 +20555,7 @@ function renderReport13(){
   sumCard.appendChild(buildPillarTable(saju));
   view.appendChild(sumCard);
 
-  view.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openShareModal('saju', p, saju); }},['이 풀이 요약 카드로 저장하기']));
+  view.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ openShareModal('saju', p, saju); }},['이 풀이 요약 카드로 저장하기']));
   view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   view.appendChild(glossaryLinkButton());
   main.appendChild(autoTermify(view));
@@ -20457,15 +20597,9 @@ function renderMbtiReport13(){
     function(id){ return id==='m5' ? buildLoveLensTables(mbtiLoveCounts, p.mbti) : ''; },
     buildMbtiHook(p));
 
-  var badgeCard = sectionCard(['4지표 요약']);
-  var badgeRow=el('div',{class:'badge-row'});
-  p.mbti.split('').forEach(function(letter){
-    badgeRow.appendChild(el('span',{class:'badge'},[letter+' · '+INDICATOR[letter].title.replace(/\s*\([A-Z]\)/,'')]));
-  });
-  badgeCard.appendChild(badgeRow);
-  view.appendChild(badgeCard);
+  /* ★ 2026-10-16 검수 — 맨 아래 '4지표 요약' 카드를 뺐다. 같은 네 지표가 내 성격유형 화면과 풀이 2장에 이미 있다(세 번째였다). */
 
-  view.appendChild(el('button',{class:'btn btn-primary btn-block', onclick:function(){ openShareModal('mbtiReport', p, null); }},['이 풀이 요약 카드로 저장하기']));
+  view.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ openShareModal('mbtiReport', p, null); }},['이 풀이 요약 카드로 저장하기']));
   view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   view.appendChild(buildNoteFold('이 글을 어떻게 봐야 하나요?',
     '성격유형은 사람을 가두는 틀이 아니라 자신을 이해하는 참고 자료예요. 여기 담긴 문구는 유형별 경향을 조합해 만든 콘텐츠라, 사람마다 실제 모습은 다를 수 있어요.'));
@@ -20974,7 +21108,7 @@ function renderCompat(){
       view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-bottom:14px;',
         disabled: GC_RELATION_SET ? null : 'disabled',
         onclick:function(){ if(!GC_RELATION_SET) return; openInviteLinkModal(p, GC_RELATION, false); }},
-        [svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('상대방에게 궁합 링크 보내기','받은 분이 자기 정보를 넣어요')]));
+        [svgIcon('M8 12 L12 8 M7.5 10.5 L6 12 A2.8 2.8 0 0 0 10 16 L11.5 14.5 M12.5 9.5 L14 8 A2.8 2.8 0 0 0 10 4 L8.5 5.5','btn-lead-icon'), btnLines('모임 궁합 링크 보내기','받은 분이 자기 정보를 넣어요')]));
       view.appendChild(el('p',{class:'biz-hint'},
         ['같은 링크 하나로 여러 분을 부를 수 있어요. 넣은 분부터 차례로 모임에 들어와요.']));
       /* ★ 2026-09-07 대표님 지시 — "저장한 그룹이랑 링크 보내는 버튼이랑 순서 바꿔".
@@ -21619,7 +21753,7 @@ function renderCompatSummary(p, draft){
   var sajuCol = sectionCard(['타고난 기운으로 더 보기']);
   sajuCol.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},['두 사람의 기운이 어떻게 맞물리는지, 어떤 자리에서 부딪히는지 문장으로 풀어드려요.']));
   sajuCol.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='saju'; render(); scrollToTopNow(); }},[compatLockMark(), '사주 궁합 자세히 보기', dirIcon('right')]));
-  var mbtiCol = sectionCard(['성격으로 더 보기']);
+  var mbtiCol = sectionCard(['성격유형으로 더 보기']);
   mbtiCol.appendChild(el('p',{class:'section-sub', style:'margin-bottom:0;'},[r.res.categories.chemistry]));
   mbtiCol.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:8px;', onclick:function(){ COMPAT_SUB='mbti'; render(); scrollToTopNow(); }},[compatLockMark(), '성격유형 궁합 자세히 보기', dirIcon('right')]));
   sumGrid.appendChild(sajuCol); sumGrid.appendChild(mbtiCol);
@@ -22959,7 +23093,7 @@ var DEEP_PB = {
   branch: {
     '육합': [
       '그래서 함께 있는 시간이 편해요. 밥때가 비슷하고, 쉬고 싶어지는 순간이 비슷하고, 자리에서 일어나고 싶어지는 때가 비슷해요. 같이 여행을 가거나 오래 붙어 있어야 할 때 이 조합이 특히 강해요.',
-      '주의할 것은 편해서 생기는 방심이에요. 맞춰지는 게 당연해지면 서로에게 고맙다는 말이 줄어들어요. 이 조합은 사이가 틀어질 때보다 무심해질 때 위험해요.'
+      '주의할 것은 편해서 생기는 방심이에요. 맞춰지는 게 당연해지면 서로에게 고맙다는 말이 줄어들어요. 이 조합은 다툴 때보다 무심해질 때를 더 조심하면 좋아요.'
     ],
     '충': [
       '이건 생활의 결이 서로 다르다는 뜻이에요. 구체적으로는 속도에서 드러나요. 한쪽이 지금 움직이고 싶을 때 다른 쪽은 아직 준비 중이고, 한쪽이 쉬고 싶을 때 다른 쪽은 이제 시동이 걸려요. 큰일보다 이런 사소한 어긋남이 쌓여서 지쳐요.',
@@ -22987,7 +23121,7 @@ var DEEP_PB = {
     ],
     '해당 없음': [
       '이런 자리는 관계가 사건으로 정해지지 않는다는 뜻이에요. 첫눈에 끌리는 것도 아니고 처음부터 어긋나는 것도 아니어서, 함께 보낸 시간이 그대로 관계의 깊이가 돼요.',
-      '그래서 이 조합은 서두르면 손해예요. 자주 보고 오래 보는 쪽이 유리해요. 급하게 결론 내지 않는 편이 좋아요.'
+      '그래서 이 조합은 서두르기보다 자주, 오래 보는 쪽이 잘 맞아요. 급하게 결론 내지 않는 편이 좋아요.'
     ]
   },
   sip: {
@@ -23322,7 +23456,7 @@ function buildCompatReport13(pA, pB, res){
    쌍마다 점수 아래 두 줄을 **반드시** 둔다: ① 오행 줄(두 분의 태어난 날 기운 아이콘 + 흐름)
    ② 성격유형 줄(두 분의 네 글자 + 함께 있을 때의 결). 재료가 없어도 줄을 빼지 않고 이유를 적는다.
    ★ 새 점수 없음 — buildSajuCompat·categories 가 이미 만든 문장을 다시 쓴다(AI 재료와 무관한 화면 글). */
-var ELEM_ICON = ['🌳','🔥','⛰️','⚙️','💧'];
+var ELEM_ICON = ['🌳','🔥','⛰️','💎','💧'];   /* 2026-10-16 검수 — 금(金)을 톱니(⚙️)로 두니 기계로 읽혔다 → 💎 */
 var ELEM_PLAIN = ['나무(목)','불(화)','흙(토)','쇠(금)','물(수)'];
 function pairElemIdx(p){
   try{
@@ -23380,7 +23514,7 @@ function buildGroupCompatCards(members, pairs, unlocked){
     var titleRow = el('h3',{class:'gc-person-title', style:'margin-bottom:2px;'});
     var av = inlineCharAvatar(m, 34);
     if(av) titleRow.appendChild(av);
-    titleRow.appendChild(el('span',{},[m.name+'님과 모임 구성원과의 궁합']));
+    titleRow.appendChild(el('span',{},[m.name+'님과 모임 사람들의 궁합']));
     card.appendChild(titleRow);
     card.appendChild(el('p',{class:'section-sub', style:'margin-top:0;'},
       [related.length>1 ? ('다른 '+related.length+'명과 하나씩 짚었어요.')
@@ -23775,13 +23909,13 @@ function groupMyRowDiff(){
 function confirmRefreshMyRow(){
   if(!GROUP_VIEW) return;
   var i = groupMyMemberIdx();
-  if(i < 0){ showToast('이 모임 명단에서 회원님을 찾지 못했어요.'); return; }
+  if(i < 0){ showToast('이 모임 명단에서 내 정보를 찾지 못했어요.'); return; }
   var me = activeProfile(); if(!me) return;
   var mine = gcMeetRow(me);
   var oldRaw = (GROUP_VIEW.rows && GROUP_VIEW.rows[i]) ? GROUP_VIEW.rows[i] : inviteObjToRow(PENDING_MEET[i]);
   var gid = GROUP_VIEW.id;
   confirmModal(
-    '이 모임에 적힌 회원님 줄을 지금 프로필 정보로 바꿀까요? 다른 분 줄은 그대로예요. 점수는 새 정보로 다시 계산돼요.',
+    '이 모임에 적힌 내 줄을 지금 프로필 정보로 바꿀까요? 다른 분 줄은 그대로예요. 점수는 새 정보로 다시 계산돼요.',
     function(){
       groupFetch({action:'refresh', groupId:gid, member:oldRaw, newMember:mine})
         .then(function(){
@@ -23800,7 +23934,7 @@ function confirmRefreshMyRow(){
 function confirmLeaveGroup(){
   if(!GROUP_VIEW) return;
   var row = groupMyMemberRow();
-  if(!row){ showToast('이 모임 명단에서 회원님을 찾지 못했어요.'); return; }
+  if(!row){ showToast('이 모임 명단에서 내 정보를 찾지 못했어요.'); return; }
   var gid = GROUP_VIEW.id, gname = GROUP_VIEW.name || '이 모임';
   var last = (PENDING_MEET || []).length <= 1;
   /* =====================================================================
@@ -23821,14 +23955,14 @@ function confirmLeaveGroup(){
   var isOwner = !!groupToken(gid);
   var keepAsOwner = isOwner && !last;
   confirmModal(
-    '"'+gname+'"에서 나갈까요? 회원님 정보가 이 모임 명단에서 빠지고, 남은 분들 화면에서도 안 보이게 돼요.'
+    '"'+gname+'"에서 나갈까요? 내 정보가 이 모임 명단에서 빠지고, 남은 분들 화면에서도 안 보이게 돼요.'
     /* ★ 2026-09-10 — '같은 주소로 참여하시면 돼요'는 정확하지 않았습니다. 그룹 주소(/g/…)는
        **보는 주소**라 그것만으로는 명단에 다시 안 들어갑니다. 다시 들어가려면 그룹 화면의
        [사람 더 받기]에 있는 접수 주소(/j/…)가 필요합니다 — 실측으로 확인하고 고쳤습니다. */
     + (last ? ' 마지막 한 분이라 모임도 함께 사라져요.'
             : ' 다시 들어오시려면 모임 화면의 [사람 더 받기] 주소로 참여하시면 돼요.')
     + (keepAsOwner
-        ? ' 이 모임은 회원님이 만들었어요 — 나가도 모임은 그대로 남고, 저장된 모임 목록에도 남아서 이름 바꾸기·지우기를 계속 할 수 있어요.'
+        ? ' 이 모임은 직접 만든 모임이에요 — 나가도 모임은 그대로 남고, 저장된 모임 목록에도 남아서 이름 바꾸기·지우기를 계속 할 수 있어요.'
         : ''),
     function(){
       groupFetch({action:'leave', groupId:gid, member:row})
@@ -25179,6 +25313,9 @@ function renderGroupCompat(){
     var gBlock = lockedBlock(PRODUCTS.compat_full, '', '모두의 궁합 상세');
     gBlock.insertBefore(el('div',{class:'locked-count'},
       [pairs.length+'쌍의 잘 맞는 점·조심할 점 풀이가 잠겨 있어요']), gBlock.firstChild);
+    /* ★ 2026-10-16 검수 — 셋 이상 모임에서 '두 분 궁합 … 한 쌍 990원'만 보여 어느 쌍을 사는지 몰랐다. */
+    if(pairs.length > 1) gBlock.insertBefore(el('p',{class:'section-sub', style:'margin:4px 0 8px;'},
+      ['결제는 한 쌍씩이에요. 캐릭터를 눌러 궁금한 사람의 카드를 연 뒤, 그 쌍의 [궁합 풀이 읽어보기]에서 열 수 있어요.']), gBlock.firstChild.nextSibling);
     view.appendChild(gBlock);
   } else if(pairs.length > 1){
     /* ★ 2026-09-07 대표님 질문("10명 모임에서 1,900원 내면 나머지는? 그에 대한 안내가 되어 있어?")
@@ -25240,7 +25377,7 @@ function renderGroupCompat(){
     if(groupToken(GROUP_VIEW.id)){
       gsCard.appendChild(el('p',{class:'biz-hint', style:'margin-top:10px;'},[
         '다른 분께 관리를 맡기시려면 [모임 관리]에서 PIN을 정해 알려주세요. '
-        + '회원님은 카카오 로그인만 하시면 어느 기기에서든 PIN 없이 관리할 수 있어요.'
+        + '만든 분은 카카오 로그인만 하면 어느 기기에서든 PIN 없이 관리할 수 있어요.'
       ]));
     }
     /* ★ 2026-09-09 — 내 줄이 명단에 있을 때만 내놓는다 (대표님 지시 "내가 스스로 그룹 못나가?").
@@ -25259,7 +25396,7 @@ function renderGroupCompat(){
       gsCard.appendChild(el('button',{class:'btn btn-ghost btn-block',
         style:'margin-top:12px;', onclick:confirmLeaveGroup},['이 모임에서 나가기']));
       gsCard.appendChild(el('p',{class:'biz-hint', style:'margin-top:8px;'},[
-        '나가면 회원님 정보만 명단에서 빠져요. 모임은 남은 분들에게 그대로 남아요.'
+        '나가면 내 정보만 명단에서 빠져요. 모임은 남은 분들에게 그대로 남아요.'
       ]));
     }
     view.appendChild(gsCard);
@@ -25876,7 +26013,7 @@ function showInviteModal(profile, link, live, ttlHours, relationKey){
     ]));
     var noteList = el('ul',{class:'invite-note'});
     [ '모임을 처음 만든 날로부터 ' + GROUP_TTL_TEXT + ' 동안 보관돼요.',
-      '이름을 바꾸거나 사람을 제외하고 싶으면 궁합 화면의 [모임 관리]에서, 회원님만 빠지고 싶으면 [이 모임에서 나가기]로 할 수 있어요.'
+      '이름을 바꾸거나 사람을 제외하고 싶으면 궁합 화면의 [모임 관리]에서, 나만 빠지고 싶으면 [이 모임에서 나가기]로 할 수 있어요.'
     ].forEach(function(t){ noteList.appendChild(el('li',{},[t])); });
     fold.appendChild(noteList);
     body.appendChild(fold);
@@ -26367,7 +26504,7 @@ function renderSettings(){
   view.appendChild(buildPaymentStatusPanel());
 
   STATE.profiles.forEach(function(p){
-    var label = p.name + (p.id===STATE.activeId?' (활성)':'');
+    var label = p.name + (p.id===STATE.activeId?' (지금 보는 중)':'');
     /* =====================================================================
        R44 — 프로필 줄이 상자를 넘치던 문제 (대표님 지적)
        ---------------------------------------------------------------------
@@ -27229,7 +27366,7 @@ var MORE_ROUTES = { chars:1, history:1, settings:1, glossary:1 };
 var MORE_NO = ['一','二','三','四','五'];
 var MORE_MENU = [
   ['chars',    '캐릭터 도감',     '오행 다섯 · 성격유형 열여섯'],
-  ['history',  '히스토리',        '지난 운세 · 궁합 기록'],
+  ['history',  '히스토리',        '지난 운세 · 궁합 · 풀이 기록'],
   ['settings', '설정',            '프로필 · 이용권 · 사업자 정보']
 ];
 function openMoreSheet(){
@@ -27245,7 +27382,8 @@ function openMoreSheet(){
     b.appendChild(l);
     /* ★ 2026-09-02 리뉴얼 — 시안은 목록 줄 오른쪽에 한자 번호를 둔다(홈의 '다음 갈 곳'과 같은 규칙).
        화살표를 셋 늘어놓으면 셋 다 같은 무게라 '몇 개가 있는지'가 안 읽힌다. */
-    b.appendChild(el('span',{class:'hd-no','aria-hidden':'true'},[MORE_NO[i] || '']));
+    /* ★ 2026-10-16 검수 — 한자 번호(一二三)가 무슨 뜻인지 안 읽혔다. 누르면 넘어간다는 표시(›)로 바꿨다. */
+    b.appendChild(el('span',{class:'hd-no','aria-hidden':'true'},['›']));
     box.appendChild(b);
   });
   openModal('더보기', box, [{label:'닫기', cls:'btn-ghost', onclick:function(){ closeModal(true); }}]);
@@ -27434,6 +27572,59 @@ function pixelProductParams(productId){
   return { content_ids:[base], content_type:'product', value: def ? def.price : 0, currency:'KRW' };
 }
 
+/* ★ 2026-10-15 대표님 지시 "아이콘은 궁합 말고 내사주랑 신년운세 등 모든 페이지에 걸쳐서 관련있는 아이콘을 좀 더 활용해서 꾸며봐"
+   제목(h2·h3)마다 주제 아이콘을 앞에 붙인다. **제목 글자는 건드리지 않는다** — 13장 제목은 AI 저장 열쇠(sectionTitles)라
+   글자에 넣으면 결제하신 글이 안 열린다. 그래서 그려진 화면(DOM)에만 아이콘 칸(.h-ic)을 얹는다.
+   · 표는 HEAD_ICONS 한 곳. 위에서부터 처음 맞는 것 하나. 안 맞는 제목은 그대로 둔다.
+   · 아이콘 칸은 aria-hidden + copy-skip — 낭독·[글 전체 복사]에 안 들어간다.
+   · 비동기로 늦게 그려지는 화면(AI 흘려받기·모임 명단)도 잡으려고 #main 을 지켜본다(MutationObserver).
+   ★ 새 화면에 제목을 만들면 여기 한 줄을 더하십시오. 오행 아이콘은 ELEM_ICON 과 같은 것을 씁니다. */
+/* ★ 2026-10-16 검수 — 처음 시안은 거의 모든 제목에 붙어서 오히려 눈에 안 띄었고, 낱말로만 붙여 뜻과 어긋났다
+   ('…하루'면 나쁜 날에도 ☀️, 상극 쌍에도 💞). ⚠️·보라 ☯️ 도 색 체계와 안 맞았다.
+   이제 **주제가 고정된 제목**(오늘 다섯 항목 · 풀이 장 · 내 사주 큰 칸 · 모임 머리)에만 붙인다.
+   좋고 나쁨이 갈리는 제목(점수·관계 판정)에는 붙이지 않는다. */
+var HEAD_ICONS = [
+  [/^총운$/, '✨'], [/^애정운$/, '💕'], [/^금전운$/, '💰'], [/^학업·직장운$/, '💼'], [/^건강운$/, '🌿'],
+  [/^오늘의 총평$/, '📝'], [/곁에 두면 좋은 것/, '🍀'],
+  [/여덟 글자/, '📜'], [/10년|대운|큰 흐름/, '🌊'], [/달마다/, '📅'], [/올해를 지나는|그 해 흐름|세운/, '📆'],
+  [/오프닝/, '✨'], [/클로징/, '🌙'], [/타고난 기질|핵심 성향/, '🌱'], [/사회적 인상/, '🎭'], [/내면|겉과 속/, '🪞'],
+  [/사랑|연애/, '💕'], [/커리어|직업|일 ·/, '💼'], [/금전|재물|돈과 생활/, '💰'], [/잠재력|성장 포인트/, '🌟'],
+  [/반복되는 패턴|고민/, '🔁'], [/타고난 강점/, '💪'], [/인간관계/, '👥'], [/스트레스/, '🧘'],
+  [/첫인상/, '🎭'], [/말이 통하는|대화가 풀리는/, '💬'], [/다툴 때/, '⚡'], [/화해/, '🕊️'], [/함께 사는/, '🏡'],
+  [/친구·동료/, '👥'], [/오래 가려면/, '🌳'],
+  [/모임 총평/, '📝'], [/전체 순위/, '🏆'], [/저장된 모임/, '📂']
+];
+function headIconFor(text){
+  text = String(text || '').replace(/\s+/g, ' ').trim();
+  for(var i = 0; i < HEAD_ICONS.length; i++) if(HEAD_ICONS[i][0].test(text)) return HEAD_ICONS[i][1];
+  return '';
+}
+function decorateHeadIcons(root){
+  if(!root) return;
+  var hs = root.querySelectorAll('h2, h3');
+  for(var i = 0; i < hs.length; i++){
+    var h = hs[i];
+    if(h.querySelector('.h-ic') || h.closest('#adminRoot')) continue;
+    var tEl = h.querySelector('.h3-text') || h;
+    var ic = headIconFor(tEl.textContent.replace(/^[一二三四五六七八九十]+/, ''));
+    if(!ic) continue;
+    var sp = document.createElement('span');
+    sp.className = 'h-ic copy-skip'; sp.setAttribute('aria-hidden', 'true'); sp.textContent = ic;
+    /* 13장 제목처럼 글자가 .h3-text 한 칸에 들어 있으면 그 안 맨 앞에 — h3 가 flex 라 따로 두면 큰 틈이 생긴다 */
+    var tx = h.querySelector('.h3-text');
+    if(tx) tx.insertBefore(sp, tx.firstChild); else h.insertBefore(sp, h.firstChild);
+  }
+}
+var HEAD_ICON_OBS = null, HEAD_ICON_PENDING = false;
+function watchHeadIcons(){
+  var main = document.getElementById('main');
+  if(!main || HEAD_ICON_OBS || typeof MutationObserver === 'undefined') return;
+  HEAD_ICON_OBS = new MutationObserver(function(){
+    if(HEAD_ICON_PENDING) return; HEAD_ICON_PENDING = true;
+    setTimeout(function(){ HEAD_ICON_PENDING = false; try{ decorateHeadIcons(document.getElementById('main')); }catch(e){} }, 0);
+  });
+  HEAD_ICON_OBS.observe(main, {childList:true, subtree:true});
+}
 function render(){
   CARD_TERM_HINT_DONE = false;   /* 새 화면을 그리므로 용어 안내를 다시 한 번 붙일 수 있게 한다 */
   /* R59 — 화면이 바뀌었으면 방문 기록에 한 칸 얹는다(뒤로가기용). */
@@ -27445,6 +27636,7 @@ function render(){
   if(viewChanged && !POPPING) scrollToTopNow();
   /* 메타 픽셀 — 그리기가 끝나 주소의 초대·영수증 흔적이 걷힌 뒤에 보낸다(pixelUrlSafe) */
   trackTimeout(pixelFlush, 0);
+  try{ watchHeadIcons(); decorateHeadIcons(document.getElementById('main')); }catch(e){}
   /* R25 — 그리기 전에 대표 오행 사본을 계산 결과에 맞춘다(위 syncAllProfileElements 주석 참고). */
   syncAllProfileElements();
   updateHeader();

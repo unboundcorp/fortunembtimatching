@@ -475,7 +475,7 @@ export default async function handler(req, res) {
     if ((recent || []).length >= RATE_MAX) {
       return json(res, 429, {
         error: 'too_many',
-        reason: '의견을 여러 건 보내주셨어요. 한 시간 뒤에 다시 보내주시면 모두 확인하겠습니다.',
+        reason: '의견을 여러 건 보내주셨어요. 한 시간 뒤에 다시 보내 주시면 모두 확인할게요.',
       });
     }
 

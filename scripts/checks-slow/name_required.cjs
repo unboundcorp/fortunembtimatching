@@ -25,7 +25,7 @@ const wait = L.wait;
     await p.goto(srv.url + '/fortune.html', {waitUntil:'networkidle0'}); await wait(1200);
     await L.clickText(p, /더보기/); await wait(400);
     await L.clickText(p, /^설정$/); await wait(600);
-    await L.clickText(p, /검사 \(활성\)/); await wait(500);
+    await L.clickText(p, /검사 \(지금 보는 중\)/); await wait(500);
     await L.clickText(p, /^정보 수정$/); await wait(800);
     await p.focus('#profNameTop');
     await p.evaluate(function(){ document.querySelector('#profNameTop').select(); });

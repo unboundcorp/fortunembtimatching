@@ -47,7 +47,7 @@ const wait = L.wait;
     R.note(s.n >= 6, '쌍 블록이 있다 (3명 × 2)', String(s.n));
     const ELEM = /[🌳🔥⛰⚙💧]/u;
     R.note(s.rows.every(r => r.length === 2), '쌍마다 관계 총평 두 줄', JSON.stringify(s.rows.map(r => r.length)));
-    R.note(s.rows.every(r => /오행/.test(r[0]) && (r[0].match(/🌳|🔥|⛰️|⚙️|💧/gu)||[]).length === 2 && /(나무|불|흙|쇠|물)\((목|화|토|금|수)\)/.test(r[0])), '① 오행 줄 — 아이콘 둘 · 두 분의 기운', s.rows[0] && s.rows[0][0]);
+    R.note(s.rows.every(r => /오행/.test(r[0]) && (r[0].match(/🌳|🔥|⛰️|💎|💧/gu)||[]).length === 2 && /(나무|불|흙|쇠|물)\((목|화|토|금|수)\)/.test(r[0])), '① 오행 줄 — 아이콘 둘 · 두 분의 기운', s.rows[0] && s.rows[0][0]);
     R.note(s.rows.every(r => /🧠/.test(r[1]) && /성격유형/.test(r[1]) && /[EI][SN][TF][JP] × [EI][SN][TF][JP] — .+/.test(r[1])), '② 성격유형 줄 — 아이콘 · 두 유형 · 이유', s.rows[0] && s.rows[0][1]);
     R.note(s.rows.every(r => r.every(t => !/undefined|null|NaN/.test(t))), '빈 값 없음');
     R.note(new Set(s.rows.map(r => r[1])).size > 1, '성격유형 줄이 쌍마다 같은 문장이 아님', JSON.stringify(s.rows.map(r => r[1])));

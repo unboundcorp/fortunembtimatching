@@ -31,7 +31,7 @@ const R = reporter('모임 내 정보 갱신(화면)');
             refreshBody = body;
             const rows = String(roster).split(';').filter(Boolean);
             const i = rows.indexOf(body.member);
-            if(i < 0) return J(404, {ok:false, reason:'이 모임 명단에서 회원님을 찾지 못했어요.'});
+            if(i < 0) return J(404, {ok:false, reason:'이 모임 명단에서 내 정보를 찾지 못했어요.'});
             rows[i] = body.newMember; roster = rows.join(';');
             return J(200, {ok:true, members:roster});
           }

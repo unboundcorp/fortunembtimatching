@@ -7,7 +7,7 @@
    ★ 일부러 작게 둔 것은 뺀다: 맨 위 '…로 돌아가기'(뒤로 가기 길) · '다음 섹션'(목차 넘기기) · 고르기 줄·칩·목록 줄.
    ③ [다른 사람과도 궁합 보기] → 궁합 둘이서 첫 화면 · 맨 위 / [다른 모임 궁합 보기] → 여럿이서 첫 화면 · 맨 위
 ===================================================================== */
-const L = require('/Users/beautymacmini/dev/harness-project(coding)/output/fortune/scripts/_lib.cjs');
+const L = require('/Users/beautymacmini/dev/coding/output/fortune/scripts/_lib.cjs');
 (async function(){
  const bad=[]; let navOk=[];
  for(const W of [320, 390]){
@@ -63,7 +63,7 @@ const L = require('/Users/beautymacmini/dev/harness-project(coding)/output/fortu
   await p.evaluate(()=>window.scrollTo(0, 99999)); await L.wait(200);
   await L.clickText(p, /^다른 모임 궁합 보기$/); await L.wait(900);
   const g = await p.evaluate(()=>({route:window.__INYEON_TEST__.route(), y:window.scrollY, t:document.querySelector('#main').innerText}));
-  navOk.push([W+' 다른 모임 궁합 보기 → 여럿이서 첫 화면·맨 위', g.route==='compat' && g.y===0 && /상대방에게 궁합 링크 보내기/.test(g.t) && /이 모임은 어떤 사이인가요/.test(g.t), JSON.stringify({route:g.route,y:g.y,t:g.t.slice(0,160)})]);
+  navOk.push([W+' 다른 모임 궁합 보기 → 여럿이서 첫 화면·맨 위', g.route==='compat' && g.y===0 && /궁합 링크 보내기/.test(g.t) && /이 모임은 어떤 사이인가요/.test(g.t), JSON.stringify({route:g.route,y:g.y,t:g.t.slice(0,160)})]);
   await p.evaluate((mid)=>window.__INYEON_TEST__.reopenCompat({id:'h1', profileId:mid, relation:'lover', inputs:{b:{name:'로또', mbti:'ISFP', gender:'F', birth:{y:1995,m:7,d:28,hour:14,minute:30}}}}), me.id);
   await L.wait(1000); await p.evaluate(()=>window.scrollTo(0, 99999)); await L.wait(200);
   await L.clickText(p, /^다른 사람과도 궁합 보기$/); await L.wait(900);

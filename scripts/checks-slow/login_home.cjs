@@ -17,7 +17,7 @@ async function run(browser, srv, mode, errs){
     window.__INYEON_TEST__.setupFill({name:'새손님', mbti:'ENFP', gender:'F', year:1992, month:3, day:4,
       timeUnknown:true, birthLonKey:'seoul', birthLon:126.98});
   }); await wait(600);
-  const label = mode==='compat' ? /^저장하고 궁합 보기$/ : /^저장하고 내 운세 보기$/;
+  const label = mode==='compat' ? /^저장하고 궁합 보기$/ : /^저장하고 (시작하기|[0-9]+년 사주 풀이 보기)$/;
   const clicked = await L.clickText(p, label); await wait(1000);
   const r = await p.evaluate(function(){
     var st={}; try{ st=JSON.parse(localStorage.getItem('inyeonjeom.v2')||'{}'); }catch(e){}

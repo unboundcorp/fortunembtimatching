@@ -92,7 +92,7 @@ const R = reporter('보낸 분 화면의 사이');
     /* 궁합 풀이로 들어가면 잠금 카드에 걸이와 권유 */
     await clickText(p, /궁합 풀이 읽어보기/); await wait(1200);
     const lock = await p.evaluate(() => { const c = document.querySelector('.locked-block'); return c ? c.innerText : ''; });
-    R.note(/걸리는 게 하나 있어요/.test(lock) && /두 분 궁합을 끝까지 알아 봐요/.test(lock), '궁합 풀이 잠금에 걸이와 권유', lock.slice(0,80));
+    R.note(/걸리는 게 하나 있어요/.test(lock) && /두 분 궁합을 끝까지 알아봐요/.test(lock), '궁합 풀이 잠금에 걸이와 권유', lock.slice(0,80));
     const hist = await p.evaluate(() => (window.__INYEON_TEST__.profiles() && JSON.parse(localStorage.getItem('inyeonjeom.v2')||'{}').compatHistory || []).length);
     R.note(hist === 0, "'전에 본 궁합'에 겹쳐 쌓지 않음", String(hist));
     /* 저장 목록 — 둘이서 화면에 있고 여럿이서 화면에는 없다 */

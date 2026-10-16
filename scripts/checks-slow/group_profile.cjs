@@ -89,7 +89,7 @@ const R = L.reporter('저장한 그룹 프로필별');
     const lay = await p.evaluate(function(){ const card = document.querySelector('[data-gid]').closest('.scroll-card'); if(!card) return null;
       const h = card.querySelector('h3'); const hints = [...card.querySelectorAll('p.biz-hint')].filter(function(x){ return /지금 고른 프로필|왼쪽으로 밀면/.test(x.textContent); });
       const row = card.querySelector('[data-gid]');
-      return { title: h ? h.textContent.trim() : '', hints: hints.length, below: hints.every(function(x){ return !!(row.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING); }) }; });
+      return { title: h ? h.textContent.replace(/^[^가-힣]+/,'').trim() : '', hints: hints.length, below: hints.every(function(x){ return !!(row.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING); }) }; });
     R.note(lay && lay.title === '저장된 모임', '카드 제목이 「저장된 모임」', JSON.stringify(lay));
     R.note(lay && lay.hints === 2 && lay.below, '안내 두 줄이 목록 아래에 있다', JSON.stringify(lay));
     /* 2026-09-22 대표님 지시 "아무도 안들어온 링크 정리하기는 맨 밑을 내려" */
