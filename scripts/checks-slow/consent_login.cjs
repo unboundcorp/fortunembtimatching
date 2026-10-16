@@ -86,7 +86,7 @@ const L = require('../_lib.cjs');
     const page = await open('', true);
     const t = await screen(page);
     R.note(/만 14세 이상이에요/.test(t), '만 14세 확인을 묻는다');
-    R.note(/사주 분석에 필요한 정보 제공에 동의해요/.test(t)
+    R.note(/사주 분석에 필요한 정보 수집·이용에 동의해요/.test(t)
         && /생년월일, 태어난 시각, 성별, 출생지/.test(t),
       '사주 분석 목적으로 무엇을 받는지 적고 따로 동의를 받는다');
     const left = await page.evaluate(() => {
