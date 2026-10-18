@@ -88,7 +88,7 @@ const R = reporter('보낸 분 화면의 사이');
     R.note(/연인 사이로 봤어요/.test(s2.chip), "칩 '연인 사이로 봤어요'", s2.chip);
     R.note(!/전체 순위/.test(s2.text), "두 분이면 '전체 순위' 없음");
     R.note(!/사람 더 받기/.test(s2.text), "둘이서 링크 모임에는 '사람 더 받기' 없음");
-    R.note(!/궁금한 친구를 눌러보세요|모두의 궁합이 아래에/.test(s2.text), '두 분이면 캐릭터 누르기 안내 없음');
+    R.note(!/친구 얼굴을 눌러 보세요|궁금한 친구를 눌러보세요|모두의 궁합이 아래에/.test(s2.text), '두 분이면 캐릭터 누르기 안내 없음');
     /* 궁합 풀이로 들어가면 잠금 카드에 걸이와 권유 */
     await clickText(p, /궁합 풀이 읽어보기/); await wait(1200);
     const lock = await p.evaluate(() => { const c = document.querySelector('.locked-block'); return c ? c.innerText : ''; });
@@ -119,7 +119,7 @@ const R = reporter('보낸 분 화면의 사이');
     await wait(1800);
     const s3 = await p.evaluate(() => ({ text: document.querySelector('#main').innerText, more: (document.getElementById('groupJoinLink')||{}).value || '' }));
     R.note(/전체 순위/.test(s3.text), "셋이면 '전체 순위' 있음");
-    R.note(/사람 더 받기/.test(s3.text) && /궁금한 친구를 눌러보세요/.test(s3.text), "셋이면 '사람 더 받기'·캐릭터 안내 있음");
+    R.note(/사람 더 받기/.test(s3.text) && /친구 얼굴을 눌러 보세요/.test(s3.text), "셋이면 '사람 더 받기'·캐릭터 안내 있음");
     /* 2026-10-07 대표님 "이 문장 필요없어" — 여럿이서 모임이 있어도 둘이서 화면에 '들어가 계신 모임 N개는…' 이 없다 */
     const pairHint = await p.evaluate(async function(){
       const W = ms => new Promise(r => setTimeout(r, ms));

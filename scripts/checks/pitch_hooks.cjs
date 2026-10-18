@@ -138,8 +138,9 @@ for(let i = 0; i < 240; i++){
         const t = (document.querySelector('.pay-pitch')||{}).textContent || ''; res.push([y, t]); });
       T.closeModal(); return {now, res};
     });
-    ok('결제창 권유 첫 줄(올해)', /^올해 전체 사주를 깊게 알아봐요$/.test(yr.res[0][1]), yr.res[0][1]);
-    ok('결제창 권유 첫 줄(내년은 연도로)', yr.res[1][1] === (yr.now+1)+'년 전체 사주를 깊게 알아봐요', yr.res[1][1]);
+    /* 2026-10-18 대표님 지시 — 연도에 올해·내년을 함께 붙인다 */
+    ok('결제창 권유 첫 줄(올해)', yr.res[0][1] === yr.now+'년(올해) 전체 사주를 깊게 알아봐요', yr.res[0][1]);
+    ok('결제창 권유 첫 줄(내년)', yr.res[1][1] === (yr.now+1)+'년(내년) 전체 사주를 깊게 알아봐요', yr.res[1][1]);
     ok('JS 오류 0', (p.__errs||[]).length === 0, JSON.stringify(p.__errs));
   } finally { await browser.close(); srv.close(); }
   console.log(`pitch_hooks: ${pass} 통과 · ${fail} 실패`);

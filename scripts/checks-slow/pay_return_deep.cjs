@@ -34,7 +34,7 @@ const Y = new Date(Date.now() + 9*3600*1000).getUTCFullYear();
       }
       if(u.indexOf('/api/verify') >= 0) return req.respond({status:200, contentType:'application/json', body:'{"verified":true}'});
       if(u.indexOf('/api/entitlements') >= 0){
-        const items = {compat_full:{purchasedAt: Date.now()}}; items['saju_full:' + Y] = {purchasedAt: Date.now()};
+        const items = {compat_full:{purchasedAt: Date.now()}}; items['saju_full:' + Y] = {purchasedAt: Date.now()}; items['saju_full:' + (Y+1)] = {purchasedAt: Date.now()}; items.mbti_full = {purchasedAt: Date.now()};
         return req.respond({status:200, contentType:'application/json', body: JSON.stringify({items:items,
           pass:{expiresAt: Date.now() + 30*86400000, purchasedAt: Date.now()}, purchases:[]})});
       }
@@ -87,12 +87,41 @@ const Y = new Date(Date.now() + 9*3600*1000).getUTCFullYear();
     s = await back('receipt=R3&product=saju_full%3A' + Y);
     R.note(s.route === 'report13', '③ 사주 결제 → 사주 풀이 화면(report13)', s.route);
 
+    /* ③-2 2026-10-18 대표님 제보 "2027년 결제했는데 2026년으로 간다" — 내년 사주를 보다 결제하면 내년 풀이 */
+    await p.evaluate(function(y){ var T = window.__INYEON_TEST__; T.goRoute('report13'); T.setViewYear(y); }, Y+1); await wait(700);
+    await p.evaluate(function(y){ window.__INYEON_TEST__.notePayPosition('saju_full:' + y); }, Y+1);
+    s = await back('receipt=R5&product=saju_full%3A' + (Y+1));
+    let vy = await p.evaluate(function(){ return window.__INYEON_TEST__.viewYear(); });
+    R.note(s.route === 'report13' && vy === Y+1, '③-2 내년 사주 결제 → 내년(' + (Y+1) + ') 풀이에 머문다', 'route=' + s.route + ' year=' + vy);
+    /* 쪽지 없이(다른 탭에서 돌아옴) 와도 결제한 해를 연다 */
+    await p.evaluate(function(y){ window.__INYEON_TEST__.setViewYear(y); }, Y);
+    s = await back('receipt=R6&product=saju_full%3A' + (Y+1));
+    vy = await p.evaluate(function(){ return window.__INYEON_TEST__.viewYear(); });
+    R.note(vy === Y+1, '③-3 쪽지가 없어도 결제한 해를 연다', 'year=' + vy);
+    /* 카카오 로그인 왕복(결제 전)에도 보던 해가 남는다 — 같은 쪽지 모양(snapshotCompatState)을 쓴다 */
+    await p.evaluate(function(y){ var T = window.__INYEON_TEST__; T.goRoute('saju'); T.setViewYear(y); }, Y+1); await wait(500);
+    await p.evaluate(function(){ window.__INYEON_TEST__.notePayPosition('saju_full:9999'); });
+    s = await back('pay=cancel');
+    vy = await p.evaluate(function(){ return window.__INYEON_TEST__.viewYear(); });
+    R.note(s.route === 'saju' && vy === Y+1, '③-4 내년을 보다 결제를 취소해도 내년 그대로', 'route=' + s.route + ' year=' + vy);
+
+    /* ③-5 성격유형 단품 결제 → 성격유형 풀이 */
+    await p.evaluate(function(){ window.__INYEON_TEST__.goRoute('report'); }); await wait(500);
+    await p.evaluate(function(){ window.__INYEON_TEST__.notePayPosition('mbti_full'); });
+    s = await back('receipt=R7&product=mbti_full');
+    R.note(s.route === 'mbtiReport', '③-5 성격유형 결제 → 성격유형 풀이(mbtiReport)', s.route);
+
     /* ④ 성격유형 → 이용권 결제 */
     await p.evaluate(function(){ window.__INYEON_TEST__.goRoute('report'); }); await wait(700);
     await p.evaluate(function(y){ window.__INYEON_TEST__.notePayPosition('premium_pass:' + y); }, Y);
     s = await back('receipt=R4&product=premium_pass%3A' + Y);
     R.note(s.route === 'mbtiReport', '④ 성격유형 화면에서 이용권 결제 → 성격유형 풀이(mbtiReport)', s.route);
 
+    /* ⑥ 2026-10-18 — 2027년 AI 글의 '올해'를 그 해의 말로 (조사 포함) */
+    const yw = await p.evaluate(function(Y){ var f = window.__INYEON_TEST__.aiYearWords;
+      return [f((Y+1)+'년, 올해는 좋아요. 올해가 지나면', Y+1), f('올해는 좋아요', Y), f('지금의 10년과 올해 · 대운', Y+1)]; }, Y);
+    R.note(yw[0] === '내년('+(Y+1)+'년)은 좋아요. 내년이 지나면', '⑥ 내년 풀이의 "올해" → "내년(YYYY년)" · 조사', yw[0]);
+    R.note(yw[1] === '올해는 좋아요' && yw[2] === '지금의 10년과 내년('+(Y+1)+'년) · 대운', '⑥ 올해 풀이는 그대로 · 제목도 바뀜', yw[1]+' / '+yw[2]);
     R.note(errs.length === 0, 'JS 오류 0건', errs.join(' | ') || '없음');
   } catch(e){ R.note(false, '검사기 자체 오류', String(e && e.stack || e)); }
   await browser.close(); site.close();
