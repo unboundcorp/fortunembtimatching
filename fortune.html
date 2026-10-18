@@ -26778,11 +26778,10 @@ function renderSettings(){
 function openShareModal(kind, profile, data){
   var body=el('div',{});
   var canvas=document.createElement('canvas');
-  /* R19 — 캐릭터가 들어가는 카드는 아래쪽에 그림 자리를 두느라 100px 더 길다.
-     '오늘의 운세' 카드는 본문(4개 영역 × 여러 줄)이 이미 아래까지 차서 그림을 넣지 않는다. */
+  /* ★ 2026-10-19 — 카드는 늘 1080×1080 정방형이다(renderShareCard). */
   renderShareCard(canvas, kind, profile, data);
   /* R62 — 캐릭터 그림은 파일이라 늦게 도착할 수 있다. 오면 카드를 다시 그린다.
-     ★ 다시 그릴 때도 renderShareCard를 쓴다 — 그림이 붙으면 본문 높이가 달라질 수 있다. */
+     ★ 다시 그릴 때도 renderShareCard를 쓴다. */
   shareCardCharKeys(kind, profile, data).forEach(function(ck){
     charImage(ck.key, function(){ renderShareCard(canvas, kind, profile, data); }, ck.gender);
   });
@@ -27117,22 +27116,6 @@ function fallbackCopy(text){
     showToast(ok?'텍스트를 복사했어요.':'복사에 실패했어요. 직접 선택해 복사해주세요.');
   }catch(e){ showToast('복사를 지원하지 않는 환경이에요.'); }
 }
-function wrapCanvasText(ctx, text, x, yy, maxWidth, lineHeight, align){
-  /* align을 주면 그 정렬로 그리고 원래대로 되돌려 놓는다 — 준 사람이 뒷정리를 잊어도
-     다음 덩이가 엉뚱하게 정렬되지 않는다. 가운데로 그릴 때 x는 가운데 좌표여야 한다. */
-  var prev = ctx.textAlign;
-  if(align) ctx.textAlign = align;
-  var words=text.split(''); var line=''; var yy2=yy;
-  for(var i=0;i<words.length;i++){
-    var test=line+words[i];
-    if(ctx.measureText(test).width>maxWidth && line!==''){
-      ctx.fillText(line, x, yy2); line=words[i]; yy2+=lineHeight;
-    } else { line=test; }
-  }
-  ctx.fillText(line, x, yy2);
-  if(align) ctx.textAlign = prev;
-  return yy2+lineHeight;
-}
 /* 캐릭터를 얹는 카드 종류. openShareModal(캔버스 높이)과 drawShareCard(그리는 자리)가 같은 표를 본다. */
 var SHARE_CARD_WITH_CHAR = { fortune:1, saju:1, report:1, mbtiReport:1, compatSummary:1 };
 /* ★ R88 — 오늘의 운세 카드에 캐릭터가 없어서 아래 3분의 1이 통째로 비어 있었다(실측).
@@ -27176,31 +27159,8 @@ var CARD_DIM  = '#736c5f';            /* 흐린 글씨 = --ink-faint */
 var CARD_SEAL = '#B41E30';            /* 로고색 = --brand */
 var CARD_ACC  = '#AF2B25';            /* 낙관(글자 강조) = --gold */
 var CARD_LINE = 'rgba(31,28,23,0.156)'; /* 먹 괘선 */
-/* ★ 2026-09-07 — 화면의 compatBarColor()는 'var(--gold-2)'를 돌려준다. Canvas는 CSS 변수를
-   못 읽어서 ctx.fillStyle에 넣으면 **조용히 무시되고 직전 색이 그대로 남는다**(오류도 안 난다).
-   그래서 공유 카드의 막대가 전부 괘선색으로 그려졌다. 같은 눈금·같은 값의 canvas용 짝을 둔다.
-   ★ 눈금(75 / 50)과 색은 :root의 --gold-2 · --gold · --ink-faint와 한 쌍이다. 한쪽만 고치지 마라. */
-function compatBarColorCanvas(v){
-  return v>=75 ? '#8F221D'       /* --gold-2 */
-       : (v>=50 ? '#AF2B25'      /* --gold */
-                : '#625b4e');    /* --ink-faint */
-}
 var CARD_SANS  = "'Pretendard Variable','Pretendard','Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif";
 var CARD_SERIF = "'Nanum Myeongjo','AppleMyungjo','Batang',serif";
-/* ★ 2026-09-07 대표님 지시 — "캐릭터 크기를 줄이고 위치를 성격유형 옆에 고정하고 나머지를 채워".
-   예전에는 캐릭터를 카드 **맨 아래에 크게** 앉혔다. 그래서 본문이 길어지면 남는 높이가
-   150 미만이 되어 **그림을 통째로 안 그렸다 — 오류도 없이 조용히.** 위에 붙박이로 두면
-   그 일이 아예 안 생기고, 아래에 생긴 자리를 글로 채울 수 있다. */
-/* 캐릭터 하나 + 그 옆 글줄. lines = [{t, f(폰트), c(색), dy(직전 줄에서 내려올 만큼)}] */
-function drawCharBeside(ctx, key, gender, x, y, size, lines){
-  if(key) drawCharOnCanvas(ctx, key, x, y, size, CARD_INK, gender);
-  var tx = x + size + 10, ty = y;
-  ctx.textAlign = 'left';
-  (lines||[]).forEach(function(L){
-    ty += L.dy; ctx.font = L.f; ctx.fillStyle = L.c; ctx.fillText(L.t, tx, ty);
-  });
-  return ty;
-}
 /* 서비스 헤더 로고(.brand-seal)의 SVG path 그대로. viewBox 0 0 48 48 기준이다. */
 var LOGO_PATH = {
   heart: 'M24 40.5C24 40.5 6.5 30.2 6.5 18.8c0-5.4 4.2-9.3 9-9.3 3.4 0 6.4 1.9 8.5 5 2.1-3.1 5.1-5 8.5-5 4.8 0 9 3.9 9 9.3 0 4.2-2.4 8.2-5.4 11.5',
@@ -27218,278 +27178,227 @@ function drawLogoOnCanvas(ctx, cx, cy, size){
   ctx.fillStyle = CARD_SEAL; ctx.fill(new Path2D(LOGO_PATH.spark));
   ctx.restore();
 }
-function drawShareCard(canvas, kind, profile, data){
-  var ctx=canvas.getContext('2d');
-  var w=canvas.width, h=canvas.height;
-  ctx.fillStyle=CARD_BG; ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle=CARD_INK; ctx.lineWidth=3; ctx.strokeRect(18,18,w-36,h-36);
-  ctx.strokeStyle=CARD_LINE; ctx.lineWidth=1; ctx.strokeRect(30,30,w-60,h-60);
-
-  /* ★ 2026-09-07 대표님 지시 — 카드 로고를 서비스 로고와 똑같이 맞춘다.
-     이 자리는 원래 낙관(붉은 동그라미)이었고 안에 '緣' 한 글자를 찍었다. R36에서 글자를
-     로고 하트로 바꾸면서 **동그라미만 그대로 남아** "로고를 동그라미가 감싼" 모양이 됐는데,
-     그건 서비스 어디에도 없는 모양이었다. 게다가 진짜 로고에 있는 **반짝이가 빠져** 있었다.
-     ★ 이제 헤더 SVG와 **같은 path 문자열**을 Path2D로 그린다. 손으로 옮겨 그리지 않으므로,
-       로고를 바꾸면 아래 세 줄에 새 path만 붙여 넣으면 카드도 같이 바뀐다.
-       (헤더는 fortune.html 위쪽 `.brand-seal` 안의 <svg viewBox="0 0 48 48">다 — 한 쌍이다.) */
-  drawLogoOnCanvas(ctx, w-84, 86, 62);
-
-  ctx.fillStyle=CARD_SEAL; ctx.font='700 30px '+CARD_SANS; ctx.textAlign='left'; ctx.textBaseline='alphabetic';   /* 글자 로고 = 로고색(--brand) */
-  ctx.fillText(COMPANY.serviceName, 50, 100);
-
-  ctx.fillStyle=CARD_INK; ctx.font='400 17px '+CARD_SANS;
-  var y=170;
-
-  if(kind==='fortune'){
-    /* ★ 2026-09-07 — 캐릭터를 아래에서 여기로 올렸다. 아래에 있을 때는 캐릭터 이름줄과
-       주소줄 사이가 33px밖에 안 남아 빠듯했다(실측). 위로 오면서 그 문제도 함께 풀린다. */
-    var fKey = charKeyForDayStem(data && data.year ? data : getSajuResult(profile));
-    drawCharBeside(ctx, fKey, profile && profile.gender, 50, y-24, 72, [
-      {t:ownerLabel(profile.name)+' 오늘의 운세', f:'700 21px '+CARD_SANS, c:CARD_INK, dy:28},
-      {t:data.date,                              f:'400 14px '+CARD_SANS, c:CARD_DIM, dy:22},
-      {t:fKey ? CHARACTERS[fKey].name : '',      f:'400 13px '+CARD_SANS, c:CARD_ACC, dy:18}
-    ]);
-    y += 66;
-    /* ★ R85 — 종합 점수를 카드 위쪽에 한 줄로. 점수가 없는 옛 기록이면 건너뛴다. */
-    if(data.overall != null){
-      ctx.font='700 17px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
-      ctx.fillText('종합 '+data.overall+'점 · '+todayOverallWord(data.overall), 50, y); y+=34;
-    }
-    FORTUNE_CATS.forEach(function(cat){
-      var item=data.items[cat.key];
-      /* ★ R88 — 여기 적혀 있던 "공유 카드는 일부러 청동색을 유지한다"는 주석을 지웠다.
-         서비스가 만세력 지면으로 바뀌면서 그 이유가 사라졌다. 이제 카드도 서비스와 같은 인주색이다.
-         주석이 코드와 다른 말을 하면 다음 사람이 코드가 아니라 주석을 믿는다. */
-      ctx.font='700 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
-      ctx.fillText(item.label+(item.score != null ? '  '+item.score+'점' : ''), 50, y); y+=22;
-      ctx.font='400 15px '+CARD_SANS; ctx.fillStyle=CARD_INK;
-      y=wrapCanvasText(ctx, item.text, 50, y, w-100, 21); y+=14;
-    });
-    y+=6; ctx.font='400 14px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
-    ctx.fillText('행운 아이템 '+data.luckyItem+' · 행운 색상 '+data.luckyColor, 50, y);
-  } else if(kind==='report'){
-    ctx.font='700 22px '+CARD_SANS; ctx.fillStyle=CARD_INK;
-    ctx.fillText(ownerLabel(profile.name)+' 성향 리포트', 50, y); y+=18;
-    /* ★ 캐릭터를 성격유형 옆에 붙박이로 (2026-09-07 대표님 지시) */
-    drawCharBeside(ctx, charKeyForMbti(profile.mbti), profile.gender, 50, y, 92, [
-      {t:profile.mbti,                    f:'700 26px '+CARD_SANS, c:CARD_ACC, dy:34},
-      {t:TYPE_TAGLINE[profile.mbti]||'',  f:'400 15px '+CARD_SANS, c:CARD_INK, dy:26},
-      {t:'오행 · '+profile.element,        f:'700 14px '+CARD_SANS, c:CARD_DIM, dy:24}
-    ]);
-    y += 108;
-    ctx.font='400 16px '+CARD_SANS; ctx.fillStyle=CARD_INK;
-    y=wrapCanvasText(ctx, ELEMENT_TRAIT[profile.element], 50, y, w-100, 22); y+=18;
-    /* ★ 캐릭터가 위로 올라가 생긴 자리를 네 지표 해설로 채운다(2026-09-07).
-       INDICATOR는 화면의 '성격유형 4지표 해설'이 쓰는 것과 같은 표다 — 여기 글을 새로 적지 마라. */
-    ctx.font='700 16px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('네 지표로 보면', 50, y); y+=22;
-    profile.mbti.split('').forEach(function(L){
-      var ind = INDICATOR[L]; if(!ind) return;
-      ctx.font='700 14px '+CARD_SANS; ctx.fillStyle=CARD_INK; ctx.fillText(ind.title, 50, y); y+=19;
-      ctx.font='400 14px '+CARD_SANS; ctx.fillStyle=CARD_DIM;
-      y = wrapCanvasText(ctx, ind.strength, 50, y, w-100, 19) + 8;
-    });
-  } else if(kind==='saju'){
-    var s=data.year?data:getSajuResult(profile);
-    var sKey = charKeyForDayStem(s);
-    /* ★ 2026-09-07 — 오행 캐릭터를 아래에서 머리글 옆으로 올렸다. */
-    drawCharBeside(ctx, sKey, profile && profile.gender, 50, y-22, 76, [
-      {t:ownerLabel(profile.name)+' 사주팔자',  f:'700 21px '+CARD_SANS, c:CARD_INK, dy:30},
-      {t:sKey ? CHARACTERS[sKey].name : '',     f:'400 14px '+CARD_SANS, c:CARD_ACC, dy:24}
-    ]);
-    y += 74;
-    var nickS = personNickname(s);
-    if(nickS){
-      ctx.font='700 20px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
-      y = wrapCanvasText(ctx, nickS, w/2, y, w-100, 28, 'center') + 14;
-      ctx.textAlign='left';
-    }
-    var cols = s.hour?['year','month','day','hour']:['year','month','day'];
-    var labelMap={year:'연주',month:'월주',day:'일주',hour:'시주'};
-    var colW=(w-100)/cols.length;
-    cols.forEach(function(pos,i){
-      var g=s[pos]; var cx=50+colW*i+colW/2;
-      ctx.textAlign='center';
-      ctx.font='400 13px '+CARD_SANS; ctx.fillStyle=CARD_DIM; ctx.fillText(labelMap[pos], cx, y);
-      /* 간지 두 글자만 명조로 남긴다 — 화면의 인장 칸(.pillar-seal .ch)과 같은 규칙이다. */
-      ctx.font='700 30px '+CARD_SERIF; ctx.fillStyle=CARD_INK; ctx.fillText(g.stem+g.branch, cx, y+42);
-      ctx.font='400 13px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText(g.stemH+g.branchH, cx, y+62);
-    });
-    ctx.textAlign='left';
-    y+=110;
-    /* R32 — 계산 한계 고지를 화면·공유 카드에서 전부 뺐다(대표님 지시). 이용약관 제11조에만 남는다.
-       ★ 되살릴 때는 이 자리에 wrapCanvasText로 DISCLAIM_SHORT 한 줄을 다시 넣으면 된다. */
-    /* ★ 2026-09-07 — 캐릭터가 위로 가면서 생긴 자리를 다섯 기운 개수로 채운다.
-       화면(내 사주)의 오행 막대와 같은 값(SajuEngine.elementCounts)이다 — 새로 세지 않는다. */
-    try{
-      /* ★ dominantElementIdx(saju).counts — 화면(내 사주)의 오행 막대가 쓰는 바로 그 값이다.
-         SajuEngine.elementCounts()는 {elem,yy} 배열을 받는 낮은 층 함수라 사주 객체를 못 받는다. */
-      var cnt = dominantElementIdx(s).counts;
-      if(cnt){
-        ctx.font='700 16px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('타고난 다섯 기운', 50, y); y+=24;
-        /* ★ 막대가 오른쪽 숫자('5개') 자리까지 뻗어 글자를 덮고 있었다(2026-09-07 실측).
-           숫자 자리 52px를 비워 둔다. */
-        var maxN = Math.max.apply(null, cnt) || 1, ebX=200, ebW=(w-50-52)-ebX;
-        SajuEngine.ELEM_NAMES.forEach(function(nm, ei){
-          ctx.font='400 14px '+CARD_SANS; ctx.fillStyle=CARD_INK; ctx.textAlign='left';
-          ctx.fillText(nm, 50, y+5);
-          ctx.fillStyle=CARD_LINE; ctx.fillRect(ebX, y-3, ebW, 8);
-          ctx.fillStyle=(cnt[ei]===maxN? '#8F221D' : '#AF2B25');
-          ctx.fillRect(ebX, y-3, ebW*cnt[ei]/maxN, 8);
-          ctx.font='700 14px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.textAlign='right';
-          ctx.fillText(cnt[ei]+'개', w-50, y+5); ctx.textAlign='left';
-          y += 23;
-        });
-      }
-    }catch(e){ /* 못 세면 이 덩이만 빠진다 */ }
-  } else if(kind==='mbtiReport'){
-    var rpt = buildMbtiReport16(profile);
-    ctx.font='700 22px '+CARD_SANS; ctx.fillStyle=CARD_INK;
-    ctx.fillText(ownerLabel(profile.name)+' 성격유형 풀이', 50, y); y+=18;
-    drawCharBeside(ctx, charKeyForMbti(profile.mbti), profile.gender, 50, y, 92, [
-      {t:profile.mbti,                   f:'700 28px '+CARD_SANS, c:CARD_ACC, dy:36},
-      {t:TYPE_TAGLINE[profile.mbti]||'', f:'400 15px '+CARD_SANS, c:CARD_INK, dy:26}
-    ]);
-    y += 108;
-    ctx.font='700 16px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('오프닝', 50, y); y+=22;
-    ctx.font='400 16px '+CARD_SANS; ctx.fillStyle=CARD_INK;
-    y=wrapCanvasText(ctx, rpt.sections[0].body.replace(/<[^>]+>/g,''), 50, y, w-100, 22); y+=20;
-    /* ★ 예전에는 'E · N · F · P' 네 글자만 찍고 끝이었다. 글자만 보면 아무것도 알 수 없다.
-       화면과 같은 표(INDICATOR)에서 해설을 가져와 남는 자리를 채운다(2026-09-07). */
-    ctx.font='700 16px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('네 지표로 보면', 50, y); y+=22;
-    profile.mbti.split('').forEach(function(L){
-      var ind = INDICATOR[L]; if(!ind) return;
-      ctx.font='700 14px '+CARD_SANS; ctx.fillStyle=CARD_INK; ctx.fillText(ind.title, 50, y); y+=19;
-      ctx.font='400 14px '+CARD_SANS; ctx.fillStyle=CARD_DIM;
-      y = wrapCanvasText(ctx, ind.strength, 50, y, w-100, 19) + 8;
-    });
-  } else {
-    var r=data;
-    /* ★ 자리가 모자라 덩이를 빼는 판정은 없앴다 — renderShareCard가 본문 길이에 맞춰
-       카드 높이를 늘려 주므로, 넣을 것은 다 넣으면 된다(2026-09-07). */
-    ctx.font='700 22px '+CARD_SANS; ctx.fillStyle=CARD_INK;
-    ctx.fillText(profile.name+' × '+r.pB.name, 50, y); y+=18;
-
-    /* ① 두 사람 — 캐릭터를 성격유형 옆에 작게 붙박이로. 두 분 성별이 다를 수 있어 각자 것을 넘긴다. */
-    var CH = 84, colW = (w-100)/2;
-    [[charKeyForMbti(profile.mbti), profile, 50],
-     [charKeyForMbti(r.pB.mbti),   r.pB,    50+colW]].forEach(function(pp){
-      var per = pp[1];
-      /* ★ 내 프로필에는 saju가 안 붙어 있을 수 있다(그때그때 계산해서 쓴다). 그래서 왼쪽 사람만
-         오행 줄이 비어 나갔다(2026-09-07 실측). 없으면 계산해서 채운다. */
-      var pSaju = null;
-      try{ pSaju = (per && per.saju) ? per.saju : (per ? getSajuResult(per) : null); }catch(e){}
-      var ek = pSaju ? charKeyForDayStem(pSaju) : null;
-      drawCharBeside(ctx, pp[0], per && per.gender, pp[2], y, CH, [
-        {t:String((per&&per.name)||'').slice(0,7), f:'700 16px '+CARD_SANS, c:CARD_INK,  dy:32},
-        {t:(per&&per.mbti)||'',                    f:'700 15px '+CARD_SANS, c:CARD_ACC,  dy:24},
-        {t:ek ? CHARACTERS[ek].name.split(' · ')[0] : '', f:'400 13px '+CARD_SANS, c:CARD_DIM, dy:20}
-      ]);
-    });
-    y += CH + 16;
-
-    /* ② 점수 */
-    ctx.font='700 54px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.textAlign='center';
-    ctx.fillText(r.res.combined+'점', w/2, y+38); y+=54;
-    ctx.font='400 17px '+CARD_SANS; ctx.fillStyle=CARD_INK;
-    ctx.fillText(r.res.combinedTier, w/2, y+18); y+=40;
-    /* ★ 2026-09-07 대표님 지시 — 인스타에 올릴 때 눈에 걸리는 한 줄.
-       화면(csb-nick)과 **같은 함수**에서 가져온다. 여기에 손으로 적지 마세요. */
-    var nickC = compatNickname(r.res, profile, r.pB);
-    if(nickC){
-      ctx.font='700 22px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
-      y = wrapCanvasText(ctx, nickC, w/2, y+18, w-100, 30, 'center') + 6;
-    }
-    ctx.textAlign='left';
-
-    /* ③ 한 줄씩 두 관점 */
-    ctx.font='700 16px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('사주 관점', 50, y); y+=22;
-    ctx.font='400 16px '+CARD_SANS; ctx.fillStyle=CARD_INK; y=wrapCanvasText(ctx, r.res.saju.elemRel, 50, y, w-100, 22); y+=16;
-    ctx.font='700 16px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('성격유형 관점', 50, y); y+=22;
-    ctx.font='400 16px '+CARD_SANS; ctx.fillStyle=CARD_INK; y=wrapCanvasText(ctx, r.res.categories.chemistry, 50, y, w-100, 22);
-
-    /* ④ 점수를 뜯어보면 — 화면의 '왜 N점인가요?'와 같은 자료(COMPAT_WHY_ITEMS)를 쓴다.
-       여기에 이름이나 색을 손으로 적으면 카드와 화면이 갈라진다. */
-    var cVals = { mbti: r.res.mbtiScore, saju: r.res.saju && r.res.saju.score,
-                  elem: r.res.elemScore, zod: r.res.zodScore };
-    var cRows = COMPAT_WHY_ITEMS.map(function(it){ return {it:it, v:cVals[it.key]}; })
-                                .filter(function(x){ return typeof x.v === 'number'; });
-    if(cRows.length){
-      y += 22;
-      ctx.font='700 16px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText('점수를 뜯어보면', 50, y); y+=22;
-      var barX=340, barW=180, barH=8;
-      cRows.forEach(function(x){
-        ctx.font='400 14px '+CARD_SANS; ctx.fillStyle=CARD_INK; ctx.textAlign='left';
-        ctx.fillText(x.it.label, 50, y+5);
-        ctx.fillStyle=CARD_LINE; ctx.fillRect(barX, y-3, barW, barH);
-        ctx.fillStyle=compatBarColorCanvas(x.v);
-        ctx.fillRect(barX, y-3, barW*Math.max(0,Math.min(100,x.v))/100, barH);
-        ctx.font='700 14px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.textAlign='right';
-        ctx.fillText(x.v+'점', w-50, y+5); ctx.textAlign='left';
-        y += 23;
-      });
-      if(cRows.length>=2){
-        var cHi=cRows.reduce(function(a,b){return b.v>a.v?b:a;},cRows[0]);
-        var cLo=cRows.reduce(function(a,b){return b.v<a.v?b:a;},cRows[0]);
-        if(cHi.it.key!==cLo.it.key && cHi.v!==cLo.v){
-          y += 4; ctx.font='400 13px '+CARD_SANS; ctx.fillStyle=CARD_DIM;
-          y = wrapCanvasText(ctx, '가장 끌어올린 자리 — '+cHi.it.label+' '+cHi.v+'점 · 가장 깎은 자리 — '+cLo.it.label+' '+cLo.v+'점', 50, y, w-100, 18);
-        }
-      }
-    }
-
-    /* ⑤ 남는 자리를 채운다 — 화면의 '이런 점이 잘 맞아요 / 조심해 주세요'와 같은 무료 문장.
-       ★ buildPairReasons는 무료 범위다. 유료 문장(elemDetail·branchRel·comment·
-         categories의 love/friend/conflict)은 절대 여기 넣지 마라. */
-    try{
-      var rea = buildPairReasons(profile, r.pB, r.res);
-      /* ★ 바로 위 '사주 관점'에 이미 나온 문장이 근거 목록에도 그대로 들어 있었다 —
-         한 카드에서 같은 말이 두 번 나왔다(2026-09-07 실측). 겹치는 줄은 뺀다.
-         ★ 카톡으로 나가는 그림이라 너무 길면 안 읽힌다. 덩이마다 다섯 줄까지만 싣는다. */
-      var dupe = String((r.res.saju && r.res.saju.elemRel) || '');
-      var clean = function(arr){
-        return (arr||[]).filter(function(t){ return !dupe || String(t).indexOf(dupe) < 0; }).slice(0,5);
-      };
-      [['이런 점이 잘 맞아요', clean(rea && rea.good)], ['이런 점은 조심해 주세요', clean(rea && rea.care)]].forEach(function(blk){
-        var arr = blk[1]; if(!arr || !arr.length) return;
-        y += 18;
-        ctx.font='700 16px '+CARD_SANS; ctx.fillStyle=CARD_ACC; ctx.fillText(blk[0], 50, y); y+=20;
-        ctx.font='400 14px '+CARD_SANS; ctx.fillStyle=CARD_INK;
-        for(var q=0; q<arr.length; q++){
-          y = wrapCanvasText(ctx, '· '+arr[q], 50, y, w-100, 20) + 2;
-        }
-      });
-    }catch(e){ /* 근거를 못 만들면 이 덩이만 빠진다 — 카드는 그대로 나온다 */ }
-  }
-
-  /* ★ 2026-09-07 — 여기 있던 '아래쪽 캐릭터 덩이'를 걷어냈다. 캐릭터는 이제 각 갈래의
-     머리글 옆에 붙박이로 그린다(drawCharBeside). 자리가 모자라면 그림을 지우는 것이 아니라
-     아래 채움 글을 줄이는 쪽으로 바뀌었다 — 그림이 소리 없이 사라지지 않는다. */
-
-  /* ★ R88 — 주소를 적는다. 이 카드는 카톡으로 나가서 남이 처음 보는 화면인데,
-     지금까지 "어디로 가면 되는지"가 카드 어디에도 없었다. 보고 나서 갈 데가 없으면
-     아무리 잘 만들어도 그 자리에서 끝난다. 고지문 위에 한 줄로 앉힌다. */
-  ctx.textAlign='center';
-  ctx.font='700 15px '+CARD_SANS; ctx.fillStyle=CARD_ACC;
-  ctx.fillText(COMPANY.site+' 에서 내 운세도 보기', w/2, h-62);
-
-  ctx.font='400 11px '+CARD_SANS; ctx.fillStyle=CARD_DIM;
-  ctx.fillText('자체 계산 만세력 기반 참고용 콘텐츠예요', w/2, h-40);
-  ctx.textAlign='left';
-  /* ★ 본문이 끝난 자리를 돌려준다 — renderShareCard가 이 값으로 카드 높이를 맞춘다. */
-  return y;
+/* =====================================================================
+   ★ 2026-10-19 대표님 지시 — 공유 카드를 인스타그램 정방형(1080×1080)으로 다시 지었다.
+   > "인스타에 공유하고 싶을 정도로 퀄리티가 괜찮아야" · "이미지 사이즈도 정방형으로"
+   > "아이콘을 최대한 많이 활용" · "사주는 경오 기묘 같은 건 작게, 쉬운 말 풀이를 많이"
+   > "MBTI는 외향·직관 설명보다 그 유형이 어떤 사람인지 요약" → 시안 확인 뒤 "그대로 해라"
+   ★ 예전 판(폭 640 · 높이가 글 길이에 따라 늘어남 · 2026-09-07)은 이것으로 바뀌었다.
+     높이는 이제 늘 1080이다. 글은 칸(타일)마다 줄 수를 정해 두고 넘치면 '…'로 끊는다.
+   ★ 카드에 넣는 글은 전부 이미 서비스 화면에 있는 무료 문장이다. 새로 지어 쓰지 않는다.
+     유료 문장(elemDetail·branchRel·comment·categories의 love/friend/conflict)은 넣지 마라.
+   ★ 사주 카드는 그 해 사주 풀이를 결제했으면 붉은 테두리 + 'YYYY년 나의 달' 칸이 붙는다.
+     달 값은 buildMonthlyFortune 의 avg(풀이 화면 막대와 같은 값)다.
+===================================================================== */
+var SQ_W = 1080;
+var SQ_BG = '#f3ece0', SQ_PANEL = '#fbf7f0', SQ_FAINT = '#8a8173', SQ_SOFT = 'rgba(180,30,48,0.08)';
+var SQ_MBTI_ICON = {E:'🗣️',I:'🏠',S:'👀',N:'💭',T:'⚖️',F:'💗',J:'📋',P:'🎈'};
+var SQ_MBTI_WORD = {E:'외향',I:'내향',S:'현실',N:'상상',T:'논리',F:'마음',J:'계획',P:'즉흥'};
+var SQ_FORTUNE_ICON = {total:'🌟', love:'💘', money:'💰', work:'💼', health:'💪'};
+function sqRound(ctx, x, y, w, h, r){
+  ctx.beginPath(); ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
 }
-/* ★ 2026-09-07 — 카드 높이를 본문에 맞춘다(두 번 그리기).
-   예전에는 높이가 860으로 못 박혀 있어서, 글이 짧은 카드는 아래 3분의 1이 빈 종이로 나가고
-   글이 긴 카드는 자리가 모자라 캐릭터가 통째로 빠졌다. 한 번 넉넉하게 그려 본문 끝을 재고,
-   그 길이에 맞춰 다시 그린다. 그리기는 값이 정해져 있어 두 번 그려도 같은 그림이 나온다. */
+/* 낱말 단위로 접는다(글자 단위로 접으면 낱말 한가운데가 끊긴다). '\n' 은 줄을 못 박는다.
+   maxLines 를 넘으면 마지막 줄 끝 낱말을 '…'로 바꾼다. */
+function sqWrap(ctx, t, x, y, maxW, lh, maxLines, align){
+  var out = [];
+  String(t == null ? '' : t).split('\n').forEach(function(para){
+    var line = '';
+    para.split(' ').forEach(function(wd){
+      var test = line ? line+' '+wd : wd;
+      if(ctx.measureText(test).width > maxW && line){ out.push(line); line = wd; } else line = test;
+    });
+    if(line) out.push(line);
+  });
+  if(out.length > maxLines){ out = out.slice(0, maxLines); out[maxLines-1] = out[maxLines-1].replace(/\s*\S+$/, '…'); }
+  ctx.textAlign = align || 'left';
+  out.forEach(function(l, i){ ctx.fillText(l, x, y + i*lh); });
+  ctx.textAlign = 'left';
+  return y + out.length*lh;
+}
+function sqFirst(t){ t = String(t || '').replace(/<[^>]+>/g, '').trim(); var m = t.match(/^[^.!?]*[.!?]/); return m ? m[0] : t; }
+function sqFrame(ctx, paid){
+  ctx.fillStyle = SQ_BG; ctx.fillRect(0, 0, SQ_W, SQ_W);
+  ctx.strokeStyle = paid ? CARD_SEAL : CARD_INK; ctx.lineWidth = paid ? 8 : 5;
+  ctx.strokeRect(24, 24, SQ_W-48, SQ_W-48);
+  ctx.fillStyle = CARD_SEAL; ctx.font = '800 40px '+CARD_SANS; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(COMPANY.serviceName, 64, 104);       /* 글자 로고 = 로고색(--brand) */
+  drawLogoOnCanvas(ctx, SQ_W-110, 86, 70);
+}
+function sqFooter(ctx, txt){
+  ctx.fillStyle = CARD_SEAL; ctx.font = '700 28px '+CARD_SANS; ctx.textAlign = 'center';
+  ctx.fillText(COMPANY.site+' 에서 '+txt, SQ_W/2, SQ_W-62);
+  ctx.textAlign = 'left';
+}
+function sqTile(ctx, x, y, w, h, icon, title, body){
+  ctx.fillStyle = SQ_PANEL; sqRound(ctx, x, y, w, h, 28); ctx.fill();
+  ctx.strokeStyle = 'rgba(31,28,23,0.10)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.textAlign = 'left';
+  ctx.font = '54px '+CARD_SANS; ctx.fillStyle = CARD_INK; ctx.fillText(icon, x+28, y+74);
+  ctx.font = '800 29px '+CARD_SANS; ctx.fillStyle = CARD_SEAL; sqWrap(ctx, title, x+100, y+66, w-124, 34, 1);
+  ctx.font = '500 25px '+CARD_SANS; ctx.fillStyle = CARD_INK;
+  sqWrap(ctx, body, x+30, y+120, w-60, 37, Math.max(1, Math.floor((h-92)/37)));
+}
+/* 2×2 칸. items = [[icon,title,body] × 4] */
+function sqTiles(ctx, top, th, gap, items){
+  var tx = 60, tw = 470;
+  items.forEach(function(it, i){
+    if(!it) return;
+    sqTile(ctx, tx + (i%2)*(tw+gap), top + Math.floor(i/2)*(th+gap), tw, th, it[0], it[1], it[2]);
+  });
+}
+function sqSajuCard(ctx, profile, saju, year, paid){
+  sqFrame(ctx, paid);
+  drawCharOnCanvas(ctx, charKeyForDayStem(saju), 70, 140, 300, CARD_INK, profile.gender);
+  ctx.fillStyle = CARD_INK; ctx.font = '800 50px '+CARD_SANS;
+  ctx.fillText(String(profile.name || '나').slice(0, 8)+'님은', 410, 200);
+  ctx.fillStyle = CARD_SEAL; ctx.font = '800 42px '+CARD_SANS;
+  var ny = sqWrap(ctx, personNickname(saju) || '', 410, 264, 600, 56, 3);
+  var f = elemReadFacts(saju), ey = ny + 30;
+  for(var i=0; i<5; i++){
+    var c = f.counts[i];
+    ctx.globalAlpha = c ? 1 : 0.28;
+    ctx.font = '40px '+CARD_SANS; ctx.fillStyle = CARD_INK; ctx.fillText(ELEM_ICON[i], 410+i*120, ey);
+    ctx.font = '700 26px '+CARD_SANS; ctx.fillStyle = c ? CARD_INK : SQ_FAINT;
+    ctx.fillText(['목','화','토','금','수'][i]+' '+c, 410+i*120+48, ey-6);
+    ctx.globalAlpha = 1;
+  }
+  /* 간지 여덟 글자는 작게 한 줄(대표님 지시) — 풀이는 아래 칸이 쉬운 말로 한다. */
+  var gz = ['year','month','day','hour'].map(function(k){ return saju[k]; }).filter(Boolean)
+    .map(function(p){ return SajuEngine.STEMS[p.stemIdx]+SajuEngine.BRANCHES[p.branchIdx]; }).join(' · ');
+  ctx.fillStyle = SQ_FAINT; ctx.font = '500 22px '+CARD_SANS;
+  ctx.fillText('사주 여덟 글자 '+gz, 410, ey+46);
+  var S = ELEM_PROFILE[f.strongest], Lk = ELEM_PROFILE[f.lack];
+  var last = ['✨', '한마디', S.manyShort+' 사람이라, '+Lk.lackShort+' 순간만 챙기면 돼요.'];
+  if(paid){
+    var mo = null; try{ mo = buildMonthlyFortune(profile, year, function(){ return true; }); }catch(e){}
+    if(mo && mo.months && mo.months.length >= 12){
+      var ms = mo.months.slice().sort(function(a, b){ return b.avg - a.avg; });
+      last = ['📅', year+'년 나의 달',
+        '🔥 힘이 실리는 달  '+ms[0].month+'월 · '+ms[1].month+'월\n🍃 쉬어 가는 달  '+ms[11].month+'월 · '+ms[10].month+'월'];
+    }
+  }
+  sqTiles(ctx, 500, 226, 20, [
+    [ELEM_ICON[f.strongest], S.name+' 기운이 넘쳐요', sqFirst(S.trait)+' '+sqFirst(S.shadow).replace(/^대신 /, '')],
+    [ELEM_ICON[f.lack], Lk.name+' 기운이 '+(f.lackCount ? '적어요' : '없어요'), sqFirst(Lk.lack)+' '+(String(Lk.lack).split('. ')[1] || '')],
+    ['🌱', '이렇게 채워요', sqFirst(Lk.fill)],
+    last
+  ]);
+  sqFooter(ctx, '내 사주 보기');
+}
+function sqMbtiCard(ctx, profile, paid){
+  sqFrame(ctx, paid);
+  var t = profile.mbti, pb = MBTI_PB[t] || {};
+  drawCharOnCanvas(ctx, charKeyForMbti(t), 70, 140, 300, CARD_INK, profile.gender);
+  ctx.fillStyle = CARD_INK; ctx.font = '800 50px '+CARD_SANS;
+  ctx.fillText(String(profile.name || '나').slice(0, 8)+'님은', 410, 200);
+  ctx.fillStyle = CARD_SEAL; ctx.font = '900 64px '+CARD_SANS; ctx.fillText(t, 410, 276);
+  ctx.font = '800 38px '+CARD_SANS;
+  var ny = sqWrap(ctx, TYPE_TAGLINE[t] || '', 410, 330, 600, 50, 2);
+  String(t).split('').forEach(function(L, i){
+    var x = 410 + i*148, y = ny + 22;
+    ctx.fillStyle = SQ_PANEL; sqRound(ctx, x, y, 132, 64, 32); ctx.fill();
+    ctx.strokeStyle = 'rgba(31,28,23,0.10)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.font = '32px '+CARD_SANS; ctx.fillStyle = CARD_INK; ctx.fillText(SQ_MBTI_ICON[L] || '', x+14, y+44);
+    ctx.font = '700 25px '+CARD_SANS; ctx.fillText(SQ_MBTI_WORD[L] || L, x+62, y+42);
+  });
+  sqTiles(ctx, 500, 226, 20, [
+    ['✨', '이런 사람이에요', sqFirst(pb.strengths && pb.strengths[0])],
+    ['💘', '연애할 땐', sqFirst(pb.love)],
+    ['💼', '일할 땐', sqFirst(pb.career)],
+    ['🌱', '나를 키우는 한 가지', sqFirst(pb.growth)]
+  ]);
+  sqFooter(ctx, '내 성격유형 보기');
+}
+function sqCompatCard(ctx, pA, r){
+  sqFrame(ctx, false);
+  var pB = r.pB, res = r.res;
+  drawCharOnCanvas(ctx, charKeyForMbti(pA.mbti), 70, 150, 260, CARD_INK, pA.gender);
+  drawCharOnCanvas(ctx, charKeyForMbti(pB.mbti), SQ_W-330, 150, 260, CARD_INK, pB.gender);
+  ctx.textAlign = 'center'; ctx.fillStyle = CARD_INK; ctx.font = '800 34px '+CARD_SANS;
+  ctx.fillText(String(pA.name || '').slice(0, 8), 200, 450); ctx.fillText(String(pB.name || '').slice(0, 8), SQ_W-200, 450);
+  ctx.fillStyle = SQ_FAINT; ctx.font = '600 24px '+CARD_SANS;
+  [[pA, 200], [pB, SQ_W-200]].forEach(function(pp){
+    var ei = null; try{ ei = pairElemIdx(pp[0]); }catch(e){}
+    ctx.fillText(pp[0].mbti + (ei != null ? ' · '+ELEM_ICON[ei]+' '+ELEM_PLAIN[ei] : ''), pp[1], 488);
+  });
+  ctx.fillStyle = SQ_SOFT; ctx.beginPath(); ctx.arc(SQ_W/2, 290, 140, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = CARD_SEAL; ctx.font = '900 112px '+CARD_SANS; ctx.fillText(res.combined+'점', SQ_W/2, 320);
+  ctx.font = '700 30px '+CARD_SANS; ctx.fillText('💞 '+tierNameFix(res.combinedTier), SQ_W/2, 372);
+  ctx.fillStyle = CARD_INK; ctx.font = '800 38px '+CARD_SANS;
+  sqWrap(ctx, compatNickname(res, pA, pB) || '', SQ_W/2, 552, 900, 48, 1, 'center');
+  ctx.textAlign = 'left';
+  var pr = { good:[], care:[] }; try{ pr = buildPairReasons(pA, pB, res); }catch(e){}
+  var why = ''; try{ why = mbtiFitReason(pA.mbti, pB.mbti, res.relation === 'coworker' ? 'work' : 'love'); }catch(e){}
+  var mean = (res.saju && res.saju.elemMean) || '';
+  var eA = null; try{ eA = pairElemIdx(pA); }catch(e){}
+  sqTiles(ctx, 588, 188, 16, [
+    ['🧠', '성격유형 '+res.mbtiScore+'점', why],
+    [eA != null ? ELEM_ICON[eA] : '☯️', '사주 '+(res.saju && res.saju.score)+'점', pairNim(sqFirst(mean), pA, pB)],
+    ['🤝', '잘 맞는 점', sqFirst(pr.good && pr.good[0])],
+    ['🧭', '조심할 점', sqFirst(pr.care && pr.care[0])]
+  ]);
+  sqFooter(ctx, '우리 궁합 보기');
+}
+function sqFortuneCard(ctx, profile, f){
+  sqFrame(ctx, false);
+  var saju = null; try{ saju = getSajuResult(profile); }catch(e){}
+  if(saju) drawCharOnCanvas(ctx, charKeyForDayStem(saju), 70, 140, 300, CARD_INK, profile.gender);
+  ctx.fillStyle = CARD_INK; ctx.font = '800 50px '+CARD_SANS;
+  ctx.fillText(ownerLabel(String(profile.name || '').slice(0, 8))+' 오늘', 410, 200);
+  ctx.fillStyle = SQ_FAINT; ctx.font = '500 26px '+CARD_SANS; ctx.fillText(f.date || '', 410, 244);
+  if(f.overall != null){
+    ctx.fillStyle = CARD_SEAL; ctx.font = '900 96px '+CARD_SANS; ctx.fillText(f.overall+'점', 410, 346);
+    ctx.fillStyle = CARD_INK; ctx.font = '800 34px '+CARD_SANS;
+    sqWrap(ctx, todayOverallWord(f.overall), 410, 400, 600, 44, 1);
+  }
+  /* 다섯 운 점수 칩 — 화면의 다섯 칸 띠와 같은 값 */
+  var cw = (SQ_W - 120 - 4*16) / 5;
+  var rows = FORTUNE_CATS.map(function(c){ var it = f.items[c.key] || {}; return {c:c, it:it}; });
+  rows.forEach(function(x, i){
+    var cx = 60 + i*(cw+16), cy = 440;
+    ctx.fillStyle = SQ_PANEL; sqRound(ctx, cx, cy, cw, 110, 24); ctx.fill();
+    ctx.strokeStyle = 'rgba(31,28,23,0.10)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.font = '30px '+CARD_SANS; ctx.fillStyle = CARD_INK; ctx.fillText(SQ_FORTUNE_ICON[x.c.key] || '', cx+cw/2, cy+40);
+    ctx.font = '700 21px '+CARD_SANS; ctx.fillText(x.c.label, cx+cw/2, cy+70);
+    ctx.font = '800 26px '+CARD_SANS; ctx.fillStyle = CARD_SEAL;
+    ctx.fillText(x.it.score != null ? x.it.score+'점' : '—', cx+cw/2, cy+100);
+    ctx.textAlign = 'left';
+  });
+  var scored = rows.filter(function(x){ return typeof x.it.score === 'number'; });
+  var hi = scored.length ? scored.reduce(function(a, b){ return b.it.score > a.it.score ? b : a; }) : rows[0];
+  var lo = scored.length ? scored.reduce(function(a, b){ return b.it.score < a.it.score ? b : a; }) : rows[1];
+  var sum = ''; try{ var L = buildTodaySummary(f); sum = (L && L.length) ? L[L.length-1] : ''; }catch(e){}
+  sqTiles(ctx, 580, 180, 16, [
+    ['🌟', '가장 좋은 운 · '+hi.c.label, sqFirst(hi.it.text)],
+    ['🧭', '살살 갈 운 · '+lo.c.label, sqFirst(lo.it.text)],
+    ['💬', '오늘의 한마디', sum],
+    ['🍀', '오늘의 행운', '아이템  '+(f.luckyItem || '')+'\n색상  '+(f.luckyColor || '')]
+  ]);
+  sqFooter(ctx, '내 운세 보기');
+}
+function drawShareCard(canvas, kind, profile, data){
+  var ctx = canvas.getContext('2d');
+  if(kind === 'fortune') sqFortuneCard(ctx, profile, data);
+  else if(kind === 'saju'){
+    var s = (data && data.year) ? data : getSajuResult(profile);
+    var yr = VIEW_YEAR, paid = false;
+    try{ paid = !!hasAccess(sajuProductId()); }catch(e){}
+    sqSajuCard(ctx, profile, s, yr, paid);
+  }
+  else if(kind === 'report' || kind === 'mbtiReport'){
+    var mp = false; try{ mp = !!hasAccess('mbti_full'); }catch(e){}
+    sqMbtiCard(ctx, profile, mp);
+  }
+  else sqCompatCard(ctx, profile, data);
+}
 function renderShareCard(canvas, kind, profile, data){
-  canvas.width = 640;
-  canvas.height = 1800;                       /* ① 재는 판 — 넉넉하게 */
-  var end = drawShareCard(canvas, kind, profile, data) || 600;
-  var h = Math.max(560, Math.min(1600, Math.round(end) + 116));   /* 고지문 78 + 아래 여백 */
-  canvas.height = h;                          /* ② 높이를 맞추고 다시 그린다 */
+  canvas.width = SQ_W; canvas.height = SQ_W;
   drawShareCard(canvas, kind, profile, data);
-  return h;
+  return SQ_W;
 }
 
 /* =====================================================================

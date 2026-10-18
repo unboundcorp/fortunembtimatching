@@ -126,7 +126,8 @@ const MEASURE = function(){
     if(m.err){ R.bad(card.name, m.err); continue; }
     const detail = m.w+'x'+m.h+' · 색 '+m.colors+'가지 · 잉크 '+m.inkPct+'%';
     if(m.errs.length){ R.bad(card.name, m.errs[0]); continue; }
-    if(m.h < 300 || m.w < 300){ R.bad(card.name, '카드가 너무 작다 ' + detail); continue; }
+    /* ★ 2026-10-19 대표님 지시 — 인스타그램 정방형. 1080×1080 이 아니면 실패다. */
+    if(m.w !== 1080 || m.h !== 1080){ R.bad(card.name, '정방형 1080 이 아니다 ' + detail); continue; }
     if(m.inkPct < 3){ R.bad(card.name, '거의 빈 종이다 ' + detail); continue; }
     R.ok(card.name + ' 카드가 그려짐', detail);
 
