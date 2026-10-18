@@ -56,6 +56,10 @@ const WANT = ['오프닝','한 해 흐름','금전운','사랑','일','타고난
     const tot = await p.evaluate(function(){ var T = window.__INYEON_TEST__, pr = T.activeProfile();
       return [2026, 2027, 2028, 2029, 2030].map(function(y){ return T.buildMonthlyFortune(pr, y, function(){ return true; }).months.map(function(m){ return m.items.total.stars; }).join(''); }); });
     R.note(new Set(tot).size === 5, '⑦ 총운 별점이 다섯 해 모두 다르다(달의 띠로만 정하면 해마다 같았음)', tot.join(' / '));
+    /* ⑧ 2026-10-18 — 십성은 띠 속 주된 기운(본기) 음양으로: 경(庚) 일간에게 사(巳)=편관 · 자(子)=상관 */
+    const sp = await p.evaluate(function(){ var E = window.__INYEON_TEST__.SajuEngine;
+      return [E.BRANCH_SIP_YY.join(''), E.sipseongOf(6, E.BRANCH_ELEM[5], E.BRANCH_SIP_YY[5]), E.sipseongOf(6, E.BRANCH_ELEM[0], E.BRANCH_SIP_YY[0])]; });
+    R.note(sp[0] === '001011001011' && sp[1] === '편관' && sp[2] === '상관', '⑧ 본기 음양 · 경+사=편관 · 경+자=상관', sp.join(' / '));
     R.note(errs.length === 0, 'JS 오류 0건', errs.join(' | ') || '없음');
   } catch(e){ R.note(false, '검사기 자체 오류', String(e && e.stack || e)); }
   await browser.close(); site.close();

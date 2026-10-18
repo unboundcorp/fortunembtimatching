@@ -4775,6 +4775,10 @@ var STEM_YY = [1,0,1,0,1,0,1,0,1,0]; // 1=양,0=음 (갑병무경임=양)
      (R14의 지시 범위 밖에서 발견한 것이라 SELF_CHECK R14에 따로 적어 둔다.) */
 var BRANCH_ELEM = [4,2,0,0,2,1,1,2,3,3,2,4];
 var BRANCH_YY = [1,0,1,0,1,0,1,0,1,0,1,0]; // 자인진오신술=양 축묘사미유해=음
+/* ★ 2026-10-18 대표님 승인("제안대로 다 해라") — 십성을 셀 때는 띠 속 주된 기운(지장간 본기)의 음양을 쓴다.
+   자(계·음) 오(정·음) 사(병·양) 해(임·양) 넷이 순서와 반대다(체용). 나머지 여덟은 같다.
+   ★ 십성(정/편)을 매길 때만 쓴다. 띠의 순서 음양(BRANCH_YY)은 그대로 둔다. */
+var BRANCH_SIP_YY = [0,0,1,0,1,1,0,0,1,0,1,1]; // 자축인묘진사오미신유술해 — 본기 계기갑을무병정기경신무임
 var ELEM_NAMES = ['목','화','토','금','수'];
 
 function ganjiOf(idx){
@@ -5557,7 +5561,7 @@ function monthlyPillarsOfYear(year){
 
 return {
   birthPlaceOf:birthPlaceOf,
-  STEMS:STEMS, BRANCHES:BRANCHES, STEMS_H:STEMS_H, BRANCHES_H:BRANCHES_H, ELEM_NAMES:ELEM_NAMES, STEM_ELEM:STEM_ELEM, STEM_YY:STEM_YY, BRANCH_ELEM:BRANCH_ELEM, BRANCH_YY:BRANCH_YY,
+  STEMS:STEMS, BRANCHES:BRANCHES, STEMS_H:STEMS_H, BRANCHES_H:BRANCHES_H, ELEM_NAMES:ELEM_NAMES, STEM_ELEM:STEM_ELEM, STEM_YY:STEM_YY, BRANCH_ELEM:BRANCH_ELEM, BRANCH_YY:BRANCH_YY, BRANCH_SIP_YY:BRANCH_SIP_YY,
   ganjiOf:ganjiOf, computeSaju:computeSaju, lunarToSolar:lunarToSolar, ipchunUTCms:ipchunUTCms, jieBoundariesForYear:jieBoundariesForYear,
   sipseongOf:sipseongOf, elementCounts:elementCounts, branchRelations:branchRelations, daewoonList:daewoonList, saeunPillar:saeunPillar,
   /* ★ 2026-09-05 — 띠 점수(zodiacScore)가 육합을 못 보고 있어서 내보낸다.
@@ -10784,7 +10788,7 @@ function aiLuckPayload(profile, saju, targetYear){
         fromAge: it.startAge, toAge: it.startAge + 9,
         stem: it.ganji.stem, branch: it.ganji.branch,
         stemSipseong: SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[it.ganji.stemIdx], SajuEngine.STEM_YY[it.ganji.stemIdx]),
-        branchSipseong: SajuEngine.sipseongOf(dayStemIdx, SajuEngine.BRANCH_ELEM[it.ganji.branchIdx], SajuEngine.BRANCH_YY[it.ganji.branchIdx]),
+        branchSipseong: SajuEngine.sipseongOf(dayStemIdx, SajuEngine.BRANCH_ELEM[it.ganji.branchIdx], SajuEngine.BRANCH_SIP_YY[it.ganji.branchIdx]),
         isCurrent: n === curIdx
       };
     });
@@ -10794,7 +10798,10 @@ function aiLuckPayload(profile, saju, targetYear){
       direction: dw.forward ? '순행' : '역행',
       ageNow: ageNow,
       list: list,
-      thisYear: sa ? { year: thisYear, stem: sa.stem, branch: sa.branch } : null
+      /* ★ 2026-10-18 — 그 해 윗글자·아랫글자가 나에게 어떤 기운인지도 넘긴다(예전엔 글자만). */
+      thisYear: sa ? { year: thisYear, stem: sa.stem, branch: sa.branch,
+        stemSipseong: SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[sa.stemIdx], SajuEngine.STEM_YY[sa.stemIdx]),
+        branchSipseong: SajuEngine.sipseongOf(dayStemIdx, SajuEngine.BRANCH_ELEM[sa.branchIdx], SajuEngine.BRANCH_SIP_YY[sa.branchIdx]) } : null
     };
   }catch(e){
     /* ★ 조용히 null을 돌려주면 대운 세 섹션이 다시 빈 채로 나가고, 아무도 모른다.
@@ -12063,14 +12070,20 @@ function sinGangJak(sajuResult){
   var dayStemIdx = sajuResult.day.stemIdx;
   var dayElem = SajuEngine.STEM_ELEM[dayStemIdx];
   var chars = sajuChars(sajuResult);
-  var supportive=0, total=chars.length;
+  /* ★ 2026-10-18 대표님 승인 — 예전에는 일곱 글자를 똑같이 한 표씩 셌다. 명리에서 가장 무겁게 보는 것은
+     태어난 달의 띠(월령 · 득령)이고 그다음이 태어난 날의 띠(득지)다. 그래서 무게를 준다:
+     달의 띠 3 · 날의 띠 1.5 · 나머지 1. 나를 돕는 쪽(같은 기운 · 나를 낳는 기운)의 무게가 전체의 절반 이상이면 '강'.
+     ★ 점수 크기는 저희가 정한 값입니다(문헌에 숫자는 없음 — 득령을 가장 무겁게 본다는 원칙만 따름). */
+  var supportive=0, total=0;
   chars.forEach(function(c){
     if(c.pos==='day' && c.part==='stem') return; // 일간 자기 자신 제외
+    var w = (c.part==='branch' && c.pos==='month') ? 3 : ((c.part==='branch' && c.pos==='day') ? 1.5 : 1);
     var elem = c.part==='stem' ? SajuEngine.STEM_ELEM[c.g.stemIdx] : SajuEngine.BRANCH_ELEM[c.g.branchIdx];
     var diff = ((elem-dayElem)%5+5)%5;
-    if(diff===0 || diff===4) supportive++; // 비겁(0) 또는 인성(4=나를 생함)
+    total += w;
+    if(diff===0 || diff===4) supportive += w; // 비겁(0) 또는 인성(4=나를 생함)
   });
-  return supportive >= (total-1)/2 ? 'strong' : 'weak';
+  return supportive >= total/2 ? 'strong' : 'weak';
 }
 /* 10종 십성 카운트(사주 8자/6자 전체, 일간 자신 제외) */
 var SIPSEONG10 = ['비견','겁재','식신','상관','편재','정재','편관','정관','편인','정인'];
@@ -12081,7 +12094,7 @@ function sipseongCounts(sajuResult){
   chars.forEach(function(c){
     if(c.pos==='day' && c.part==='stem') return;
     var elem = c.part==='stem' ? SajuEngine.STEM_ELEM[c.g.stemIdx] : SajuEngine.BRANCH_ELEM[c.g.branchIdx];
-    var yy = c.part==='stem' ? SajuEngine.STEM_YY[c.g.stemIdx] : SajuEngine.BRANCH_YY[c.g.branchIdx];
+    var yy = c.part==='stem' ? SajuEngine.STEM_YY[c.g.stemIdx] : SajuEngine.BRANCH_SIP_YY[c.g.branchIdx];
     var name = SajuEngine.sipseongOf(dayStemIdx, elem, yy);
     counts[name]++;
   });
@@ -12183,7 +12196,7 @@ var GYEOKGUK_MAP = { 비견:'건록격', 겁재:'양인격', 식신:'식신격',
 function gyeokOf(sajuResult){
   var dayStemIdx = sajuResult.day.stemIdx;
   var mb = sajuResult.month.branchIdx;
-  var monthSip = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.BRANCH_ELEM[mb], SajuEngine.BRANCH_YY[mb]);
+  var monthSip = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.BRANCH_ELEM[mb], SajuEngine.BRANCH_SIP_YY[mb]);
   return { sipseong: monthSip, gyeok: GYEOKGUK_MAP[monthSip] };
 }
 /* v4-B 신규: 격국별 "이 격을 가진 사람은 보통 이런 결로 산다" 한 줄 해설 — 고정 룩업 텍스트. */
@@ -13290,6 +13303,9 @@ function buildReport13(profile, saju, targetYear){
        달마다 막대는 화면이 이 장 아래에 붙인다(renderReport13 의 extras 'sy'). */
     add('sy', SAJU_YEAR_SECTION_TITLE, 'M3 5 L17 5 L17 17 L3 17 Z M3 9 L17 9 M7 3 L7 7 M13 3 L13 7',
       '<p>'+(thisYear === kstYearOf(Date.now()) ? '올해('+thisYear+'년, '+saeun.text+' 해)는' : thisYear === kstYearOf(Date.now())+1 ? '내년('+thisYear+'년, '+saeun.text+' 해)는' : thisYear+'년('+saeun.text+' 해)는')+' — '+PB.saeunPattern[saeunKey].replace(/올해/g, '이 해').replace(/^(게다가|다만) /, '')+'</p>'+
+      /* ★ 2026-10-18 — 그 해 윗글자가 나에게 어떤 기운인지(예전엔 띠끼리 부딪힘·맞물림만 봤다). 쉬운 이름 먼저, 용어는 괄호. */
+      (function(){ var ys = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[saeun.stemIdx], SajuEngine.STEM_YY[saeun.stemIdx]); var yg = groupCategory(ys);
+        return '<p>이 해 들어오는 윗기운은 나에게 <strong>'+(SIPSEONG_GROUP_PLAIN[yg]||yg)+' 기운</strong>('+ys+')이에요. '+(YEAR_STEM_LINE[yg]||'')+'</p>'; })()+
       '<p><strong>'+cur.startAge+'세부터 시작된 '+cur.ganji.text+'('+cur.ganji.textH+') 대운</strong>을 지나는 중이에요. '+PB.currentDaeunLine[curSip]+' '+daeunSeasonLine(curSip)+'</p>'+
       '<p>'+curMH.stageLine+'</p>'+
       '<p>'+curMH.moneyLine+' '+curMH.healthLine+'</p>'+
@@ -13328,6 +13344,13 @@ function buildReport13(profile, saju, targetYear){
   sections.forEach(function(x){ if(order.indexOf(x.id) < 0) ordered.push(x); });
   return { sections: ordered, meta:{ balanceKey:balanceKey, sg:sg, domSip:domSip, dohwa:dohwa, hasHapAny:hasHapAny, hasChungAny:hasChungAny } };
 }
+var YEAR_STEM_LINE = {
+  '비겁':'내 편이 늘고 스스로 밀고 나갈 힘이 붙는 해예요. 다만 돈과 몫을 나누는 일이 잦아지니 셈은 미리 분명히 해 두세요.',
+  '식상':'하고 싶은 말과 만들고 싶은 것이 많아지는 해예요. 표현한 만큼 길이 열리지만 말이 앞서지 않게 한 번 더 다듬어 보세요.',
+  '재성':'돈과 결과를 직접 다루는 일이 늘어나는 해예요. 들어오는 만큼 나가기도 하니 큰 지출은 계획을 세워 두고 쓰세요.',
+  '관성':'맡는 자리와 책임이 커지는 해예요. 인정받을 기회가 오는 대신 부담도 따라오니 혼자 다 떠안지 마세요.',
+  '인성':'배우고 채우는 데 힘이 붙는 해예요. 공부·자격·준비처럼 나중에 쓸 힘을 쌓기 좋고, 도와주는 사람도 생기기 쉬워요.'
+};
 var SAJU_YEAR_SECTION_TITLE = '한 해 흐름 · 그 해의 기운과 달마다 흐름';
 var SAJU_SECTION_ORDER = ['s1','sy','s7','s5','s6','s2','s3','s4','s8','s9','s10','s12','s13'];
 
@@ -17641,7 +17664,7 @@ function buildSipseongOverlay(saju){
     var col=el('div',{class:'pillar-col'});
     col.appendChild(el('div',{class:'col-label'},[plainMap[pos]]));
     var stemSip = pos==='day' ? null : SajuEngine.sipseongOf(dayStemIdx, SajuEngine.STEM_ELEM[g.stemIdx], SajuEngine.STEM_YY[g.stemIdx]);
-    var branchSip = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.BRANCH_ELEM[g.branchIdx], SajuEngine.BRANCH_YY[g.branchIdx]);
+    var branchSip = SajuEngine.sipseongOf(dayStemIdx, SajuEngine.BRANCH_ELEM[g.branchIdx], SajuEngine.BRANCH_SIP_YY[g.branchIdx]);
     col.appendChild(el('div',{class:'ss-ch'},[SajuEngine.STEMS[g.stemIdx]]));
     col.appendChild(stemSip
       ? termChip(stemSip,{plain:termMini(stemSip), cls:'tchip-tight', plainOnly:true})
@@ -20220,7 +20243,7 @@ function renderSaju(){
   elemCard.appendChild(cardHead('다섯 가지 기운이 얼마나 있나요', ['오행'])  /* R30 — 신강·신약은 바로 아래 문장에 이미 붙는다(같은 줄에 셋을 늘어놓지 않는다) */);
   elemCard.appendChild(buildElemBars(elemInfo.counts));
   elemCard.appendChild(el('p',{class:'section-sub'},['가장 진한 기운은 '+ELEMENTS[elemInfo.idx]+' 기운이에요. 내 힘의 세기는 '+
-    (sinGangJak(saju)==='strong'?'넘치는 편(신강)':'모자란 편(신약)')+'이에요 — 글자 수만 세는 간단한 판정이라 참고로만 봐주세요.']));
+    (sinGangJak(saju)==='strong'?'넘치는 편(신강)':'모자란 편(신약)')+'이에요 — 태어난 달의 기운을 가장 무겁게 쳐서 본 판정이에요.']));
   /* ★ 2026-09-26 대표님 지시 — 무엇이 넘치고 무엇이 모자란지를 사람 이야기로. */
   var elemRead = buildElemReading(saju, hasAccess(sajuProductId()));
   if(elemRead) elemCard.appendChild(elemRead);
@@ -28653,7 +28676,7 @@ try{
       openPaywall: openPaywall,   /* 결제창 문구를 화면으로 재는 용도 (2026-09-21) */
       groupMyMemberIdx: groupMyMemberIdx, groupMyRowStale: groupMyRowStale,
       /* 2026-09-22 — 결제 취소 복귀 검사(checks-slow/pay_cancel.cjs)가 쓴다 */
-      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, screenTextForCopy: screenTextForCopy, startService: startService, finishConsent: finishConsent, adGoPending: adGoPending, viewYear: function(){ return VIEW_YEAR; }, setViewYear: function(y){ VIEW_YEAR = y; render(); }, buildReport13: buildReport13, getSajuResult: getSajuResult, aiYearWords: aiYearWords, buildMonthlyFortune: buildMonthlyFortune, sectionsByTitle: sectionsByTitle, sajuPayload: function(y){ var pr=activeProfile(), s=getSajuResult(pr), v=VIEW_YEAR; VIEW_YEAR=y; var o=Interpreter.buildSajuPayload(pr,s); VIEW_YEAR=v; return o; }, parseSections: function(t, ti){ return Interpreter.parseSections(t, ti); }, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
+      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, screenTextForCopy: screenTextForCopy, startService: startService, finishConsent: finishConsent, adGoPending: adGoPending, viewYear: function(){ return VIEW_YEAR; }, setViewYear: function(y){ VIEW_YEAR = y; render(); }, buildReport13: buildReport13, getSajuResult: getSajuResult, aiYearWords: aiYearWords, buildMonthlyFortune: buildMonthlyFortune, sectionsByTitle: sectionsByTitle, SajuEngine: SajuEngine, sajuPayload: function(y){ var pr=activeProfile(), s=getSajuResult(pr), v=VIEW_YEAR; VIEW_YEAR=y; var o=Interpreter.buildSajuPayload(pr,s); VIEW_YEAR=v; return o; }, parseSections: function(t, ti){ return Interpreter.parseSections(t, ti); }, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
       elemReadFacts: elemReadFacts, buildSajuHook: buildSajuHook, buildMbtiHook: buildMbtiHook, buildCompatWeave: buildCompatWeave,
       buildCompatHook: buildCompatHook, compatWeaveFacts: compatWeaveFacts, buildElemReading: function(sj){ var b = buildElemReading(sj, false); return b ? b.innerText : ''; },
       Interpreter: Interpreter, pairDeep: function(){ return PAIR_DEEP; }, compatSub: function(){ return COMPAT_SUB; },
