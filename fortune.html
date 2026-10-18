@@ -6220,6 +6220,11 @@ function aiQuotaText(product){
 /* 무료로 보여줄 섹션 수. 이 값이 "맛보기"의 크기다.
    너무 적으면 서비스 가치를 못 느끼고, 너무 많으면 결제할 이유가 없어진다. */
 var FREE_SECTION_COUNT = 3;
+/* ★ 2026-10-18 대표님 결정 "1)" — 사주 풀이는 앞 두 장(오프닝 · 한 해 흐름)만 무료. 금전운부터 잠김. 다른 상품은 3장 그대로. */
+function freeSectionsFor(product){
+  var id = (product && typeof product === 'object') ? product.id : product;
+  return splitProductId(String(id || '')).base === 'saju_full' ? 2 : FREE_SECTION_COUNT;
+}
 
 /* =====================================================================
    R13 — 월별 운세 상세 · 대운 상세의 무료/유료 경계.
@@ -7547,6 +7552,21 @@ function aiYearWords(t, y){
     return w + (j ? (JO[j] || j) : '');
   });
 }
+/* 받은 장들을 우리 목차(titles) 순서로 맞춘다. 제목의 ' · ' 앞쪽으로 견준다. 하나라도 못 맞추면 null(예전처럼 자리로).
+   옛 제목 '지금의 10년과 올해'는 '한 해 흐름' 칸으로 보낸다(2026-10-18 옮김). 순서가 이미 같으면 null. */
+var SECTION_TITLE_ALIAS = { '지금의 10년과 올해': '한 해 흐름' };
+function sectionsByTitle(items, titles, getTitle){
+  if(!titles || !titles.length || !items || !items.length) return null;
+  function key(t){ var k = String(t || '').split(' · ')[0].replace(/\s+/g, ' ').trim(); return SECTION_TITLE_ALIAS[k] || k; }
+  var want = titles.map(key), out = new Array(titles.length), same = true;
+  for(var i = 0; i < items.length; i++){
+    var at = want.indexOf(key(getTitle(items[i])));
+    if(at < 0 || out[at]) return null;
+    out[at] = items[i];
+    if(at !== i) same = false;
+  }
+  return same ? null : out;
+}
 function fillNamePlaceholder(text, name, forHtml){
   /* ★ 손질과 이름 채우기는 한 통로다. 여기 말고 다른 데서 서버 글을 만지지 마라 —
      통로가 둘이 되는 순간 한쪽만 고쳐진 글이 생긴다(오늘까지 그런 사고가 여러 번 있었다). */
@@ -7575,7 +7595,7 @@ async function fetchPaidSection(productId, payload, displayName){
   if(!serverContentMode()) return null;
   Interpreter.lastRecovered = false;   /* 이번 요청의 결과만 본다 */
   var data = await billingFetchJson(BILLING.contentEndpoint, {
-    productId: productId, sectionFrom: FREE_SECTION_COUNT, payload: contentPayloadFrom(payload)
+    productId: productId, sectionFrom: freeSectionsFor(productId), payload: contentPayloadFrom(payload)
   }, PAID_BODY_TIMEOUT_MS);
   /* ★ 2026-09-09 — 흘려받기 창구와 **같은 표식**을 쓴다. 두 창구가 서로 다른 이름을 쓰면
      한쪽으로 넘어갔을 때 안내가 조용히 사라진다. */
@@ -7585,7 +7605,7 @@ async function fetchPaidSection(productId, payload, displayName){
   return data.sections.map(function(s, i){
     return {
       id: s.id || ('srv'+i),
-      title: fillNamePlaceholder(s.title || ('섹션 '+(FREE_SECTION_COUNT+i+1)), displayName, false),
+      title: fillNamePlaceholder(s.title || ('섹션 '+(freeSectionsFor(productId)+i+1)), displayName, false),
       icon: safeIconPath(s.icon),
       paragraphs: Array.isArray(s.paragraphs)
         ? s.paragraphs.map(function(t){ return fillNamePlaceholder(t, displayName, false); }) : null,
@@ -10087,12 +10107,13 @@ function generateOnce(key, productId, payload, onText, onOpen){
 
 function paintReportInto(host, localSections, product, tocLabel, payloadFn, displayName, extras, hookHtml){
   AI_TEXT_YEAR = (product && splitProductId(product.id).base === 'saju_full') ? (product.year || VIEW_YEAR) : null;
+  var FREE_N = freeSectionsFor(product);
   var payload = null;
   try{ payload = payloadFn ? payloadFn() : null; }catch(e){ payload = null; }
 
   /* ★ 유료 본문 서버가 연결돼 있으면, 클라이언트는 유료 섹션의 "본문"을 아예 갖지 않는다.
      제목만 남기고 본문을 비워, 결제하지 않은 사람은 브라우저 안에서 본문을 얻을 방법이 없게 만든다. */
-  var baseSections = serverContentMode() ? stripPaidBodies(localSections) : localSections;
+  var baseSections = serverContentMode() ? stripPaidBodies(localSections, FREE_N) : localSections;
   var paidNeeded = serverContentMode() && hasAccess(product.id);
 
   /* ★ R42 — AI 해석은 결제한 사람에게만 부른다. 그래서 '불러오는 중' 표시도 그때만 뜬다.
@@ -10123,7 +10144,7 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
   /* 손님이 목차에서 보는 것은 13개다. 유료 10개만 세어 "총 10개 중"이라고 쓰면
      화면에 보이는 숫자와 어긋난다. 무료 구간은 이미 다 쓰인 것으로 세고 전체로 말한다. */
   var WAIT_TOTAL = baseSections.length;
-  var PAID_TOTAL = Math.max(0, baseSections.length - FREE_SECTION_COUNT);
+  var PAID_TOTAL = Math.max(0, baseSections.length - FREE_N);
 
   function armWait(){
     if(waitDone || waitOpened || waitTimer) return;
@@ -10157,7 +10178,7 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     var bar  = el('div',{class:'wait-bar idle'});
     var fill = el('i',{});
     bar.appendChild(fill);
-    var cnt  = el('p',{class:'wait-count'},[PAID_TOTAL ? ('총 '+WAIT_TOTAL+'개 중 '+FREE_SECTION_COUNT+'개 완성') : '준비하는 중이에요']);
+    var cnt  = el('p',{class:'wait-count'},[PAID_TOTAL ? ('총 '+WAIT_TOTAL+'개 중 '+FREE_N+'개 완성') : '준비하는 중이에요']);
     var tip  = el('p',{class:'wait-tip'},['이 창을 닫으면 지금까지 쓰인 곳부터 바로 읽으실 수 있어요. 나머지는 읽으시는 동안 이어서 채워져요.']);
     body.appendChild(lead); body.appendChild(time); body.appendChild(bar);
     body.appendChild(cnt);  body.appendChild(tip);
@@ -10184,9 +10205,9 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     if(done > PAID_TOTAL) done = PAID_TOTAL;
     if(done > 0){
       waitUI.bar.classList.remove('idle');
-      waitUI.fill.style.width = Math.round((FREE_SECTION_COUNT + done) / WAIT_TOTAL * 100) + '%';
+      waitUI.fill.style.width = Math.round((FREE_N + done) / WAIT_TOTAL * 100) + '%';
     }
-    waitUI.cnt.textContent = '총 ' + WAIT_TOTAL + '개 중 ' + (FREE_SECTION_COUNT + done) + '개 완성';
+    waitUI.cnt.textContent = '총 ' + WAIT_TOTAL + '개 중 ' + (FREE_N + done) + '개 완성';
   }
 
   function finishWait(ok, err){
@@ -10254,7 +10275,7 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     if(showPending) host.appendChild(paidContentNotice(state, loadPaidBody, product));
     renderGatedSections(host, state.sections, product, {
       forceLocked: state.locked || null,
-      pendingFrom: showPending ? FREE_SECTION_COUNT : -1,
+      pendingFrom: showPending ? FREE_N : -1,
       pendingLoading: state.paidLoading,
       onRetry: loadPaidBody,
       extras: extras || null,
@@ -10272,7 +10293,10 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
       state.paidLoading = false;
       state.paidError = null; state.paidErrorCode = null;
       state.recovered = !!Interpreter.lastRecovered;   /* 되찾아 온 글인가 (2026-09-09) */
-      state.sections = baseSections.slice(0, FREE_SECTION_COUNT).concat(remote);
+      var paidBase = baseSections.slice(FREE_N);
+      var fit = sectionsByTitle(remote, paidBase.map(function(x){ return x.title; }), function(x){ return x.title; });
+      if(fit) remote = fit.map(function(x, k){ return x ? Object.assign({}, x, {id: paidBase[k].id, title: paidBase[k].title}) : paidBase[k]; });   /* 옛 순서 글을 제목으로 맞춤(2026-10-18) */
+      state.sections = baseSections.slice(0, FREE_N).concat(remote);
       finishWait(true);
       paint();
     }).catch(function(err){
@@ -10327,7 +10351,7 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
       서버는 글을 만들어 보냈고 화면이 못 붙인 것이다.) */
   function emptyPaidCount(secs){
     var n = 0;
-    for(var i = FREE_SECTION_COUNT; i < secs.length; i++){
+    for(var i = FREE_N; i < secs.length; i++){
       var sc = secs[i];
       var hasPara = sc && Array.isArray(sc.paragraphs) && sc.paragraphs.length &&
                     sc.paragraphs.some(function(t){ return String(t||'').trim(); });
@@ -10445,9 +10469,10 @@ function personLabel(name, fallback){
 }
 
 /* 유료 구간의 본문만 비운다(제목·아이콘은 목차와 잠금 카드에 필요하므로 남긴다). */
-function stripPaidBodies(sections){
+function stripPaidBodies(sections, freeN){
+  var fn = (typeof freeN === 'number') ? freeN : FREE_SECTION_COUNT;
   return sections.map(function(s, i){
-    if(i < FREE_SECTION_COUNT) return s;
+    if(i < fn) return s;
     return { id:s.id, title:s.title, icon:s.icon, body:'', paragraphs:null };
   });
 }
@@ -10486,7 +10511,7 @@ function sectionPlainText(s){
    잠긴 항목은 결제 화면으로 연결한다. */
 function buildGatedToc(sections, product, ariaLabel, forceLocked){
   var unlocked = hasAccess(product.id) && !forceLocked;
-  var freeCount = unlocked ? sections.length : Math.min(FREE_SECTION_COUNT, sections.length);
+  var freeCount = unlocked ? sections.length : Math.min(freeSectionsFor(product), sections.length);
   var toc = el('nav',{class:'toc-nav','aria-label':ariaLabel});
   sections.forEach(function(s,i){
     var label = aiYearWords(s.title, AI_TEXT_YEAR).split(' · ')[0];
@@ -10564,7 +10589,7 @@ function renderGatedSections(view, sections, product, opts){
   /* ★ 2026-10-06 — 서버가 '횟수를 다 썼다'(quota_exceeded)·'권한 없음'(no_access)으로 거절했으면
      화면이 아는 권한(열림)과 상관없이 잠근다. 예전에는 '본문을 불러오지 못했어요'를 열 줄 늘어놓았다. */
   var unlocked = hasAccess(product.id) && !opts.forceLocked;
-  var freeCount = unlocked ? sections.length : Math.min(FREE_SECTION_COUNT, sections.length);
+  var freeCount = unlocked ? sections.length : Math.min(freeSectionsFor(product), sections.length);
 
   sections.forEach(function(s,i){
     if(i >= freeCount) return;
@@ -10604,7 +10629,8 @@ function renderGatedSections(view, sections, product, opts){
     if(opts.extras){
       var ex = null;
       try{ ex = opts.extras(s.id); }catch(e){ ex = null; console.error('섹션 덧붙임 실패', s.id, e); }
-      if(ex) sec.appendChild(el('div',{class:'sec-extra', html:ex}));
+      if(ex && typeof ex === 'object' && ex.nodeType) sec.appendChild(el('div',{class:'sec-extra'},[ex]));   /* 단추가 있는 덧붙임(한 해 흐름 막대)은 노드로 받는다 */
+      else if(ex) sec.appendChild(el('div',{class:'sec-extra', html:ex}));
     }
     /* R23 — 본문에 이미 쓰여 있는 용어에 점선 밑줄을 그어 눌러서 뜻을 볼 수 있게 한다.
        ★ 여기 오는 것은 무료 구간(또는 결제해서 열린 구간)뿐이다 — 잠긴 섹션은 위에서 return하므로
@@ -10867,6 +10893,14 @@ var Interpreter = {
          서로 다른 글로 따로 저장된다 — 산 연도의 글은 몇 년이 지나도 그대로 열린다. */
       year: VIEW_YEAR,
       daewoon: aiLuckPayload(profile, saju, VIEW_YEAR),
+      /* ★ 2026-10-18 대표님 지시 "그 해 운세를 먼저 풀고 전체를" — 2장 '한 해 흐름'에서 달마다를 짚으려면 달마다 값이 있어야 한다.
+         화면 막대·월별 운세와 같은 값(buildMonthlyFortune 의 별점·간지)이다. 새 계산 없음. 프롬프트 7-6. */
+      yearMonths: (function(){
+        try{
+          var mf = buildMonthlyFortune(profile, VIEW_YEAR, function(){ return false; });
+          return (mf && mf.months) ? mf.months.map(function(m){ return { month: m.month, ganji: m.ganji.text, score: m.avg }; }) : null;
+        }catch(e){ return null; }
+      })(),
       /* ★ 제목 목록을 함께 보낸다. 이게 없으면 AI가 제목을 제멋대로 지어,
          화면의 목차(로컬에서 만든 것)와 본문이 서로 다른 이름을 갖게 된다. */
       requested: { sections: 13, tone: '해요체', language: 'ko', sectionTitles: null,
@@ -11101,6 +11135,10 @@ var Interpreter = {
       }
     }
     if(cur) out.push(cur);
+    /* ★ 2026-10-18 — 사주 풀이 순서를 바꾼 뒤, 옛 순서로 만들어 둔 글(되찾기로 열림)이 자리만 보고 끼워지면
+       '타고난 기질' 글이 '한 해 흐름' 칸에 들어간다. AI가 적은 제목이 우리 목록에 다 있으면 **제목으로** 맞춰 끼운다. */
+    var byTitle = sectionsByTitle(out, titles, function(x){ return x.title; });
+    if(byTitle) return byTitle.map(function(sec, i){ return sec ? { title: titles[i], paras: sec.paras } : { title: titles[i], paras: [] }; });
     /* 제목은 우리가 정한 것을 쓴다. AI가 조금 다르게 적어도 목차와 어긋나지 않게. */
     return out.map(function(sec, i){
       return { title: (titles && titles[i]) ? titles[i] : sec.title, paras: sec.paras };
@@ -13248,12 +13286,18 @@ function buildReport13(profile, saju, targetYear){
     var newChung = saeunBranchRel.chung.length>rel.chung.length;
     var saeunKey = newChung?'chung':(newHap?'hap':'none');
     var curMH = daeunMoneyHealthLines(dayStemIdx, cur.ganji, counts, curIdx); // v5-C: 기능5 타임라인과 동일한 함수 재사용(R16: slot=curIdx)
-    add('s11','지금의 10년과 올해 · 대운과 그 해 흐름(세운)','M10 2 A8 8 0 1 1 9.99 2 M10 6 L10 10 L13 12',
+    /* ★ 2026-10-18 대표님 지시 — 옛 11장('지금의 10년과 올해')을 2번 '한 해 흐름'으로 옮겼다. 그 해를 먼저, 지금 대운은 뒤에.
+       달마다 막대는 화면이 이 장 아래에 붙인다(renderReport13 의 extras 'sy'). */
+    add('sy', SAJU_YEAR_SECTION_TITLE, 'M3 5 L17 5 L17 17 L3 17 Z M3 9 L17 9 M7 3 L7 7 M13 3 L13 7',
+      '<p>'+(thisYear === kstYearOf(Date.now()) ? '올해('+thisYear+'년, '+saeun.text+' 해)는' : thisYear === kstYearOf(Date.now())+1 ? '내년('+thisYear+'년, '+saeun.text+' 해)는' : thisYear+'년('+saeun.text+' 해)는')+' — '+PB.saeunPattern[saeunKey].replace(/올해/g, '이 해').replace(/^(게다가|다만) /, '')+'</p>'+
       '<p><strong>'+cur.startAge+'세부터 시작된 '+cur.ganji.text+'('+cur.ganji.textH+') 대운</strong>을 지나는 중이에요. '+PB.currentDaeunLine[curSip]+' '+daeunSeasonLine(curSip)+'</p>'+
       '<p>'+curMH.stageLine+'</p>'+
       '<p>'+curMH.moneyLine+' '+curMH.healthLine+'</p>'+
-      '<p class="mh-note">'+DAEUN_MH_NOTE+'</p>'+
-      '<p>'+(thisYear === kstYearOf(Date.now()) ? '올해('+thisYear+'년, '+saeun.text+' 해)는' : thisYear === kstYearOf(Date.now())+1 ? '내년('+thisYear+'년, '+saeun.text+' 해)는' : thisYear+'년('+saeun.text+' 해)는')+' — '+PB.saeunPattern[saeunKey]+'</p>');
+      '<p class="mh-note">'+DAEUN_MH_NOTE+'</p>');
+  } else {
+    var saeun0 = SajuEngine.saeunPillar(reportYear);
+    add('sy', SAJU_YEAR_SECTION_TITLE, 'M3 5 L17 5 L17 17 L3 17 Z M3 9 L17 9 M7 3 L7 7 M13 3 L13 7',
+      '<p>'+reportYear+'년('+saeun0.text+' 해)의 흐름을 달마다 나눠 아래에 짚었어요.</p>');
   }
 
   // 12. 다가올 대운
@@ -13275,8 +13319,17 @@ function buildReport13(profile, saju, targetYear){
   add('s13','클로징','M10 3 L10 17 M4 10 L16 10',
     '<p>'+PB.closingBase[sg]+' '+PB.closingFlavor[domGroup]+'</p><p>'+PB.closingTail+'</p>');
 
-  return { sections: sections, meta:{ balanceKey:balanceKey, sg:sg, domSip:domSip, dohwa:dohwa, hasHapAny:hasHapAny, hasChungAny:hasChungAny } };
+  /* ★ 2026-10-18 대표님 지시 — 순서: 오프닝 → 한 해 흐름(월별) → 금전 → 사랑 → 일 → 타고난 기질 → 사회적 인상 → 내면
+     → 잠재력 → 반복 패턴 → 지난 10년 → 앞으로 10년 → 클로징. 무료는 앞 두 장(freeSectionsFor).
+     ★ 이 순서가 곧 AI 요청서의 sectionTitles 순서다(저장 열쇠 재료) — 바꾸면 새 글이 만들어진다. */
+  var order = SAJU_SECTION_ORDER, byId = {};
+  sections.forEach(function(x){ byId[x.id] = x; });
+  var ordered = order.map(function(id){ return byId[id]; }).filter(Boolean);
+  sections.forEach(function(x){ if(order.indexOf(x.id) < 0) ordered.push(x); });
+  return { sections: ordered, meta:{ balanceKey:balanceKey, sg:sg, domSip:domSip, dohwa:dohwa, hasHapAny:hasHapAny, hasChungAny:hasChungAny } };
 }
+var SAJU_YEAR_SECTION_TITLE = '한 해 흐름 · 그 해의 기운과 달마다 흐름';
+var SAJU_SECTION_ORDER = ['s1','sy','s7','s5','s6','s2','s3','s4','s8','s9','s10','s12','s13'];
 
 /* =====================================================================
    기능18: MBTI 풀이 리포트 (신규, v3 — 기능6 buildReport13/목차 UI와 형식적으로 대구)
@@ -14274,6 +14327,7 @@ function buildMonthlyFortune(profile, year, isOpen){
   var counts = elemInfo.counts;
   var weakestElem = counts.indexOf(Math.min.apply(null,counts));
   var mostElem = counts.indexOf(Math.max.apply(null,counts));
+  var mStrength = sinGangJak(saju);   /* 2026-10-18 — 달의 윗글자가 보탬인지 가르는 기준 */
 
   // 현재 대운 상승기/준비기 안내(화면 상단 1회 — 대운은 원국 전체에 걸리는 흐름이라 달마다 반복하지 않는다)
   var daeunIntro = null;
@@ -14344,10 +14398,26 @@ function buildMonthlyFortune(profile, year, isOpen){
     var mStageAdj  = (typeof mStagePow === 'number') ? (mStagePow - 9) * 1.6 : 0;
     var mTotalTier = newChung?'chung':(newHap?'hap':'none');
     var mMoneyKey  = (monthSip==='정재' || monthSip==='편재') ? monthSip : sipGroup;
-    var mHealthTier= (monthElem===weakestElem) ? 'weak' : (monthElem===mostElem ? 'most' : 'other');
+    /* ★ 2026-10-18 대표님 지시 "해가 달라지는 부분 꼼꼼하게" — 총운·애정·건강이 **달의 아랫글자(띠)로만** 정해져
+       해마다 열두 달이 똑같이 나왔다(달의 띠는 해마다 같다 — 1월은 늘 축월). 그 해에만 있는 것을 둘 넣는다.
+       ① 그 해 기운(세운)의 띠와 이 달 띠가 부딪히나(충)·맞물리나(합·삼합) → 총운 ±, 애정 절반
+       ② 건강은 달의 윗글자 기운도 본다(윗글자는 해마다 바뀐다 — 5년 주기). 1월은 그 전 해(입춘 전)의 띠를 쓴다(mp.yearGanji). */
+    var yrBranchIdx = (mp.yearGanji && typeof mp.yearGanji.branchIdx === 'number') ? mp.yearGanji.branchIdx : null;
+    var yrRel = (yrBranchIdx == null || yrBranchIdx === mBranchIdx) ? null : SajuEngine.branchRelations([{idx:mBranchIdx},{idx:yrBranchIdx}]);
+    var yrTier = !yrRel ? 'none' : (yrRel.chung.length ? 'chung' : ((yrRel.hap.length || yrRel.samhap.length) ? 'hap' : 'none'));
+    var yrAdj = yrTier === 'chung' ? -8 : (yrTier === 'hap' ? 5 : 0);
+    /* ③ 달의 윗글자(해마다 바뀜)가 나에게 힘을 보태나 덜어 가나 — 신약이면 인성·비겁이 보탬, 신강이면 식상·재성·관성이 보탬(억부).
+       ④ 애정: 여성은 관성, 남성은 재성이 들어오는 달에 인연 쪽이 움직인다고 본다(전통 해석). */
+    var helps = (mStrength === 'weak') ? (sipGroup === '인성' || sipGroup === '비겁') : (sipGroup === '식상' || sipGroup === '재성' || sipGroup === '관성');
+    var stemAdj = helps ? 4 : -3;
+    var loveStemAdj = ((profile.gender === 'M' && sipGroup === '재성') || (profile.gender !== 'M' && sipGroup === '관성')) ? 5 : 0;
+    var mStemElem = SajuEngine.STEM_ELEM[mStemIdx];
+    var mHealthTier= (monthElem===weakestElem || mStemElem===weakestElem) ? 'weak' : ((monthElem===mostElem || mStemElem===mostElem) ? 'most' : 'other');
+    /* 건강 문장의 {e}·{o} 는 판정에 실제로 걸린 기운으로 채운다(윗글자로 걸렸는데 아랫글자 기운을 적으면 문장이 거짓이 된다). */
+    var mHealthElem = mHealthTier === 'weak' ? weakestElem : (mHealthTier === 'most' ? mostElem : monthElem);
     var mScores = {
-      total:  clamp100((TODAY_TOTAL_SCORE[mTotalTier]   != null ? TODAY_TOTAL_SCORE[mTotalTier]   : 62) + mStageAdj),
-      love:   clamp100((TODAY_LOVE_SCORE[loveTier]      != null ? TODAY_LOVE_SCORE[loveTier]      : 58) + mStageAdj*0.5),
+      total:  clamp100((TODAY_TOTAL_SCORE[mTotalTier]   != null ? TODAY_TOTAL_SCORE[mTotalTier]   : 62) + mStageAdj + yrAdj + stemAdj),
+      love:   clamp100((TODAY_LOVE_SCORE[loveTier]      != null ? TODAY_LOVE_SCORE[loveTier]      : 58) + mStageAdj*0.5 + yrAdj*0.5 + loveStemAdj),
       money:  clamp100((TODAY_MONEY_SCORE[mMoneyKey]    != null ? TODAY_MONEY_SCORE[mMoneyKey]    : 60) + mStageAdj*0.5),
       work:   clamp100((TODAY_WORK_SCORE[sipGroup]      != null ? TODAY_WORK_SCORE[sipGroup]      : 62) + mStageAdj*0.5),
       health: clamp100((TODAY_HEALTH_SCORE[mHealthTier] != null ? TODAY_HEALTH_SCORE[mHealthTier] : 66) + mStageAdj*0.5)
@@ -14357,14 +14427,19 @@ function buildMonthlyFortune(profile, year, isOpen){
       mp: mp,
       /* 타일에 찍히는 총운 별점 — 무료 요약 지표라 잠금 여부와 무관하게 계산한다. */
       stars: scoreToStars(mScores.total),
+      /* ★ 2026-10-18 — 종합 별점(다섯 운 평균). 총운은 달의 아랫글자로만 정해져 **해마다 똑같이** 나왔다(실측 2026~2029 열두 달 동일).
+         금전·일은 달의 윗글자를 봐서 해마다 달라지므로, 막대·타일·AI 재료는 이 값을 쓴다. 상세 창의 '총운' 별은 그대로 stars. */
+      overall: scoreToStars((mScores.total + mScores.love + mScores.money + mScores.work + mScores.health) / 5),
+      avg: Math.round((mScores.total + mScores.love + mScores.money + mScores.work + mScores.health) / 5),
       scores: mScores,
       seed: seed,
       total: newChung?'chung':(newHap?'hap':'none'),
       money: monthSip==='정재' ? 'jeongjae' : (monthSip==='편재' ? 'pyeonjae' : sipGroup),
       work: sipGroup,
       love: loveTier,
-      elem: monthElem,
-      health: (monthElem===weakestElem) ? 'weak' : (monthElem===mostElem ? 'most' : 'other')
+      elem: mHealthElem,
+      health: mHealthTier,
+      yr: yrTier, yrGz: mp.yearGanji ? mp.yearGanji.text : '', helps: helps, loveStem: loveStemAdj > 0
     };
   });
 
@@ -14386,21 +14461,24 @@ function buildMonthlyFortune(profile, year, isOpen){
   var months = pillars.map(function(mp){
     var m = meta[mp.month];
     /* ★ 잠긴 달은 여기서 끝. 아래 문장 조립을 통째로 건너뛴다. */
-    if(!isOpen(mp.month)) return { month:mp.month, ganji:mp.ganji, stars:m.stars, items:null, locked:true };
+    if(!isOpen(mp.month)) return { month:mp.month, ganji:mp.ganji, stars:m.stars, overall:m.overall, avg:m.avg, items:null, locked:true };
 
     var hBank = MONTHLY_HEALTH_LINES[m.health];
     var healthText = fillElemOrgan(hBank[idxHealth[mp.month]], m.elem)
       + ' (전통 오행 이론에 기반한 참고용 근사이며 의학적 진단이 아니에요.)';
 
     var items = {
-      total: { label:'총운', stars: m.stars, text: MONTHLY_TOTAL_PHRASES[m.total][idxTotal[mp.month]] },
+      total: { label:'총운', stars: m.stars, text: MONTHLY_TOTAL_PHRASES[m.total][idxTotal[mp.month]]
+        + (m.yr === 'chung' ? ' 그 해의 기운('+m.yrGz+')과 이 달 기운이 정면으로 맞서는 달이라, 한 해 중에서도 흔들림이 큰 편이에요. 큰 결정은 앞뒤 달로 옮겨 보세요.'
+          : m.yr === 'hap' ? ' 그 해의 기운('+m.yrGz+')과 이 달 기운이 서로 맞물리는 달이라, 한 해 중에서도 일이 잘 이어지는 편이에요. 미뤄 둔 일을 여기에 놓아 보세요.' : '')
+        + (m.helps ? ' 이 달 들어오는 기운('+mp.ganji.text+')이 지금 나에게 모자란 힘을 채워 주는 쪽이라 한결 수월해요.' : ' 이 달 들어오는 기운('+mp.ganji.text+')은 힘을 덜어 가는 쪽이라 무리하지 않는 편이 좋아요.') },
       /* ★ R86 — 여기도 난수였다(1+((m.seed+N)%5)). 위에서 계산해 둔 점수로 바꾼다. */
-      love: { label:'애정운', stars: scoreToStars(m.scores.love), text: MONTHLY_LOVE_PHRASES[m.love][idxLove[mp.month]] },
+      love: { label:'애정운', stars: scoreToStars(m.scores.love), text: MONTHLY_LOVE_PHRASES[m.love][idxLove[mp.month]] + (m.loveStem ? ' 이 달은 인연을 뜻하는 기운도 함께 들어와서 새로운 만남이나 관계의 진전이 생기기 쉬워요.' : '') },
       money: { label:'금전운', stars: scoreToStars(m.scores.money), text: MONTHLY_MONEY_PHRASES[m.money][idxMoney[mp.month]] },
       work: { label:'학업·직장운', stars: scoreToStars(m.scores.work), text: MONTHLY_WORK_PHRASES[m.work][idxWork[mp.month]] },
       health: { label:'건강운', stars: scoreToStars(m.scores.health), text: healthText }
     };
-    return { month:mp.month, ganji:mp.ganji, stars:m.stars, items:items, locked:false };
+    return { month:mp.month, ganji:mp.ganji, stars:m.stars, overall:m.overall, avg:m.avg, items:items, locked:false };
   });
 
   return { year:year, daeunIntro:daeunIntro, months:months };
@@ -20285,7 +20363,7 @@ function renderSaju(){
 
   /* ★ 2026-10-18 대표님 지시 "세운 지워라" — 10-16 에 넣었던 '해마다 바뀌는 흐름 · 세운' 띠를 뺐다. 되살리지 마십시오. */
 
-  view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ ROUTE='monthlyFortune'; render(); }},['올해 월별 운세 보기']));
+  view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ ROUTE='monthlyFortune'; render(); }},[(VIEW_YEAR === kstYearOf(Date.now()) ? '올해' : VIEW_YEAR+'년')+' 월별 운세 보기']));
   /* ★ R92 — 친구 사주를 봐주는 길. 이 화면에서 가장 자주 그 생각이 든다(대표님 제보). */
   /* ★ 2026-10-04 — 같은 모양 단추 넷이 세로로 쌓여 있었다. 곁가지 둘은 한 줄로 묶는다. */
   view.appendChild(el('div',{class:'btn-row', style:'margin-top:4px;'},[
@@ -20342,12 +20420,12 @@ function renderMonthlyFortune(){
     : (previewMonth>0
         /* ★ R52 — '무료/유료'로 나눠 말하지 않는다(대표님 지시). 값은 버튼에 적혀 있어 다들 안다.
            여기서는 '무엇을 볼 수 있는지'만 말한다. */
-        ? '달마다의 두 글자(간지)와 총운 별점은 모두 볼 수 있어요. 총운·애정운·금전운·학업·직장운·건강운 자세한 풀이는 이번 달('+previewMonth+'월)만 미리 열어 두었어요.'
-        : '달마다의 두 글자(간지)와 총운 별점은 모두 볼 수 있어요.') )}));
+        ? '달마다의 두 글자(간지)와 종합 별점은 모두 볼 수 있어요. 총운·애정운·금전운·학업·직장운·건강운 자세한 풀이는 이번 달('+previewMonth+'월)만 미리 열어 두었어요.'
+        : '달마다의 두 글자(간지)와 종합 별점은 모두 볼 수 있어요.') )}));
 
   if(mf.daeunIntro){
     var introCard=el('div',{class:'scroll-card stamp-in'});
-    introCard.appendChild(cardHead('올해를 지나는 큰 흐름', ['대운']));
+    introCard.appendChild(cardHead((year === kstYearOf(Date.now()) ? '올해를' : yearWithRel(year)+'을')+' 지나는 큰 흐름', ['대운']));   /* 2026-10-18 — 고른 해의 말로 */
     introCard.appendChild(el('p',{},[mf.daeunIntro]));
     view.appendChild(introCard);
   }
@@ -20385,8 +20463,8 @@ function renderMonthlyFortune(){
        낭독은 aria-label이 대신하게 한다(타일이 좁아 buildStars의 별 5개는 들어가지 않는다). */
     /* role='img'가 없으면 낭독기가 div의 aria-label을 무시할 수 있다.
        안의 '★'은 aria-hidden이라, role이 빠지면 점수가 통째로 안 읽힌다. */
-    box.appendChild(el('div',{class:'mc-st', role:'img', 'aria-label':'운세 '+mo.stars+'점 (5점 만점)'},[
-      el('span',{'aria-hidden':'true'},['★'.repeat(mo.stars)+'☆'.repeat(Math.max(0,5-mo.stars))])
+    box.appendChild(el('div',{class:'mc-st', role:'img', 'aria-label':'종합 운세 '+mo.overall+'점 (5점 만점)'},[
+      el('span',{'aria-hidden':'true'},['★'.repeat(mo.overall)+'☆'.repeat(Math.max(0,5-mo.overall))])
     ]));
     grid.appendChild(box);
   });
@@ -20483,9 +20561,11 @@ function upsertHistoryEntry(list, matches, entry, max){
 function recordSajuReportHistory(p, report){
   if(!p || !report || !report.sections || !report.sections.length) return;
   var d = todayStr();
+  /* ★ 2026-10-18 — 사주 풀이는 해마다 다른 글이다. 같은 날 2026·2027 을 열면 한 줄로 덮이던 것을 해별로 나눈다. */
+  var vy = VIEW_YEAR;
   var changed = upsertHistoryEntry(STATE.sajuHistory,
-    function(x){ return x.profileId===p.id && x.date===d; },
-    {id:uid(), date:d, profileId:p.id, summary:reportOpeningSummary(report.sections[0], '오프닝: ')},
+    function(x){ return x.profileId===p.id && x.date===d && (x.year || vy) === vy; },
+    {id:uid(), date:d, year:vy, profileId:p.id, summary:reportOpeningSummary(report.sections[0], '오프닝: ')},
     REPORT_HISTORY_MAX);
   if(changed) saveState();
 }
@@ -20554,6 +20634,36 @@ function buildYearPicker(){
 /* =====================================================================
    렌더: 사주 풀이 리포트 (기능6 — 13섹션)
 ===================================================================== */
+/* ★ 2026-10-18 대표님 지시 — 사주 풀이 2장 '한 해 흐름' 아래 달마다 막대. 새 계산 없음(buildMonthlyFortune 값).
+   막대 높이 = 그 달 별점(5점 만점). 누르면 그 달 상세 — 잠긴 해면 상세 창이 잠금으로 뜬다(월별 운세 화면과 같은 규칙). */
+function buildYearMonthBars(p){
+  try{
+    var unlocked = sajuDetailUnlocked();
+    var ymf = buildMonthlyFortune(p, VIEW_YEAR, function(){ return unlocked; });
+    if(!ymf || !ymf.months || !ymf.months.length) return null;
+    var ms = ymf.months;
+    var top = Math.max.apply(null, ms.map(function(m){ return m.avg; }));
+    var low = Math.min.apply(null, ms.map(function(m){ return m.avg; }));
+    var box = el('div',{class:'ym-box'});
+    box.appendChild(el('div',{class:'year-basis'},[
+      el('strong',{},['힘이 실리는 달 · ']), ms.filter(function(m){ return m.avg === top; }).map(function(m){ return m.month+'월'; }).join(', '), el('br'),
+      el('strong',{},['쉬어 가는 달 · ']), (top === low ? '없어요 — 한 해가 고르게 흘러요' : ms.filter(function(m){ return m.avg === low; }).map(function(m){ return m.month+'월'; }).join(', '))
+    ]));
+    var bars = el('div',{class:'ym-bars', role:'group', 'aria-label':VIEW_YEAR+'년 달마다 운세 막대'});
+    ms.forEach(function(mo){
+      var hi = (mo.avg === top && top !== low), lo = (mo.avg === low && top !== low);
+      bars.appendChild(el('button',{type:'button', class:'ym-bar'+(hi?' hi':'')+(lo?' lo':''),
+        'aria-label':mo.month+'월 종합 '+mo.avg+'점 · 눌러서 자세히', onclick:function(){ openMonthlyFortuneSheet(p.name, mo); }},[
+        el('span',{class:'yb-n','aria-hidden':'true'},[String(mo.avg)]),
+        el('span',{class:'yb-col','aria-hidden':'true'},[el('span',{class:'yb-fill', style:'height:'+Math.max(8, Math.min(100, Math.round((mo.avg - 40) / 45 * 100)))+'%;'})]),
+        el('span',{class:'yb-m','aria-hidden':'true'},[mo.month+'월'])
+      ]));
+    });
+    box.appendChild(bars);
+    box.appendChild(el('p',{class:'ym-tap'},['👆 막대를 누르면 그 달 풀이가 나와요']));
+    return box;
+  }catch(e){ console.warn('한 해 흐름 막대 실패', e); return null; }
+}
 function renderReport13(){
   var main=$('#main'); main.innerHTML='';
   var p=activeProfile();
@@ -20574,7 +20684,7 @@ function renderReport13(){
     view.appendChild(el('div',{class:'year-basis'},[
       el('strong',{},[yearWithRel(VIEW_YEAR)+' '+(vsa ? vsa.text+'년 ' : '')+'기준 풀이예요']),
       el('br'),
-      '10~12장의 대운과 11장의 그 해 흐름은 '+VIEW_YEAR+'년 나이와 기운으로 풀었어요. 타고난 성격(1~4장)은 해마다 같아요.'
+      '2장 한 해 흐름과 금전·사랑·일은 '+VIEW_YEAR+'년 기운을 먼저 짚고, 타고난 성격은 그 뒤에 풀었어요.'
     ]));
   }
 
@@ -20586,45 +20696,9 @@ function renderReport13(){
   catch(e){ console.error('연애 표 오행 계산 실패', e); }
   paintReportInto(sajuHost, report.sections, sajuProduct(), '사주 풀이 목차',
     function(){ return Interpreter.buildSajuPayload(p, saju); }, p.name,
-    function(id){ return id==='s5' ? buildLoveLensTables(sajuLoveCounts, p.mbti) : ''; },
+    function(id){ return id==='s5' ? buildLoveLensTables(sajuLoveCounts, p.mbti) : (id==='sy' ? buildYearMonthBars(p) : ''); },
     buildSajuHook(p, saju));
 
-  /* ★ 2026-10-18 대표님 지시 "연도별 풀이는 연도별로 월별로 흐름도 꼭 짚어줘라" — 열린 해의 풀이 끝에
-     그 해 열두 달을 한눈에 놓는다. 새 계산 없음 — 월별 운세 화면과 같은 buildMonthlyFortune 의 값(별점·총운 문장)이다.
-     줄을 누르면 그 달의 다섯 운이 뜬다. 잠긴 해는 안 그린다(유료 본문). */
-  if(sajuDetailUnlocked()){
-    try{
-      var ymf = buildMonthlyFortune(p, VIEW_YEAR, function(){ return true; });
-      if(ymf && ymf.months && ymf.months.length){
-        var mCard = sectionCard([yearWithRel(VIEW_YEAR)+' 달마다의 흐름'], ['한 해를 열두 달로 나눠 짚었어요.']);
-        var ms = ymf.months.slice();
-        var top = Math.max.apply(null, ms.map(function(m){ return m.stars; }));
-        var low = Math.min.apply(null, ms.map(function(m){ return m.stars; }));
-        var best = ms.filter(function(m){ return m.stars === top; }).map(function(m){ return m.month+'월'; });
-        var care = ms.filter(function(m){ return m.stars === low; }).map(function(m){ return m.month+'월'; });
-        var sum = el('div',{class:'year-basis'},[
-          el('strong',{},['힘이 실리는 달 · ']), best.join(', '), el('br'),
-          el('strong',{},['쉬어 가는 달 · ']), (top === low ? '없어요 — 한 해가 고르게 흘러요' : care.join(', '))
-        ]);
-        mCard.appendChild(sum);
-        /* ★ 2026-10-18 대표님 "너무 길어지지 않냐 · 대운처럼 그래프 그리고 월별로 터치했을 때 설명" — 열두 줄 글 대신
-           막대 열두 개. 높이 = 그 달 별점(5점 만점, 눈금을 늘리지 않음). 막대를 누르면 그 달 상세 창. */
-        var bars = el('div',{class:'ym-bars', role:'group', 'aria-label':VIEW_YEAR+'년 달마다 운세 막대'});
-        ms.forEach(function(mo){
-          var hi = (mo.stars === top && top !== low), lo = (mo.stars === low && top !== low);
-          bars.appendChild(el('button',{type:'button', class:'ym-bar'+(hi?' hi':'')+(lo?' lo':''),
-            'aria-label':mo.month+'월 운세 '+mo.stars+'점 (5점 만점) · 눌러서 자세히', onclick:function(){ openMonthlyFortuneSheet(p.name, mo); }},[
-            el('span',{class:'yb-n','aria-hidden':'true'},[String(mo.stars)]),
-            el('span',{class:'yb-col','aria-hidden':'true'},[el('span',{class:'yb-fill', style:'height:'+(mo.stars*20)+'%;'})]),
-            el('span',{class:'yb-m','aria-hidden':'true'},[mo.month+'월'])
-          ]));
-        });
-        mCard.appendChild(bars);
-        mCard.appendChild(el('p',{class:'ym-tap'},['👆 막대를 누르면 그 달 풀이가 나와요']));
-        view.appendChild(mCard);
-      }
-    }catch(e){ console.warn('풀이 월별 흐름 실패', e); }
-  }
 
   var sumCard=el('div',{class:'scroll-card'});
   sumCard.appendChild(cardHead('태어난 때를 적은 '+charCountWord(p)+' 글자', ['사주팔자']));
@@ -26440,7 +26514,7 @@ function renderHistory(){
         var sChipKey = charKeyForDayStem(p ? getSajuResult(p) : null);
         if(sChipKey) left.appendChild(buildCharChip(sChipKey, 34, CHARACTERS[sChipKey].name.split(' · ')[0]+' 캐릭터'));
         var sTxt=el('div',{class:'hi-text'});
-        sTxt.appendChild(el('div',{},[s.date]));
+        sTxt.appendChild(el('div',{},[(s.year ? s.year+'년 풀이 · ' : '')+s.date]));
         sTxt.appendChild(el('div',{class:'meta'},[s.summary]));
         left.appendChild(sTxt);
         item.appendChild(left);
@@ -26548,7 +26622,7 @@ function openSajuDetailModal(s){
   var body=el('div',{});
   body.appendChild(el('p',{},[s.summary]));
   body.appendChild(el('p',{class:'section-sub', style:'margin-top:8px;'},['전체 리포트는 \'내 사주\' 탭에서 다시 볼 수 있어요.']));
-  openModal('사주풀이 · '+s.date, autoTermify(body), [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
+  openModal('사주풀이 · '+(s.year ? s.year+'년 · ' : '')+s.date, autoTermify(body), [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
 }
 function openMbtiReportDetailModal(m){
   var body=el('div',{});
@@ -27678,8 +27752,8 @@ function pixelProductParams(productId){
 var HEAD_ICONS = [
   [/^총운$/, '✨'], [/^애정운$/, '💕'], [/^금전운$/, '💰'], [/^학업·직장운$/, '💼'], [/^건강운$/, '🌿'],
   [/^오늘의 총평$/, '📝'], [/곁에 두면 좋은 것/, '🍀'],
-  [/여덟 글자/, '📜'], [/10년|대운|큰 흐름/, '🌊'], [/달마다/, '📅'], [/올해를 지나는|그 해 흐름|세운/, '📆'],
-  [/오프닝/, '✨'], [/클로징/, '🌙'], [/타고난 기질|핵심 성향/, '🌱'], [/사회적 인상/, '🎭'], [/내면|겉과 속/, '🪞'],
+  [/여덟 글자/, '📜'], [/10년|대운|큰 흐름/, '🌊'], [/달마다/, '📅'], [/[을를] 지나는 큰 흐름|그 해 흐름|세운/, '📆'],
+  [/오프닝/, '✨'], [/클로징/, '🌙'], [/한 해 흐름/, '📅'], [/타고난 기질|핵심 성향/, '🌱'], [/사회적 인상/, '🎭'], [/내면|겉과 속/, '🪞'],
   [/사랑|연애/, '💕'], [/커리어|직업|일 ·/, '💼'], [/금전|재물|돈과 생활/, '💰'], [/잠재력|성장 포인트/, '🌟'],
   [/반복되는 패턴|고민/, '🔁'], [/타고난 강점/, '💪'], [/인간관계/, '👥'], [/스트레스/, '🧘'],
   [/첫인상/, '🎭'], [/말이 통하는|대화가 풀리는/, '💬'], [/다툴 때/, '⚡'], [/화해/, '🕊️'], [/함께 사는/, '🏡'],
@@ -28579,7 +28653,7 @@ try{
       openPaywall: openPaywall,   /* 결제창 문구를 화면으로 재는 용도 (2026-09-21) */
       groupMyMemberIdx: groupMyMemberIdx, groupMyRowStale: groupMyRowStale,
       /* 2026-09-22 — 결제 취소 복귀 검사(checks-slow/pay_cancel.cjs)가 쓴다 */
-      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, screenTextForCopy: screenTextForCopy, startService: startService, finishConsent: finishConsent, adGoPending: adGoPending, viewYear: function(){ return VIEW_YEAR; }, setViewYear: function(y){ VIEW_YEAR = y; render(); }, buildReport13: buildReport13, getSajuResult: getSajuResult, aiYearWords: aiYearWords, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
+      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, screenTextForCopy: screenTextForCopy, startService: startService, finishConsent: finishConsent, adGoPending: adGoPending, viewYear: function(){ return VIEW_YEAR; }, setViewYear: function(y){ VIEW_YEAR = y; render(); }, buildReport13: buildReport13, getSajuResult: getSajuResult, aiYearWords: aiYearWords, buildMonthlyFortune: buildMonthlyFortune, sectionsByTitle: sectionsByTitle, sajuPayload: function(y){ var pr=activeProfile(), s=getSajuResult(pr), v=VIEW_YEAR; VIEW_YEAR=y; var o=Interpreter.buildSajuPayload(pr,s); VIEW_YEAR=v; return o; }, parseSections: function(t, ti){ return Interpreter.parseSections(t, ti); }, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
       elemReadFacts: elemReadFacts, buildSajuHook: buildSajuHook, buildMbtiHook: buildMbtiHook, buildCompatWeave: buildCompatWeave,
       buildCompatHook: buildCompatHook, compatWeaveFacts: compatWeaveFacts, buildElemReading: function(sj){ var b = buildElemReading(sj, false); return b ? b.innerText : ''; },
       Interpreter: Interpreter, pairDeep: function(){ return PAIR_DEEP; }, compatSub: function(){ return COMPAT_SUB; },
