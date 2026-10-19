@@ -27224,8 +27224,9 @@ function sqFrame(ctx, paid){
   ctx.strokeStyle = paid ? CARD_SEAL : CARD_INK; ctx.lineWidth = paid ? 8 : 5;
   ctx.strokeRect(24, 24, SQ_W-48, SQ_W-48);
   ctx.fillStyle = CARD_SEAL; ctx.font = '800 40px '+CARD_SANS; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText(COMPANY.serviceName, 64, 104);       /* 글자 로고 = 로고색(--brand) */
-  drawLogoOnCanvas(ctx, SQ_W-110, 86, 70);
+  /* 2026-10-19 대표님 "하트 체크 로고와 글자 인연점을 왼쪽 위에 한 번에" — 서비스 머리글과 같은 순서(하트 → 글자) */
+  drawLogoOnCanvas(ctx, 96, 90, 60);
+  ctx.fillText(COMPANY.serviceName, 136, 104);      /* 글자 로고 = 로고색(--brand) */
 }
 function sqFooter(ctx, txt){
   ctx.fillStyle = CARD_SEAL; ctx.font = '700 28px '+CARD_SANS; ctx.textAlign = 'center';
