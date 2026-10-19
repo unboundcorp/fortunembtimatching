@@ -27202,21 +27202,82 @@ function sqRound(ctx, x, y, w, h, r){
 }
 /* 낱말 단위로 접는다(글자 단위로 접으면 낱말 한가운데가 끊긴다). '\n' 은 줄을 못 박는다.
    maxLines 를 넘으면 마지막 줄 끝 낱말을 '…'로 바꾼다. */
-function sqWrap(ctx, t, x, y, maxW, lh, maxLines, align){
+/* ★ 2026-10-19 대표님 "줄바꿈을 문장 단위로 할 수 없을까 · 줄 바꾸면 조금 어색하다"
+   ① 문장마다 새 줄에서 시작한다 ② 한 문장이 한 줄에 안 들어가면 줄 길이를 고르게 나누되
+   쉼표·이음 어미(…고 ·…서 ·…는데) 뒤에서 끊고, '같은 · 수 · 것' 같은 말이 줄 머리에 혼자 오지 않게 한다
+   ③ 그래도 칸을 넘치면 글자를 조금(최대 18%) 줄여 문장을 지킨다. 그다음에야 '…'로 끊는다. */
+var SQ_BREAK_GOOD = /[,，]$|(?:고|서|며|면|는데|지만|니까|라서|어서|아서|해서|면서|거나|든지)$/;
+var SQ_BREAK_HEAD = /^(?:같은|같이|수|것|거|게|때|줄|듯|만큼|뿐|중|있어요|있는|없어요|돼요|해요|해|하는|보는|가는|오는|들어오는|나가는)(?:\S*)?$/;
+function sqSentences(t){
   var out = [];
   String(t == null ? '' : t).split('\n').forEach(function(para){
-    var line = '';
-    para.split(' ').forEach(function(wd){
-      var test = line ? line+' '+wd : wd;
-      if(ctx.measureText(test).width > maxW && line){ out.push(line); line = wd; } else line = test;
-    });
-    if(line) out.push(line);
+    para = para.trim(); if(!para) return;
+    var m = para.match(/[^.!?。]+[.!?。]+["'”’)]*\s*|[^.!?。]+$/g) || [para];
+    m.forEach(function(x){ x = x.trim(); if(x) out.push(x); });
   });
-  if(out.length > maxLines){ out = out.slice(0, maxLines); out[maxLines-1] = out[maxLines-1].replace(/\s*\S+$/, '…'); }
+  return out;
+}
+function sqBreakSentence(ctx, sen, maxW, loose){
+  var w = sen.split(' '), n = w.length, sp = ctx.measureText(' ').width;
+  if(ctx.measureText(sen).width <= maxW || n < 2) return [sen];
+  var ww = w.map(function(x){ return ctx.measureText(x).width; });
+  function width(i, j){ var s = 0; for(var k=i; k<j; k++) s += ww[k]; return s + sp*(j-i-1); }
+  /* 가장 적은 줄 수부터 — 줄 수를 늘리면서 고르게 나뉘는 끊기를 찾는다 */
+  var total = width(0, n);
+  for(var lines = Math.max(2, Math.ceil(total/maxW)); lines <= n; lines++){
+    var target = total/lines, best = [], INF = 1e18;
+    var cost = new Array(n+1).fill(INF), prev = new Array(n+1).fill(-1), cnt = new Array(n+1).fill(0);
+    cost[0] = 0;
+    for(var j=1; j<=n; j++){
+      for(var i=0; i<j; i++){
+        if(cost[i] >= INF) continue;
+        var lw = width(i, j); if(lw > maxW) continue;
+        var c = (lw-target)*(lw-target);
+        if(j < n){
+          if(SQ_BREAK_GOOD.test(w[j-1])) c -= target*target*0.12;
+          if(SQ_BREAK_HEAD.test(w[j])){ if(!loose) continue; c += target*target*0.6; }   /* '…놓치는 / 게' 같은 끊기는 먼저 아예 빼 본다 */
+          if(j - i === 1 && n > 2) c += target*target*0.3;   /* 한 낱말만 남는 줄 */
+        }
+        var tc = cost[i] + c;
+        if(tc < cost[j] && cnt[i] + 1 <= lines){ cost[j] = tc; prev[j] = i; cnt[j] = cnt[i] + 1; }
+      }
+    }
+    if(cost[n] < INF){
+      for(var e = n; e > 0; e = prev[e]) best.unshift(w.slice(prev[e], e).join(' '));
+      return best;
+    }
+  }
+  return loose ? [sen] : sqBreakSentence(ctx, sen, maxW, true);
+}
+function sqLines(ctx, t, maxW){
+  var out = [];
+  sqSentences(t).forEach(function(sen){ out = out.concat(sqBreakSentence(ctx, sen, maxW)); });
+  return out;
+}
+function sqWrap(ctx, t, x, y, maxW, lh, maxLines, align){
+  var font0 = ctx.font, m = font0.match(/(\d+(?:\.\d+)?)px/), base = m ? +m[1] : 0;
+  var out = sqLines(ctx, t, maxW), size = base, lhNow = lh;
+  /* 넘치면 글자를 조금씩 줄여 본다 */
+  while(base && out.length > maxLines && size > base*0.82){
+    size -= 1; ctx.font = font0.replace(/(\d+(?:\.\d+)?)px/, size+'px');
+    out = sqLines(ctx, t, maxW); lhNow = lh*size/base;
+  }
+  if(out.length > maxLines){
+    ctx.font = font0; lhNow = lh;
+    /* 줄인 글자로도 안 되면 원래 크기로 들어가는 문장까지만 싣는다(문장 중간에서 끊지 않는다) */
+    var sens = sqSentences(t), keep = [];
+    for(var si=0; si<sens.length; si++){
+      var nx = keep.concat(sqBreakSentence(ctx, sens[si], maxW));
+      if(nx.length > maxLines) break; keep = nx;
+    }
+    if(keep.length) out = keep;
+    else { out = sqLines(ctx, t, maxW).slice(0, maxLines); out[maxLines-1] = out[maxLines-1].replace(/\s*\S+$/, '…'); }
+  }
   ctx.textAlign = align || 'left';
-  out.forEach(function(l, i){ ctx.fillText(l, x, y + i*lh); });
+  out.forEach(function(l, i){ ctx.fillText(l, x, y + i*lhNow); });
   ctx.textAlign = 'left';
-  return y + out.length*lh;
+  ctx.font = font0;
+  return y + out.length*lhNow;
 }
 function sqFirst(t){ t = String(t || '').replace(/<[^>]+>/g, '').trim(); var m = t.match(/^[^.!?]*[.!?]/); return m ? m[0] : t; }
 function sqFrame(ctx, paid){
