@@ -90,6 +90,15 @@ function wire(page){
       if(b.action === 'reply') return r.respond(j({ok:true}));
       return r.respond(j({items:TICKETS}));
     }
+    /* 2026-10-19 — 후기(관리자 [후기] 탭). 실제 구매 1 · 테스트 1 */
+    if(u.indexOf('/api/review') >= 0){
+      let b = {}; try{ b = JSON.parse(r.postData() || '{}'); }catch(e){}
+      if(b.action === 'set') return r.respond(j({ok:true}));
+      if(b.action === 'list') return r.respond(j({ready:true, items:[
+        {id:1, product:'saju_full', stars:5, body:'어린 시절 얘기가 딱 맞았어요', nick:'가*', kakao_id:'4001', status:'pending', tester:false, created_at:'2026-10-19T03:00:00Z', updated_at:'2026-10-19T03:00:00Z'},
+        {id:2, product:'compat_full', stars:4, body:'테스트로 남긴 글', nick:'검*', kakao_id:null, status:'pending', tester:true, created_at:'2026-10-19T04:00:00Z', updated_at:'2026-10-19T04:00:00Z'}]}));
+      return r.respond(j({items:[], sum:{n:0, avg:0}}));
+    }
     if(u.indexOf('/api/notice') >= 0){
       let b = {}; try{ b = JSON.parse(r.postData() || '{}'); }catch(e){}
       if(b.action === 'active') return r.respond(j({items:[]}));

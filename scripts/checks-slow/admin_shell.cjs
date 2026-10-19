@@ -126,6 +126,15 @@ function wire(page, opt){
       return r.respond(j(SUMMARY));
     }
     if(u.indexOf('/api/feedback') >= 0) return r.respond(j({items:TICKETS}));
+    /* 2026-10-19 — 후기(관리자 [후기] 탭). 실제 구매 1 · 테스트 1 */
+    if(u.indexOf('/api/review') >= 0){
+      let b = {}; try{ b = JSON.parse(r.postData() || '{}'); }catch(e){}
+      if(b.action === 'set') return r.respond(j({ok:true}));
+      if(b.action === 'list') return r.respond(j({ready:true, items:[
+        {id:1, product:'saju_full', stars:5, body:'어린 시절 얘기가 딱 맞았어요', nick:'가*', kakao_id:'4001', status:'pending', tester:false, created_at:'2026-10-19T03:00:00Z', updated_at:'2026-10-19T03:00:00Z'},
+        {id:2, product:'compat_full', stars:4, body:'테스트로 남긴 글', nick:'검*', kakao_id:null, status:'pending', tester:true, created_at:'2026-10-19T04:00:00Z', updated_at:'2026-10-19T04:00:00Z'}]}));
+      return r.respond(j({items:[], sum:{n:0, avg:0}}));
+    }
     if(u.indexOf('/api/notice') >= 0){
       let b = {}; try{ b = JSON.parse(r.postData() || '{}'); }catch(e){}
       if(b.action === 'active') return r.respond(j({items:NOTICES.map(function(n){
@@ -137,7 +146,7 @@ function wire(page, opt){
   });
 }
 const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · CS', payments:'결제',
-               compat:'궁합 · 모임', ai:'AI 해석', notices:'공지 · 배너', export:'데이터 내보내기'};
+               compat:'궁합 · 모임', ai:'AI 해석', reviews:'후기', notices:'공지 · 배너', export:'데이터 내보내기'};
 
 (async () => {
   const R = L.reporter('어드민 셸');
@@ -190,9 +199,9 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   }));
   R.note(!shell.hidden, '어드민 칸이 보인다');
   R.note(shell.outsideApp, '#adminRoot 가 #app 밖에 있다 (420px 에 안 갇힌다)');
-  R.note(shell.navs.length === 8, '메뉴가 여덟이다', shell.navs.join(' / '));
+  R.note(shell.navs.length === 9, '메뉴가 아홉이다(후기 추가)', shell.navs.join(' / '));
   R.note(shell.groups.length === 5, '묶음이 다섯이다', shell.groups.join(' / '));
-  R.note(shell.icons === 8, '메뉴마다 아이콘이 그려진다', shell.icons + '개');
+  R.note(shell.icons === 9, '메뉴마다 아이콘이 그려진다', shell.icons + '개');
   R.note(shell.title === '대시보드', '처음은 대시보드다', shell.title);
   /* ★ 손님용 탭 막대가 어드민 위로 비쳐 보이던 적이 있다(겹침 순서). 그 자리를 지킨다. */
   R.note(!shell.tabbarShows, '손님 탭 막대가 어드민 위로 안 비친다');
@@ -378,6 +387,11 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   R.note(o.text.indexOf('Cannot read') < 0 && o.text.indexOf('undefined') < 0,
          '오류 글자가 화면에 안 뜬다', o.text.slice(0, 60));
 
+  R.head('⑤-1 후기 (2026-10-19)');
+  o = await go('reviews');
+  R.note(o.text.indexOf('어린 시절 얘기가 딱 맞았어요') >= 0 && o.text.indexOf('사주 풀이') >= 0, '후기 목록이 보인다(상품 이름까지)');
+  R.note(/확인 대기 2개/.test(o.text) && o.text.indexOf('테스트') >= 0, '대기 수와 테스트 표시를 적는다');
+  R.note(o.text.indexOf('공개하지 마세요') >= 0, '테스트 후기를 공개하지 말라는 안내가 있다');
   R.head('⑤ 공지 · 배너');
   o = await go('notices');
   R.note(o.text.indexOf('9월 12일 새벽 점검 안내') >= 0, '공지 목록이 보인다');
