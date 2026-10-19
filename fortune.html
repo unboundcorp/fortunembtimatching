@@ -18507,6 +18507,114 @@ function adminDash(body){
     '접속자 수(DAU/MAU)·리텐션·유입 경로는 여기 없어요. 방문·결제 흐름은 메타 이벤트 관리자(인연점 픽셀)에서 볼 수 있어요.']));
   three.appendChild(srv);
   body.appendChild(three);
+
+  adminDemo(body, win);
+}
+/* ── 회원 분포 (2026-10-19 대표님 지시 "결과값이 구체적이었으면 · 성별 연령대 정도는 더 추가 안돼?") ──
+   서버 people[] = 카카오 회원 한 분당 한 줄(첫 프로필 기준 성별·만 나이·유형·대표 기운 + 결제한 주문).
+   ★ 이름·생년월일은 안 받는다. ★ '누적'은 서버가 가진 전부(최대 2,000명), '이 기간'은 위에서 고른 날짜.
+   ★ 결제는 kakao_links 가 가리키는 최신 세션의 주문만 잡힌다(회원 관리 표와 같은 한계). */
+var AD_AGE_BANDS = [
+  ['14~19세', 14, 19], ['20~24세', 20, 24], ['25~29세', 25, 29], ['30~34세', 30, 34],
+  ['35~39세', 35, 39], ['40대', 40, 49], ['50대 이상', 50, 200]
+];
+function adAgeBand(a){
+  if(typeof a !== 'number') return '모름';
+  for(var i=0;i<AD_AGE_BANDS.length;i++){ if(a >= AD_AGE_BANDS[i][1] && a <= AD_AGE_BANDS[i][2]) return AD_AGE_BANDS[i][0]; }
+  return '모름';
+}
+function adProductShort(base){ var p = PRODUCTS[base]; return p ? p.name : base; }
+function adDemoGroups(people, keyFn, order, win){
+  var g = {};
+  order.forEach(function(k){ g[k] = {k:k, all:0, payEver:0, joined:0, payers:0, revenue:0, cnt:0, prods:{}}; });
+  people.forEach(function(p){
+    var k = keyFn(p); if(!g[k]) g[k] = {k:k, all:0, payEver:0, joined:0, payers:0, revenue:0, cnt:0, prods:{}};
+    var b = g[k];
+    b.all += 1;
+    if((p.orders || []).length) b.payEver += 1;
+    if(p.d && p.d >= win.from && p.d <= win.to) b.joined += 1;
+    var inWin = (p.orders || []).filter(function(o){ return o.d && o.d >= win.from && o.d <= win.to; });
+    if(inWin.length) b.payers += 1;
+    inWin.forEach(function(o){ b.revenue += o.amt || 0; b.cnt += 1; b.prods[o.base] = (b.prods[o.base] || 0) + 1; });
+  });
+  return Object.keys(g).map(function(k){ return g[k]; }).filter(function(b){ return b.all > 0; });
+}
+function adDemoTable(title, groups, total){
+  var card = adCard([adH(title)]);
+  if(!groups.length){ card.appendChild(adEmpty('아직 회원이 없어요.')); return card; }
+  var trs = groups.map(function(b){
+    var top = Object.keys(b.prods).sort(function(x, y){ return b.prods[y] - b.prods[x]; })[0];
+    var tr = el('tr',{});
+    var nm = el('div',{});
+    nm.appendChild(el('div',{style:'font-weight:600;'},[b.k]));
+    var bar = el('div',{class:'ad-track', style:'margin-top:4px;min-width:60px;'});
+    bar.appendChild(el('div',{class:'ad-fill', style:'width:' + (total ? Math.round(b.all/total*100) : 0) + '%;background:var(--gold-2);'}));
+    nm.appendChild(bar);
+    tr.appendChild(adTd([nm]));
+    tr.appendChild(adTd([b.all + '명 · ' + (total ? Math.round(b.all/total*100) : 0) + '%'],'ad-num'));
+    tr.appendChild(adTd([b.joined + '명'],'ad-num'));
+    tr.appendChild(adTd([b.payers + '명'],'ad-num'));
+    tr.appendChild(adTd([b.revenue ? formatWon(b.revenue) : '—'],'ad-num'));
+    tr.appendChild(adTd([b.cnt ? formatWon(Math.round(b.revenue / b.cnt)) : '—'],'ad-num'));
+    tr.appendChild(adTd([top ? adProductShort(top) + ' ' + b.prods[top] + '건' : '—'],'ad-nowrap'));
+    tr.appendChild(adTd([b.all ? (Math.round(b.payEver / b.all * 1000) / 10) + '%' : '—'],'ad-num'));
+    return tr;
+  });
+  card.appendChild(adTable(['구분','회원(누적)','이 기간 가입','이 기간 결제한 분','이 기간 매출','건당','많이 산 상품','결제 전환(누적)'], trs, 760));
+  return card;
+}
+function adminDemo(body, win){
+  var people = (STATS_DATA && STATS_DATA.people) || null;
+  var head = adCard([adH('회원 분포 · 성별 · 연령대')]);
+  if(!people){
+    head.appendChild(adEmpty('서버가 아직 분포 자료를 내려주지 않아요. 새로 올린 뒤 다시 열어 주세요.'));
+    body.appendChild(head); return;
+  }
+  var total = people.length;
+  var known = people.filter(function(p){ return p.g; }).length;
+  head.appendChild(el('p',{class:'ad-note'},[
+    '회원 ' + total + '명 · 각 회원이 처음 만든 프로필(본인)의 성별·나이로 나눴어요. 다른 사람을 봐 준 프로필은 안 세요. '
+    + '나이는 오늘 기준 만 나이예요. \'이 기간\'은 위에서 고른 ' + win.from + ' ~ ' + win.to + ' 이고, 결제 전환은 지금까지 한 번이라도 결제한 비율이에요.']));
+  if(total && known < total) head.appendChild(el('p',{class:'ad-note'},['프로필이 없거나 성별이 비어 있는 회원 ' + (total - known) + '명은 \'모름\'으로 셌어요.']));
+  body.appendChild(head);
+
+  var GN = {F:'여성', M:'남성', '':'모름'};
+  body.appendChild(adDemoTable('성별', adDemoGroups(people, function(p){ return GN[p.g || '']; }, ['여성','남성','모름'], win), total));
+  body.appendChild(adDemoTable('연령대', adDemoGroups(people, function(p){ return adAgeBand(p.age); },
+    AD_AGE_BANDS.map(function(b){ return b[0]; }).concat(['모름']), win), total));
+
+  /* 성별 × 연령대 — 회원 수(누적). 칸 진하기 = 가장 많은 칸 대비 */
+  var cross = adCard([adH('성별 × 연령대 (회원 수 · 누적)')]);
+  var bands = AD_AGE_BANDS.map(function(b){ return b[0]; }).concat(['모름']);
+  var cnt = {}, max = 0;
+  people.forEach(function(p){ var k = (p.g || '') + '|' + adAgeBand(p.age); cnt[k] = (cnt[k] || 0) + 1; if(cnt[k] > max) max = cnt[k]; });
+  var crows = [['F','여성'],['M','남성'],['','모름']].filter(function(gg){
+    return bands.some(function(b){ return cnt[gg[0] + '|' + b]; }); }).map(function(gg){
+    var tr = el('tr',{});
+    tr.appendChild(adTd([gg[1]],'ad-nowrap'));
+    bands.forEach(function(b){
+      var v = cnt[gg[0] + '|' + b] || 0;
+      tr.appendChild(el('td',{class:'ad-num', style: v ? 'background:rgba(180,30,48,' + (0.08 + 0.42 * v / max).toFixed(2) + ');' : 'color:var(--ink-faint);'},[String(v)]));
+    });
+    return tr;
+  });
+  if(!crows.length) cross.appendChild(adEmpty('아직 회원이 없어요.'));
+  else cross.appendChild(adTable(['성별'].concat(bands), crows, 640));
+  body.appendChild(cross);
+
+  /* 성격유형 · 대표 기운 — 많은 순(누적) */
+  var two = el('div',{class:'ad-grid ad-two'});
+  function topCard(title, keyFn, lim){
+    var c = adCard([adH(title)]), m = {}, n = 0;
+    people.forEach(function(p){ var k = keyFn(p); if(!k) return; m[k] = (m[k] || 0) + 1; n += 1; });
+    var ks = Object.keys(m).sort(function(a, b){ return m[b] - m[a]; }).slice(0, lim);
+    if(!ks.length) c.appendChild(adEmpty('아직 자료가 없어요.'));
+    ks.forEach(function(k){ c.appendChild(adFunnelRow(k, m[k] + '명', n ? Math.round(m[k] / n * 100) : 0)); });
+    return c;
+  }
+  two.appendChild(topCard('많은 성격유형 (상위 6 · 누적)', function(p){ return p.mbti; }, 6));
+  two.appendChild(topCard('대표 기운 (누적)', function(p){ return p.elem; }, 5));
+  body.appendChild(two);
 }
 /* ── 2. 회원 관리 ────────────────────────────────────────────────── */
 function adminMembers(body){

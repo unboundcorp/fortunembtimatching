@@ -504,15 +504,17 @@ export default async function handler(req, res) {
        이 셋은 이미 표에 쌓여 있는데 현황판에 안 나와서, 대표님이 상태를 알려면 저에게 물어봐야 했다.
        ★ 실패해도 현황판 전체를 죽이지 않는다 — 새로 붙인 칸 때문에 원래 보던 숫자가 사라지면 안 된다. */
     const soft = (q) => rest(q).catch((e) => { console.warn('현황판 일부 조회 실패:', e && e.message); return []; });
-    const [orders, rooms, groups, aiUse, aiCache, kakao, sync, feedback] = await Promise.all([
-      rest('orders?select=order_id,product_id,amount,status,created_at,paid_at&order=created_at.desc&limit=2000'),
+    const [orders, rooms, groups, aiUse, aiCache, kakao, sync, feedback, syncProfiles] = await Promise.all([
+      rest('orders?select=order_id,session_id,product_id,amount,status,created_at,paid_at&order=created_at.desc&limit=2000'),
       rest('rooms?select=room_id,created_at,joined_at&order=created_at.desc&limit=2000'),
       rest('groups?select=group_id,members,created_at&order=created_at.desc&limit=2000'),
       rest('ai_usage?select=cache_key,created_at,in_tokens,out_tokens,cache_read_tokens,cache_write_tokens&order=created_at.desc&limit=2000'),
       rest('ai_cache?select=cache_key,product_id,created_at&order=created_at.desc&limit=2000'),
-      soft('kakao_links?select=kakao_id,created_at&order=created_at.desc&limit=2000'),
+      soft('kakao_links?select=kakao_id,session_id,created_at&order=created_at.desc&limit=2000'),
       soft('user_sync?select=kakao_id,rev,updated_at&order=updated_at.desc&limit=2000'),
       soft('feedback?select=id,kind,status,created_at,replied_at&order=created_at.desc&limit=2000'),
+      /* 회원 분포용 — 프로필만 꺼낸다(기록·모임은 무거워서 안 받는다) */
+      soft('user_sync?select=kakao_id,profiles:data->profiles&limit=2000'),
     ]);
 
     const d1 = daysAgo(1), d7 = daysAgo(7), d30 = daysAgo(30);
@@ -636,10 +638,46 @@ export default async function handler(req, res) {
 
     const daily = dayList.map((d) => Object.assign({ d }, dayMap[d]));
 
+    /* ── 회원 분포 (2026-10-19 대표님 지시 "성별 연령대 정도는 더 추가 안돼?") ──
+       회원 한 분 = 카카오 계정 하나. 그 계정의 **첫 프로필**(가입하고 처음 만든 것 — 회원 관리 표와 같은 기준)을
+       그분으로 본다. 다른 사람 사주를 봐 준 프로필은 안 센다.
+       ★ 이름·생년월일은 안 내려보낸다 — 성별·만 나이·유형·대표 기운과 결제만. 화면이 기간으로 걸러 더한다.
+       ★ 나이는 오늘(KST) 기준 만 나이. 생년월일이 없거나 이상하면 null(화면이 '모름'으로 센다). */
+    const todayKst = new Date(Date.now() + 9 * 3600 * 1000);
+    const ty = todayKst.getUTCFullYear(), tmd = (todayKst.getUTCMonth() + 1) * 100 + todayKst.getUTCDate();
+    const ageOf = (pf) => {
+      const y = Number(pf && pf.year), m = Number(pf && pf.month), d = Number(pf && pf.day);
+      if (!(y > 1900 && y <= ty)) return null;
+      let a = ty - y; if (m && d && tmd < m * 100 + d) a -= 1;
+      return a >= 0 && a < 120 ? a : null;
+    };
+    const profBy = {}; (syncProfiles || []).forEach((x) => { profBy[x.kakao_id] = Array.isArray(x.profiles) ? x.profiles : []; });
+    const ordBySid = {};
+    (orders || []).forEach((o) => {
+      if (o.status !== 'paid' || !o.session_id) return;
+      const sp = splitProductId(o.product_id);
+      (ordBySid[o.session_id] = ordBySid[o.session_id] || []).push({
+        d: kstDay(o.paid_at || o.created_at), amt: o.amount || 0, base: sp ? sp.base : String(o.product_id || ''),
+      });
+    });
+    const people = (kakao || []).map((k) => {
+      const pf = (profBy[k.kakao_id] || [])[0] || null;
+      return {
+        d: kstDay(k.created_at),
+        g: pf && (pf.gender === 'M' || pf.gender === 'F') ? pf.gender : '',
+        age: ageOf(pf),
+        mbti: pf && /^[EI][SN][TF][JP]$/.test(pf.mbti || '') ? pf.mbti : '',
+        elem: pf && pf.element ? String(pf.element).slice(0, 10) : '',
+        np: (profBy[k.kakao_id] || []).length,
+        orders: ordBySid[k.session_id] || [],
+      };
+    });
+
     return json(res, 200, {
       now: new Date().toISOString(),
       daily,
       dailyDays: DAILY_DAYS,
+      people,
       rooms: { d1: roomStat(d1), d7: roomStat(d7), d30: roomStat(d30), all: rooms.length },
       groups: { d1: groupStat(d1), d7: groupStat(d7), d30: groupStat(d30), all: groups.length },
       orders: { d1: paidStat(d1), d7: paidStat(d7), d30: paidStat(d30), all: orders.length },

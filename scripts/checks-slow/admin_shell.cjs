@@ -39,7 +39,13 @@ const SUMMARY = {now:new Date().toISOString(), daily:DAILY, dailyDays:90,
   orders:{d1:{},d7:{},d30:{},all:6}, ai:{d1:{},d7:{},d30:{},cached:5,reuse:2,costPerKrw:101,
       price:{inPerMTokUsd:2,outPerMTokUsd:10,usdKrw:1380}},
   kakao:{linked:7,d1:1,d7:3}, sync:{saved:5,d7:2},
-  feedback:{all:2,d1:1,d7:2,byStatus:{received:1,answered:1},waiting:1}, recent:[]};
+  feedback:{all:2,d1:1,d7:2,byStatus:{received:1,answered:1},waiting:1}, recent:[],
+  /* ★ 2026-10-19 회원 분포 — 여 2(22세·결제 1,900 오늘) · 남 1(31세) · 모름 1(나이 없음 = 프로필 없는 회원) */
+  people:[
+    {d:day(1), g:'F', age:22, mbti:'ENFP', elem:'목(木)', np:2, orders:[{d:day(0), amt:1900, base:'saju_full'}]},
+    {d:day(2), g:'F', age:23, mbti:'ENFP', elem:'화(火)', np:1, orders:[]},
+    {d:day(40), g:'M', age:31, mbti:'ISTJ', elem:'목(木)', np:1, orders:[]},
+    {d:day(3), g:'', age:null, mbti:'', elem:'', np:0, orders:[]}]};
 
 const P_A = {name:'가영',mbti:'ENFP',gender:'여',birth:'1990-03-05',inputBirth:'1990-02-09',
   calendar:'음력',time:'09:30',place:'seoul',lon:'126.98',solarTime:'보정함',
@@ -211,6 +217,14 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   R.note(dash.lines === 3, '활동 추이가 세 줄이다', dash.lines + '줄');
   R.note(['7일','30일','90일','직접'].every(x => dash.segs.indexOf(x) >= 0), '기간이 넷이다', dash.segs.join(','));
   R.note(/2,890원/.test(o.text), '고른 기간의 매출이 더해진다');
+  /* ★ 2026-10-19 회원 분포 — 표가 서고 값이 맞게 나뉘는가 */
+  ['회원 분포','성별','연령대','성별 × 연령대','많은 성격유형','대표 기운'].forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "'" + w + "' 칸이 있다"); });
+  R.note(/여성\s*2명 · 50%/.test(o.text), '여성 2명 · 50% (넷 중 둘)');
+  R.note(/20~24세\s*2명 · 50%/.test(o.text), '20~24세 2명 · 50% (만 나이로 나눔)');
+  R.note(/30~34세\s*1명 · 25%/.test(o.text), '30~34세 1명');
+  R.note(/모름\s*1명 · 25%/.test(o.text), '성별·나이 모르는 회원은 모름으로');
+  R.note(/1,900원/.test(o.text) && /사주 풀이/.test(o.text), '여성 칸에 이 기간 매출·많이 산 상품');
+  R.note(/50%\s*$|50%/.test(o.text) && /ENFP\s*2명/.test(o.text), '많은 성격유형 ENFP 2명');
   /* [직접] 을 누르면 날짜 칸이 실제로 생기는가 */
   await page.evaluate(() => {
     const b = [...document.querySelectorAll('#adminRoot .ad-seg button')].find(x => x.textContent.trim() === '직접');
