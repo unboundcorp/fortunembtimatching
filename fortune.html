@@ -12285,17 +12285,41 @@ function elemReadFacts(saju){
    걸려있다" 흐름). 무료 1장이 가장 진한 기운을 이미 말하므로, 여기서는 **모자란 기운**을 꺼내고 끊는다.
    ★ '걸리는 것'은 실제로 계산된 사실(개수 0 또는 가장 적음)뿐이다. "뭔가 붙어 있다" 같은 말은 쓰지 않는다.
    ★ '어느 달이 고비인지'는 사주 상품에 월별 운세가 들어 있어서 쓸 수 있는 말이다 — 다른 상품에 옮기지 마십시오. */
-function buildSajuHook(profile, saju){
+function buildSajuHook(profile, saju, year){
   try{
     var f = elemReadFacts(saju);
     if(f.lack === f.strongest) return '';
+    var y = year || VIEW_YEAR;
     var who = (String(profile && profile.name || '').trim() || '이분') + '님 사주엔 ';
     var L = ELEM_PROFILE[f.lack];
-    /* ★ 2026-10-06 대표님 지시 "점찍고 엔터 값을 넣자" — 문장마다 마침표로 끝내고 줄을 바꾼다. 끝의 '— 여기서부터'는 문장에 이어 붙인다. */
+    /* ★ 2026-10-19 대표님 지시 "2026년 잠금화면이랑 2027년 잠금화면이랑 문구가 너무 똑같잖아 연도별로 맞춰야지" —
+       타고난 사실(모자란 기운) 한 줄은 그대로 두고, 그 해의 기운(세운 간지 두 글자)과
+       그 해 달마다 막대(buildMonthlyFortune avg — 바로 위 무료 막대와 같은 값)에서 나온 사실로 뒤 두 줄을 만든다. 새 점수 없음. */
+    var ys = SajuEngine.saeunPillar(y);
+    var se = SajuEngine.STEM_ELEM[ys.stemIdx], be = SajuEngine.BRANCH_ELEM[ys.branchIdx];
+    var wa = function(i){ return elemLabel(i) + ([0,3].indexOf(i) >= 0 ? '과' : '와'); };
+    var yName = yearWithRel(y) + ' ' + ys.text + '년엔 ';
+    var yearLine;
+    if(se === be) yearLine = yName + elemLabel(se) + ' 기운이 두 겹으로 들어와요.';
+    else yearLine = yName + wa(se) + ' ' + elemLabel(be) + ' 기운이 들어와요.';
+    if(se === f.lack || be === f.lack) yearLine += '<br>비어 있던 ' + elemLabel(f.lack) + ' 자리가 채워지는 해라, 평소와 다른 내가 나올 수 있어요.';
+    else if(se === f.strongest || be === f.strongest) yearLine += '<br>이미 진한 ' + elemLabel(f.strongest) + ' 기운이 더 몰리고, ' + elemLabel(f.lack) + ' 자리는 여전히 비어요.';
+    else yearLine += '<br>' + elemLabel(f.lack) + ' 자리는 이 해에도 비어 있어서, ' + L.lackShort + ' 모습이 더 또렷해질 수 있어요.';
+    var monthTail = '어느 달이 고비인지는';
+    try{
+      var ms = buildMonthlyFortune(profile, y, function(){ return false; }).months;
+      var top = Math.max.apply(null, ms.map(function(m){ return m.avg; }));
+      var low = Math.min.apply(null, ms.map(function(m){ return m.avg; }));
+      if(isFinite(top) && isFinite(low) && top !== low){
+        var hiM = ms.filter(function(m){ return m.avg === top; })[0].month, loM = ms.filter(function(m){ return m.avg === low; })[0].month;
+        monthTail = '왜 ' + hiM + '월에 힘이 실리고 ' + loM + '월에 쉬어 가야 하는지는';
+      }
+    }catch(e){}
+    /* ★ 2026-10-06 대표님 지시 "점찍고 엔터 값을 넣자" — 문장마다 마침표로 끝내고 줄을 바꾼다. */
     return '<b>그런데 걸리는 게 하나 있어요.</b><br>'
       + escapeHtml(who) + elemLabel(f.lack) + ' 기운이 ' + (f.lackCount === 0 ? '하나도 없어요.' : f.lackCount + '개뿐이에요.') + '<br>'
-      + L.lackShort + ' 모습이 여기서 나와요.<br>'
-      + '이게 ' + elemLabel(f.strongest) + ' 기운과 만나 <b>돈</b>과 <b>연애</b>에서 어떻게 드러나는지, 어느 달이 고비인지는 여기서부터 이어져요.';
+      + yearLine + '<br>'
+      + '이 해 <b>돈</b>과 <b>연애</b>에서 이게 어떻게 드러나는지, ' + monthTail + ' 여기서부터 이어져요.';
   }catch(e){ return ''; }
 }
 /* 신규(대운 서술 심화 후속): 십이운성(十二運星) 조견표 — 일간(10) × 지지(12) 고정 룩업. 명리학 통설(화토동법 포함, WebSearch로 교차검증 완료).

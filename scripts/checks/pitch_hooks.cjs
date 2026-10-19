@@ -61,6 +61,10 @@ for(let i = 0; i < 240; i++){
             if(i !== f.lack) bad('걸이가 가장 모자란 기운이 아님', h);
             if(m[2] === '하나도 없어요' ? c !== 0 : +m[3] !== c) bad('걸이 개수 ≠ 실제', m[0]+' 실제 '+c); }
           if(/undefined|null|NaN/.test(h)) bad('사주 걸이 빈 값', h);
+          /* 2026-10-19 대표님 "2026년 잠금화면이랑 2027년 잠금화면이랑 문구가 너무 똑같잖아" — 해가 다르면 걸이도 달라야 한다 */
+          const h26 = strip(T.buildSajuHook(pp, sj, 2026)), h27 = strip(T.buildSajuHook(pp, sj, 2027));
+          if(h26 === h27) bad('사주 걸이가 해마다 같음', h26);
+          if(!/2026년\(?[^ ]* 병오년엔/.test(h26) || !/2027년\(?[^ ]* 정미년엔/.test(h27)) bad('사주 걸이에 그 해 간지 없음', h26+' || '+h27);
         }
         /* 성격유형 걸이 — 가장 덜 쓰는 기능이 MBTI_STACK 넷째인가 */
         const mh = strip(T.buildMbtiHook(pp)); out.n.mbti++;
