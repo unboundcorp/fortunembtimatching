@@ -27269,7 +27269,7 @@ function copyAllButton(){
    ★ 화면을 그대로 찍지 않는다. 바깥 라이브러리를 못 쓰고(이 파일은 혼자 열린다), 화면을 그림으로 옮기는
      방법(SVG foreignObject)은 아이폰 사파리에서 막힌다. 대신 [글 전체 복사]와 **같은 글**(screenTextForCopy —
      표는 줄마다, 막대는 숫자로 이미 펴 둔 것)을 캔버스에 직접 쓴다. 그래서 복사본과 그림이 같은 말을 한다.
-   ★ 한 장 1080×1350(인스타 세로 4:5). 장 제목(■)은 새 쪽에서 시작하지 않고 이어 쓴다 — 쪽 수가 너무 늘어난다.
+   ★ 폭 1080 · 세로로 쭉 긴 한 장(2026-10-19 대표님 — 간직용). 너무 길면 pgDraw 가 전체를 줄여 그린다.
 ===================================================================== */
 var PG_W = 1080, PG_H = 1350, PG_X = 84, PG_TOP = 170, PG_BOT = PG_H - 120;
 function pgWrapLine(ctx, text, maxW){
@@ -27313,9 +27313,9 @@ var PG_STYLE = {
   b:{font:'500 32px ', lh:50, color:'ink',  before:0,  after:6, indent:30},
   p:{font:'500 32px ', lh:50, color:'ink',  before:0,  after:6}
 };
-function pgFrame(ctx, title, no, total){
-  ctx.fillStyle = SQ_BG; ctx.fillRect(0, 0, PG_W, PG_H);
-  ctx.strokeStyle = CARD_INK; ctx.lineWidth = 4; ctx.strokeRect(24, 24, PG_W-48, PG_H-48);
+function pgFrame(ctx, title, H){
+  ctx.fillStyle = SQ_BG; ctx.fillRect(0, 0, PG_W, H);
+  ctx.strokeStyle = CARD_INK; ctx.lineWidth = 4; ctx.strokeRect(24, 24, PG_W-48, H-48);
   drawLogoOnCanvas(ctx, 96, 90, 56);
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
   ctx.fillStyle = CARD_SEAL; ctx.font = '800 38px '+CARD_SANS; ctx.fillText(COMPANY.serviceName, 134, 103);
@@ -27323,42 +27323,41 @@ function pgFrame(ctx, title, no, total){
   var t = String(title || ''); while(t.length > 1 && ctx.measureText(t).width > 560) t = t.slice(0, -1);
   ctx.fillText(t + (t !== String(title||'') ? '…' : ''), PG_W-84, 103);
   ctx.textAlign = 'center'; ctx.font = '600 24px '+CARD_SANS;
-  ctx.fillText(COMPANY.site + '   ' + no + ' / ' + total, PG_W/2, PG_H-62);
+  ctx.fillText(COMPANY.site, PG_W/2, H-62);
   ctx.textAlign = 'left';
 }
-/* 그릴 줄을 쪽으로 나눈다. 같은 계산으로 한 번 재고(쪽 수) 한 번 그린다. */
+/* ★ 2026-10-19 대표님 "인스타 올릴 건 아닌 거 같다 / 결제한 사람 간직용으로 쭉 길게 이미지 한장만" —
+   쪽으로 나누지 않고 세로로 쭉 이어 한 장에 쓴다. 줄의 y 와 전체 높이를 돌려준다. */
 function pgLayout(ctx, blocks){
-  var pages = [[]], y = PG_TOP, maxW = PG_W - PG_X*2;
-  blocks.forEach(function(b, bi){
+  var out = [], y = PG_TOP, maxW = PG_W - PG_X*2;
+  blocks.forEach(function(b){
     if(b.kind === 'gap'){ y += 14; return; }
     var st = PG_STYLE[b.kind]; ctx.font = st.font + CARD_SANS;
-    var w = maxW - (st.indent || 0);
-    var lines = pgWrapLine(ctx, b.text, w);
-    var need = st.before + lines.length * st.lh;
-    /* 장 제목이 쪽 맨 아래에 홀로 남지 않게 — 제목 + 두 줄이 안 들어가면 다음 쪽 */
-    var keep = b.kind === 'h' || b.kind === 's' ? need + 2*50 : st.before + st.lh;
-    if(y + keep > PG_BOT && pages[pages.length-1].length){ pages.push([]); y = PG_TOP; }
+    var lines = pgWrapLine(ctx, b.text, maxW - (st.indent || 0));
     if(y !== PG_TOP) y += st.before;
-    lines.forEach(function(ln, li){
-      if(y + st.lh > PG_BOT){ pages.push([]); y = PG_TOP; }
-      pages[pages.length-1].push({kind:b.kind, text:ln, y:y + st.lh*0.72, first: li === 0});
-      y += st.lh;
-    });
+    lines.forEach(function(ln, li){ out.push({kind:b.kind, text:ln, y:y + st.lh*0.72, first: li === 0}); y += st.lh; });
     y += st.after;
   });
-  return pages.filter(function(pg){ return pg.length; });
+  return { lines: out, height: y + 120 };
 }
-function pgDraw(canvas, page, title, no, total){
-  canvas.width = PG_W; canvas.height = PG_H;
+/* 아이폰 사파리는 캔버스 한 장의 넓이가 약 1,677만 화소를 넘으면 그리지 못한다(빈 그림).
+   넘으면 그림 전체를 같은 비율로 줄여 그린다 — 글 배치는 그대로라 줄이 바뀌지 않는다. */
+var PG_MAX_AREA = 16000000;
+function pgDraw(canvas, made){
+  var H = Math.max(PG_H, made.height);
+  var k = Math.min(1, Math.sqrt(PG_MAX_AREA / (PG_W * H)));
+  canvas.width = Math.floor(PG_W * k); canvas.height = Math.floor(H * k);
   var ctx = canvas.getContext('2d');
-  pgFrame(ctx, title, no, total);
-  page.forEach(function(ln){
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  pgFrame(ctx, made.title, H);
+  made.lines.forEach(function(ln){
     var st = PG_STYLE[ln.kind], col = pgColor(st.color); ctx.font = st.font + CARD_SANS; ctx.fillStyle = col;
     var x = PG_X + (st.indent || 0);
     if(ln.kind === 'b' && ln.first){ ctx.fillStyle = CARD_SEAL; ctx.fillText('·', PG_X + 6, ln.y); ctx.fillStyle = col; }
     if(ln.kind === 's'){ ctx.fillStyle = SQ_PANEL; sqRound(ctx, PG_X - 14, ln.y - 38, PG_W - PG_X*2 + 28, 52, 14); ctx.fill(); ctx.fillStyle = col; }
     ctx.fillText(ln.text, x, ln.y);
   });
+  return k;
 }
 function screenImagePages(){
   var text = screenTextForCopy();
@@ -27366,57 +27365,39 @@ function screenImagePages(){
   var lines = String(text).split('\n');
   var title = (lines.shift() || '').trim();
   var c = document.createElement('canvas'); c.width = PG_W; c.height = PG_H;
-  var ctx = c.getContext('2d');
-  return { title: title, pages: pgLayout(ctx, pgBlocks(lines.join('\n'))) };
+  var lay = pgLayout(c.getContext('2d'), pgBlocks(lines.join('\n')));
+  return { title: title, lines: lay.lines, height: lay.height };
 }
 function openScreenImages(){
   var made = null;
   try{ made = screenImagePages(); }catch(e){ console.warn('이미지 만들기 실패', e); }
-  if(!made || !made.pages.length){ showToast('그림으로 만들 내용을 찾지 못했어요.'); return; }
-  var total = made.pages.length, canvases = [];
+  if(!made || !made.lines.length){ showToast('그림으로 만들 내용을 찾지 못했어요.'); return; }
+  var cv = document.createElement('canvas');
+  try{ pgDraw(cv, made); }catch(e){ showToast('그림을 만들지 못했어요.'); return; }
   var body = el('div',{});
   body.appendChild(el('p',{class:'section-sub', style:'margin:0 0 10px;'},
-    ['화면 글을 세로 그림 '+total+'장으로 만들었어요. 그림을 길게 눌러도 저장할 수 있어요.']));
-  var list = el('div',{class:'pg-list'});
-  made.pages.forEach(function(pg, i){
-    var cv = document.createElement('canvas');
-    pgDraw(cv, pg, made.title, i+1, total);
-    canvases.push(cv);
-    var img = el('img',{class:'pg-img', alt:made.title+' '+(i+1)+'/'+total});
-    try{ img.src = cv.toDataURL('image/png'); }catch(e){}
-    list.appendChild(img);
-  });
-  var name = 'inyeonjeom_'+todayStr();
-  function toFiles(done){
-    var files = [], left = canvases.length;
-    canvases.forEach(function(cv, i){
-      cv.toBlob(function(b){
-        if(b && window.File) files[i] = new File([b], name+'_'+(i+1)+'.png', {type:'image/png'});
-        if(--left === 0) done(files.filter(Boolean));
-      }, 'image/png');
-    });
-  }
+    ['화면 글을 긴 그림 한 장으로 만들었어요. 그림을 길게 눌러도 저장할 수 있어요.']));
+  var img = el('img',{class:'pg-img', alt:made.title});
+  try{ img.src = cv.toDataURL('image/png'); }catch(e){}
+  var fname = 'inyeonjeom_'+todayStr()+'.png';
   var row = el('div',{class:'btn-row', style:'margin:0 0 12px;'});
   row.appendChild(el('button',{class:'btn btn-primary btn-sm', type:'button', onclick:function(){
-    toFiles(function(files){
-      /* 폰이면 공유 창(사진에 저장 · 카톡 보내기)이 가장 쉽다. 안 되면 하나씩 내려받는다. */
-      if(files.length && navigator.canShare && navigator.canShare({files:files}) && navigator.share){
-        navigator.share({files:files, title:made.title}).catch(function(){});
+    cv.toBlob(function(blob){
+      if(!blob){ showToast('그림을 만들지 못했어요.'); return; }
+      var f = window.File ? new File([blob], fname, {type:'image/png'}) : null;
+      /* 폰이면 공유 창(사진에 저장 · 카톡 보내기)이 가장 쉽다. 안 되면 내려받는다. */
+      if(f && navigator.canShare && navigator.canShare({files:[f]}) && navigator.share){
+        navigator.share({files:[f], title:made.title}).catch(function(){});
         return;
       }
-      files.forEach(function(f, i){
-        trackTimeout(function(){
-          var url = URL.createObjectURL(f), a = document.createElement('a');
-          a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          trackTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
-        }, i*400);
-      });
-      showToast('그림 '+files.length+'장을 저장했어요.');
-    });
-  }},['모두 저장 ('+total+'장)']));
-  /* 저장 단추를 그림 목록 위에 둔다 — 아래에 두면 목록을 끝까지 내려야 보인다(실측) */
+      var url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = fname; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      trackTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+      showToast('그림을 저장했어요.');
+    }, 'image/png');
+  }},['그림 저장하기']));
   body.appendChild(row);
-  body.appendChild(list);
+  body.appendChild(el('div',{class:'pg-list'},[img]));
   openModal('이미지로 저장', body, [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
 }
 function copyText(text){
@@ -29027,7 +29008,7 @@ try{
       openPaywall: openPaywall,   /* 결제창 문구를 화면으로 재는 용도 (2026-09-21) */
       groupMyMemberIdx: groupMyMemberIdx, groupMyRowStale: groupMyRowStale,
       /* 2026-09-22 — 결제 취소 복귀 검사(checks-slow/pay_cancel.cjs)가 쓴다 */
-      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, screenTextForCopy: screenTextForCopy, screenImagePages: screenImagePages, openScreenImages: openScreenImages, startService: startService, finishConsent: finishConsent, adGoPending: adGoPending, viewYear: function(){ return VIEW_YEAR; }, setViewYear: function(y){ VIEW_YEAR = y; render(); }, buildReport13: buildReport13, getSajuResult: getSajuResult, aiYearWords: aiYearWords, buildMonthlyFortune: buildMonthlyFortune, sectionsByTitle: sectionsByTitle, SajuEngine: SajuEngine, sajuPayload: function(y){ var pr=activeProfile(), s=getSajuResult(pr), v=VIEW_YEAR; VIEW_YEAR=y; var o=Interpreter.buildSajuPayload(pr,s); VIEW_YEAR=v; return o; }, parseSections: function(t, ti){ return Interpreter.parseSections(t, ti); }, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
+      notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, screenTextForCopy: screenTextForCopy, screenImagePages: screenImagePages, openScreenImages: openScreenImages, pgDraw: pgDraw, startService: startService, finishConsent: finishConsent, adGoPending: adGoPending, viewYear: function(){ return VIEW_YEAR; }, setViewYear: function(y){ VIEW_YEAR = y; render(); }, buildReport13: buildReport13, getSajuResult: getSajuResult, aiYearWords: aiYearWords, buildMonthlyFortune: buildMonthlyFortune, sectionsByTitle: sectionsByTitle, SajuEngine: SajuEngine, sajuPayload: function(y){ var pr=activeProfile(), s=getSajuResult(pr), v=VIEW_YEAR; VIEW_YEAR=y; var o=Interpreter.buildSajuPayload(pr,s); VIEW_YEAR=v; return o; }, parseSections: function(t, ti){ return Interpreter.parseSections(t, ti); }, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
       elemReadFacts: elemReadFacts, buildSajuHook: buildSajuHook, buildMbtiHook: buildMbtiHook, buildCompatWeave: buildCompatWeave,
       buildCompatHook: buildCompatHook, compatWeaveFacts: compatWeaveFacts, buildElemReading: function(sj){ var b = buildElemReading(sj, false); return b ? b.innerText : ''; },
       Interpreter: Interpreter, pairDeep: function(){ return PAIR_DEEP; }, compatSub: function(){ return COMPAT_SUB; },
