@@ -18628,7 +18628,7 @@ function adminMembers(body){
     if(ADMIN_MFILTER === 'none' && (r.profiles || []).length) return false;
     if(!q) return true;
     var hay = [r.id, r.sessionId].concat((r.profiles||[]).map(function(p){
-      return [p.name, p.mbti, p.birth, p.saju].join(' '); })).join(' ').toLowerCase();
+      return [p.name, p.mbti, p.birth, p.saju, p.gender].join(' '); })).join(' ').toLowerCase();
     return hay.indexOf(q) >= 0;
   });
 
@@ -18656,6 +18656,8 @@ function adminMembers(body){
     who.appendChild(el('div',{},[p0 ? (p0.name || '(이름 없음)') : '(사주 없음)']));
     who.appendChild(el('div',{class:'ad-sub2'},['카카오 ' + r.id]));
     tr.appendChild(adTd([who]));
+    tr.appendChild(adTd([p0 && p0.gender ? p0.gender : el('span',{class:'ad-sub2'},['—'])],'ad-nowrap'));
+    tr.appendChild(adTd([adAgeText(p0) || el('span',{class:'ad-sub2'},['—'])],'ad-nowrap'));
     tr.appendChild(adTd([p0 && p0.mbti ? adTag(p0.mbti,'out') : el('span',{class:'ad-sub2'},['—'])],'ad-nowrap'));
     tr.appendChild(adTd([p0 && p0.saju ? p0.saju : '—'],'ad-nowrap'));
     tr.appendChild(adTd([el('span',{class:'ad-sub2'},[(r.at || '').slice(0,10)])],'ad-nowrap'));
@@ -18667,10 +18669,20 @@ function adminMembers(body){
       onclick:(function(m){ return function(){ ADMIN_MEMBER = m; render(); }; })(r)},['상세'])],'ad-nowrap'));
     return tr;
   });
-  card.appendChild(adTable(['회원','성격유형','사주','가입','마지막','결제','상태',''], trs, 780));
+  card.appendChild(adTable(['회원','성별','나이','성격유형','사주','가입','마지막','결제','상태',''], trs, 900));
   card.appendChild(adPager('members', rows.length));
   body.appendChild(card);
 }
+/* ★ 2026-10-19 대표님 "회원 관리 탭에도 성별이랑 나이 열" — 첫 프로필(본인)의 생년월일로 오늘(KST) 만 나이.
+   대시보드 회원 분포(서버 ageOf)와 같은 셈 — 한쪽만 고치면 두 화면 나이가 갈린다. */
+function adAgeOf(p){
+  var m = p && /^(\d{4})-(\d{2})-(\d{2})$/.exec(p.birth || '');
+  if(!m) return null;
+  var t = new Date(Date.now() + 9*3600*1000), ty = t.getUTCFullYear(), md = (t.getUTCMonth()+1)*100 + t.getUTCDate();
+  var a = ty - (+m[1]); if(md < (+m[2])*100 + (+m[3])) a -= 1;
+  return a >= 0 && a < 120 ? a : null;
+}
+function adAgeText(p){ var a = adAgeOf(p); return a == null ? '' : a + '세'; }
 function adminMemberDrawer(r){
   var wrap = el('div',{class:'ad-drawer'});
   wrap.appendChild(el('button',{class:'ad-scrim', 'aria-label':'닫기',
@@ -18689,7 +18701,9 @@ function adminMemberDrawer(r){
   panel.appendChild(head);
 
   var g = el('div',{style:'display:grid;grid-template-columns:1fr 1fr;gap:8px;'});
-  [['성격유형', p0 && p0.mbti ? p0.mbti : '—'],
+  [['성별', p0 && p0.gender ? p0.gender : '—'],
+   ['나이', adAgeText(p0) ? adAgeText(p0) + ' (만 · ' + p0.birth + ')' : '—'],
+   ['성격유형', p0 && p0.mbti ? p0.mbti : '—'],
    ['사주', p0 && p0.saju ? p0.saju : '아직 계산 안 됨'],
    ['누적 결제', r.paidCount ? (formatWon(r.revenue) + ' · ' + r.paidCount + '건') : '없음'],
    ['이어보기', r.synced ? ('저장본 ' + r.rev + '번') : '없음'],
@@ -18747,10 +18761,10 @@ function adminMemberDrawer(r){
   return wrap;
 }
 function adminMemberCsv(rows){
-  var out = [['카카오번호','이름','성격유형','성별','생년월일','태어난시각','사주','결제건수','결제금액','가입','마지막','프로필수','기록','모임']];
+  var out = [['카카오번호','이름','성격유형','성별','나이','생년월일','태어난시각','사주','결제건수','결제금액','가입','마지막','프로필수','기록','모임']];
   rows.forEach(function(r){
     var p0 = (r.profiles || [])[0] || {};
-    out.push([r.id, p0.name || '', p0.mbti || '', p0.gender || '', p0.birth || '', p0.time || '',
+    out.push([r.id, p0.name || '', p0.mbti || '', p0.gender || '', adAgeOf(p0) == null ? '' : adAgeOf(p0), p0.birth || '', p0.time || '',
               p0.saju || '', r.paidCount, r.revenue, r.at || '', r.updatedAt || '',
               (r.profiles||[]).length, r.history, r.groups]);
   });

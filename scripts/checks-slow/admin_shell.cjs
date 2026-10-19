@@ -239,6 +239,14 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   R.note(o.clicked, '[회원 관리] 를 눌렀다');
   ['5057959396','가영','ENFP','경오 임오 신해 계사','결제 2건','2,890원','5073954894','사주 없음']
     .forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "'" + w + "' 가 보인다"); });
+  /* ★ 2026-10-19 성별·나이 열 — 가영(여 · 1990-03-05)의 만 나이를 오늘(KST)로 셈 */
+  const AGE_A = (function(){ const t = new Date(Date.now()+9*3600*1000); let a = t.getUTCFullYear() - 1990;
+    if((t.getUTCMonth()+1)*100 + t.getUTCDate() < 305) a -= 1; return a; })();
+  const mhead = await page.evaluate(() => [...document.querySelectorAll('#adminRoot .ad-table th')].map(x => x.textContent.trim()));
+  R.note(mhead[1] === '성별' && mhead[2] === '나이', '회원 표에 성별·나이 열', mhead.join(','));
+  const mrow = await page.evaluate(() => { const tr = [...document.querySelectorAll('#adminRoot .ad-table tbody tr')].find(x => x.textContent.indexOf('가영') >= 0);
+    return tr ? [...tr.children].map(td => td.textContent.trim()) : []; });
+  R.note(mrow[1] === '여' && mrow[2] === AGE_A + '세', '가영 줄 = 여 · ' + AGE_A + '세 (만 나이)', mrow.slice(0,3).join(' | '));
   /* ★ 2026-09-11 대표님 영상 제보로 뒤집힌 검사입니다.
      예전에는 주소에 `#admin/members` 를 적는 것이 통과 조건이었는데, 그 주소가
      방문 기록에 박혀 **손님 링크가 운영자 전용 화면을 열었습니다.** 이제 주소에
