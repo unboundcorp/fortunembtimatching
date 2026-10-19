@@ -21,5 +21,10 @@ ok(VV && V && Object.keys(VV).sort().join() === Object.keys(V).sort().join(), '�
 lines.forEach(l => ok(l.length <= 18, '너무 긴 줄('+l.length+'자): '+l));
 ok(lines.length > 150, '줄 수가 이상하게 적음: '+lines.length);
 ok(/SQ_MBTI_CARD\[t\]/.test(s) && /SQ_LACK_VIEW\[f\.strongest/.test(s), '카드 함수가 표를 실제로 읽는가');
+/* 2026-10-19 대표님 "사주풀이 요약카드도 2026년 2027년이 같다" — 사주 카드 아래 두 칸은 그 해 것이어야 한다 */
+const YG = grab('SQ_YEAR_GROUP');
+ok(YG && ['비겁','식상','재성','관성','인성'].every(k => YG[k] && YG[k].length <= 18), '그 해 기운 다섯 갈래 · 18자 안쪽');
+const sc = s.slice(s.indexOf('function sqSajuCard'), s.indexOf('function sqMbtiCard'));
+ok(/saeunPillar\(year\)/.test(sc) && /buildMonthlyFortune\(profile, year/.test(sc) && /SQ_YEAR_GROUP\[/.test(sc), '사주 카드가 그 해 간지·달마다 값을 읽는가');
 console.log('공유 카드 짧은 문장 — 검사 '+n+'건 · 실패 '+fail+'건');
 process.exit(fail ? 1 : 0);

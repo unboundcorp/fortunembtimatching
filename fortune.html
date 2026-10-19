@@ -27469,6 +27469,9 @@ var SQ_ELEM_CARD = {
   4:{ trait:'생각이 깊고 눈치가 빨라요.\n상황을 먼저 읽는 편이에요.', shadow:'생각이 깊고 눈치가 빨라요.\n생각이 많아 행동이 늦어요.',
       lack:'한 박자 쉬어 가기가 어려워요.\n서두르다 놓치는 게 생겨요.', fill:'결정은 하룻밤 재워 보고,\n쉬는 시간을 따로 떼어 두세요.' }
 };
+/* 그 해 윗글자가 나에게 어떤 기운인가(2장 YEAR_STEM_LINE 과 같은 뜻) — 카드 칸 한 줄 */
+var SQ_YEAR_GROUP = { '비겁':'내 힘이 붙는 해예요.', '식상':'표현할 게 많아지는 해예요.', '재성':'돈을 다룰 일이 느는 해예요.',
+  '관성':'맡는 책임이 커지는 해예요.', '인성':'배우고 채우기 좋은 해예요.' };
 /* 넘치는 기운과 함께 읽으면 반대로 들리는 짝 — 화면 ELEM_LACK_VIEW 와 같은 짝 · 같은 뜻 */
 var SQ_LACK_VIEW = {
   '2-4':'정하고 나면 쉬지 않고\n밀어붙이는 쪽으로 기울어요.',
@@ -27517,22 +27520,36 @@ function sqSajuCard(ctx, profile, saju, year, paid){
   ctx.fillStyle = SQ_FAINT; ctx.font = '500 22px '+CARD_SANS;
   ctx.fillText('사주 여덟 글자 '+gz, 410, ey+46);
   var S = ELEM_PROFILE[f.strongest], Lk = ELEM_PROFILE[f.lack];
-  var last = ['✨', '한마디', S.manyShort+' 사람이라, '+Lk.lackShort+' 순간만 챙기면 돼요.'];
-  if(paid){
-    var mo = null; try{ mo = buildMonthlyFortune(profile, year, function(){ return true; }); }catch(e){}
+  /* ★ 2026-10-19 대표님 지시 "사주풀이 요약카드도 2026년 2027년이 같다! 카드에 연도별 흐름이나 특이사항 주요풀이 추가해라" —
+     아래 두 칸을 그 해 것으로 바꾼다(예전: '이렇게 채워요' · '한마디', 결제한 해만 '나의 달').
+     ③ 그 해 간지 — 윗글자가 나에게 어떤 기운인지(2장과 같은 십성 무리) + 그 해 기운이 모자란/진한 기운과 어떻게 만나는지
+     ④ 그 해 달마다 막대(buildMonthlyFortune avg — 화면 무료 막대와 같은 값)의 위 둘 · 아래 둘. 새 점수 없음. */
+  var yTile = null, mTile = null;
+  try{
+    var ysa = SajuEngine.saeunPillar(year);
+    var yse = SajuEngine.STEM_ELEM[ysa.stemIdx], ybe = SajuEngine.BRANCH_ELEM[ysa.branchIdx];
+    var ysip = SajuEngine.sipseongOf(saju.day.stemIdx, yse, SajuEngine.STEM_YY[ysa.stemIdx]);
+    var yl2;
+    if(yse === f.lack || ybe === f.lack) yl2 = '비어 있던 '+Lk.name+' 기운이 들어와요.';
+    else if(yse === f.strongest || ybe === f.strongest) yl2 = '진한 '+S.name+' 기운이 더 몰려요.';
+    else yl2 = (yse === ybe ? ELEM_PROFILE[yse].name : ELEM_PROFILE[yse].name+'·'+ELEM_PROFILE[ybe].name)+' 기운이 들어와요.';
+    yTile = ['📅', year+'년 '+ysa.text+'년', (SQ_YEAR_GROUP[groupCategory(ysip)] || '')+'\n'+yl2];
+  }catch(e){}
+  try{
+    var mo = buildMonthlyFortune(profile, year, function(){ return true; });
     if(mo && mo.months && mo.months.length >= 12){
       var ms = mo.months.slice().sort(function(a, b){ return b.avg - a.avg; });
-      last = ['📅', year+'년 나의 달',
+      if(ms[0].avg !== ms[11].avg) mTile = ['🗓️', year+'년 달마다 흐름',
         '🔥 힘이 실리는 달  '+ms[0].month+'월 · '+ms[1].month+'월\n🍃 쉬어 가는 달  '+ms[11].month+'월 · '+ms[10].month+'월'];
     }
-  }
+  }catch(e){}
   /* 넘침(3개 이상)이 아니면 '가장 진해요'와 좋은 면만 — 화면 buildElemReading 과 같은 갈래 */
   var SC = SQ_ELEM_CARD[f.strongest], LC = SQ_ELEM_CARD[f.lack];
   sqTiles(ctx, 500, 226, 20, [
     [ELEM_ICON[f.strongest], S.name+' 기운이 '+(f.many ? '넘쳐요' : '가장 진해요'), f.many ? SC.shadow : SC.trait],
     [ELEM_ICON[f.lack], Lk.name+' 기운이 '+(f.lackCount ? '적어요' : '없어요'), SQ_LACK_VIEW[f.strongest+'-'+f.lack] || LC.lack],
-    ['🌱', '이렇게 채워요', LC.fill],
-    last
+    yTile || ['🌱', '이렇게 채워요', LC.fill],
+    mTile || ['✨', '한마디', S.manyShort+' 사람이라, '+Lk.lackShort+' 순간만 챙기면 돼요.']
   ]);
   sqFooter(ctx, '내 사주 보기');
 }
