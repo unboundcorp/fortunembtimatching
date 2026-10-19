@@ -1057,6 +1057,11 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + var(--tabbar-h) + env(safe-are
 .rv-input{width:100%;box-sizing:border-box;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--paper, #fff);resize:vertical;}
 .rv-msg{color:var(--brand);font-size:.86rem;margin:6px 0 0;}
 .rv-mine{margin:0;}
+.sit-group{margin:0 0 14px;}
+.sit-label{font-weight:700;font-size:.9rem;margin:0 0 6px;}
+.sit-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.sit-chip{min-height:40px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel-3);font:inherit;font-size:.9rem;color:var(--ink);cursor:pointer;}
+.sit-chip.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700;}
 .copy-links{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px;}
 .pg-list{display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow:auto;}
 .pg-img{width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block;}
@@ -6377,6 +6382,9 @@ function normalizeEntitlements(raw){
                  purchasedAt: Number(raw.pass.purchasedAt) || Date.now(),
                  expiresAt: Number(raw.pass.expiresAt) || 0 };
   }
+  /* ★ 2026-10-19 — 이 세션이 AI 풀이를 이미 만든 상품(서버 ai_cache 기준). '고민 고르기'를 물을지 가른다.
+       없으면(옛 서버) 넣지 않는다 — 그때는 '이미 만들었을 수 있다'로 보고 묻지 않는다. */
+  if(Array.isArray(raw.made)) out.made = raw.made.filter(function(x){ return typeof x === 'string'; });
   if(Array.isArray(raw.purchases)){
     out.purchases = raw.purchases.filter(function(p){ return p && productDef(p.productId); }).map(function(p){
       return { productId:p.productId, at:Number(p.at)||0, price:Number(p.price)||productDef(p.productId).price,
@@ -6596,10 +6604,20 @@ function syncCall(body){
 /* id가 같으면 한 번만. 없는 것은 둘 다 남긴다. */
 function syncMergeList(local, remote){
   var out = (local||[]).slice(), seen = {};
-  out.forEach(function(x){ if(x && x.id) seen[x.id] = 1; });
+  out.forEach(function(x){ if(x && x.id) seen[x.id] = x; });
   (remote||[]).forEach(function(x){
-    if(!x || !x.id || seen[x.id]) return;
-    out.push(x); seen[x.id] = 1;
+    if(!x || !x.id) return;
+    if(seen[x.id]){
+      /* ★ 2026-10-19 — 고민 고르기(aiSituation)는 빈 칸만 상대에게서 채운다. 안 채우면 다른 기기에서
+         같은 풀이를 열 때 다시 묻고, 다른 답을 고르면 저장 열쇠가 바뀌어 새로 만들어진다. */
+      var mine = seen[x.id];
+      if(mine !== x && x.aiSituation && typeof x.aiSituation === 'object'){
+        mine.aiSituation = mine.aiSituation || {};
+        Object.keys(x.aiSituation).forEach(function(k){ if(!(k in mine.aiSituation)) mine.aiSituation[k] = x.aiSituation[k]; });
+      }
+      return;
+    }
+    out.push(x); seen[x.id] = x;
   });
   return out;
 }
@@ -6662,11 +6680,14 @@ function syncMergeGroups(local, remote, tombs){
 function syncMerge(remote){
   if(!remote || typeof remote !== 'object') return false;
   var changed = false;
+  var sitSig = function(){ return JSON.stringify((STATE.profiles||[]).map(function(x){ return x && x.aiSituation || null; })); };
+  var sitBefore = sitSig();
   SYNC_LISTS.forEach(function(k){
     var before = (STATE[k]||[]).length;
     var merged = syncMergeList(STATE[k], remote[k]);
     if(merged.length !== before){ STATE[k] = merged; changed = true; }
   });
+  if(sitSig() !== sitBefore) changed = true;   /* 고민 고르기만 채워져도 저장한다(2026-10-19) */
   var memos = syncMergeMemos(STATE.receiptMemos, remote.receiptMemos);
   if(memos.length !== (STATE.receiptMemos||[]).length){ STATE.receiptMemos = memos; changed = true; }
   /* ★ 모임은 SYNC_LISTS에 넣지 않는다 — 그 병합은 줄 개수만 보고 빈 칸을 채우지 못한다.
@@ -10229,6 +10250,73 @@ function generateOnce(key, productId, payload, onText, onOpen){
   return entry.promise;
 }
 
+/* =====================================================================
+   고민 고르기 (2026-10-19 대표님 지시) — 풀이를 처음 쓰기 직전에 한 번
+   ★ 값은 프로필의 aiSituation[상품 id] 에 적는다(사주는 해마다 따로). 프로필째 동기화된다.
+   ★ AI 규칙은 api/_lib/aiprompt.js 7-7. 화면 이름과 서버로 가는 낱말이 이 표 한 벌이다.
+===================================================================== */
+var SIT_LOVE = [['solo','솔로예요'],['some','썸 타는 중'],['dating','연애 중'],['married','결혼했어요'],['breakup','헤어진 지 얼마 안 됐어요']];
+var SIT_FOCUS = [['love','사랑'],['work','일과 직장'],['money','돈'],['self','나 자신'],['future','앞날']];
+var SIT_SEND_LOVE = {solo:'솔로', some:'썸 타는 중', dating:'연애 중', married:'기혼', breakup:'이별 직후'};
+var SIT_SEND_FOCUS = {love:'사랑', work:'일과 직장', money:'돈', self:'나 자신', future:'앞날'};
+function situationAsked(p, pid){ return !!(p && p.aiSituation && Object.prototype.hasOwnProperty.call(p.aiSituation, pid)); }
+function situationPayload(p, pid){
+  var v = p && p.aiSituation && p.aiSituation[pid];
+  if(!v) return null;
+  var love = SIT_SEND_LOVE[v.love] || null, focus = SIT_SEND_FOCUS[v.focus] || null;
+  return (love || focus) ? {love:love, focus:focus} : null;
+}
+function aiMadeFor(pid){
+  var m = ENT && ENT.data && ENT.data.made;
+  return Array.isArray(m) ? m.indexOf(pid) >= 0 : true;
+}
+function saveSituation(p, pid, val){
+  var prof = (STATE.profiles || []).filter(function(x){ return x.id === p.id; })[0];
+  if(!prof) return;
+  prof.aiSituation = prof.aiSituation || {};
+  prof.aiSituation[pid] = val;
+  prof.updatedAt = Date.now();
+  saveState();
+}
+function askSituation(p, pid){
+  var pick = {love:null, focus:null};
+  var body = el('div',{class:'sit-ask'});
+  body.appendChild(el('p',{class:'section-sub', style:'margin:0 0 12px;'},
+    ['고르면 풀이가 지금 상황에 맞춰 써져요.', el('br'), '안 골라도 돼요.']));
+  function group(label, list, key){
+    var wrap = el('div',{class:'sit-group'});
+    wrap.appendChild(el('div',{class:'sit-label'},[label]));
+    var row = el('div',{class:'sit-chips', role:'radiogroup', 'aria-label':label});
+    list.forEach(function(it){
+      var b = el('button',{type:'button', class:'sit-chip', role:'radio', 'aria-checked':'false', 'data-v':it[0],
+        onclick:function(){
+          pick[key] = pick[key] === it[0] ? null : it[0];
+          [].slice.call(row.children).forEach(function(c){
+            var on = c.getAttribute('data-v') === pick[key];
+            c.classList.toggle('on', on); c.setAttribute('aria-checked', on ? 'true' : 'false');
+          });
+        }},[it[1]]);
+      row.appendChild(b);
+    });
+    wrap.appendChild(row);
+    return wrap;
+  }
+  body.appendChild(group('연애 상태', SIT_LOVE, 'love'));
+  body.appendChild(group('지금 가장 걸리는 것', SIT_FOCUS, 'focus'));
+  var finished = false;
+  function finish(val){
+    if(finished) return; finished = true;
+    saveSituation(p, pid, val);
+    closeModal(true);
+    render();
+  }
+  openModal('풀이를 쓰기 전에 하나만 물어볼게요', body, [
+    {label:'건너뛰기', cls:'btn-ghost', onclick:function(){ finish({}); }},
+    {label:'이대로 풀이 받기', cls:'btn-primary', onclick:function(){ finish({love:pick.love, focus:pick.focus}); }}
+  ]);
+  /* 바깥을 누르거나 뒤로 가서 닫아도 '건너뛰기'로 본다 — 안 그러면 풀이가 영영 안 써진다 */
+  MODAL_GUARD = function(){ finish({}); };
+}
 function paintReportInto(host, localSections, product, tocLabel, payloadFn, displayName, extras, hookHtml){
   AI_TEXT_YEAR = (product && splitProductId(product.id).base === 'saju_full') ? (product.year || VIEW_YEAR) : null;
   var FREE_N = freeSectionsFor(product);
@@ -10443,6 +10531,24 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
      목차와 본문이 서로 다른 이름을 갖는다 — 목차를 눌러도 그 자리로 안 간다. */
   var titles = baseSections.map(function(x){ return x.title; });
   try{ payload.requested = payload.requested || {}; payload.requested.sectionTitles = titles; }catch(e){}
+
+  /* ★ 2026-10-19 대표님 "그래 그대로 해라" — 고민 고르기(연애 상태 · 지금 가장 걸리는 것).
+     사주·성격유형 풀이를 **처음 만들기 직전에만** 묻는다. 고른 값은 프로필에 상품별로 적고(동기화됨)
+     요청서 situation 으로 보낸다. 건너뛰면 {} 로 적고 아무것도 안 보낸다.
+     ★ 이미 만든 풀이(ENT.data.made)에는 묻지도 보내지도 않는다 — 요청서가 바뀌면 저장 열쇠가 바뀌어
+       새로 만들어지고 돈이 나간다. 만든 적이 있는지 모르면(옛 서버) 묻지 않는다. */
+  var sitBase = splitProductId(product.id).base;
+  if(payload && (sitBase === 'saju_full' || sitBase === 'mbti_full')){
+    var sitP = activeProfile();
+    var sitVal = situationPayload(sitP, product.id);
+    if(sitVal) payload.situation = sitVal;
+    else if(sitP && willAsk && !situationAsked(sitP, product.id) && !aiMadeFor(product.id)){
+      state.loading = false; state.attempted = false;
+      paint();
+      askSituation(sitP, product.id);
+      return;
+    }
+  }
 
   paint();
   /* ★ 스트리밍이 돌 참이면 유료 본문을 따로 부르지 않는다. 같은 글을 두 번 만들면
