@@ -13158,7 +13158,7 @@ function buildReport13(profile, saju, targetYear){
        이름으로 불러 말한다. 둘 다 두면 "기운이 몰려 있어요"를 한 장에서 두 번 하게 된다. */
     '<p>'+T(PB.ilganImage[dayStemName].line)+(balanceKey==='many' ? '' : ' '+PB.balanceOpening[balanceKey==='few'?'few':'balanced'])+'</p>'+
     s1ElemHtml(saju, safeName, totalChars) +
-    '<p>지금부터 '+safeName+'의 사주 여덟 글자(시주를 모르면 여섯 글자) 안에 담긴 흐름을 하나씩 같이 짚어볼게요.</p>');
+    '<p>지금부터 '+safeName+'의 사주 '+(saju.hour?'여덟':'여섯')+' 글자 안에 담긴 흐름을 하나씩 같이 짚어볼게요.</p>');
 
   // 2. 일간 분석
   add('s2','타고난 기질 · 나를 가리키는 글자(일간)','M4 18 L10 6 L16 18',
