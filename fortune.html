@@ -25622,11 +25622,7 @@ function renderGroupCompat(){
   applyCardFilter(GC_SEL!=null && GC_SEL < members.length ? GC_SEL : null);
   if(!groupUnlocked){
     var gBlock = lockedBlock(PRODUCTS.compat_full, '', '모두의 궁합 상세');
-    gBlock.insertBefore(el('div',{class:'locked-count'},
-      [pairs.length+'쌍의 잘 맞는 점·조심할 점 풀이가 잠겨 있어요']), gBlock.firstChild);
-    /* ★ 2026-10-16 검수 — 셋 이상 모임에서 '두 분 궁합 … 한 쌍 990원'만 보여 어느 쌍을 사는지 몰랐다. */
-    if(pairs.length > 1) gBlock.insertBefore(el('p',{class:'section-sub', style:'margin:4px 0 8px;'},
-      ['결제는 한 쌍씩이에요. 캐릭터를 눌러 궁금한 사람의 카드를 연 뒤, 그 쌍의 [궁합 풀이 읽어보기]에서 열 수 있어요.']), gBlock.firstChild.nextSibling);
+    /* ★ 2026-10-19 대표님 지시로 'N쌍의 … 잠겨 있어요' · '결제는 한 쌍씩이에요…' 두 줄을 지웠습니다. 되살리지 마십시오. */
     view.appendChild(gBlock);
   } else if(pairs.length > 1){
     /* ★ 2026-09-07 대표님 질문("10명 모임에서 1,900원 내면 나머지는? 그에 대한 안내가 되어 있어?")
