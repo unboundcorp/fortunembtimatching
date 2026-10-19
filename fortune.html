@@ -10268,12 +10268,8 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
     /* ★ 2026-09-09 — 저장 열쇠가 안 맞아 **먼저 만들어 드린 글을 되찾아 온** 경우다.
        아무 말 없이 옛 글을 띄우면 "왜 지금 화면 점수랑 글이 다르지?"가 된다.
        서버가 알려줄 때만 적는다(state.recovered) — 우리가 짐작해서 적지 않는다. */
-    if(state.recovered){
-      host.appendChild(el('p',{class:'warn-box', style:'margin:10px 0 14px;'},[
-        '계산 방식이 바뀐 뒤라, 먼저 만들어 드린 풀이를 그대로 보여드려요. '
-        + '결제한 글은 그대로 볼 수 있어요. 지금 화면의 점수와 글의 숫자가 조금 다를 수 있어요.'
-      ]));
-    }
+    /* ★ 2026-10-19 대표님 지시("1) 로해라") — 되찾은 글 위에 띄우던 '계산 방식이 바뀐 뒤라…' 안내를 지웠습니다.
+       되찾기 자체(state.recovered)는 그대로입니다. 안내를 되살리지 마십시오. */
     /* AI 해석이 이미 13섹션을 통째로 갈아끼운 뒤라면 본문이 비어 있지 않으므로 대체 카드를 쓰지 않는다. */
     var showPending = !state.locked && paidNeeded && state.source !== 'api' && (state.paidLoading || state.paidError);
     if(showPending) host.appendChild(paidContentNotice(state, loadPaidBody, product));

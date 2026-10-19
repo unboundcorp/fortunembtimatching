@@ -92,11 +92,12 @@ const R = reporter('되찾기 표식');
     R.note(/recovered: true|recovered: true/.test(src), f + " 가 화면에 recovered 를 알려준다");
   });
 
-  R.head('── ⑤ 화면이 그 사실을 손님께 적는가');
+  R.head('── ⑤ 화면이 되찾은 글을 받는가 (안내 문장은 2026-10-19 지움)');
   const html = fs.readFileSync(path.join(ROOT, 'fortune.html'), 'utf8');
   R.note(/state\.recovered/.test(html), '화면이 recovered 를 들고 있다');
-  R.note(/계산 방식이 바뀐 뒤라, 먼저 만들어 드린 풀이를 그대로 보여드려요/.test(html),
-         '되찾아 온 글이라는 것을 화면에 적는다');
+  /* 2026-10-19 대표님 지시로 되찾은 글 위의 안내는 지웠다 — 되살아나면 실패 */
+  R.note(!/계산 방식이 바뀐 뒤라, 먼저 만들어 드린 풀이를 그대로 보여드려요/.test(html),
+         '되찾아 온 글 위에 안내 문장을 다시 띄우지 않는다');
   R.note(/if\(ev\.recovered\) self\.lastRecovered = true;/.test(html),
          '흘려받기 창구에서도 받는다');
   R.note(/if\(data && data\.recovered\) Interpreter\.lastRecovered = true;/.test(html),
