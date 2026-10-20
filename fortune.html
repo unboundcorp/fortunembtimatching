@@ -18140,8 +18140,11 @@ function statsSum(rows){
   var o = {rooms:{made:0,joined:0,rate:0}, groups:{made:0,people:0,avg:0,max:0},
            orders:{created:0,paid:0,failed:0,revenue:0,byProduct:{}},
            ai:{generated:0,costKrw:0,inTok:0,outTok:0,cacheRead:0,estimated:0},
-           kakao:{linked:0}, feedback:{created:0}};
+           kakao:{linked:0}, feedback:{created:0},
+           ads:{spend:0, impr:0, clicks:0, days:0}};
   rows.forEach(function(r){
+    /* 메타 광고비 (2026-10-20) — 서버가 연결됐을 때만 r.ads 를 준다. 없는 날은 '모름'이라 안 센다 */
+    if(r.ads){ o.ads.spend += r.ads.spend || 0; o.ads.impr += r.ads.impr || 0; o.ads.clicks += r.ads.clicks || 0; o.ads.days += 1; }
     o.rooms.made += r.rooms.made; o.rooms.joined += r.rooms.joined;
     o.groups.made += r.groups.made; o.groups.people += r.groups.people;
     if(r.groups.max > o.groups.max) o.groups.max = r.groups.max;
@@ -18595,6 +18598,65 @@ function adminSubline(base){
 }
 
 /* ── 1. 대시보드 ─────────────────────────────────────────────────── */
+/* ── 메타 광고비 (2026-10-20 대표님 지시 "메타 mcp로 인연점 어드민에 광고비 끌어올 수 있냐?") ──
+   서버 api/stats.js 가 메타 Marketing API(insights)를 읽어 daily[].ads 와 ads{connected,reason,accounts} 를 준다.
+   ★ 연결 전·실패면 숫자를 지어내지 않고 이유만 적는다. ★ 날짜는 광고 계정 시간대 기준(서울이 아니면 적는다).
+   ★ '가입당'·'결제당'은 이 기간 광고비 ÷ 이 기간 새 회원·결제 수 — 광고로 온 분만 가른 값이 아니다(그 기록이 없다). */
+function adsConnected(){ return !!(STATS_DATA && STATS_DATA.ads && STATS_DATA.ads.connected); }
+function adminAdsCard(D, W, P, days){
+  var A = D.ads || null;
+  var card = adCard([adH('광고비 · 메타')]);
+  if(!A){
+    card.appendChild(adEmpty('서버가 아직 광고비를 안 내려줘요. 새로 올린 뒤 다시 열어 주세요.'));
+    return card;
+  }
+  if(!A.connected){
+    card.appendChild(el('div',{class:'ad-v', style:'font-size:20px;'},['광고 계정 연결 전']));
+    card.appendChild(el('p',{class:'ad-note'},[A.reason || '메타 광고 계정과 아직 이어지지 않았어요.']));
+    return card;
+  }
+  var sp = W.ads.spend;
+  var per = function(n){ return n ? formatWon(Math.round(sp / n)) : '—'; };
+  var grid = el('div',{class:'ad-grid ad-kpi'});
+  grid.appendChild(adKpi({label:'광고비', icon:'card', value:formatWon(sp),
+    delta:statsDelta(sp, P.ads.spend, true),
+    note:'노출 ' + adminNum(W.ads.impr) + ' · 클릭 ' + adminNum(W.ads.clicks)
+       + (W.ads.clicks ? ' · 클릭당 ' + per(W.ads.clicks) : ''),
+    spark:days.map(function(r){ return r.ads ? r.ads.spend : 0; })}));
+  grid.appendChild(adKpi({label:'새 회원 1명당 광고비', icon:'users', value:per(W.kakao.linked),
+    note:'광고비 ' + formatWon(sp) + ' ÷ 새 회원 ' + W.kakao.linked + '명'}));
+  grid.appendChild(adKpi({label:'결제 1건당 광고비', icon:'gauge', value:per(W.orders.paid),
+    note:'광고비 ÷ 결제 ' + W.orders.paid + '건' + (sp ? ' · 매출은 광고비의 ' + (Math.round(W.orders.revenue / sp * 100)) + '%' : '')}));
+  card.appendChild(grid);
+
+  var legend = el('div',{class:'ad-legend'});
+  [['결제 매출','var(--gold-2)'],['광고비','#A99E8E']].forEach(function(l){
+    var s2 = el('span',{}); s2.appendChild(el('i',{style:'background:'+l[1]+';'}));
+    s2.appendChild(document.createTextNode(l[0])); legend.appendChild(s2);
+  });
+  card.appendChild(adH('날마다 매출과 광고비', legend));
+  card.appendChild(adLines(days, [
+    {label:'결제 매출', color:'var(--gold-2)', w:'1.6', get:function(r){ return r.orders.revenue; }},
+    {label:'광고비', color:'#A99E8E', w:'1.4', dash:true, get:function(r){ return r.ads ? r.ads.spend : 0; }}
+  ]));
+  var axis = el('div',{class:'ad-legend', style:'justify-content:space-between;'});
+  [0, Math.floor(days.length/2), days.length-1].forEach(function(i){
+    if(days[i]) axis.appendChild(el('span',{},[days[i].d.slice(5)]));
+  });
+  card.appendChild(axis);
+
+  var acc = (A.accounts || []);
+  var notes = ['가입당·결제당은 이 기간 광고비를 이 기간 전체 새 회원·결제 수로 나눈 값이에요. 광고로 들어온 분만 가른 값은 아니에요.'];
+  var used = acc.filter(function(a){ return a.included; });
+  if(used.length) notes.push('계정: ' + used.map(function(a){ return (a.name || a.id) + ' (' + a.id + ')'; }).join(', '));
+  var skip = acc.filter(function(a){ return !a.included; });
+  if(skip.length) notes.push('원화가 아니라 더하지 않은 계정: ' + skip.map(function(a){ return (a.name || a.id) + ' · ' + a.currency; }).join(', '));
+  var offTz = used.filter(function(a){ return a.tz && a.tz !== 'Asia/Seoul'; });
+  if(offTz.length) notes.push('광고 계정 시간대가 ' + offTz.map(function(a){ return a.tz; }).join(', ') + ' 라서 날짜가 한국 시간과 하루 어긋날 수 있어요.');
+  notes.push('정확한 청구액은 메타 광고 관리자가 정본이에요(부가세 별도).');
+  notes.forEach(function(t){ card.appendChild(el('p',{class:'ad-note'},[t])); });
+  return card;
+}
 function adminDash(body){
   if(STATS_ERR){
     body.appendChild(adCard([el('p',{class:'ad-empty', style:'color:var(--red-hi);'},[STATS_ERR]),
@@ -18679,19 +18741,25 @@ function adminDash(body){
     delta:statsDelta(W.ai.costKrw, P.ai.costKrw, true),
     note:W.ai.generated + '건 · ' + adminTokenText(W.ai),
     spark:days.map(function(r){ return r.ai.costKrw || 0; })}));
-  /* 남는 것 = 매출 − AI 비용. 결제 수수료·서버비는 안 빠진 값이라 그 사실을 적는다. */
+  /* 남는 것 = 매출 − AI 비용 (− 광고비, 메타가 연결됐으면). 결제 수수료·서버비는 안 빠진 값이라 그 사실을 적는다.
+     ★ 2026-10-20 — 광고비를 함께 뺀다. 연결 전이면 예전처럼 매출 − AI 만 뺀다(모르는 광고비를 0으로 치지 않는다). */
+  var adsOn = adsConnected(), adW = adsOn ? W.ads.spend : 0, adP = adsOn ? P.ads.spend : 0;
   kpi.appendChild(adKpi({label:'남는 것', icon:'gauge',
-    value:formatWon(W.orders.revenue - W.ai.costKrw),
-    delta:statsDelta(W.orders.revenue - W.ai.costKrw, P.orders.revenue - P.ai.costKrw, true),
+    value:formatWon(W.orders.revenue - W.ai.costKrw - adW),
+    delta:statsDelta(W.orders.revenue - W.ai.costKrw - adW, P.orders.revenue - P.ai.costKrw - adP, true),
     note:'매출 ' + formatWon(W.orders.revenue) + ' − AI ' + formatWon(W.ai.costKrw)
-       + ' (결제 수수료·서버비는 안 뺀 값)',
-    spark:days.map(function(r){ return Math.max(0, r.orders.revenue - (r.ai.costKrw || 0)); })}));
+       + (adsOn ? ' − 광고비 ' + formatWon(adW) : ' (광고비는 연결 전이라 안 뺌)')
+       + ' · 결제 수수료·서버비는 안 뺀 값',
+    spark:days.map(function(r){ return Math.max(0, r.orders.revenue - (r.ai.costKrw || 0) - (adsOn && r.ads ? r.ads.spend : 0)); })}));
   var tried = W.orders.created;
   kpi.appendChild(adKpi({label:'결제 실패율', icon:'gauge',
     value:(tried ? (Math.round((W.orders.failed / tried) * 1000) / 10) : 0) + '%',
     note:'결제창까지 ' + tried + '건 중 ' + W.orders.failed + '건 실패',
     spark:days.map(function(r){ return r.orders.failed; })}));
   body.appendChild(kpi);
+
+  /* (c2) 광고비 — 메타 (2026-10-20) */
+  body.appendChild(adminAdsCard(D, W, P, days));
 
   /* (d) 활동 추이 + 링크 퍼널 */
   var two = el('div',{class:'ad-grid ad-two'});

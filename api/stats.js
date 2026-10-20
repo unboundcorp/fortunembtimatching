@@ -20,6 +20,7 @@ import { productOf, aiQuotaOf, splitProductId } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import { decodePersonRow, describeProfile } from './_lib/person.js';
 import { lookupPaymentByOrder, cancelPayment } from './_lib/toss.js';
+import { fetchMetaAdSpend } from './_lib/metaads.js';
 
 /* AI 해석 1건당 대략 얼마가 나가는지 — 원가 감을 잡기 위한 값이다.
    Sonnet 5 기준 입력 $2 / 출력 $10 per MTok, 유료 10섹션 ≈ 7천 토큰으로 잡았다.
@@ -504,6 +505,11 @@ export default async function handler(req, res) {
        이 셋은 이미 표에 쌓여 있는데 현황판에 안 나와서, 대표님이 상태를 알려면 저에게 물어봐야 했다.
        ★ 실패해도 현황판 전체를 죽이지 않는다 — 새로 붙인 칸 때문에 원래 보던 숫자가 사라지면 안 된다. */
     const soft = (q) => rest(q).catch((e) => { console.warn('현황판 일부 조회 실패:', e && e.message); return []; });
+    /* ★ 2026-10-20 메타 광고비 — DB 조회와 나란히 묻는다. 실패해도 throw 하지 않는다(_lib/metaads.js).
+       날짜 범위는 아래 daily 90일과 같은 KST 날짜다. */
+    const kstToday = (ms) => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    const adsP = fetchMetaAdSpend({ since: kstToday(Date.now() - 89 * 86400000), until: kstToday(Date.now()) })
+      .catch(() => ({ connected: false, reason: '메타에 묻지 못했어요.', accounts: [], byDay: {} }));
     const [orders, rooms, groups, aiUse, aiCache, kakao, sync, feedback, syncProfiles] = await Promise.all([
       rest('orders?select=order_id,session_id,product_id,amount,status,created_at,paid_at&order=created_at.desc&limit=2000'),
       rest('rooms?select=room_id,created_at,joined_at&order=created_at.desc&limit=2000'),
@@ -636,6 +642,12 @@ export default async function handler(req, res) {
     (kakao || []).forEach((k) => bump(k.created_at, (x) => { x.kakao.linked += 1; }));
     (feedback || []).forEach((f) => bump(f.created_at, (x) => { x.feedback.created += 1; }));
 
+    /* 광고비 — 메타가 준 하루치를 같은 날짜 칸에 넣는다. 연결 전이면 ads 칸을 아예 안 만든다
+       (0원으로 채우면 '광고비 0원'으로 읽힌다 — 모르는 것과 0은 다르다). */
+    const ads = await adsP;
+    if (ads.connected) {
+      dayList.forEach((d) => { dayMap[d].ads = ads.byDay[d] || { spend: 0, impr: 0, clicks: 0 }; });
+    }
     const daily = dayList.map((d) => Object.assign({ d }, dayMap[d]));
 
     /* ── 회원 분포 (2026-10-19 대표님 지시 "성별 연령대 정도는 더 추가 안돼?") ──
@@ -678,6 +690,8 @@ export default async function handler(req, res) {
       daily,
       dailyDays: DAILY_DAYS,
       people,
+      ads: { connected: !!ads.connected, reason: ads.reason || null, accounts: ads.accounts || [],
+             version: ads.version || null },
       rooms: { d1: roomStat(d1), d7: roomStat(d7), d30: roomStat(d30), all: rooms.length },
       groups: { d1: groupStat(d1), d7: groupStat(d7), d30: groupStat(d30), all: groups.length },
       orders: { d1: paidStat(d1), d7: paidStat(d7), d30: paidStat(d30), all: orders.length },
