@@ -38,6 +38,21 @@ function summary(mode){
   return s;
 }
 
+const ADS_REQ = [];
+function detail(b, mode){
+  if(mode === 'off') return {connected:false, reason:'광고 계정 연결 전이에요 (Vercel 에 META_ADS_TOKEN 이 없어요).', accounts:[], rows:[], daily:[]};
+  const rows = {
+    campaign:[{id:'c1', campaign:'가을 캠페인', adset:'', ad:'', spend:9000, impr:3000, reach:2000, clicks:70, linkClicks:60, purchaseValue:3800, conv:{reg:3, checkout:2, purchase:2}},
+              {id:'c2', campaign:'리타게팅', adset:'', ad:'', spend:3000, impr:1000, reach:800, clicks:30, linkClicks:20, purchaseValue:0, conv:{reg:1, checkout:0, purchase:0}}],
+    ad:[{id:'a1', campaign:'가을 캠페인', adset:'2030 여성', ad:'영상 A', spend:12000, impr:4000, reach:2800, clicks:100, linkClicks:80, purchaseValue:3800, conv:{reg:4, checkout:2, purchase:2}}],
+  };
+  return {connected:true, level:b.level, since:b.since, until:b.until,
+    accounts:[{id:'act_111', name:'인연점 광고', currency:'KRW', tz:'Asia/Seoul', included:true}],
+    rows: rows[b.level] || rows.campaign,
+    daily:[{d:day(2), spend:5000, impr:2000, reach:1500, clicks:40, linkClicks:30, purchaseValue:1900, conv:{reg:2, purchase:1}},
+           {d:day(1), spend:7000, impr:2000, reach:1500, clicks:60, linkClicks:50, purchaseValue:1900, conv:{reg:2, purchase:1}}]};
+}
+
 (async () => {
   const R = L.reporter('대시보드 광고비');
   let base = (process.argv[2] || '').replace(/\/+$/, ''), srv = null;
@@ -46,20 +61,32 @@ function summary(mode){
   if(!exe || !pp){ console.error('크롬 또는 puppeteer-core 를 못 찾았습니다.'); process.exit(2); }
   const browser = await pp.launch({executablePath:exe, headless:'new', args:['--no-sandbox']});
 
-  async function open(mode, width){
+  async function open(mode, width, tab){
     const page = await L.openPage(browser, {width:width || 1280, height:1000, state:L.makeState()});
     const errs = []; page.on('pageerror', (e) => errs.push(String(e && e.message)));
     await page.setRequestInterception(true);
     page.on('request', (r) => {
       const u = r.url(), j = (o) => ({status:200, contentType:'application/json', body:JSON.stringify(o)});
       if(u.indexOf('/api/entitlements') >= 0) return r.respond(j({items:{}, pass:null, purchases:[], adminAccess:true, testAccess:false}));
-      if(u.indexOf('/api/stats') >= 0) return r.respond(j(summary(mode)));
+      if(u.indexOf('/api/stats') >= 0){
+        let b = {}; try{ b = JSON.parse(r.postData() || '{}'); }catch(e){}
+        if(b.action === 'ads'){ ADS_REQ.push(b); return r.respond(j(detail(b, mode))); }
+        return r.respond(j(summary(mode)));
+      }
       if(u.indexOf('/api/feedback') >= 0) return r.respond(j({items:[]}));
       if(u.indexOf('/api/') >= 0) return r.respond(j({}));
       r.continue();
     });
     await page.goto(base + '/fortune.html#admin', {waitUntil:'load'});
     await L.wait(3000);
+    if(tab){
+      await page.evaluate(() => { const b = [...document.querySelectorAll('#adminRoot .ad-nav')].find(x => (x.textContent||'').trim() === '광고'); if(b) b.click(); });
+      await L.wait(1500);
+      if(tab === 'ad'){
+        await page.evaluate(() => { const b = [...document.querySelectorAll('#adminRoot .ad-seg button')].find(x => x.textContent.trim() === '광고별'); if(b) b.click(); });
+        await L.wait(1200);
+      }
+    }
     const o = await page.evaluate(() => {
       const root = document.querySelector('#adminRoot');
       const kpis = [...root.querySelectorAll('.ad-kpi > .ad-card')].map((c) => (c.innerText || '').replace(/\s+/g, ' '));
@@ -99,6 +126,28 @@ function summary(mode){
   const narrow = await open('on', 390);
   R.note(!narrow.docOver, '폭 390 가로 넘침 없음');
   R.note(narrow.errs.length === 0, '폭 390 JS 오류 0건', narrow.errs[0] || '');
+
+  R.head('④ [광고] 탭');
+  ADS_REQ.length = 0;
+  const t1 = await open('on', 1280, 'campaign');
+  R.note(t1.text.indexOf('메타 광고비 · 캠페인별 성과') >= 0, '메뉴 [광고]를 누르면 광고 화면', t1.text.slice(0, 80));
+  R.note(ADS_REQ.length >= 1 && ADS_REQ[0].level === 'campaign' && /^\d{4}-\d{2}-\d{2}$/.test(ADS_REQ[0].since), '서버에 캠페인 단위·KST 날짜로 물음', JSON.stringify(ADS_REQ[0]));
+  R.note(ADS_REQ.length >= 1 && ADS_REQ[0].since === day(6) && ADS_REQ[0].until === day(0), '기본 7일 = 오늘 포함 7일', JSON.stringify(ADS_REQ[0]));
+  R.note(/광고비\s*12,000원/.test(t1.text), '캠페인 둘의 광고비 합 12,000원');
+  R.note(t1.text.indexOf('가을 캠페인') >= 0 && t1.text.indexOf('리타게팅') >= 0, '캠페인 이름이 표에');
+  R.note(/구매 \(메타 픽셀\)\s*2건/.test(t1.text), '픽셀 구매 합 2건');
+  R.note(/우리 기록 결제 3건/.test(t1.text), '같은 기간 우리 결제 기록을 나란히');
+  R.note(/광고비 대비 매출\s*47.5%/.test(t1.text), '광고비 대비 매출 = 우리 매출 5,700 ÷ 12,000', (t1.text.match(/광고비 대비 매출\s*\S+/) || [''])[0]);
+  R.note(t1.text.indexOf('날마다') >= 0 && t1.text.indexOf(day(1)) >= 0, '날마다 표');
+  R.note(t1.errs.length === 0, 'JS 오류 0건', t1.errs[0] || '');
+  ADS_REQ.length = 0;
+  const t2 = await open('on', 1280, 'ad');
+  R.note(ADS_REQ.some((b) => b.level === 'ad'), '[광고별]을 누르면 광고 단위로 다시 물음', JSON.stringify(ADS_REQ.map((b) => b.level)));
+  R.note(t2.text.indexOf('영상 A') >= 0 && t2.text.indexOf('가을 캠페인 › 2030 여성') >= 0, '광고 이름 + 캠페인 › 광고 세트 경로');
+  const t3 = await open('off', 1280, 'campaign');
+  R.note(t3.text.indexOf('광고 계정 연결 전') >= 0 && t3.text.indexOf('META_ADS_TOKEN') >= 0, '연결 전이면 이유만');
+  const t4 = await open('on', 390, 'campaign');
+  R.note(!t4.docOver && t4.errs.length === 0, '폭 390 넘침·오류 없음', t4.errs[0] || '');
 
   await browser.close();
   if(srv && srv.close) srv.close();

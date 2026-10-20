@@ -73,6 +73,12 @@ function wire(page){
     if(u.indexOf('/api/stats') >= 0){
       let b = {}; try{ b = JSON.parse(r.postData() || '{}'); }catch(e){}
       if(b.action === 'rows') return r.respond(j({kind:b.kind, rows:ROWS[b.kind] || []}));
+      /* 2026-10-20 [광고] 탭 — 캠페인 한 줄 · 날마다 한 줄 */
+      if(b.action === 'ads') return r.respond(j({connected:true, level:b.level || 'campaign', since:b.since, until:b.until,
+        accounts:[{id:'act_1', name:'인연점 광고', currency:'KRW', tz:'Asia/Seoul', included:true}],
+        rows:[{id:'c1', campaign:'가을 캠페인', adset:'2030 여성', ad:'영상 A', spend:12000, impr:3000, reach:2500, clicks:80, linkClicks:60, purchaseValue:3800,
+               conv:{reg:4, checkout:3, purchase:2, view:10, landing:50}}],
+        daily:[{d:b.until, spend:12000, impr:3000, reach:2500, clicks:80, linkClicks:60, purchaseValue:3800, conv:{reg:4, checkout:3, purchase:2}}]}));
       if(b.action === 'order') return r.respond(j({found:true,
         order:{receiptId:'ORD-1', productId:'compat_full', productName:'궁합 심층 해석', amount:990,
                status:'paid', createdAt:'2026-09-10T02:03:04Z', paidAt:'2026-09-10T02:03:44Z', paymentKey:'있음', paymentKeyFull:'tviva20260910', sessionId:'sessABCDEFGH1234'},
@@ -110,7 +116,7 @@ function wire(page){
     r.continue();
   });
 }
-const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · CS', payments:'결제',
+const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · CS', payments:'결제', ads:'광고',
                compat:'궁합 · 모임', ai:'AI 해석', notices:'공지 · 배너', export:'데이터 내보내기'};
 /* 눌러도 어드민을 벗어나는 것 — 여기서는 건너뛴다(벗어나는 것 자체는 따로 확인한다) */
 const SKIP = ['서비스 화면으로'];

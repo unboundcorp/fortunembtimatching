@@ -28,6 +28,11 @@ async function fakeFetch(url, init){
       {id:'act_111', name:'인연점 광고', currency:'KRW', timezone_name:'Asia/Seoul'},
       {id:'act_222', name:'달러', currency:'USD', timezone_name:'America/Los_Angeles'}]});
     if(/\/act_333333$/.test(u.pathname)) return resp(200, {id:'act_333333', name:'고정 계정', currency:'KRW', timezone_name:'Asia/Seoul'});
+    if(/\/act_111\/insights$/.test(u.pathname) && u.searchParams.get('level') === 'campaign') return resp(200, {data:[
+      {campaign_id:'c1', campaign_name:'가을', spend:'8000', impressions:'1000', reach:'900', clicks:'50', inline_link_clicks:'40',
+       actions:[{action_type:'offsite_conversion.fb_pixel_purchase', value:'2'}, {action_type:'purchase', value:'2'},
+                {action_type:'complete_registration', value:'5'}],
+       action_values:[{action_type:'offsite_conversion.fb_pixel_purchase', value:'3800'}]}]});
     if(/\/act_111\/insights$/.test(u.pathname)){
       if(u.searchParams.get('after') === 'p2') return resp(200, {data:[{date_start:D1, spend:'3000', impressions:'100', clicks:'5'}]});
       return resp(200, {data:[{date_start:D2, spend:'5000', impressions:'200', clicks:'9'}],
@@ -100,6 +105,28 @@ async function fakeFetch(url, init){
   R.note(o.raw.indexOf(TOKEN) < 0 && !warns.some((w) => w.indexOf(TOKEN) >= 0), '④ 오류 문장의 토큰이 응답·로그로 안 샘');
   R.note(!(o.body.daily || []).some((r) => r.ads), '④ 실패면 ads 칸 없음');
   console.warn = origWarn;
+
+  /* ⑥ [광고] 탭 창구 (action:'ads') */
+  META_MODE = 'ok'; META_CALLS = [];
+  async function runAds(b){
+    const out = {status:0, body:null, raw:''};
+    const res = { status(x){ out.status = x; return this; }, setHeader(){}, send(t){ out.raw = String(t); try{ out.body = JSON.parse(t); }catch(e){ out.body = t; } }, end(){} };
+    await stats({ method:'POST', headers:{}, body:b }, res);
+    return out;
+  }
+  o = await runAds({action:'ads', since:D2, until:D1, level:'campaign'});
+  const row = o.body && o.body.rows && o.body.rows[0];
+  R.note(o.status === 200 && o.body.connected && row && row.campaign === '가을' && row.spend === 8000, '⑥ 캠페인 줄', JSON.stringify(row).slice(0, 160));
+  R.note(row && row.conv.purchase === 2, '⑥ 같은 구매가 두 이름으로 와도 한 번만(2, 4 아님)', row && row.conv.purchase);
+  R.note(row && row.conv.reg === 5 && row.purchaseValue === 3800, '⑥ 가입(일반 이름)·구매액', JSON.stringify(row && row.conv));
+  R.note(o.body.daily && o.body.daily.length === 2 && o.body.daily[0].d === D2, '⑥ 날마다 줄(다음 쪽까지)', JSON.stringify(o.body.daily && o.body.daily.map((d) => d.d)));
+  R.note(o.raw.indexOf(TOKEN) < 0, '⑥ 응답에 토큰 없음');
+  o = await runAds({action:'ads', since:'2020-01-01', until:D1, level:'campaign'});
+  R.note(o.status === 400, '⑥ 400일 넘는 기간은 거절', o.status);
+  o = await runAds({action:'ads', since:'abc', until:D1});
+  R.note(o.status === 400, '⑥ 날짜를 못 읽으면 거절', o.status);
+  const sAds = fs.readFileSync(path.join(ROOT, 'api/stats.js'), 'utf8');
+  R.note(sAds.indexOf("body.action === 'ads'") > sAds.indexOf('adminAccessOf(sessionId)'), '⑥ [광고] 창구도 운영자 관문 뒤');
 
   /* ⑤ 관문 뒤 · 창구는 stats 하나뿐 */
   const src = fs.readFileSync(path.join(ROOT, 'api/stats.js'), 'utf8');

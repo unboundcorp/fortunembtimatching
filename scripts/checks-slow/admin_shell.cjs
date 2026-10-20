@@ -199,9 +199,9 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   }));
   R.note(!shell.hidden, '어드민 칸이 보인다');
   R.note(shell.outsideApp, '#adminRoot 가 #app 밖에 있다 (420px 에 안 갇힌다)');
-  R.note(shell.navs.length === 9, '메뉴가 아홉이다(후기 추가)', shell.navs.join(' / '));
+  R.note(shell.navs.length === 10, '메뉴가 열이다(후기 · 광고 추가)', shell.navs.join(' / '));
   R.note(shell.groups.length === 5, '묶음이 다섯이다', shell.groups.join(' / '));
-  R.note(shell.icons === 9, '메뉴마다 아이콘이 그려진다', shell.icons + '개');
+  R.note(shell.icons === 10, '메뉴마다 아이콘이 그려진다', shell.icons + '개');
   R.note(shell.title === '대시보드', '처음은 대시보드다', shell.title);
   /* ★ 손님용 탭 막대가 어드민 위로 비쳐 보이던 적이 있다(겹침 순서). 그 자리를 지킨다. */
   R.note(!shell.tabbarShows, '손님 탭 막대가 어드민 위로 안 비친다');

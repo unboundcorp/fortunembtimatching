@@ -61,6 +61,42 @@ async function getJson(url, fetchImpl) {
   }
 }
 
+/* 어느 광고 계정을 볼까 — 요약(fetchMetaAdSpend)과 [광고] 탭(fetchMetaAdDetail)이 함께 쓴다.
+   돌려주는 것: { accounts:[{id,name,currency,tz,included}] } 또는 { reason } */
+async function resolveAccounts(f, tk) {
+  let accounts = [];
+  const rawIds = String(process.env.META_AD_ACCOUNT_ID || '').trim();
+  const fixed = rawIds.split(',').map(normAccount).filter(Boolean);
+  /* 적어 두었는데 하나도 못 읽으면 조용히 '전부'로 넘어가지 않는다 — 엉뚱한 계정이 더해질 수 있다. */
+  if (rawIds && !fixed.length) {
+    return { reason: 'META_AD_ACCOUNT_ID 값을 광고 계정 번호로 못 읽었어요. 숫자(또는 act_숫자)로 넣어 주세요.' };
+  }
+  const fields = 'fields=' + encodeURIComponent('id,name,currency,timezone_name,account_status');
+  if (fixed.length) {
+    for (const id of fixed) accounts.push(await getJson(BASE + '/' + id + '?' + fields + '&' + tk, f));
+  } else {
+    let url = BASE + '/me/adaccounts?' + fields + '&limit=50&' + tk;
+    for (let p = 0; p < MAX_PAGES && url; p++) {
+      const d = await getJson(url, f);
+      accounts = accounts.concat(Array.isArray(d.data) ? d.data : []);
+      url = d.paging && d.paging.next ? d.paging.next : null;
+    }
+  }
+  const list = accounts.map((a) => ({
+    id: String(a.id || ''), name: String(a.name || '').slice(0, 60),
+    currency: String(a.currency || ''), tz: String(a.timezone_name || ''),
+    included: String(a.currency || '').toUpperCase() === 'KRW',
+  }));
+  if (!list.length) return { reason: '토큰으로 볼 수 있는 광고 계정이 없어요. 시스템 사용자에게 광고 계정을 배정해 주세요.' };
+  return { accounts: list };
+}
+
+function failReason(e) {
+  if (e && e.name === 'AbortError') return '메타가 ' + (TIMEOUT_MS / 1000) + '초 안에 답하지 않았어요. 잠시 뒤 다시 열어 주세요.';
+  if (e && e.meta) return reasonOf(e.meta);
+  return '메타에 묻지 못했어요: ' + scrubMeta(e && e.message);
+}
+
 /* 한 줄을 { spend(원), impr, clicks } 로. 메타는 spend 를 '12345' 같은 문자열로 준다(KRW 는 소수 없음). */
 function rowOf(r) {
   return {
@@ -80,37 +116,9 @@ export async function fetchMetaAdSpend({ since, until, fetchImpl } = {}) {
   const tk = 'access_token=' + encodeURIComponent(token);
   try {
     /* ① 어느 계정을 볼까 */
-    let accounts = [];
-    const rawIds = String(process.env.META_AD_ACCOUNT_ID || '').trim();
-    const fixed = rawIds.split(',').map(normAccount).filter(Boolean);
-    /* 적어 두었는데 하나도 못 읽으면 조용히 '전부'로 넘어가지 않는다 — 엉뚱한 계정이 더해질 수 있다. */
-    if (rawIds && !fixed.length) {
-      out.reason = 'META_AD_ACCOUNT_ID 값을 광고 계정 번호로 못 읽었어요. 숫자(또는 act_숫자)로 넣어 주세요.';
-      return out;
-    }
-    const fields = 'fields=' + encodeURIComponent('id,name,currency,timezone_name,account_status');
-    if (fixed.length) {
-      for (const id of fixed) {
-        const a = await getJson(BASE + '/' + id + '?' + fields + '&' + tk, f);
-        accounts.push(a);
-      }
-    } else {
-      let url = BASE + '/me/adaccounts?' + fields + '&limit=50&' + tk;
-      for (let p = 0; p < MAX_PAGES && url; p++) {
-        const d = await getJson(url, f);
-        accounts = accounts.concat(Array.isArray(d.data) ? d.data : []);
-        url = d.paging && d.paging.next ? d.paging.next : null;
-      }
-    }
-    out.accounts = accounts.map((a) => ({
-      id: String(a.id || ''), name: String(a.name || '').slice(0, 60),
-      currency: String(a.currency || ''), tz: String(a.timezone_name || ''),
-      included: String(a.currency || '').toUpperCase() === 'KRW',
-    }));
-    if (!out.accounts.length) {
-      out.reason = '토큰으로 볼 수 있는 광고 계정이 없어요. 시스템 사용자에게 광고 계정을 배정해 주세요.';
-      return out;
-    }
+    const acc = await resolveAccounts(f, tk);
+    if (acc.reason) { out.reason = acc.reason; return out; }
+    out.accounts = acc.accounts;
 
     /* ② 계정마다 하루치 광고비 */
     const range = encodeURIComponent(JSON.stringify({ since, until }));
@@ -138,11 +146,118 @@ export async function fetchMetaAdSpend({ since, until, fetchImpl } = {}) {
     }
     return out;
   } catch (e) {
-    if (e && e.name === 'AbortError') out.reason = '메타가 ' + (TIMEOUT_MS / 1000) + '초 안에 답하지 않았어요. 잠시 뒤 다시 열어 주세요.';
-    else if (e && e.meta) out.reason = reasonOf(e.meta);
-    else out.reason = '메타에 묻지 못했어요: ' + scrubMeta(e && e.message);
+    out.reason = failReason(e);
     console.warn('메타 광고비 조회 실패:', out.reason);
     out.byDay = {};
+    return out;
+  }
+}
+
+/* =====================================================================
+   [광고] 탭 (2026-10-20 대표님 "광고탭 만들고 세부적으로도 볼 수 있어?")
+   ---------------------------------------------------------------------
+   캠페인 / 광고 세트 / 광고 단위로 기간 합계 + 날마다 계정 합계.
+   ★ 전환(가입·결제 시작·구매)은 **메타 픽셀이 센 값**이다(광고 기여 기준은 계정 기본값).
+     우리 DB 의 회원·결제와 숫자가 다를 수 있어 화면이 그 사실을 적는다.
+   ★ 같은 전환이 'purchase' 와 'offsite_conversion.fb_pixel_purchase' 두 이름으로 함께 올 수 있다 —
+     더하지 않고 하나만 쓴다(픽셀 이름 우선).
+===================================================================== */
+export const AD_LEVELS = {
+  campaign: ['campaign_id', 'campaign_name'],
+  adset: ['campaign_name', 'adset_id', 'adset_name'],
+  ad: ['campaign_name', 'adset_name', 'ad_id', 'ad_name'],
+};
+const CONV = {
+  reg: ['offsite_conversion.fb_pixel_complete_registration', 'complete_registration'],
+  checkout: ['offsite_conversion.fb_pixel_initiate_checkout', 'initiate_checkout'],
+  purchase: ['offsite_conversion.fb_pixel_purchase', 'purchase'],
+  view: ['offsite_conversion.fb_pixel_view_content', 'view_content'],
+  landing: ['landing_page_view'],
+};
+export function pickAction(list, names) {
+  const arr = Array.isArray(list) ? list : [];
+  for (const n of names) {
+    const hit = arr.find((a) => a && a.action_type === n);
+    if (hit) return Math.round(Number(hit.value) || 0);
+  }
+  return 0;
+}
+function detailRow(r) {
+  const o = {
+    spend: Math.round(Number(r.spend) || 0),
+    impr: Math.round(Number(r.impressions) || 0),
+    reach: Math.round(Number(r.reach) || 0),
+    clicks: Math.round(Number(r.clicks) || 0),
+    linkClicks: Math.round(Number(r.inline_link_clicks) || 0),
+    conv: {},
+    purchaseValue: pickAction(r.action_values, CONV.purchase),
+  };
+  Object.keys(CONV).forEach((k) => { o.conv[k] = pickAction(r.actions, CONV[k]); });
+  return o;
+}
+
+export async function fetchMetaAdDetail({ since, until, level, fetchImpl } = {}) {
+  const lv = AD_LEVELS[level] ? level : 'campaign';
+  const out = { connected: false, reason: null, accounts: [], level: lv, since, until, rows: [], daily: [], version: META_API_VERSION };
+  const token = process.env.META_ADS_TOKEN;
+  if (!token) { out.reason = '광고 계정 연결 전이에요 (Vercel 에 META_ADS_TOKEN 이 없어요).'; return out; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(since)) || !/^\d{4}-\d{2}-\d{2}$/.test(String(until))) {
+    out.reason = '기간을 못 읽었어요.'; return out;
+  }
+  const f = fetchImpl || globalThis.fetch;
+  const tk = 'access_token=' + encodeURIComponent(token);
+  try {
+    const acc = await resolveAccounts(f, tk);
+    if (acc.reason) { out.reason = acc.reason; return out; }
+    out.accounts = acc.accounts;
+    const used = out.accounts.filter((a) => a.included);
+    if (!used.length) { out.reason = '원화(KRW) 광고 계정이 없어요. 다른 통화 계정은 더하지 않아요.'; return out; }
+    const range = encodeURIComponent(JSON.stringify({ since, until }));
+    const base = 'spend,impressions,reach,clicks,inline_link_clicks,actions,action_values';
+    const dayMap = {};
+    for (const a of used) {
+      /* 단위별 기간 합계 */
+      let url = BASE + '/' + a.id + '/insights?level=' + lv + '&time_range=' + range
+        + '&fields=' + encodeURIComponent(AD_LEVELS[lv].join(',') + ',' + base) + '&limit=200&' + tk;
+      for (let p = 0; p < MAX_PAGES && url; p++) {
+        const d = await getJson(url, f);
+        (Array.isArray(d.data) ? d.data : []).forEach((r) => {
+          const row = detailRow(r);
+          row.account = a.name || a.id;
+          row.campaign = String(r.campaign_name || '').slice(0, 120);
+          row.adset = String(r.adset_name || '').slice(0, 120);
+          row.ad = String(r.ad_name || '').slice(0, 120);
+          row.id = String(r[lv + '_id'] || '');
+          out.rows.push(row);
+        });
+        url = d.paging && d.paging.next ? d.paging.next : null;
+      }
+      /* 날마다 계정 합계 */
+      url = BASE + '/' + a.id + '/insights?level=account&time_increment=1&time_range=' + range
+        + '&fields=' + encodeURIComponent(base) + '&limit=100&' + tk;
+      for (let p = 0; p < MAX_PAGES && url; p++) {
+        const d = await getJson(url, f);
+        (Array.isArray(d.data) ? d.data : []).forEach((r) => {
+          const day = String(r.date_start || '').slice(0, 10);
+          if (!day) return;
+          const v = detailRow(r);
+          const b = dayMap[day] || { d: day, spend: 0, impr: 0, reach: 0, clicks: 0, linkClicks: 0, purchaseValue: 0, conv: {} };
+          b.spend += v.spend; b.impr += v.impr; b.clicks += v.clicks; b.linkClicks += v.linkClicks;
+          b.reach += v.reach; b.purchaseValue += v.purchaseValue;
+          Object.keys(v.conv).forEach((k) => { b.conv[k] = (b.conv[k] || 0) + v.conv[k]; });
+          dayMap[day] = b;
+        });
+        url = d.paging && d.paging.next ? d.paging.next : null;
+      }
+    }
+    out.rows.sort((x, y) => y.spend - x.spend);
+    out.daily = Object.keys(dayMap).sort().map((k) => dayMap[k]);
+    out.connected = true;
+    return out;
+  } catch (e) {
+    out.reason = failReason(e);
+    console.warn('메타 광고 상세 조회 실패:', out.reason);
+    out.rows = []; out.daily = [];
     return out;
   }
 }

@@ -20,7 +20,7 @@ import { productOf, aiQuotaOf, splitProductId } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import { decodePersonRow, describeProfile } from './_lib/person.js';
 import { lookupPaymentByOrder, cancelPayment } from './_lib/toss.js';
-import { fetchMetaAdSpend } from './_lib/metaads.js';
+import { fetchMetaAdSpend, fetchMetaAdDetail } from './_lib/metaads.js';
 
 /* AI 해석 1건당 대략 얼마가 나가는지 — 원가 감을 잡기 위한 값이다.
    Sonnet 5 기준 입력 $2 / 출력 $10 per MTok, 유료 10섹션 ≈ 7천 토큰으로 잡았다.
@@ -273,6 +273,18 @@ export default async function handler(req, res) {
          코드 하나뿐입니다(adminAccessOf). **손님 화면에는 이 창구를 절대 붙이지 마십시오.**
        ★ 사람 한 줄(a_payload · members 의 한 칸)은 화면의 INVITE_FIELDS 와 같은 형식입니다 —
          n,m,y,mo,d,h,mi,g,lo,ts. 여기서 손으로 다시 세지 말고 아래 decodePerson 을 쓰십시오. */
+    /* ★ 2026-10-20 [광고] 탭 — 메타 캠페인/광고 세트/광고 단위 + 날마다. 읽기만 한다(_lib/metaads.js).
+       기간은 화면이 고른 KST 날짜(최대 400일). 실패해도 200 으로 이유를 싣는다. */
+    if (body.action === 'ads') {
+      const okDay = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+      let since = String(body.since || ''), until = String(body.until || '');
+      if (!okDay(since) || !okDay(until)) return json(res, 400, { error: 'bad_range', reason: '기간을 못 읽었어요.' });
+      if (since > until) { const t = since; since = until; until = t; }
+      if ((Date.parse(until) - Date.parse(since)) / 86400000 > 400) return json(res, 400, { error: 'bad_range', reason: '기간은 400일까지 볼 수 있어요.' });
+      const level = ['campaign', 'adset', 'ad'].indexOf(body.level) >= 0 ? body.level : 'campaign';
+      return json(res, 200, await fetchMetaAdDetail({ since, until, level }));
+    }
+
     if (body.action === 'rows') {
       const kind = String(body.kind || '');
       const N = 200;

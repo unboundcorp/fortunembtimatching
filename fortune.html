@@ -18221,6 +18221,7 @@ var ADMIN_MENUS = [
   {group:'사용자', key:'members',  label:'회원 관리',   icon:'users'},
   {group:'사용자', key:'tickets',  label:'문의 · CS',   icon:'chat'},
   {group:'수익',   key:'payments', label:'결제',        icon:'card'},
+  {group:'수익',   key:'ads',      label:'광고',        icon:'target'},
   {group:'콘텐츠', key:'compat',   label:'궁합 · 모임', icon:'link'},
   {group:'콘텐츠', key:'ai',       label:'AI 해석',     icon:'spark'},
   {group:'콘텐츠', key:'reviews',  label:'후기',        icon:'star'},
@@ -18232,6 +18233,7 @@ var ADMIN_META = {
   members:  {title:'회원 관리',   sub:'가입 · 사주 · 결제 이력 조회'},
   tickets:  {title:'문의 · CS',   sub:'손님 문의와 답변'},
   payments: {title:'결제',        sub:'주문 원장과 열람 여부'},
+  ads:      {title:'광고',        sub:'메타 광고비 · 캠페인별 성과 (읽기만)'},
   compat:   {title:'궁합 · 모임', sub:'초대 링크와 모임 명단'},
   ai:       {title:'AI 해석',     sub:'만든 글 · 쓴 토큰 · 비용'},
   reviews:  {title:'후기',        sub:'구매한 분이 남긴 별점 · 공개할 것을 고름'},
@@ -18251,6 +18253,7 @@ function adminIcon(name, size){
     link:'M10 13.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.2 1.2M14 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.2-1.2',
     spark:'M12 3.5l1.9 4.9 4.9 1.9-4.9 1.9L12 17.1l-1.9-4.9L5.2 10.3l4.9-1.9zM18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z',
     mega:'M4 10v4h3l7 4V6l-7 4H4zM17.5 9.5a3.5 3.5 0 0 1 0 5',
+    target:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zM12 12.5v-1',
     star:'M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z',
     down:'M12 4v11m0 0l-4-4m4 4l4-4M4 19.5h16',
     search:'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM16.2 16.2 21 21',
@@ -18325,6 +18328,7 @@ function adminGo(screen){
   if(screen === 'notices') loadNotices();
   if(screen === 'reviews') loadReviewsAdmin(true);
   if(screen === 'dash' && !STATS_DATA) loadStats();
+  if(screen === 'ads'){ loadAdsDetail(); if(!STATS_DATA && !STATS_LOADING) loadStats(); }
   adminSyncHash();
   render();
   var m = $('#adminRoot .ad-main'); if(m) m.scrollTop = 0;
@@ -18573,7 +18577,7 @@ function adminPaintBody(node){
   var body = node || $('#adBody');
   if(!body) return;
   body.innerHTML = '';
-  var fn = {dash:adminDash, members:adminMembers, tickets:adminTickets, payments:adminPayments,
+  var fn = {dash:adminDash, members:adminMembers, tickets:adminTickets, payments:adminPayments, ads:adminAds,
             compat:adminCompat, ai:adminAi, reviews:adminReviews, notices:adminNotices, export:adminExport}[ADMIN_SCREEN];
   (fn || adminDash)(body);
 }
@@ -18598,6 +18602,181 @@ function adminSubline(base){
 }
 
 /* ── 1. 대시보드 ─────────────────────────────────────────────────── */
+/* ── [광고] 탭 (2026-10-20 대표님 "광고탭 만들고 세부적으로도 볼 수 있어?") ──
+   서버 /api/stats action:'ads' → 메타 insights 를 캠페인/광고 세트/광고 단위 + 날마다로.
+   ★ 기간은 이 탭만의 것(ADS_RANGE)이다. KST 날짜로 보낸다.
+   ★ 가입·결제 시작·구매는 **메타 픽셀이 센 값**이다. 우리 DB 기록(대시보드 자료가 있으면 함께 적음)과 다를 수 있다.
+   ★ 같은 기간·단위를 다시 열면 서버를 다시 부르지 않는다([새로고침]만 다시 부름). */
+var ADS_RANGE = 'd7', ADS_FROM = null, ADS_TO = null, ADS_LEVEL = 'campaign';
+var ADS_DETAIL = {key:null, loading:false, data:null, err:null};
+function adsKstDay(offsetDays){ return new Date(Date.now() + 9*3600*1000 - (offsetDays||0)*86400000).toISOString().slice(0,10); }
+function adsWindow(){
+  if(ADS_RANGE === 'custom' && ADS_FROM && ADS_TO){
+    return ADS_FROM <= ADS_TO ? {from:ADS_FROM, to:ADS_TO} : {from:ADS_TO, to:ADS_FROM};
+  }
+  var n = ADS_RANGE === 'd30' ? 30 : ADS_RANGE === 'd90' ? 90 : ADS_RANGE === 'today' ? 1 : 7;
+  return {from:adsKstDay(n - 1), to:adsKstDay(0)};
+}
+function loadAdsDetail(force){
+  var w = adsWindow(), key = w.from + '|' + w.to + '|' + ADS_LEVEL;
+  if(!force && ADS_DETAIL.key === key && (ADS_DETAIL.loading || ADS_DETAIL.data || ADS_DETAIL.err)) return;
+  ADS_DETAIL = {key:key, loading:true, data:null, err:null};
+  fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'}, credentials:'include',
+    body:JSON.stringify({action:'ads', since:w.from, until:w.to, level:ADS_LEVEL})})
+    .then(function(r){ return r.json().catch(function(){return null;}).then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(r){
+      if(ADS_DETAIL.key !== key) return;            /* 그사이 기간을 바꿨으면 버린다 */
+      if(!r.ok || !r.d) throw new Error((r.d && r.d.reason) || '불러오지 못했어요.');
+      ADS_DETAIL = {key:key, loading:false, data:r.d, err:null}; render();
+    })
+    .catch(function(e){ if(ADS_DETAIL.key !== key) return;
+      ADS_DETAIL = {key:key, loading:false, data:null, err:(e && e.message) || '불러오지 못했어요.'}; render(); });
+}
+function adsPct(a, b){ return b ? (Math.round(a / b * 1000) / 10) + '%' : '—'; }
+function adsPer(sp, n){ return n ? formatWon(Math.round(sp / n)) : '—'; }
+function adminAds(body){
+  var w = adsWindow();
+  var bar = el('div',{class:'ad-bar'});
+  var seg = el('div',{class:'ad-seg'});
+  [['today','오늘'],['d7','7일'],['d30','30일'],['d90','90일'],['custom','직접']].forEach(function(pr){
+    seg.appendChild(el('button',{type:'button','aria-pressed':ADS_RANGE===pr[0]?'true':'false',
+      onclick:(function(k){ return function(){
+        if(k === 'custom' && !(ADS_FROM && ADS_TO)){ ADS_FROM = w.from; ADS_TO = w.to; }
+        ADS_RANGE = k; loadAdsDetail(); render();
+      }; })(pr[0])},[pr[1]]));
+  });
+  bar.appendChild(seg);
+  bar.appendChild(el('span',{class:'ad-sub2'},[w.from + ' → ' + w.to]));
+  bar.appendChild(el('button',{class:'ad-btn', style:'margin-left:auto;',
+    onclick:function(){ loadAdsDetail(true); render(); }},['새로고침']));
+  body.appendChild(bar);
+  if(ADS_RANGE === 'custom'){
+    var dates = el('div',{class:'ad-bar'});
+    var minD = adsKstDay(400), maxD = adsKstDay(0);
+    dates.appendChild(el('input',{class:'ad-input', type:'date', style:'max-width:170px;', value:ADS_FROM || w.from,
+      min:minD, max:maxD, 'aria-label':'시작 날짜', onchange:function(){ ADS_FROM = this.value; loadAdsDetail(); render(); }}));
+    dates.appendChild(el('span',{class:'ad-sub2'},['~']));
+    dates.appendChild(el('input',{class:'ad-input', type:'date', style:'max-width:170px;', value:ADS_TO || w.to,
+      min:minD, max:maxD, 'aria-label':'끝 날짜', onchange:function(){ ADS_TO = this.value; loadAdsDetail(); render(); }}));
+    body.appendChild(dates);
+  }
+  var lvBar = el('div',{class:'ad-bar'});
+  var lvSeg = el('div',{class:'ad-seg'});
+  [['campaign','캠페인'],['adset','광고 세트'],['ad','광고']].forEach(function(pr){
+    lvSeg.appendChild(el('button',{type:'button','aria-pressed':ADS_LEVEL===pr[0]?'true':'false',
+      onclick:(function(k){ return function(){ ADS_LEVEL = k; loadAdsDetail(); render(); }; })(pr[0])},[pr[1] + '별']));
+  });
+  lvBar.appendChild(lvSeg);
+  body.appendChild(lvBar);
+
+  loadAdsDetail();
+  var st = ADS_DETAIL;
+  if(st.loading || (!st.data && !st.err)){ body.appendChild(adCard([adEmpty('메타에서 불러오는 중이에요…')])); return; }
+  if(st.err){
+    body.appendChild(adCard([el('p',{class:'ad-empty', style:'color:var(--red-hi);'},[st.err]),
+      el('button',{class:'ad-btn', style:'margin:0 auto;', onclick:function(){ loadAdsDetail(true); render(); }},['다시 시도'])]));
+    return;
+  }
+  var A = st.data;
+  if(!A.connected){
+    body.appendChild(adCard([adH('광고 계정 연결 전'), el('p',{class:'ad-note'},[A.reason || '메타 광고 계정과 아직 이어지지 않았어요.'])]));
+    return;
+  }
+  /* 합계 — 단위별 줄을 더한다(같은 기간·같은 계정이라 합이 계정 전체와 같다) */
+  var T = {spend:0, impr:0, clicks:0, linkClicks:0, purchaseValue:0, conv:{reg:0, checkout:0, purchase:0, view:0, landing:0}};
+  (A.rows || []).forEach(function(r){
+    T.spend += r.spend; T.impr += r.impr; T.clicks += r.clicks; T.linkClicks += r.linkClicks; T.purchaseValue += r.purchaseValue;
+    for(var k in T.conv) T.conv[k] += (r.conv && r.conv[k]) || 0;
+  });
+  /* 우리 기록 — 대시보드 자료(KST 하루치)가 있으면 같은 날짜를 더한다 */
+  var ours = null;
+  if(STATS_DATA && STATS_DATA.daily){
+    var od = STATS_DATA.daily.filter(function(r){ return r.d >= w.from && r.d <= w.to; });
+    if(od.length) ours = statsSum(od);
+  }
+  var kpi = el('div',{class:'ad-grid ad-kpi'});
+  kpi.appendChild(adKpi({label:'광고비', icon:'card', value:formatWon(T.spend),
+    note:(A.daily || []).length + '일 · 하루 평균 ' + formatWon(Math.round(T.spend / Math.max(1, (A.daily || []).length))),
+    spark:(A.daily || []).map(function(d){ return d.spend; })}));
+  kpi.appendChild(adKpi({label:'노출', icon:'gauge', value:adminNum(T.impr),
+    note:'1,000회 노출당 ' + adsPer(T.spend * 1000, T.impr)}));
+  kpi.appendChild(adKpi({label:'링크 클릭', icon:'link', value:adminNum(T.linkClicks),
+    note:'클릭률 ' + adsPct(T.linkClicks, T.impr) + ' · 클릭당 ' + adsPer(T.spend, T.linkClicks)}));
+  kpi.appendChild(adKpi({label:'가입 (메타 픽셀)', icon:'users', value:adminNum(T.conv.reg) + '건',
+    note:'가입당 광고비 ' + adsPer(T.spend, T.conv.reg) + (ours ? ' · 우리 기록 새 회원 ' + ours.kakao.linked + '명' : '')}));
+  kpi.appendChild(adKpi({label:'구매 (메타 픽셀)', icon:'card', value:adminNum(T.conv.purchase) + '건',
+    note:'결제 시작 ' + adminNum(T.conv.checkout) + '건 · 구매당 광고비 ' + adsPer(T.spend, T.conv.purchase)
+       + (ours ? ' · 우리 기록 결제 ' + ours.orders.paid + '건' : '')}));
+  kpi.appendChild(adKpi({label:'광고비 대비 매출', icon:'spark',
+    value:T.spend ? adsPct(ours ? ours.orders.revenue : T.purchaseValue, T.spend) : '—',
+    note:(ours ? '우리 결제 매출 ' + formatWon(ours.orders.revenue) : '픽셀 구매액 ' + formatWon(T.purchaseValue))
+       + ' ÷ 광고비 ' + formatWon(T.spend)}));
+  body.appendChild(kpi);
+
+  /* 단위별 표 */
+  var lvName = {campaign:'캠페인', adset:'광고 세트', ad:'광고'}[A.level] || '캠페인';
+  var tcard = adCard([adH(lvName + '별 성과', el('span',{class:'ad-sub2'},[(A.rows || []).length + '개 · 광고비 많은 순']))]);
+  if(!(A.rows || []).length) tcard.appendChild(adEmpty('이 기간에 광고비가 쓰인 ' + lvName + '이 없어요.'));
+  else {
+    var trs = A.rows.map(function(r){
+      var tr = el('tr',{});
+      var nm = el('div',{});
+      var main = A.level === 'ad' ? r.ad : A.level === 'adset' ? r.adset : r.campaign;
+      nm.appendChild(el('div',{style:'font-weight:600;'},[main || '(이름 없음)']));
+      var path = A.level === 'ad' ? [r.campaign, r.adset] : A.level === 'adset' ? [r.campaign] : [];
+      if(path.filter(Boolean).length) nm.appendChild(el('div',{class:'ad-sub2'},[path.filter(Boolean).join(' › ')]));
+      tr.appendChild(adTd([nm]));
+      tr.appendChild(adTd([formatWon(r.spend)],'ad-num'));
+      tr.appendChild(adTd([adminNum(r.impr)],'ad-num'));
+      tr.appendChild(adTd([adminNum(r.reach)],'ad-num'));
+      tr.appendChild(adTd([adminNum(r.linkClicks)],'ad-num'));
+      tr.appendChild(adTd([adsPct(r.linkClicks, r.impr)],'ad-num'));
+      tr.appendChild(adTd([adsPer(r.spend, r.linkClicks)],'ad-num'));
+      tr.appendChild(adTd([adminNum(r.conv.reg)],'ad-num'));
+      tr.appendChild(adTd([adminNum(r.conv.checkout)],'ad-num'));
+      tr.appendChild(adTd([adminNum(r.conv.purchase)],'ad-num'));
+      tr.appendChild(adTd([adsPer(r.spend, r.conv.purchase)],'ad-num'));
+      return tr;
+    });
+    tcard.appendChild(adTable([lvName,'광고비','노출','도달','링크 클릭','클릭률','클릭당','가입','결제 시작','구매','구매당'], trs, 980));
+  }
+  body.appendChild(tcard);
+
+  /* 날마다 */
+  var dcard = adCard([adH('날마다')]);
+  var days = (A.daily || []).slice().reverse();
+  if(!days.length) dcard.appendChild(adEmpty('이 기간에 광고비가 없어요.'));
+  else {
+    var ourBy = {};
+    if(STATS_DATA && STATS_DATA.daily) STATS_DATA.daily.forEach(function(r){ ourBy[r.d] = r; });
+    var drs = days.map(function(d){
+      var o = ourBy[d.d];
+      var tr = el('tr',{});
+      tr.appendChild(adTd([d.d],'ad-nowrap'));
+      tr.appendChild(adTd([formatWon(d.spend)],'ad-num'));
+      tr.appendChild(adTd([adminNum(d.impr)],'ad-num'));
+      tr.appendChild(adTd([adminNum(d.linkClicks)],'ad-num'));
+      tr.appendChild(adTd([adsPct(d.linkClicks, d.impr)],'ad-num'));
+      tr.appendChild(adTd([adminNum((d.conv && d.conv.reg) || 0)],'ad-num'));
+      tr.appendChild(adTd([adminNum((d.conv && d.conv.purchase) || 0)],'ad-num'));
+      tr.appendChild(adTd([o ? o.kakao.linked + '명' : '—'],'ad-num'));
+      tr.appendChild(adTd([o ? formatWon(o.orders.revenue) : '—'],'ad-num'));
+      return tr;
+    });
+    dcard.appendChild(adTable(['날짜','광고비','노출','링크 클릭','클릭률','가입(픽셀)','구매(픽셀)','새 회원(우리)','매출(우리)'], drs, 760));
+  }
+  body.appendChild(dcard);
+
+  var notes = adCard([adH('읽는 법')]);
+  [
+    '가입·결제 시작·구매는 메타 픽셀이 센 값이에요. 광고를 보고 들어온 분의 전환만 메타가 광고에 붙여 세요(기여 기준은 광고 계정 기본값). 그래서 우리 기록(새 회원·결제)과 숫자가 다를 수 있어요.',
+    '‘우리’ 칸은 우리 서버 기록이에요. 광고로 온 분만 가른 값이 아니라 그날 전체예요.',
+    '날짜는 광고 계정 시간대 기준이에요' + ((A.accounts || []).some(function(a){ return a.included && a.tz && a.tz !== 'Asia/Seoul'; }) ? ' — 서울이 아니라 한국 날짜와 하루 어긋날 수 있어요.' : ' (서울).'),
+    '계정: ' + (A.accounts || []).filter(function(a){ return a.included; }).map(function(a){ return (a.name || a.id) + ' (' + a.id + ')'; }).join(', '),
+    '여기서는 읽기만 해요. 광고를 켜고 끄거나 예산을 바꾸는 건 메타 광고 관리자에서 하세요. 정확한 청구액도 광고 관리자가 정본이에요(부가세 별도).'
+  ].forEach(function(t){ notes.appendChild(el('p',{class:'ad-note'},[t])); });
+  body.appendChild(notes);
+}
 /* ── 메타 광고비 (2026-10-20 대표님 지시 "메타 mcp로 인연점 어드민에 광고비 끌어올 수 있냐?") ──
    서버 api/stats.js 가 메타 Marketing API(insights)를 읽어 daily[].ads 와 ads{connected,reason,accounts} 를 준다.
    ★ 연결 전·실패면 숫자를 지어내지 않고 이유만 적는다. ★ 날짜는 광고 계정 시간대 기준(서울이 아니면 적는다).
@@ -18605,7 +18784,7 @@ function adminSubline(base){
 function adsConnected(){ return !!(STATS_DATA && STATS_DATA.ads && STATS_DATA.ads.connected); }
 function adminAdsCard(D, W, P, days){
   var A = D.ads || null;
-  var card = adCard([adH('광고비 · 메타')]);
+  var card = adCard([adH('광고비 · 메타', el('button',{class:'ad-link', onclick:function(){ adminGo('ads'); }},['캠페인별 자세히 ›']))]);
   if(!A){
     card.appendChild(adEmpty('서버가 아직 광고비를 안 내려줘요. 새로 올린 뒤 다시 열어 주세요.'));
     return card;
@@ -28632,6 +28811,7 @@ function render(){
       if(ROUTE === 'csAdmin' && ADMIN_SCREEN !== 'tickets') ADMIN_SCREEN = 'tickets';
       if(ROUTE === 'stats' && ADMIN_SCREEN === 'tickets') ADMIN_SCREEN = 'dash';
       if(ADMIN_SCREEN === 'dash' && !STATS_DATA && !STATS_ERR) loadStats();
+      if(ADMIN_SCREEN === 'ads'){ loadAdsDetail(); if(!STATS_DATA && !STATS_ERR) loadStats(); }
       if(ADMIN_SCREEN === 'tickets') loadCsAdmin();
       var needKind = ADMIN_NEEDS[ADMIN_SCREEN];
       if(needKind) adminRows(needKind);

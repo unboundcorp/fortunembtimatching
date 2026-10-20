@@ -45,7 +45,7 @@ const menuKeys = (function(){
   const m = /var ADMIN_MENUS = \[([\s\S]*?)\n\];/.exec(html);
   return m ? (m[1].match(/key:'(\w+)'/g) || []).map(x => /'(\w+)'/.exec(x)[1]) : [];
 })();
-R.note(menuKeys.length === 9, '메뉴가 아홉이다(2026-10-19 후기 추가)', menuKeys.join(','));
+R.note(menuKeys.length === 10, '메뉴가 열이다(2026-10-19 후기 · 2026-10-20 광고 추가)', menuKeys.join(','));
 menuKeys.forEach(function(k){
   const fn = 'admin' + k[0].toUpperCase() + k.slice(1);
   R.note(new RegExp('function ' + fn + '\\(').test(html), k + ' 메뉴를 그리는 함수가 있다 (' + fn + ')');
