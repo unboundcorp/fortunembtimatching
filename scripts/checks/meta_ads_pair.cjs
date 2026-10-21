@@ -27,6 +27,13 @@ async function fakeFetch(url, init){
     if(/\/me\/adaccounts$/.test(u.pathname)) return resp(200, {data:[
       {id:'act_111', name:'인연점 광고', currency:'KRW', timezone_name:'Asia/Seoul'},
       {id:'act_222', name:'달러', currency:'USD', timezone_name:'America/Los_Angeles'}]});
+    if(/\/739495668667523\/stats$/.test(u.pathname)){
+      if(META_MODE === 'nopix') return resp(400, {error:{message:'Unsupported get request. access_token=' + TOKEN, code:100}});
+      const st = Number(u.searchParams.get('start_time'));
+      return resp(200, {data:[
+        {start_time:new Date(st*1000 + 3600000).toISOString().replace('.000Z','+0000'), aggregation:'event', data:[{value:'PageView', count:30},{value:'Purchase', count:2}]},
+        {start_time:new Date(st*1000 + 26*3600000).toISOString().replace('.000Z','+0000'), aggregation:'event', data:[{value:'PageView', count:12},{value:'CompleteRegistration', count:4}]}]});
+    }
     if(/\/act_333333$/.test(u.pathname)) return resp(200, {id:'act_333333', name:'고정 계정', currency:'KRW', timezone_name:'Asia/Seoul'});
     if(/\/act_111\/insights$/.test(u.pathname) && u.searchParams.get('level') === 'campaign') return resp(200, {data:[
       {campaign_id:'c1', campaign_name:'가을', spend:'8000', impressions:'1000', reach:'900', clicks:'50', inline_link_clicks:'40',
@@ -121,6 +128,19 @@ async function fakeFetch(url, init){
   R.note(row && row.conv.reg === 5 && row.purchaseValue === 3800, '⑥ 가입(일반 이름)·구매액', JSON.stringify(row && row.conv));
   R.note(o.body.daily && o.body.daily.length === 2 && o.body.daily[0].d === D2, '⑥ 날마다 줄(다음 쪽까지)', JSON.stringify(o.body.daily && o.body.daily.map((d) => d.d)));
   R.note(o.raw.indexOf(TOKEN) < 0, '⑥ 응답에 토큰 없음');
+  /* ⑦ 픽셀 통계(이벤트 전체) — 2026-10-22 */
+  const px = o.body && o.body.pixel;
+  R.note(px && px.connected && px.totals.PageView === 42 && px.totals.Purchase === 2 && px.totals.CompleteRegistration === 4,
+    '⑦ 픽셀 이벤트 합계(페이지뷰 42 · 결제 2 · 가입 4)', JSON.stringify(px && px.totals));
+  R.note(px && px.daily.length === 2 && px.daily[0].d === D2 && px.daily[1].ev.PageView === 12, '⑦ 픽셀 이벤트를 KST 날짜로 묶음', JSON.stringify(px && px.daily));
+  R.note(META_CALLS.some((c) => /\/stats\?.*aggregation=event/.test(c)), '⑦ /{pixel}/stats aggregation=event 로 물음');
+  o = await runAds({action:'ads', since:kst(Date.now() - 29*86400000), until:D1, level:'campaign'});
+  R.note(o.body.pixel && o.body.pixel.clipped && o.body.pixel.from === kst(Date.now() - 6*86400000), '⑦ 30일을 고르면 최근 7일로 잘라 묻고 적음', o.body.pixel && o.body.pixel.from);
+  META_MODE = 'nopix';
+  o = await runAds({action:'ads', since:D2, until:D1, level:'campaign'});
+  R.note(o.status === 200 && o.body.connected && o.body.pixel && !o.body.pixel.connected && /데이터 세트/.test(o.body.pixel.reason || '') && o.raw.indexOf(TOKEN) < 0,
+    '⑦ 픽셀 권한이 없으면 광고 숫자는 그대로 · 이유만 · 토큰 없음', o.body.pixel && o.body.pixel.reason);
+  META_MODE = 'ok';
   o = await runAds({action:'ads', since:'2020-01-01', until:D1, level:'campaign'});
   R.note(o.status === 400, '⑥ 400일 넘는 기간은 거절', o.status);
   o = await runAds({action:'ads', since:'abc', until:D1});

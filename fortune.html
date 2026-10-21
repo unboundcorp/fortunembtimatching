@@ -18833,6 +18833,8 @@ function adminAds(body){
   }
   body.appendChild(dcard);
 
+  body.appendChild(adsPixelCard(A.pixel));
+
   var notes = adCard([adH('읽는 법')]);
   [
     '가입·결제 시작·구매는 메타 픽셀이 센 값이에요. 광고를 보고 들어온 분의 전환만 메타가 광고에 붙여 세요(기여 기준은 광고 계정 기본값). 그래서 우리 기록(새 회원·결제)과 숫자가 다를 수 있어요.',
@@ -18842,6 +18844,59 @@ function adminAds(body){
     '여기서는 읽기만 해요. 광고를 켜고 끄거나 예산을 바꾸는 건 메타 광고 관리자에서 하세요. 정확한 청구액도 광고 관리자가 정본이에요(부가세 별도).'
   ].forEach(function(t){ notes.appendChild(el('p',{class:'ad-note'},[t])); });
   body.appendChild(notes);
+}
+/* ── 픽셀이 받은 이벤트 전체 (2026-10-22 대표님 "광고탭에 메타에 이벤트로 넣은 페이지뷰나 결제 완료 데이터 연동 가능?") ──
+   서버 api/_lib/metaads.js fetchPixelStats — 광고 기여와 상관없이 픽셀이 받은 이벤트를 모두 센 값.
+   ★ 메타가 최근 7일치까지만 줘서 기간이 길면 잘라 묻고, 자른 기간을 적는다.
+   ★ 우리 기록(새 회원·결제)과 나란히 둔다 — 광고 차단·[맞춤 광고 정보 보내지 않기]를 켠 분은 픽셀에 안 잡혀 픽셀 쪽이 적을 수 있다. */
+var PIXEL_EVENT_LABEL = [
+  ['PageView','페이지뷰'], ['ViewContent','유료 잠금 화면 봄'], ['CompleteRegistration','가입 (첫 프로필 저장)'],
+  ['InitiateCheckout','결제창 열림'], ['Purchase','결제 완료'], ['ShareInvite','궁합 링크 보냄']
+];
+function adsPixelCard(X){
+  var card = adCard([adH('픽셀이 받은 이벤트 · 전체', el('span',{class:'ad-sub2'},[X && X.from ? X.from + ' → ' + X.to : '']))]);
+  if(!X){ card.appendChild(adEmpty('서버가 아직 픽셀 통계를 안 내려줘요. 새로 올린 뒤 다시 열어 주세요.')); return card; }
+  if(!X.connected){
+    card.appendChild(el('p',{class:'ad-note', style:'color:var(--red-hi);'},[X.reason || '픽셀 통계를 읽지 못했어요.']));
+    return card;
+  }
+  var ours = null, ourBy = {};
+  if(STATS_DATA && STATS_DATA.daily){
+    STATS_DATA.daily.forEach(function(r){ ourBy[r.d] = r; });
+    var od = STATS_DATA.daily.filter(function(r){ return r.d >= X.from && r.d <= X.to; });
+    if(od.length) ours = statsSum(od);
+  }
+  var T = X.totals || {};
+  var grid = el('div',{class:'ad-grid ad-kpi'});
+  PIXEL_EVENT_LABEL.forEach(function(pr){
+    var note = pr[0];
+    if(ours && pr[0] === 'CompleteRegistration') note += ' · 우리 기록 새 회원 ' + ours.kakao.linked + '명';
+    if(ours && pr[0] === 'Purchase') note += ' · 우리 기록 결제 ' + ours.orders.paid + '건';
+    grid.appendChild(adKpi({label:pr[1], icon:pr[0]==='Purchase'?'card':pr[0]==='PageView'?'gauge':'spark',
+      value:adminNum(T[pr[0]] || 0) + '건', note:note}));
+  });
+  card.appendChild(grid);
+  var other = Object.keys(T).filter(function(k){ return !PIXEL_EVENT_LABEL.some(function(pr){ return pr[0] === k; }); });
+  if(other.length) card.appendChild(el('p',{class:'ad-note'},['그 밖에 받은 이벤트: ' + other.map(function(k){ return k + ' ' + adminNum(T[k]); }).join(' · ')]));
+  var days = (X.daily || []).slice().reverse();
+  if(!days.length) card.appendChild(adEmpty('이 기간에 픽셀이 받은 이벤트가 없어요.'));
+  else {
+    var trs = days.map(function(d){
+      var o = ourBy[d.d], tr = el('tr',{});
+      tr.appendChild(adTd([d.d],'ad-nowrap'));
+      PIXEL_EVENT_LABEL.forEach(function(pr){ tr.appendChild(adTd([adminNum((d.ev && d.ev[pr[0]]) || 0)],'ad-num')); });
+      tr.appendChild(adTd([o ? o.kakao.linked + '명' : '—'],'ad-num'));
+      tr.appendChild(adTd([o ? o.orders.paid + '건' : '—'],'ad-num'));
+      return tr;
+    });
+    card.appendChild(adTable(['날짜','페이지뷰','잠금 화면','가입','결제창','결제 완료','링크 보냄','새 회원(우리)','결제(우리)'], trs, 860));
+  }
+  [
+    '광고를 보고 왔든 아니든 픽셀이 받은 이벤트를 모두 센 값이에요. 위의 가입·구매(픽셀)는 그중 메타가 광고에 붙인 것만이에요.',
+    X.clipped ? '메타가 픽셀 통계를 최근 7일치까지만 줘서 ' + X.from + '부터만 셌어요.' : '날짜는 한국 시간이에요.',
+    '광고 차단을 쓰거나 설정에서 맞춤 광고 정보를 끈 분은 픽셀에 안 잡혀서, 우리 기록보다 적게 나올 수 있어요.'
+  ].forEach(function(t){ card.appendChild(el('p',{class:'ad-note'},[t])); });
+  return card;
 }
 /* ── 메타 광고비 (2026-10-20 대표님 지시 "메타 mcp로 인연점 어드민에 광고비 끌어올 수 있냐?") ──
    서버 api/stats.js 가 메타 Marketing API(insights)를 읽어 daily[].ads 와 ads{connected,reason,accounts} 를 준다.

@@ -50,7 +50,10 @@ function detail(b, mode){
     accounts:[{id:'act_111', name:'인연점 광고', currency:'KRW', tz:'Asia/Seoul', included:true}],
     rows: rows[b.level] || rows.campaign,
     daily:[{d:day(2), spend:5000, impr:2000, reach:1500, clicks:40, linkClicks:30, purchaseValue:1900, conv:{reg:2, purchase:1}},
-           {d:day(1), spend:7000, impr:2000, reach:1500, clicks:60, linkClicks:50, purchaseValue:1900, conv:{reg:2, purchase:1}}]};
+           {d:day(1), spend:7000, impr:2000, reach:1500, clicks:60, linkClicks:50, purchaseValue:1900, conv:{reg:2, purchase:1}}],
+    pixel:{connected:true, pixelId:'739495668667523', from:day(6), to:day(0), clipped:false,
+      totals:{PageView:321, ViewContent:40, CompleteRegistration:9, InitiateCheckout:6, Purchase:3, ShareInvite:2},
+      daily:[{d:day(2), ev:{PageView:150, Purchase:1}}, {d:day(1), ev:{PageView:171, CompleteRegistration:9, Purchase:2}}]}};
 }
 
 (async () => {
@@ -139,6 +142,8 @@ function detail(b, mode){
   R.note(/우리 기록 결제 3건/.test(t1.text), '같은 기간 우리 결제 기록을 나란히');
   R.note(/광고비 대비 매출\s*47.5%/.test(t1.text), '광고비 대비 매출 = 우리 매출 5,700 ÷ 12,000', (t1.text.match(/광고비 대비 매출\s*\S+/) || [''])[0]);
   R.note(t1.text.indexOf('날마다') >= 0 && t1.text.indexOf(day(1)) >= 0, '날마다 표');
+  R.note(t1.text.indexOf('픽셀이 받은 이벤트 · 전체') >= 0 && /페이지뷰\s*321건/.test(t1.text) && /결제 완료\s*3건/.test(t1.text), '픽셀 이벤트 전체 카드(페이지뷰 321 · 결제 완료 3)', (t1.text.match(/페이지뷰\s*\S+/) || [''])[0]);
+  R.note(/궁합 링크 보냄\s*2건/.test(t1.text) && t1.text.indexOf('171') >= 0, '픽셀 카드 — 링크 보냄 · 날마다 줄');
   R.note(t1.errs.length === 0, 'JS 오류 0건', t1.errs[0] || '');
   ADS_REQ.length = 0;
   const t2 = await open('on', 1280, 'ad');

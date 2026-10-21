@@ -261,3 +261,70 @@ export async function fetchMetaAdDetail({ since, until, level, fetchImpl } = {})
     return out;
   }
 }
+
+/* =====================================================================
+   픽셀이 받은 이벤트 전체 (2026-10-22 대표님 "광고탭에 메타에 이벤트로 넣은 페이지뷰나 결제 완료 데이터 연동 가능?")
+   ---------------------------------------------------------------------
+   insights 의 전환은 **광고에 기여된 것만**이다. 여기서는 픽셀 자체의 통계(/{pixel}/stats ·
+   aggregation=event)로 광고와 상관없이 픽셀이 받은 이벤트를 **모두** 센다(PageView 포함).
+   ★ 메타는 이 통계를 최근 7일치까지만 준다 — 그래서 기간을 최근 7일로 줄여서 묻고, 줄였으면 range 에 적는다.
+   ★ 이 토큰(시스템 사용자)에 **픽셀(데이터 세트)** 이 배정돼 있어야 읽힌다. 안 돼 있으면 이유만 적는다.
+   ★ 시간 단위 줄을 KST 날짜로 묶는다. 절대 throw 하지 않는다.
+===================================================================== */
+export const PIXEL_EVENTS = ['PageView', 'ViewContent', 'CompleteRegistration', 'InitiateCheckout', 'Purchase', 'ShareInvite'];
+const PIXEL_DAYS = 7;
+function kstDayOf(ms) { return new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10); }
+function kstMidnightMs(day) { return Date.parse(day + 'T00:00:00+09:00'); }
+
+export async function fetchPixelStats({ since, until, fetchImpl, now } = {}) {
+  const out = { connected: false, reason: null, pixelId: null, from: null, to: null, clipped: false, totals: {}, daily: [] };
+  const token = process.env.META_ADS_TOKEN;
+  if (!token) { out.reason = '광고 계정 연결 전이에요 (Vercel 에 META_ADS_TOKEN 이 없어요).'; return out; }
+  const pid = String(process.env.META_PIXEL_ID || '739495668667523').trim();
+  if (!/^\d{5,25}$/.test(pid)) { out.reason = 'META_PIXEL_ID 를 픽셀 번호로 못 읽었어요.'; return out; }
+  out.pixelId = pid;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(since)) || !/^\d{4}-\d{2}-\d{2}$/.test(String(until))) { out.reason = '기간을 못 읽었어요.'; return out; }
+  const nowMs = typeof now === 'number' ? now : Date.now();
+  const earliest = kstDayOf(nowMs - (PIXEL_DAYS - 1) * 86400000);
+  let from = since, to = until;
+  if (from < earliest) { from = earliest; out.clipped = true; }
+  if (to < from) { out.reason = '메타가 픽셀 통계를 최근 ' + PIXEL_DAYS + '일치까지만 줘서 이 기간은 볼 수 없어요.'; out.clipped = true; return out; }
+  out.from = from; out.to = to;
+  const start = Math.floor(kstMidnightMs(from) / 1000);
+  const end = Math.min(Math.floor((kstMidnightMs(to) + 86400000) / 1000), Math.floor(nowMs / 1000));
+  const f = fetchImpl || globalThis.fetch;
+  const tk = 'access_token=' + encodeURIComponent(token);
+  try {
+    const dayMap = {};
+    let url = BASE + '/' + pid + '/stats?aggregation=event&start_time=' + start + '&end_time=' + end + '&' + tk;
+    for (let p = 0; p < 20 && url; p++) {
+      const d = await getJson(url, f);
+      (Array.isArray(d.data) ? d.data : []).forEach((bucket) => {
+        const ms = Date.parse(String(bucket.start_time || '').replace(/([+-]\d{2})(\d{2})$/, '$1:$2'));
+        if (!isFinite(ms)) return;
+        const day = kstDayOf(ms);
+        if (day < from || day > to) return;
+        const b = dayMap[day] || (dayMap[day] = { d: day, ev: {} });
+        (Array.isArray(bucket.data) ? bucket.data : []).forEach((x) => {
+          const name = String((x && x.value) || '').slice(0, 60);
+          const n = Math.round(Number(x && x.count) || 0);
+          if (!name || !n) return;
+          b.ev[name] = (b.ev[name] || 0) + n;
+          out.totals[name] = (out.totals[name] || 0) + n;
+        });
+      });
+      url = d.paging && d.paging.next ? d.paging.next : null;
+    }
+    out.daily = Object.keys(dayMap).sort().map((k) => dayMap[k]);
+    out.connected = true;
+    return out;
+  } catch (e) {
+    const m = e && e.meta;
+    if (m && (m.code === 10 || m.code === 100 || (m.code >= 200 && m.code < 300))) {
+      out.reason = '토큰이 이 픽셀을 읽을 수 없어요. 메타 비즈니스 설정 → 사용자 → 시스템 사용자 → [자산 추가] → 데이터 세트(픽셀 ' + pid + ')를 배정해 주세요. (' + scrubMeta(m.message) + ')';
+    } else out.reason = failReason(e);
+    console.warn('메타 픽셀 통계 조회 실패:', out.reason);
+    out.totals = {}; out.daily = [];
+    return out;
+  }
+}

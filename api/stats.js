@@ -20,7 +20,7 @@ import { productOf, aiQuotaOf, splitProductId } from './_lib/products.js';
 import { buildEntitlements } from './_lib/entitlements.js';
 import { decodePersonRow, describeProfile } from './_lib/person.js';
 import { lookupPaymentByOrder, cancelPayment } from './_lib/toss.js';
-import { fetchMetaAdSpend, fetchMetaAdDetail } from './_lib/metaads.js';
+import { fetchMetaAdSpend, fetchMetaAdDetail, fetchPixelStats } from './_lib/metaads.js';
 
 /* AI 해석 1건당 대략 얼마가 나가는지 — 원가 감을 잡기 위한 값이다.
    Sonnet 5 기준 입력 $2 / 출력 $10 per MTok, 유료 10섹션 ≈ 7천 토큰으로 잡았다.
@@ -282,7 +282,10 @@ export default async function handler(req, res) {
       if (since > until) { const t = since; since = until; until = t; }
       if ((Date.parse(until) - Date.parse(since)) / 86400000 > 400) return json(res, 400, { error: 'bad_range', reason: '기간은 400일까지 볼 수 있어요.' });
       const level = ['campaign', 'adset', 'ad'].indexOf(body.level) >= 0 ? body.level : 'campaign';
-      return json(res, 200, await fetchMetaAdDetail({ since, until, level }));
+      /* 픽셀 통계(광고와 상관없는 이벤트 전체)는 함께 묻되, 실패해도 광고 숫자는 그대로 간다 */
+      const [detail, pixel] = await Promise.all([fetchMetaAdDetail({ since, until, level }), fetchPixelStats({ since, until })]);
+      detail.pixel = pixel;
+      return json(res, 200, detail);
     }
 
     if (body.action === 'rows') {
