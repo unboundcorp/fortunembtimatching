@@ -12,21 +12,26 @@ const wait = L.wait;
   const browser = await L.puppeteer().launch({executablePath: L.chromePath(), headless:'new', args:['--no-sandbox']});
   const errs = [];
   const sent = [];
-  async function open(pub){
-    const p = await L.openPage(browser, {hook:true, width:390, height:900, state: L.makeState()});
+  const ADMIN_ROWS = [{id:7, product:'saju_full', stars:5, body:'딱 맞았어요', nick:'가*', status:'public', bought:true, tester:false, updated_at:'2026-10-19T00:00:00Z', reply:null},
+                      {id:8, product:'mbti_full', stars:4, body:'재밌어요', nick:'나*', status:'pending', bought:false, tester:false, updated_at:'2026-10-20T00:00:00Z', reply:'고마워요'}];
+  async function open(pub, admin){
+    const p = await L.openPage(browser, {hook:true, width:admin ? 1280 : 390, height:900, state: L.makeState()});
     p.on('pageerror', e => errs.push(String(e)));
     await p.setRequestInterception(true);
     p.on('request', function(req){
       const u = req.url();
       const j = o => req.respond({status:200, contentType:'application/json', body:JSON.stringify(o)});
       if(u.indexOf('/api/entitlements') >= 0)
-        return j({items:{mbti_full:{purchasedAt:Date.now()}}, pass:null, purchases:[], testAccess:false, adminAccess:false, testPayment:false});
+        return j({items:{mbti_full:{purchasedAt:Date.now()}}, pass:null, purchases:[], testAccess:false, adminAccess:!!admin, testPayment:false});
       if(u.indexOf('/api/review') >= 0){
         const b = JSON.parse(req.postData() || '{}'); sent.push(b);
         if(b.action === 'mine') return j({canWrite:true, mine:null, ready:true});
         if(b.action === 'write') return j({ok:true});
+        if(b.action === 'list') return j({items:ADMIN_ROWS, ready:true});
+        if(b.action === 'reply') return j({ok:true, reply:String(b.text||'').trim() || null});
+        if(b.action === 'set') return j({ok:true});
         if(b.action === 'public') return j(pub && b.product === 'saju_full'
-          ? {items:[{stars:5, text:'어린 시절 얘기가 딱 맞았어요', nick:'가*', bought:true, at:'2026-10-19'},{stars:4, text:'무료 부분도 재밌어요', nick:'나*', bought:false, at:'2026-10-20'}], sum:{n:2, avg:4.5}}
+          ? {items:[{stars:5, text:'어린 시절 얘기가 딱 맞았어요', nick:'가*', bought:true, at:'2026-10-19', reply:'남겨 주셔서 고마워요'},{stars:4, text:'무료 부분도 재밌어요', nick:'나*', bought:false, at:'2026-10-20'}], sum:{n:2, avg:4.5}}
           : {items:[], sum:{n:0, avg:0}});
       }
       if(u.indexOf('/api/interpret') >= 0){
@@ -38,7 +43,7 @@ const wait = L.wait;
       if(u.indexOf('/api/content') >= 0) return req.respond({status:500, contentType:'application/json', body:'{}'});
       req.continue();
     });
-    await p.goto(srv.url + '/fortune.html', {waitUntil:'networkidle0'}); await wait(800);
+    await p.goto(srv.url + '/fortune.html' + (admin ? '#admin' : ''), {waitUntil:'networkidle0'}); await wait(admin ? 2500 : 800);
     return p;
   }
   try{
@@ -72,6 +77,8 @@ const wait = L.wait;
     await p.evaluate(function(){ window.__INYEON_TEST__.goRoute('report13'); }); await wait(2500);
     const pub = await p.evaluate(function(){ var b = document.querySelector('#main .locked-block .rv-pub'); return b && b.style.display !== 'none' ? b.innerText : null; });
     R.note(!!pub && /가\*/.test(pub) && /후기 2개/.test(pub) && !/구매한 분 후기/.test(pub), '② 공개 후기가 결제 단추 위에 보인다', String(pub));
+    const rep = await p.evaluate(function(){ return [].slice.call(document.querySelectorAll('#main .locked-block .rv-pub .rv-reply')).map(function(x){ return x.innerText; }); });
+    R.note(rep.length === 1 && /인연점/.test(rep[0]) && /남겨 주셔서 고마워요/.test(rep[0]), '⑦ 운영자 답글이 그 후기 바로 아래 「인연점」으로 (답글 있는 글에만)', JSON.stringify(rep));
     const tags = await p.evaluate(function(){ return [].slice.call(document.querySelectorAll('#main .locked-block .rv-pub-row')).map(function(r){ return !!r.querySelector('.rv-buy'); }); });
     R.note(tags.length === 2 && tags[0] === true && tags[1] === false, "② '구매' 표시는 산 분 글에만", JSON.stringify(tags));
     const order = await p.evaluate(function(){ var c = document.querySelector('#main .locked-cta'); var a = c.querySelector('.rv-pub'), b = c.querySelector('.btn-buy');
@@ -96,6 +103,32 @@ const wait = L.wait;
     R.note(none, '② 공개 후기가 없으면 아무것도 안 보인다');
     const over = await p.evaluate(function(){ return document.documentElement.scrollWidth > document.documentElement.clientWidth; });
     R.note(!over, '가로 넘침 없음');
+    await p.close();
+    /* ⑧ 관리자 [후기] — 답글 달기·고치기·지우기 */
+    p = await open(false, true);
+    await p.evaluate(function(){ var b = [].slice.call(document.querySelectorAll('#adminRoot .ad-nav')).filter(function(x){ return /^후기/.test(x.textContent.trim()); })[0]; if(b) b.click(); });
+    await wait(1200);
+    const ad0 = await p.evaluate(function(){ var t = document.querySelector('#adminRoot').innerText;
+      return {reply:/고마워요/.test(t), btns:[].slice.call(document.querySelectorAll('#adminRoot .ad-link')).map(function(b){ return b.textContent.trim(); }).filter(function(x){ return /답글/.test(x); })}; });
+    R.note(ad0.reply && ad0.btns.join(',') === '답글,답글 고치기', '⑧ 관리자 — 단 답글이 보이고 줄마다 [답글]/[답글 고치기]', JSON.stringify(ad0));
+    await p.evaluate(function(){ [].slice.call(document.querySelectorAll('#adminRoot .ad-link')).filter(function(b){ return b.textContent.trim() === '답글'; })[0].click(); });
+    await wait(300);
+    await p.focus('#adminRoot .rv-admin-reply textarea'); await p.keyboard.type('찾아 주셔서 고마워요');
+    await p.evaluate(function(){ [].slice.call(document.querySelectorAll('#adminRoot .rv-admin-reply button')).filter(function(b){ return /답글 저장/.test(b.textContent); })[0].click(); });
+    await wait(700);
+    const rp = sent.filter(b => b.action === 'reply');
+    R.note(rp.length === 1 && rp[0].id === 7 && rp[0].text === '찾아 주셔서 고마워요', '⑧ [답글 저장] → 서버로 그 후기 번호와 글', JSON.stringify(rp));
+    const ad1 = await p.evaluate(function(){ return {open:!!document.querySelector('#adminRoot .rv-admin-reply'), shown:/찾아 주셔서 고마워요/.test(document.querySelector('#adminRoot').innerText)}; });
+    R.note(!ad1.open && ad1.shown, '⑧ 저장 뒤 편집 칸이 닫히고 답글이 표에 보인다', JSON.stringify(ad1));
+    await p.evaluate(function(){ [].slice.call(document.querySelectorAll('#adminRoot .ad-link')).filter(function(b){ return b.textContent.trim() === '답글 고치기'; })[1].click(); });
+    await wait(300);
+    const pre = await p.evaluate(function(){ var t = document.querySelector('#adminRoot .rv-admin-reply textarea'); return t ? t.value : null; });
+    R.note(pre === '고마워요', '⑧ [답글 고치기]는 원래 답글을 채워서 연다', pre);
+    p.on('dialog', d => d.accept());
+    await p.evaluate(function(){ [].slice.call(document.querySelectorAll('#adminRoot .rv-admin-reply button')).filter(function(b){ return /답글 지우기/.test(b.textContent); })[0].click(); });
+    await wait(700);
+    const rp2 = sent.filter(b => b.action === 'reply');
+    R.note(rp2.length === 2 && rp2[1].id === 8 && rp2[1].text === '', '⑧ [답글 지우기] → 빈 글로 보냄', JSON.stringify(rp2[1]));
     await p.close();
     R.note(errs.length === 0, '⑤ JS 오류 0건', errs.slice(0,2).join(' | '));
   }catch(e){ R.note(false, '검사 자체가 터졌습니다: ' + e.message); }

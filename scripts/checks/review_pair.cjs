@@ -10,7 +10,7 @@ const path = require('path');
 const { ROOT, reporter } = require('../_lib.cjs');
 const R = reporter('후기 창구');
 function resp(status, obj){ const t = typeof obj === 'string' ? obj : JSON.stringify(obj); return { ok: status < 400, status, json: async () => obj, text: async () => t }; }
-let ORDERS = [], GRANT = null, TABLE = true, WRITES = [], QUERIES = [];
+let ORDERS = [], GRANT = null, TABLE = true, WRITES = [], QUERIES = [], PATCHES = [], MISSING = [], PUB_ROWS = [];
 (async function(){
   process.env.SUPABASE_URL = 'https://fake.local';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'x'.repeat(40);
@@ -24,8 +24,16 @@ let ORDERS = [], GRANT = null, TABLE = true, WRITES = [], QUERIES = [];
       if(!TABLE) return resp(404, '{"code":"42P01","message":"relation \\"reviews\\" does not exist"}');
       QUERIES.push(u.search);
       if(init && init.method === 'POST'){ WRITES.push(JSON.parse(init.body)); return resp(201, ''); }
-      if(init && init.method === 'PATCH') return resp(204, '');
-      return resp(200, []);
+      if(init && init.method === 'PATCH'){
+        const b = JSON.parse(init.body);
+        const miss = MISSING.find(c => c in b);
+        if(miss) return resp(400, '{"code":"PGRST204","message":"Could not find the \''+miss+'\' column of \'reviews\' in the schema cache"}');
+        PATCHES.push({q:u.search, b}); return resp(204, '');
+      }
+      const sel = (u.searchParams.get('select') || '').split(',');
+      const miss = MISSING.find(c => sel.indexOf(c) >= 0);
+      if(miss) return resp(400, '{"code":"42703","message":"column reviews.'+miss+' does not exist"}');
+      return resp(200, PUB_ROWS.map(r => { const o = {}; sel.forEach(c => { if(c in r) o[c] = r[c]; }); return o; }));
     }
     return resp(200, []);
   };
@@ -80,6 +88,33 @@ let ORDERS = [], GRANT = null, TABLE = true, WRITES = [], QUERIES = [];
   o = await call({action:'list'});
   R.note(o.status === 200 && o.body.ready === true, '⑥ 운영자는 목록을 본다', o.status);
 
+  /* ⑧ 운영자 답글 (2026-10-21 대표님 "3) ㅇㅇ") */
+  o = await call({action:'reply', id:3, text:'  감사합니다   또 와 주세요 '});
+  R.note(o.status === 200 && PATCHES.length === 1 && PATCHES[0].b.reply === '감사합니다 또 와 주세요' && !!PATCHES[0].b.reply_at && /id=eq\.3/.test(PATCHES[0].q) && !('status' in PATCHES[0].b),
+    '⑧ 운영자는 답글을 단다 · 공개 여부는 안 건드림', o.status + ' ' + JSON.stringify(PATCHES[0]));
+  o = await call({action:'reply', id:3, text:'   '});
+  R.note(o.status === 200 && PATCHES[1] && PATCHES[1].b.reply === null && PATCHES[1].b.reply_at === null, '⑧ 빈 글로 저장하면 답글을 지운다', JSON.stringify(PATCHES[1]));
+  o = await call({action:'reply', id:3, text:'x'.repeat(400)});
+  R.note(PATCHES[2] && PATCHES[2].b.reply.length === mod.REPLY_MAX, '⑧ 답글은 300자까지', PATCHES[2] && PATCHES[2].b.reply.length);
+  MISSING = ['reply', 'reply_at'];
+  o = await call({action:'reply', id:3, text:'고마워요'});
+  R.note(o.status === 503 && o.body.error === 'not_ready', '⑧ 답글 칸이 아직 없으면 503 + 이유', o.status + ' ' + JSON.stringify(o.body));
+  MISSING = [];
+  GRANT = null;
+  o = await call({action:'reply', id:3, text:'고마워요'});
+  R.note(o.status === 404, '⑧ 답글은 운영자만', o.status);
+  PUB_ROWS = [{stars:5, body:'좋아요', nick:'김*', bought:true, reply:'감사해요', reply_at:'2026-10-21T01:00:00Z', created_at:'2026-10-19T00:00:00Z', updated_at:'2026-10-19T00:00:00Z'},
+              {stars:4, body:'괜찮아요', nick:'이*', bought:false, reply:null, reply_at:null, created_at:'2026-10-19T00:00:00Z', updated_at:'2026-10-19T00:00:00Z'}];
+  o = await call({action:'public', product:'saju_full'});
+  R.note(o.status === 200 && o.body.items[0].reply === '감사해요' && o.body.items[1].reply === null, '⑨ 공개 후기에 답글이 함께 나간다', JSON.stringify(o.body.items));
+  MISSING = ['reply', 'reply_at'];
+  o = await call({action:'public', product:'saju_full'});
+  R.note(o.status === 200 && o.body.items.length === 2 && o.body.items[0].reply === null && o.body.items[0].bought === true, '⑨ 답글 칸이 아직 없어도 공개 후기는 나간다', o.status + ' ' + JSON.stringify(o.body));
+  MISSING = ['bought', 'reply', 'reply_at'];
+  o = await call({action:'public', product:'saju_full'});
+  R.note(o.status === 200 && o.body.items.length === 2, '⑨ 구매 칸·답글 칸이 다 없어도 나간다', o.status);
+  MISSING = []; PUB_ROWS = [];
+
   TABLE = false; GRANT = null;
   o = await call({action:'public', product:'saju_full'});
   R.note(o.status === 200 && o.body.items.length === 0, '⑦ 표가 없어도 손님 공개 후기는 빈 목록', o.status);
@@ -89,5 +124,6 @@ let ORDERS = [], GRANT = null, TABLE = true, WRITES = [], QUERIES = [];
   const html = require('fs').readFileSync(path.join(ROOT, 'fortune.html'), 'utf8');
   R.note(/var rvPub = buildPublicReviews\(product\)/.test(html) && /buildReviewBox\(product\)/.test(html), '화면 — 잠금 카드에 공개 후기 · 결제한 풀이 끝에 후기 칸');
   R.note(/key:'reviews'/.test(html) && /function adminReviews\(/.test(html), '관리자 [후기] 탭');
+  R.note(/action:'reply', id:id, text:text/.test(html) && /class:'rv-reply'/.test(html), '화면 — 관리자 답글 저장 · 손님 화면 답글 줄');
   R.done();
 })();

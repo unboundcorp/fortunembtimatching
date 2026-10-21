@@ -28,6 +28,8 @@
        unique (session_id, product)
      );
      alter table reviews add column if not exists bought boolean;   -- 2026-10-21 (없으면 bought 없이 저장 · 표시 안 붙음)
+     alter table reviews add column if not exists reply text;          -- 2026-10-21 운영자 답글 (대표님 "3) ㅇㅇ")
+     alter table reviews add column if not exists reply_at timestamptz;
      alter table reviews enable row level security;
 ===================================================================== */
 import { readBody, json } from './_lib/http.js';
@@ -84,9 +86,17 @@ export function boughtProduct(orders, product) {
   });
 }
 
-const publicRow = (r) => ({ stars: r.stars, text: r.body, nick: r.nick || '손님', bought: r.bought === true, at: r.updated_at || r.created_at });
-/* bought 칸이 아직 없는 표(대표님이 alter 를 돌리기 전) */
-const missingBought = (e) => e && /bought/i.test(String(e.body || e.message)) && /column|42703|PGRST204|schema cache/i.test(String(e.body || e.message));
+export const publicRow = (r) => ({ stars: r.stars, text: r.body, nick: r.nick || '손님', bought: r.bought === true, at: r.updated_at || r.created_at,
+  reply: r.reply ? String(r.reply) : null, replyAt: r.reply ? (r.reply_at || null) : null });
+export const REPLY_MAX = 300;
+/* 칸이 아직 없는 표(대표님이 alter 를 돌리기 전) — 없는 칸 이름을 돌려준다 */
+const OPTIONAL_COLS = ['bought', 'reply_at', 'reply'];
+export function missingCol(e) {
+  const t = String((e && (e.body || e.message)) || '');
+  if (!/column|42703|PGRST204|schema cache/i.test(t)) return null;
+  return OPTIONAL_COLS.find((c) => t.indexOf(c) >= 0) || null;
+}
+const missingBought = (e) => missingCol(e) === 'bought';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -107,10 +117,18 @@ export default async function handler(req, res) {
     if (body.action === 'public') {
       if (!product) return json(res, 400, { error: 'bad_request' });
       let rows = [];
-      const q = (cols) => rest(`reviews?product=eq.${product}&status=eq.public&select=${cols}&order=updated_at.desc&limit=20`);
+      const q = (cols) => rest(`reviews?product=eq.${product}&status=eq.public&select=${cols.join(',')}&order=updated_at.desc&limit=20`);
+      /* 없는 칸(bought · reply · reply_at)은 하나씩 빼고 다시 묻는다 */
+      let cols = ['stars', 'body', 'nick', 'bought', 'reply', 'reply_at', 'created_at', 'updated_at'];
       try {
-        try { rows = await q('stars,body,nick,bought,created_at,updated_at'); }
-        catch (e) { if (!missingBought(e)) throw e; rows = await q('stars,body,nick,created_at,updated_at'); }
+        for (let i = 0; ; i++) {
+          try { rows = await q(cols); break; }
+          catch (e) {
+            const c = missingCol(e);
+            if (!c || i >= 3) throw e;
+            cols = cols.filter((x) => x !== c && !(c === 'reply' && x === 'reply_at'));
+          }
+        }
       } catch (e) { if (!missingTable(e)) throw e; }
       const items = (rows || []).map(publicRow);
       const avg = items.length ? Math.round(items.reduce((a, r) => a + r.stars, 0) / items.length * 10) / 10 : 0;
@@ -178,6 +196,22 @@ export default async function handler(req, res) {
         body: JSON.stringify({ status }),
       });
       return json(res, 200, { ok: true });
+    }
+    /* 운영자 답글 — 빈 글이면 지운다. 공개 여부(status)는 안 건드린다 */
+    if (body.action === 'reply') {
+      const id = Number(body.id);
+      if (!id) return json(res, 400, { error: 'bad_request' });
+      const text = String(body.text == null ? '' : body.text).replace(/[ \t]+/g, ' ').trim().slice(0, REPLY_MAX);
+      try {
+        await rest(`reviews?id=eq.${id}`, {
+          method: 'PATCH', headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify(text ? { reply: text, reply_at: new Date().toISOString() } : { reply: null, reply_at: null }),
+        });
+      } catch (e) {
+        if (missingCol(e)) return json(res, 503, { error: 'not_ready', reason: '답글 칸이 아직 없어요. reviews 표에 reply · reply_at 칸을 먼저 만들어 주세요.' });
+        throw e;
+      }
+      return json(res, 200, { ok: true, reply: text || null });
     }
     return json(res, 400, { error: 'bad_request' });
   } catch (err) {

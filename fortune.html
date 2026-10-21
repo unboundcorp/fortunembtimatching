@@ -1050,6 +1050,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + var(--tabbar-h) + env(safe-are
 .rv-pub-nick{color:var(--ink-faint);white-space:nowrap;}
 .rv-buy{display:inline-block;margin-left:6px;padding:0 6px;border-radius:8px;font-size:.72rem;line-height:1.5;color:var(--brand);border:1px solid var(--gold-line);vertical-align:1px;}
 .rv-stars{color:var(--brand);letter-spacing:1px;}
+.rv-reply{margin:3px 0 0 12px;padding-left:8px;border-left:2px solid var(--gold-line);color:var(--ink-soft,var(--ink));font-size:.82rem;}
+.rv-reply b{color:var(--brand);font-weight:600;}
 .modal-box .rv-box{margin:0;padding:0;background:none;}
 .rv-box{margin:22px 0 8px;padding:16px;border-radius:14px;background:var(--panel-3);}
 .rv-title{margin:0 0 8px;font-size:1.02rem;}
@@ -7895,6 +7897,8 @@ function buildPublicReviews(product){
       box.appendChild(el('div',{class:'rv-pub-row'},[
         el('span',{class:'rv-stars'},[starText(r.stars)]), ' ', el('span',{class:'rv-pub-text'},[r.text]),
         el('span',{class:'rv-pub-nick'},[' — '+r.nick+(r.at ? ' · '+reviewDay(r.at) : '')]), r.bought ? el('span',{class:'rv-buy'},['구매']) : null].filter(Boolean)));
+      /* ★ 2026-10-21 운영자 답글 (대표님 "3) ㅇㅇ") — 이음처럼 후기 바로 아래 */
+      if(r.reply) box.appendChild(el('div',{class:'rv-reply'},[el('b',{},['인연점']), ' '+r.reply]));
     });
   }
   var c = REVIEW_PUB[base];
@@ -19738,7 +19742,7 @@ function noticeFromLocal(v){
   return isFinite(t) ? new Date(t).toISOString() : '';
 }
 /* ★ 2026-10-19 — 후기 관리. [공개]로 고른 것만 손님 화면 결제 단추 위에 보인다(api/review.js 'public'). */
-var REVIEW_ADMIN = {state:'idle', items:[], ready:true, err:null};
+var REVIEW_ADMIN = {state:'idle', items:[], ready:true, err:null, replyOpen:null, draft:'', saving:false};
 var REVIEW_PRODUCT_NAME = {saju_full:'사주 풀이', mbti_full:'성격유형 풀이', compat_full:'궁합 상세'};
 function loadReviewsAdmin(force){
   if(REVIEW_ADMIN.state === 'loading') return;
@@ -19757,6 +19761,31 @@ function setReviewStatus(id, status){
     showToast(status === 'public' ? '공개했어요.' : status === 'hidden' ? '숨겼어요.' : '대기로 돌렸어요.');
     render();
   }).catch(function(e){ showToast((e && e.message) || '바꾸지 못했어요.'); });
+}
+/* ★ 2026-10-21 운영자 답글 — 빈 글로 저장하면 지운다. 공개 여부는 안 바뀐다 */
+function saveReviewReply(id, text){
+  if(REVIEW_ADMIN.saving) return;
+  REVIEW_ADMIN.saving = true;
+  reviewApi({action:'reply', id:id, text:text}).then(function(r){
+    REVIEW_ADMIN.saving = false;
+    if(!r.ok) throw new Error(r.j.reason || '저장하지 못했어요.');
+    var now = new Date().toISOString();
+    REVIEW_ADMIN.items.forEach(function(x){ if(x.id === id){ x.reply = r.j.reply || null; x.reply_at = r.j.reply ? now : null; } });
+    REVIEW_ADMIN.replyOpen = null; REVIEW_ADMIN.draft = '';
+    REVIEW_PUB = {};
+    showToast(r.j.reply ? '답글을 저장했어요.' : '답글을 지웠어요.');
+    render();
+  }).catch(function(e){ REVIEW_ADMIN.saving = false; showToast((e && e.message) || '저장하지 못했어요.'); });
+}
+function adminReviewReplyEditor(r){
+  var ta = el('textarea',{class:'ad-input', maxlength:'300', placeholder:'손님 화면에 「인연점」 이름으로 후기 바로 아래에 보여요. (300자까지)',
+    oninput:function(){ REVIEW_ADMIN.draft = ta.value; }});
+  ta.value = REVIEW_ADMIN.draft;
+  return el('div',{class:'rv-admin-reply', style:'margin-top:6px;max-width:420px;'},[ta,
+    el('div',{style:'display:flex;gap:6px;margin-top:6px;'},[
+      el('button',{class:'ad-btn ad-btn-primary', onclick:function(){ saveReviewReply(r.id, ta.value); }},['답글 저장']),
+      r.reply ? el('button',{class:'ad-btn', onclick:function(){ if(window.confirm('답글을 지울까요?')) saveReviewReply(r.id, ''); }},['답글 지우기']) : null,
+      el('button',{class:'ad-btn', onclick:function(){ REVIEW_ADMIN.replyOpen = null; REVIEW_ADMIN.draft = ''; render(); }},['취소'])].filter(Boolean))]);
 }
 function adminReviews(body){
   if(REVIEW_ADMIN.state === 'idle') loadReviewsAdmin();
@@ -19785,7 +19814,9 @@ function adminReviews(body){
     var trs = items.map(function(r){
       var tr = el('tr',{});
       tr.appendChild(adTd([el('div',{},[el('span',{class:'rv-stars'},[starText(r.stars)])]),
-        el('div',{class:'ad-tprev', style:'max-width:300px;white-space:normal;'},[r.body])]));
+        el('div',{class:'ad-tprev', style:'max-width:300px;white-space:normal;'},[r.body]),
+        (r.reply && REVIEW_ADMIN.replyOpen !== r.id) ? el('div',{class:'rv-reply', style:'max-width:300px;font-size:13px;line-height:1.5;'},[el('b',{},['인연점']), ' '+r.reply]) : null,
+        REVIEW_ADMIN.replyOpen === r.id ? adminReviewReplyEditor(r) : null].filter(Boolean)));
       tr.appendChild(adTd([el('div',{},[REVIEW_PRODUCT_NAME[r.product] || r.product]),
         el('div',{class:'ad-sub2'},[(r.nick || '') + (r.kakao_id ? ' · ' + r.kakao_id : '')])],'ad-nowrap'));
       tr.appendChild(adTd([el('span',{class:'ad-sub2'},[statsTime(r.updated_at || r.created_at).slice(0,16)])],'ad-nowrap'));
@@ -19796,13 +19827,15 @@ function adminReviews(body){
         if(r.tester && !window.confirm('테스트 허가로 쓴 후기예요. 실제 구매 후기가 아니라 공개하면 안 됩니다. 그래도 공개할까요?')) return;
         setReviewStatus(r.id, 'public'); }},['공개']));
       if(r.status !== 'hidden') acts.appendChild(el('button',{class:'ad-link', onclick:function(){ setReviewStatus(r.id, 'hidden'); }},['숨김']));
+      if(REVIEW_ADMIN.replyOpen !== r.id) acts.appendChild(el('button',{class:'ad-link', onclick:function(){
+        REVIEW_ADMIN.replyOpen = r.id; REVIEW_ADMIN.draft = r.reply || ''; render(); }},[r.reply ? '답글 고치기' : '답글']));
       tr.appendChild(adTd([acts],'ad-nowrap'));
       return tr;
     });
     card.appendChild(adTable(['별점 · 내용','상품 · 이름','남긴 때','상태',''], trs, 760));
   }
   card.appendChild(el('p',{class:'ad-note'},[
-    '[공개]로 고른 후기만 손님 화면의 결제 단추 위에 보여요(최근 3개 · 공개한 것의 평균). 「구매」는 결제한 분, 「미구매」는 결제 안 한 분의 글이에요(손님 화면에도 구매한 분 글에만 「구매」 표시). 「테스트」는 테스트 허가로 쓴 글이라 공개하지 마세요. 손님이 후기를 고치면 다시 「대기」로 돌아와요.']));
+    '[공개]로 고른 후기만 손님 화면의 결제 단추 위에 보여요(최근 3개 · 공개한 것의 평균). 「구매」는 결제한 분, 「미구매」는 결제 안 한 분의 글이에요(손님 화면에도 구매한 분 글에만 「구매」 표시). 「테스트」는 테스트 허가로 쓴 글이라 공개하지 마세요. 손님이 후기를 고치면 다시 「대기」로 돌아와요(답글은 그대로 남으니 내용이 바뀌었으면 답글도 다시 보세요). [답글]은 공개된 후기 바로 아래 「인연점」 이름으로 보여요.']));
   body.appendChild(card);
 }
 function adminNotices(body){
