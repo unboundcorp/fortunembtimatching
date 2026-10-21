@@ -2716,6 +2716,8 @@ body.admin-on .mode-fab{display:none !important;}
    기존 .settings-row는 justify-content:space-between이라 자식을 그냥 하나 더 넣으면 라벨이 가운데로 밀린다.
    그래서 칩+라벨을 한 덩어리(.sr-label-wrap)로 묶어 왼쪽 항목 수를 그대로 유지한다. */
 .settings-row .sr-label-wrap{display:flex;align-items:center;gap:9px;min-width:0;flex:1 1 auto;}
+/* 2026-10-21 — 저장된 모임 줄의 '기다리는 중' 칩(아무도 안 들어온 링크) */
+.wait-chip{flex:0 0 auto;font-size:.7rem;font-weight:600;line-height:1;padding:4px 7px;border-radius:999px;background:var(--gold-soft);color:var(--brand);white-space:nowrap;}
 .hist-item .hi-main{display:flex;align-items:center;gap:11px;text-align:left;background:none;flex:1;min-width:0;min-height:44px;}
 .hist-item .hi-text{min-width:0;}
 @media (max-width:360px){.char-dex-grid{grid-template-columns:repeat(auto-fill,minmax(84px,1fr));}}
@@ -22539,9 +22541,10 @@ function renderCompatSummary(p, draft){
   var numRow = el('div',{class:'csb-num', role:'img',
     'aria-label':'종합 궁합 점수 '+r.res.combined+'점 (100점 만점) · '+tierNameFix(r.res.combinedTier)});
   numRow.appendChild(el('b',{'aria-hidden':'true'},[String(r.res.combined)]));
-  var unit = '점';
-  if(r.res.saju && r.res.saju.elemTerm && r.res.saju.elemTerm !== '정보 부족') unit += ' · '+r.res.saju.elemTerm;
-  numRow.appendChild(el('span',{'aria-hidden':'true'},[unit]));
+  /* ★ 2026-10-21 대표님 지적(사진) "위에는 무난한 인연인데 밑에는 상극이라고 써져 있어서 헷갈린다 상극 이런 거 필요 없지 않냐?" —
+     점수 옆 '· 상극(서로 극함)'(태어난 날 윗글자 오행 관계)을 뺐다. 등급 이름 '상극 인연'과 같은 낱말이라 종합 등급으로 읽혔다.
+     그 관계는 아래 '왜 N점인가요?'의 [서로 채워 주는 힘] 줄이 쉬운 말로 그대로 설명한다. 되살리지 마십시오. */
+  numRow.appendChild(el('span',{'aria-hidden':'true'},['점']));
   var nick = compatNickname(r.res, p, r.pB);
   if(nick) scoreBlk.insertBefore(el('p',{class:'csb-nick'},[nick]), scoreBlk.firstChild);
   scoreBlk.appendChild(numRow);
@@ -24811,8 +24814,39 @@ function groupProfileWord(g){
   return g.pchk ? '지금 없는 프로필' : '어느 프로필인지 확인 중';
 }
 function savedGroupLabel(g){
-  return groupProfileWord(g) + ' · ' + (g.name || '이름 없는 모임') + (g.n > 1 ? ' · ' + g.n + '명' : ' · 아직 나 혼자')
+  /* ★ 2026-10-21 — 아무도 안 들어온 링크는 줄 앞 '기다리는 중' 칩이 그 뜻을 말한다(savedGroupRow). '아직 나 혼자'를 또 적지 않는다. */
+  return groupProfileWord(g) + ' · ' + (g.name || '이름 없는 모임') + (g.n > 1 ? ' · ' + g.n + '명' : '')
     + ' · ' + (groupRelation(g.id) ? relationLabel(groupRelation(g.id)) : '사이 미정');
+}
+/* ★ 2026-10-21 대표님 지시 "3)으로 해라" — 맨 위 지켜보기 카드는 가장 최근 링크 하나뿐이라, 그 전에 보낸 링크는
+   목록에서 '기다리는 중'인지 안 보였다. 아무도 안 들어온(나 혼자인) 모임 줄 앞에 칩을 붙인다. */
+function groupWaiting(g){ return !(g && g.n > 1); }
+function savedGroupRow(g){
+  var row = settingsRow(savedGroupLabel(g), '열기', function(){ openSavedGroup(g.id); },
+    groupWaiting(g) ? el('span',{class:'wait-chip'},['기다리는 중']) : null);
+  row.setAttribute('data-gid', g.id);
+  return row;
+}
+/* 저장된 인원 수는 열거나 지켜볼 때만 갱신된다. 기다리는 중으로 보이는 모임은 한 세션에 한 번 명단을 받아,
+   그새 누가 들어왔으면 칩을 걷고 인원을 적는다(화면을 다시 그리지 않고 그 줄만 — fillGroupProfiles 와 같은 이유). */
+var GROUP_WAIT_CHECK = {};
+function refreshWaitingGroups(list){
+  list.forEach(function(g){
+    if(!g || !g.id || !groupWaiting(g) || GROUP_WAIT_CHECK[g.id]) return;
+    GROUP_WAIT_CHECK[g.id] = 1;
+    groupFetch({action:'get', groupId:g.id}).then(function(d){
+      var n = String((d && d.members) || '').split(';').filter(Boolean).length;
+      if(n <= 1) return;
+      var cur = savedGroups().filter(function(x){ return x && x.id === g.id; })[0];
+      if(!cur) return;
+      cur.n = n; saveState();
+      var rowEl = document.querySelector('[data-gid="'+g.id+'"]');
+      if(rowEl){
+        var chip = rowEl.querySelector('.wait-chip'); if(chip) chip.remove();
+        var lab = rowEl.querySelector('.sr-label'); if(lab) lab.textContent = savedGroupLabel(cur);
+      }
+    }).catch(function(){ delete GROUP_WAIT_CHECK[g.id]; });
+  });
 }
 /* 지금 고른 프로필로 본 모임만. 어느 프로필인지 모르는 것(아직 확인 전 · 지운 프로필)은 누구에게나 보인다 —
    숨기면 그 모임에 닿는 길이 아예 없어진다. */
@@ -25626,6 +25660,7 @@ function buildSavedGroupsCard(pairMode){
   var orphan = all.filter(function(g){ return g.pchk && !g.profileId; });
   fillGroupProfiles();
   if(!all.length) return null;
+  refreshWaitingGroups(all);
   /* 다시 그리면 밀려 있던 줄은 사라진다. 가리키던 것을 안 놓으면 화면에 없는 줄을
      계속 붙들고 있게 된다. */
   SWIPE_OPEN = null;
@@ -25633,7 +25668,6 @@ function buildSavedGroupsCard(pairMode){
      안내 두 줄은 목록 아래(정리 단추 뒤)로. 목록이 먼저 보여야 한다. */
   var card = sectionCard(['저장된 모임']);
   list.forEach(function(g){
-    var row = settingsRow(
       /* ★ 2026-09-05 대표님 지적 — 위 카드는 "아직 아무도 열지 않았어요"라는데
          이 줄은 "· 1명"이라 서로 어긋나 보였다. 1명은 만든 사람 자신이다.
          숫자 대신 그 뜻을 적는다(watchLineText가 n>1을 '들어왔다'로 보는 것과 같은 기준). */
@@ -25644,9 +25678,7 @@ function buildSavedGroupsCard(pairMode){
          "왜 얘만 관계가 없지?"가 된다(대표님 지적). 없다는 사실을 적는다 —
          '친구'라고 적으면 고른 적 없는 값을 적는 것이라 그건 안 한다. 열면 고르게 된다.
          (글은 savedGroupLabel 한 벌 — fillGroupProfiles 가 나중에 같은 글로 바꿔 끼운다) */
-      savedGroupLabel(g),
-      '열기', function(){ openSavedGroup(g.id); });
-    row.setAttribute('data-gid', g.id);
+    var row = savedGroupRow(g);
     /* ★ 2026-09-09 대표님 지시 — "지우기 아래 두지 말고, 줄을 왼쪽으로 밀면
        지우겠냐는 창이 뜨게 해라." 줄마다 단추를 하나씩 달면 목록이 두 배로 길어진다. */
     card.appendChild(swipeToDelete(row, function(){ askDeleteGroup(g); }));
@@ -25656,8 +25688,7 @@ function buildSavedGroupsCard(pairMode){
     fold.appendChild(el('summary',{},['지금 없는 프로필로 들어간 모임 ' + orphan.length + '개']));
     fold.appendChild(el('p',{class:'biz-hint', style:'margin-top:4px;'},['지운 프로필로 들어갔거나 명단에 지금 프로필이 없는 모임이에요. 열어 보거나 왼쪽으로 밀어 지울 수 있어요.']));
     orphan.forEach(function(g){
-      var row = settingsRow(savedGroupLabel(g), '열기', function(){ openSavedGroup(g.id); });
-      row.setAttribute('data-gid', g.id);
+      var row = savedGroupRow(g);
       fold.appendChild(swipeToDelete(row, function(){ askDeleteGroup(g); }));
     });
     card.appendChild(fold);
