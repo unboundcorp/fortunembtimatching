@@ -1048,7 +1048,9 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + var(--tabbar-h) + env(safe-are
 .rv-pub-head{font-weight:700;margin-bottom:4px;}
 .rv-pub-row{margin-top:4px;}
 .rv-pub-nick{color:var(--ink-faint);white-space:nowrap;}
+.rv-buy{display:inline-block;margin-left:6px;padding:0 6px;border-radius:8px;font-size:.72rem;line-height:1.5;color:var(--brand);border:1px solid var(--gold-line);vertical-align:1px;}
 .rv-stars{color:var(--brand);letter-spacing:1px;}
+.modal-box .rv-box{margin:0;padding:0;background:none;}
 .rv-box{margin:22px 0 8px;padding:16px;border-radius:14px;background:var(--panel-3);}
 .rv-title{margin:0 0 8px;font-size:1.02rem;}
 .rv-pick{display:flex;gap:4px;margin:2px 0 8px;}
@@ -7876,6 +7878,7 @@ function reviewBase(product){
   if(b === 'premium_pass') return null;
   return (b === 'saju_full' || b === 'mbti_full' || b === 'compat_full') ? b : null;
 }
+function reviewDay(at){ var d = new Date(at); if(isNaN(d)) return ''; var k = new Date(d.getTime()+9*3600e3); return (k.getUTCMonth()+1)+'월 '+k.getUTCDate()+'일'; }
 function starText(n){ n = Math.max(0, Math.min(5, Math.round(n))); return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
 function buildPublicReviews(product){
   var base = reviewBase(product); if(!base) return null;
@@ -7886,11 +7889,12 @@ function buildPublicReviews(product){
     if(!c || c.state !== 'done' || !c.items.length){ box.style.display = 'none'; return; }
     box.style.display = '';
     box.appendChild(el('div',{class:'rv-pub-head'},[
-      el('span',{class:'rv-stars'},[starText(c.sum.avg)]), ' '+c.sum.avg.toFixed(1)+' · 구매한 분 후기 '+c.sum.n+'개']));
+      el('span',{class:'rv-stars'},[starText(c.sum.avg)]), ' '+c.sum.avg.toFixed(1)+' · 후기 '+c.sum.n+'개']));
+    /* ★ 2026-10-21 — 결제 안 한 분도 후기를 쓴다. 산 분의 글에만 '구매' 표시(서버 bought) — 모든 글을 구매 후기처럼 보이게 하지 않는다 */
     c.items.slice(0, 3).forEach(function(r){
       box.appendChild(el('div',{class:'rv-pub-row'},[
         el('span',{class:'rv-stars'},[starText(r.stars)]), ' ', el('span',{class:'rv-pub-text'},[r.text]),
-        el('span',{class:'rv-pub-nick'},[' — '+r.nick])]));
+        el('span',{class:'rv-pub-nick'},[' — '+r.nick+(r.at ? ' · '+reviewDay(r.at) : '')]), r.bought ? el('span',{class:'rv-buy'},['구매']) : null].filter(Boolean)));
     });
   }
   var c = REVIEW_PUB[base];
@@ -7923,13 +7927,33 @@ function buildReviewBox(product){
   paintReviewBox(box, base);
   return box;
 }
+/* ★ 2026-10-21 대표님 지시 "카드로 저장하기 밑에 후기 버튼 하나" · "다른 화면도 같은 위치에" —
+   누르면 별점·한 줄 창. 결제 여부와 상관없이 누구나(서버 api/review.js). 화면 끝에 깔던 후기 칸은 이 단추로 바꿨다. */
+function reviewButton(productId, label){
+  var product = {id:productId};
+  if(!reviewBase(product)) return null;
+  return el('button',{class:'btn btn-ghost btn-block rv-open', type:'button', onclick:function(){
+    var box = buildReviewBox(product); box.__modal = true; paintReviewBox(box, reviewBase(product));
+    openModal(label || '이 풀이, 어떠셨어요?', box, [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
+  }},['후기 남기기']);
+}
 function paintReviewBoxes(base){ $all('.rv-box[data-base="'+base+'"]').forEach(function(b){ paintReviewBox(b, base); }); }
 function paintReviewBox(box, base){
   var m = REVIEW_MINE[base] || {};
   box.innerHTML = '';
+  if(box.__modal && m.state !== 'done'){
+    box.style.display = '';
+    box.appendChild(el('p',{class:'section-sub', style:'margin:0;'},[m.state === 'error' ? '지금은 후기 칸을 열지 못했어요. 잠시 뒤 다시 해 주세요.' : '불러오는 중이에요…']));
+    return;
+  }
+  if(box.__modal && !m.ready){
+    box.style.display = '';
+    box.appendChild(el('p',{class:'section-sub', style:'margin:0;'},['후기 받기를 준비하고 있어요. 잠시 뒤 다시 남겨 주세요.']));
+    return;
+  }
   if(m.state !== 'done' || !m.canWrite || !m.ready){ box.style.display = 'none'; return; }
   box.style.display = '';
-  box.appendChild(el('h3',{class:'rv-title'},['이 풀이, 어떠셨어요?']));
+  if(!box.__modal) box.appendChild(el('h3',{class:'rv-title'},['이 풀이, 어떠셨어요?']));
   if(m.mine && !m.editing){
     var st = {pending:'확인 중이에요', public:'다른 분들께 보여지고 있어요', hidden:'남겨 주셔서 고마워요'}[m.mine.status] || '';
     box.appendChild(el('p',{class:'rv-mine'},[el('span',{class:'rv-stars'},[starText(m.mine.stars)]), ' '+m.mine.text]));
@@ -10489,10 +10513,10 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
       extras: extras || null,
       hook: hookHtml || ''
     });
-    /* ★ 2026-10-19 대표님 "3) 후기 해라" — 결제한 풀이를 다 받은 뒤에만 맨 끝에 후기 칸 */
-    if(!state.locked && !state.paidLoading && !state.paidError && hasAccess(product.id)){
-      var rv = buildReviewBox(product); if(rv) host.appendChild(rv);
-    }
+    /* ★ 2026-10-19 대표님 "3) 후기 해라" — 풀이 맨 끝에 후기 칸.
+       ★ 2026-10-21 대표님 "후기는 결제하지 않은 사람도 누구든 쓸 수 있게 하자" — 잠긴 풀이(무료 부분만 본 분)에도 둔다.
+         결제한 분은 유료 본문을 다 받은 뒤에(쓰는 중·실패 중에는 안 둠). */
+    /* ★ 2026-10-21 — 화면 끝 [후기 남기기] 단추(reviewButton)로 옮겼다. 여기 다시 깔지 마십시오(같은 칸이 두 개가 됨). */
   }
 
   /* 유료 본문을 서버에서 받아온다. 권한이 없으면 요청조차 하지 않는다.
@@ -18236,7 +18260,7 @@ var ADMIN_META = {
   ads:      {title:'광고',        sub:'메타 광고비 · 캠페인별 성과 (읽기만)'},
   compat:   {title:'궁합 · 모임', sub:'초대 링크와 모임 명단'},
   ai:       {title:'AI 해석',     sub:'만든 글 · 쓴 토큰 · 비용'},
-  reviews:  {title:'후기',        sub:'구매한 분이 남긴 별점 · 공개할 것을 고름'},
+  reviews:  {title:'후기',        sub:'손님이 남긴 별점 · 공개할 것을 고름'},
   notices:  {title:'공지 · 배너', sub:'알림 초안 · 손님 화면엔 안 나감'},
   export:   {title:'데이터 내보내기', sub:'지금 화면의 자료를 CSV 로'}
 };
@@ -19756,7 +19780,7 @@ function adminReviews(body){
   body.appendChild(el('div',{class:'ad-bar'},[el('span',{class:'ad-sub2'},[
     '전체 ' + items.length + '개 · 확인 대기 ' + wait + '개 · 공개 ' + pub + '개' + (items.length ? ' · 평균 ★' + avg.toFixed(1) : '')])]));
   var card = adCard([adH('후기 목록')]);
-  if(!items.length) card.appendChild(adEmpty('아직 들어온 후기가 없어요. 결제한 분이 풀이 맨 끝에서 남기면 여기에 쌓입니다.'));
+  if(!items.length) card.appendChild(adEmpty('아직 들어온 후기가 없어요. 손님이 풀이 맨 끝에서 남기면 여기에 쌓입니다(결제 안 한 분도 씀).'));
   else {
     var trs = items.map(function(r){
       var tr = el('tr',{});
@@ -19765,7 +19789,7 @@ function adminReviews(body){
       tr.appendChild(adTd([el('div',{},[REVIEW_PRODUCT_NAME[r.product] || r.product]),
         el('div',{class:'ad-sub2'},[(r.nick || '') + (r.kakao_id ? ' · ' + r.kakao_id : '')])],'ad-nowrap'));
       tr.appendChild(adTd([el('span',{class:'ad-sub2'},[statsTime(r.updated_at || r.created_at).slice(0,16)])],'ad-nowrap'));
-      tr.appendChild(adTd([r.tester ? adTag('테스트','out') : null,
+      tr.appendChild(adTd([r.tester ? adTag('테스트','out') : (r.bought === true ? adTag('구매') : r.bought === false ? adTag('미구매','out') : null),
         adTag(r.status === 'public' ? '공개' : r.status === 'hidden' ? '숨김' : '대기', r.status === 'public' ? null : 'out')].filter(Boolean),'ad-nowrap'));
       var acts = el('div',{style:'display:flex;gap:4px;'});
       if(r.status !== 'public') acts.appendChild(el('button',{class:'ad-link', onclick:function(){
@@ -19778,7 +19802,7 @@ function adminReviews(body){
     card.appendChild(adTable(['별점 · 내용','상품 · 이름','남긴 때','상태',''], trs, 760));
   }
   card.appendChild(el('p',{class:'ad-note'},[
-    '[공개]로 고른 후기만 손님 화면의 결제 단추 위에 보여요(최근 3개 · 공개한 것의 평균). 「테스트」는 테스트 허가로 쓴 글이라 공개하지 마세요. 손님이 후기를 고치면 다시 「대기」로 돌아와요.']));
+    '[공개]로 고른 후기만 손님 화면의 결제 단추 위에 보여요(최근 3개 · 공개한 것의 평균). 「구매」는 결제한 분, 「미구매」는 결제 안 한 분의 글이에요(손님 화면에도 구매한 분 글에만 「구매」 표시). 「테스트」는 테스트 허가로 쓴 글이라 공개하지 마세요. 손님이 후기를 고치면 다시 「대기」로 돌아와요.']));
   body.appendChild(card);
 }
 function adminNotices(body){
@@ -20785,6 +20809,7 @@ function renderReport(){
 
   view.appendChild(circleCTA(CTA_ICON.arrow, '내 성격유형 풀이 읽어보기', function(){ ROUTE='mbtiReport'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('report', p, null); }},['리포트 요약 공유하기']));
+  view.appendChild(reviewButton('mbti_full', '내 성격유형 풀이, 어떠셨어요?'));
   view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   /* R50 — 여기까지 본 사람에게 다른 서비스를 권한다. 두 서비스가 서로를 모르면 한쪽만 쓰고 끝난다. */
   view.appendChild(crossSell('toCompat'));
@@ -21073,11 +21098,14 @@ function renderSaju(){
   /* ★ 2026-10-18 대표님 지시 "내 사주 풀이 읽어보기를 위로 올리고 그 텍스트박스는 지우자" — 대운 카드 아래의 잠금 상자
      ('N개 구간 상세가 잠겨 있어요')를 지우고, 그 자리에 풀이로 가는 단추를 둔다. 해 고르기·결제는 풀이 화면 맨 위에서 한다.
      잠긴 구간을 누르면 뜨는 창 안의 잠금 카드는 그대로다. */
-  view.appendChild(circleCTA(CTA_ICON.arrow, '내 사주 풀이 읽어보기', function(){ ROUTE='report13'; render(); }));
-
+  /* ★ 2026-10-21 대표님 지시 "윗줄 올해 월별 운세, 내 사주 풀이 읽어보기로 바꾸고 올해 월별 운세 보기는 리뷰 버튼으로 바꾸자" —
+     원 단추를 빼고 윗줄 두 칸, 그 아래 한 줄은 [후기 남기기]. */
   /* ★ 2026-10-18 대표님 지시 "세운 지워라" — 10-16 에 넣었던 '해마다 바뀌는 흐름 · 세운' 띠를 뺐다. 되살리지 마십시오. */
-
-  view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ ROUTE='monthlyFortune'; render(); }},[(VIEW_YEAR === kstYearOf(Date.now()) ? '올해' : VIEW_YEAR+'년')+' 월별 운세 보기']));
+  view.appendChild(el('div',{class:'btn-row', style:'margin-top:14px;'},[
+    el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='monthlyFortune'; render(); }},[(VIEW_YEAR === kstYearOf(Date.now()) ? '올해' : VIEW_YEAR+'년')+' 월별 운세']),
+    el('button',{class:'btn btn-primary btn-sm', onclick:function(){ ROUTE='report13'; render(); }},['내 사주 풀이 읽어보기'])
+  ]));
+  view.appendChild(reviewButton(sajuProductId(), '내 사주 풀이, 어떠셨어요?'));
   /* ★ R92 — 친구 사주를 봐주는 길. 이 화면에서 가장 자주 그 생각이 든다(대표님 제보). */
   /* ★ 2026-10-04 — 같은 모양 단추 넷이 세로로 쌓여 있었다. 곁가지 둘은 한 줄로 묶는다. */
   view.appendChild(el('div',{class:'btn-row', style:'margin-top:4px;'},[
@@ -21420,6 +21448,7 @@ function renderReport13(){
   view.appendChild(sumCard);
 
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ openShareModal('saju', p, saju); }},['이 풀이 요약 카드로 저장하기']));
+  view.appendChild(reviewButton(sajuProductId()));
   view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   view.appendChild(glossaryLinkButton());
   main.appendChild(autoTermify(view));
@@ -21463,6 +21492,7 @@ function renderMbtiReport13(){
   /* ★ 2026-10-16 검수 — 맨 아래 '4지표 요약' 카드를 뺐다. 같은 네 지표가 내 성격유형 화면과 풀이 2장에 이미 있다(세 번째였다). */
 
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ openShareModal('mbtiReport', p, null); }},['이 풀이 요약 카드로 저장하기']));
+  view.appendChild(reviewButton('mbti_full'));
   view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   view.appendChild(buildNoteFold('이 글을 어떻게 봐야 하나요?',
     '성격유형은 사람을 가두는 틀이 아니라 자신을 이해하는 참고 자료예요. 여기 담긴 문구는 유형별 경향을 조합해 만든 콘텐츠라, 사람마다 실제 모습은 다를 수 있어요.'));
@@ -22634,6 +22664,7 @@ function renderCompatSummary(p, draft){
     COMPAT_DRAFT=null; COMPAT_SUB=null; COMPAT_VIEW='pair'; setRoute('compat'); render(); scrollToTopNow();
   }},['다른 사람과도 궁합 보기']));
   box.appendChild(actions);
+  var rvb = reviewButton('compat_full', '이 궁합, 어떠셨어요?'); if(rvb){ rvb.style.marginTop = '8px'; box.appendChild(rvb); }
   box.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
   box.appendChild(compatDisclaimerFold());
   box.appendChild(crossSell('toSelf'));

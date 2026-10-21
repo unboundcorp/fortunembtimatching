@@ -1,11 +1,13 @@
 /* =====================================================================
    후기 (2026-10-19 대표님 지시 "3) 후기 해라" — 동백당 분석에서 나온 제안)
    ---------------------------------------------------------------------
-   ① 결제한 분이 유료 풀이 끝에서 별점과 한 줄을 남긴다(상품마다 한 번 · 고치면 다시 '검토 대기')
+   ① 누구든(결제 여부와 상관없이) 풀이 끝에서 별점과 한 줄을 남긴다(상품마다 한 번 · 고치면 다시 '검토 대기')
+      ★ 2026-10-21 대표님 지시 "후기는 결제하지 않은 사람도 누구든 쓸 수 있게 하자" — 예전엔 산 분만 썼다.
+        산 분인지는 bought 칸에 적고, 손님 화면은 산 분 글에만 '구매' 표시를 붙인다(산 것처럼 보이게 하지 않음).
    ② 운영자가 관리자 화면에서 [공개]/[숨김]을 고른다
    ③ **운영자가 공개로 고른 것만** 손님 화면(결제 단추 위)에 보인다. 공개한 것이 없으면 아무것도 안 보인다.
 
-   ★ 후기를 지어내지 마십시오. 이 표에 들어오는 것은 결제(또는 테스트 허가)가 확인된 세션이 쓴 글뿐이고,
+   ★ 후기를 지어내지 마십시오. 이 표에 들어오는 것은 실제 손님 세션이 쓴 글뿐이고,
      화면은 이 표의 public 줄만 그대로 보여 줍니다. 테스트 허가로 쓴 글은 tester=true 로 남습니다 —
      운영자 화면이 그 표시를 보여 주므로 공개하지 마십시오(표시광고법상 거짓 후기가 됩니다).
    ★ 이름은 서버에서 가린다(첫 글자 + *). 화면이 보낸 이름을 그대로 내보내지 않는다.
@@ -25,6 +27,7 @@
        tester boolean not null default false,
        unique (session_id, product)
      );
+     alter table reviews add column if not exists bought boolean;   -- 2026-10-21 (없으면 bought 없이 저장 · 표시 안 붙음)
      alter table reviews enable row level security;
 ===================================================================== */
 import { readBody, json } from './_lib/http.js';
@@ -69,7 +72,7 @@ function missingTable(err) {
 /* 이름 가리기 — 첫 글자만 남긴다. 이름이 없으면 '구매자' */
 export function maskNick(name) {
   const s = Array.from(String(name || '').replace(/\s+/g, '').trim());
-  if (!s.length) return '구매자';
+  if (!s.length) return '손님';
   return s[0] + '*'.repeat(Math.max(1, Math.min(3, s.length - 1)));
 }
 
@@ -81,7 +84,9 @@ export function boughtProduct(orders, product) {
   });
 }
 
-const publicRow = (r) => ({ stars: r.stars, text: r.body, nick: r.nick || '구매자', at: r.updated_at || r.created_at });
+const publicRow = (r) => ({ stars: r.stars, text: r.body, nick: r.nick || '손님', bought: r.bought === true, at: r.updated_at || r.created_at });
+/* bought 칸이 아직 없는 표(대표님이 alter 를 돌리기 전) */
+const missingBought = (e) => e && /bought/i.test(String(e.body || e.message)) && /column|42703|PGRST204|schema cache/i.test(String(e.body || e.message));
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -102,8 +107,10 @@ export default async function handler(req, res) {
     if (body.action === 'public') {
       if (!product) return json(res, 400, { error: 'bad_request' });
       let rows = [];
+      const q = (cols) => rest(`reviews?product=eq.${product}&status=eq.public&select=${cols}&order=updated_at.desc&limit=20`);
       try {
-        rows = await rest(`reviews?product=eq.${product}&status=eq.public&select=stars,body,nick,created_at,updated_at&order=updated_at.desc&limit=20`);
+        try { rows = await q('stars,body,nick,bought,created_at,updated_at'); }
+        catch (e) { if (!missingBought(e)) throw e; rows = await q('stars,body,nick,created_at,updated_at'); }
       } catch (e) { if (!missingTable(e)) throw e; }
       const items = (rows || []).map(publicRow);
       const avg = items.length ? Math.round(items.reduce((a, r) => a + r.stars, 0) / items.length * 10) / 10 : 0;
@@ -115,7 +122,7 @@ export default async function handler(req, res) {
       if (!product) return json(res, 400, { error: 'bad_request' });
       const [orders, tester] = await Promise.all([paidOrdersOf(sessionId), testPassOf(sessionId)]);
       const bought = boughtProduct(orders, product);
-      const canWrite = bought || !!tester;
+      const canWrite = true;   /* 2026-10-21 — 누구든 */
 
       if (body.action === 'mine') {
         let row = null;
@@ -126,7 +133,6 @@ export default async function handler(req, res) {
         return json(res, 200, { canWrite, mine: row ? { stars: row.stars, text: row.body, status: row.status } : null, ready: true });
       }
 
-      if (!canWrite) return json(res, 403, { error: 'not_bought', reason: '결제한 풀이에만 후기를 남길 수 있어요.' });
       const stars = Math.round(Number(body.stars));
       const text = String(body.text == null ? '' : body.text).replace(/\s+/g, ' ').trim().slice(0, REVIEW_MAX);
       if (!(stars >= 1 && stars <= 5)) return json(res, 400, { error: 'bad_request', reason: '별점을 골라 주세요.' });
@@ -135,15 +141,17 @@ export default async function handler(req, res) {
       try { const k = await kakaoLinkOfSession(sessionId); kakaoId = k ? k.kakao_id : null; } catch (e) {}
       const row = {
         session_id: sessionId, kakao_id: kakaoId, product, stars, body: text,
-        nick: maskNick(body.nick), status: 'pending', tester: !bought && !!tester,
+        nick: maskNick(body.nick), status: 'pending', tester: !bought && !!tester, bought,
         updated_at: new Date().toISOString(),
       };
+      const save = (r) => rest('reviews?on_conflict=session_id,product', {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(r),
+      });
       try {
-        await rest('reviews?on_conflict=session_id,product', {
-          method: 'POST',
-          headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-          body: JSON.stringify(row),
-        });
+        try { await save(row); }
+        catch (e) { if (!missingBought(e)) throw e; const { bought: _b, ...rest2 } = row; await save(rest2); }
       } catch (e) {
         if (missingTable(e)) return json(res, 503, { error: 'not_ready', reason: '후기 받기를 준비하고 있어요. 잠시 뒤 다시 남겨 주세요.' });
         throw e;

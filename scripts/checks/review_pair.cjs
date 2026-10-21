@@ -1,7 +1,7 @@
 /* =====================================================================
    후기 창구 (빠른 층) — 2026-10-19 대표님 "3) 후기 해라"
    가짜 DB 로 api/review.js 를 실제로 돌린다.
-   ① 산 적 없으면 못 쓴다(403) ② 산 사람은 쓴다 — 이름은 가려서, 상태는 대기로
+   ① 산 적 없어도 쓴다(2026-10-21 대표님 지시) · bought=false ② 산 사람은 쓴다 — 이름은 가려서, 상태는 대기로
    ③ 이용권으로 산 사람도 쓴다 ④ 테스트 허가로 쓰면 tester=true
    ⑤ 손님 'public' 은 status=public 만 묻는다 ⑥ 관리자 창구는 운영자 아니면 404
    ⑦ 표가 아직 없으면 손님 화면은 '없음'(터지지 않음)
@@ -42,18 +42,20 @@ let ORDERS = [], GRANT = null, TABLE = true, WRITES = [], QUERIES = [];
 
   ORDERS = []; GRANT = null;
   let o = await call(W);
-  R.note(o.status === 403 && WRITES.length === 0, '① 산 적 없으면 못 쓴다', o.status);
+  R.note(o.status === 200 && WRITES.length === 1 && WRITES[0].bought === false && WRITES[0].tester === false, '① 산 적 없어도 쓴다 · 구매 아님 표시', o.status + ' ' + JSON.stringify(WRITES[0]));
+  o = await call({action:'mine', product:'saju_full'});
+  R.note(o.status === 200 && o.body.canWrite === true, '① 산 적 없어도 후기 칸이 열린다(canWrite)', JSON.stringify(o.body));
 
   ORDERS = [{product_id:'saju_full:2027', status:'paid'}];
   o = await call(W);
   const w = WRITES[WRITES.length-1] || {};
-  R.note(o.status === 200 && w.status === 'pending' && w.tester === false && w.stars === 5, '② 산 사람은 쓴다 · 상태 대기 · 테스트 아님', JSON.stringify(w));
+  R.note(o.status === 200 && w.status === 'pending' && w.tester === false && w.bought === true && w.stars === 5, '② 산 사람은 쓴다 · 상태 대기 · 구매 표시', JSON.stringify(w));
   R.note(w.nick === '김**' && !/가영/.test(JSON.stringify(w)), '② 이름은 첫 글자만', w.nick);
   R.note(w.body === '어린 시절 얘기가 딱 맞았어요' && w.kakao_id === 'k9', '② 글 다듬기 · 카카오 번호', JSON.stringify(w.body));
   R.note(QUERIES.some(q => /on_conflict=session_id%2Cproduct|on_conflict=session_id,product/.test(q)), '② 상품마다 한 번(고치면 덮어씀)');
 
   o = await call({action:'write', product:'mbti_full', stars:4, text:'좋아요', nick:''});
-  R.note(o.status === 403, '② 사주를 샀다고 성격유형 후기를 쓸 수는 없다', o.status);
+  R.note(o.status === 200 && (WRITES[WRITES.length-1]||{}).bought === false, '② 사주를 산 분의 성격유형 후기는 구매 아님으로 적힌다', o.status);
 
   ORDERS = [{product_id:'premium_pass:2026', status:'paid'}];
   o = await call({action:'write', product:'compat_full', stars:4, text:'좋아요', nick:''});
