@@ -38,19 +38,19 @@ const wait = L.wait;
     R.note(/출시 기념가 1,900원으로 열기/.test(lockTxt), '① 잠금 단추에 출시 기념가', lockTxt);
     await p.evaluate(function(){ window.__INYEON_TEST__.openPaywall(window.__INYEON_TEST__.PRODUCTS.mbti_full); }); await wait(600);
     const pay = await p.evaluate(function(){ var x = document.querySelector('.modal-box .pay-launch'); return x ? x.textContent : ''; });
-    R.note(pay === '출시 기념가 · 12월 31일까지1월 1일부터 2,900원', '① 결제창에 끝나는 날과 바뀔 값', pay);
+    R.note(pay === '출시 기념가 · 10월 31일까지11월 1일부터 2,900원', '① 결제창에 끝나는 날과 바뀔 값', pay);
     await p.evaluate(function(){ document.querySelectorAll('.modal-box button').forEach(function(b){ if(/닫기/.test(b.textContent)) b.click(); }); });
     await p.evaluate(function(){ window.__INYEON_TEST__.goRoute('pricing'); }); await wait(800);
     const pr = await p.evaluate(function(){ return document.querySelector('#main').innerText; });
-    R.note((pr.match(/2027년 1월 1일부터/g)||[]).length === 4 && /1월 1일부터 1,500원/.test(pr) && /1월 1일부터 5,900원/.test(pr), '① 상품과 가격에 네 상품 모두 바뀔 값', (pr.match(/1월 1일부터 [\d,]+원/g)||[]).join(' · '));
+    R.note((pr.match(/11월 1일부터/g)||[]).length === 4 && /11월 1일부터 1,500원/.test(pr) && /11월 1일부터 5,900원/.test(pr) && !/12월 31일까지/.test(pr), '① 상품과 가격에 네 상품 모두 바뀔 값', (pr.match(/11월 1일부터 [\d,]+원/g)||[]).join(' · '));
     const s1 = await p.evaluate(function(){ return document.querySelectorAll('#main s, .modal-box s').length; });
     await p.close();
 
     /* ② 1월 1일 00:00:05 (한국) */
-    const q = await open(Date.UTC(2026, 11, 31, 15, 0, 5));
+    const q = await open(Date.UTC(2026, 9, 31, 15, 0, 5));   /* 한국 11월 1일 00:00:05 */
     const t2 = await q.evaluate(function(){ var H = window.__INYEON_TEST__, P = H.PRODUCTS;
       return {active: H.launchPriceActive(), prices:[P.saju_full.price, P.mbti_full.price, P.compat_full.price, P.premium_pass.price]}; });
-    R.note(!t2.active && t2.prices.join(',') === '2900,2900,1500,5900', '② 1월 1일 0시가 지나면 새 값', JSON.stringify(t2));
+    R.note(!t2.active && t2.prices.join(',') === '2900,2900,1500,5900', '② 11월 1일 0시가 지나면 새 값', JSON.stringify(t2));
     await q.evaluate(function(){ window.__INYEON_TEST__.goRoute('pricing'); }); await wait(800);
     const pr2 = await q.evaluate(function(){ return document.querySelector('#main').innerText; });
     R.note(!/출시 기념가/.test(pr2) && /2,900원/.test(pr2) && /5,900원/.test(pr2), '② 상품과 가격 — 새 값 · 기념가 글자 없음');

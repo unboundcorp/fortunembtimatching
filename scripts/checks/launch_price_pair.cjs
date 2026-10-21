@@ -19,7 +19,7 @@ const R = reporter('출시 기념가 자동 전환');
   const P = await import('file://' + path.join(ROOT, 'api/_lib/products.js'));
   R.note(cliUntil === P.LAUNCH_PRICE_UNTIL, '① 끝나는 시각이 화면·서버 같다', cliUntil + ' / ' + P.LAUNCH_PRICE_UNTIL);
   R.note(JSON.stringify(cliAfter) === JSON.stringify(P.AFTER_LAUNCH_PRICE), '① 바뀐 값이 화면·서버 같다', JSON.stringify(cliAfter));
-  R.note(new Date(P.LAUNCH_PRICE_UNTIL).toISOString() === '2026-12-31T15:00:00.000Z', '② 한국 시각 2027-01-01 00:00', new Date(P.LAUNCH_PRICE_UNTIL).toISOString());
+  R.note(new Date(P.LAUNCH_PRICE_UNTIL).toISOString() === '2026-10-31T15:00:00.000Z', '② 한국 시각 2026-11-01 00:00 (10-22 당김)', new Date(P.LAUNCH_PRICE_UNTIL).toISOString());
   R.note(JSON.stringify(P.AFTER_LAUNCH_PRICE) === JSON.stringify({saju_full:2900, mbti_full:2900, compat_full:1500, premium_pass:5900}), '④ A안 값');
   const realNow = Date.now;
   function at(ms, id){ Date.now = () => ms; try{ const p = P.productOf(id); return p && p.price; } finally { Date.now = realNow; } }
@@ -27,7 +27,7 @@ const R = reporter('출시 기념가 자동 전환');
   const rows = [['saju_full:2026',1900,2900],['saju_full:2027',1900,2900],['mbti_full',1900,2900],['compat_full',990,1500],['premium_pass:2027',3900,5900]];
   rows.forEach(([id, b, a]) => {
     const pb = at(before, id), pa = at(aft, id);
-    R.note(pb === b && pa === a, '③ ' + id + ' — 12/31 23:59:59 ' + b + ' · 1/1 00:00 ' + a, pb + ' → ' + pa);
+    R.note(pb === b && pa === a, '③ ' + id + ' — 10/31 23:59:59 ' + b + ' · 11/1 00:00 ' + a, pb + ' → ' + pa);
   });
   R.note(P.PRODUCTS.saju_full.price === 1900, '③ 상품표 자체(기념가)는 안 바뀐다 — 값은 productOf 가 그때그때');
   R.done();
