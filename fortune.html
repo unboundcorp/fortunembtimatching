@@ -2621,6 +2621,29 @@ body.admin-on .mode-fab{display:none !important;}
 .cross-sell .cs-desc{color:var(--ink-dim);font-size:.84rem;line-height:1.7;
   margin:6px 0 14px;word-break:keep-all;}
 .cross-sell .btn{display:flex;align-items:center;justify-content:center;gap:4px;}
+/* 궁합 링크 권유 카드(buildInviteNudge) — 2026-10-22. 붉은 테두리로 crossSell 보다 한 단 눈에 띄게 */
+.inv-nudge{margin-top:20px;padding:20px 16px 18px;border-radius:var(--r-lg);background:var(--panel-3);border:1.5px solid rgba(180,30,48,.35);}
+.inv-nudge .inv-title{font-family:var(--sans);font-size:1.12rem;font-weight:800;line-height:1.45;letter-spacing:-.02em;margin:0 0 6px;color:var(--ink);word-break:keep-all;}
+.inv-nudge .inv-title b{color:var(--brand);}
+.inv-nudge .inv-lead{color:var(--ink-dim);font-size:.84rem;line-height:1.7;margin:0 0 12px;word-break:keep-all;}
+.inv-pair{display:flex;align-items:center;justify-content:center;gap:10px;margin:4px 0 10px;}
+.inv-av{width:96px;text-align:center;font-size:.76rem;color:var(--ink-dim);}
+.inv-av img{border-radius:50%;background:var(--paper-raised);border:1px solid var(--gold-line);display:block;margin:0 auto 4px;}
+.inv-q{width:72px;height:72px;border-radius:50%;border:2px dashed rgba(180,30,48,.5);display:flex;align-items:center;justify-content:center;font-size:1.9rem;font-weight:800;color:var(--brand);margin:0 auto 4px;background:var(--paper-raised);animation:invPulse 1.6s infinite;}
+.inv-q.many{font-size:1.15rem;}
+.inv-x{font-size:1.3rem;font-weight:800;color:var(--brand);}
+@keyframes invPulse{0%,100%{box-shadow:0 0 0 0 rgba(180,30,48,.25)}50%{box-shadow:0 0 0 9px rgba(180,30,48,0)}}
+@media (prefers-reduced-motion:reduce){.inv-q{animation:none;}}
+.inv-miss{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 14px;}
+.inv-miss span{font-size:.76rem;padding:5px 10px;border-radius:999px;background:var(--gold-soft);color:var(--brand);font-weight:700;}
+.inv-seg{display:grid;grid-template-columns:1fr 1fr;background:var(--btn-soft);border-radius:12px;padding:4px;margin-bottom:10px;}
+.inv-seg button{min-height:40px;border:0;border-radius:9px;background:none;font-family:var(--sans);font-size:.88rem;font-weight:600;color:var(--ink-dim);cursor:pointer;}
+.inv-seg button[aria-pressed="true"]{background:var(--paper-raised);color:var(--ink);font-weight:800;box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.inv-cap{font-size:.76rem;color:var(--ink-faint);margin:0 0 6px 2px;}
+.inv-rel{display:grid;gap:6px;margin-bottom:12px;}
+.inv-rel button{min-height:44px;border:1px solid var(--gold-line);border-radius:10px;background:var(--paper-raised);font-family:var(--sans);font-size:.84rem;color:var(--ink);cursor:pointer;padding:0 2px;}
+.inv-rel button[aria-pressed="true"]{border-color:var(--brand);color:var(--brand);font-weight:700;background:var(--gold-soft);}
+.inv-send{background:var(--brand)!important;color:#fff!important;border-color:var(--brand)!important;}
 .link-btn{display:block;margin:4px auto 0;min-height:44px;padding:10px 12px;background:none;border:0;cursor:pointer;
   font-family:var(--sans);font-size:.84rem;font-weight:600;color:var(--ink-dim);
   text-decoration:underline;text-decoration-color:var(--gold-line);text-underline-offset:4px;}
@@ -20556,6 +20579,82 @@ function crossSell(kind){
   return card;
 }
 
+/* =====================================================================
+   궁합 링크 권유 카드 — 2026-10-22 대표님 "그래 만들어 봐" → 시안 2
+   · "둘이서 보기 여럿이서 보기가 맞지 않냐" · "궁합 링크 보내기만 넣어" · "맨 밑에 안내 멘트는 필요 없다"
+   · "무료 친구도 무료 버튼도 필요 없어"
+   ---------------------------------------------------------------------
+   예전 crossSell('toCompat') 은 궁합 탭으로 보내기만 해서 링크를 만들기까지 네 번을 더 눌러야 했다
+   (광고를 돌린 10/18~21 궁합 링크 0개). 이제 카드 안에서 둘이서/여럿이서 · 사이를 고르고
+   [궁합 링크 보내기] 한 번으로 초대 창(openInviteLinkModal — 링크 · 자동 복사 · 공유)을 연다.
+   ★ 걸이는 계산된 사실만 쓴다 — 하나도 없는 기운(elemReadFacts.missing), 없으면 가장 적은 기운과 그 개수. 새 점수 없음.
+   ★ 여럿이서면 연인을 뺀다(groupRelations · 2026-09-07 규칙). 연인을 고른 채 여럿이서로 바꾸면 친구로 돌린다.
+   ★ 대표님이 뺀 것 — 아래 '링크 복사 · 여럿이서 보기' 줄 · 맨 아래 안내 두 줄 · '무료 · 친구도 무료' 딱지. 되살리지 마십시오.
+===================================================================== */
+var INVITE_NUDGE = {pair:true, rel:'friend'};
+function inviteNudgeFacts(p){
+  try{
+    var saju = getSajuResult(p), f = elemReadFacts(saju);
+    var list = f.missing.length ? f.missing.slice() : [f.lack];
+    return {saju:saju, list:list, zero:f.missing.length > 0, count:f.lackCount, counts:f.counts,
+      dayElem: SajuEngine.STEM_ELEM[saju.day.stemIdx]};
+  }catch(e){ return null; }
+}
+function buildInviteNudge(p){
+  var card = el('div',{class:'inv-nudge copy-skip'});
+  function paint(){
+    card.innerHTML = '';
+    var f = inviteNudgeFacts(p);
+    var nm = String(p && p.name || '').trim();
+    var who = nm ? nm + '님 사주엔' : '내 사주엔';
+    var h = el('h3',{class:'inv-title'});
+    if(f){
+      var names = f.list.map(function(i){ return ELEM_PROFILE[i].name; }).join('·');
+      h.appendChild(document.createTextNode(who)); h.appendChild(el('br'));
+      h.appendChild(el('b',{},[names + ' 기운']));
+      h.appendChild(document.createTextNode(f.zero ? '이 하나도 없어요' : '이 ' + f.count + '개뿐이에요'));
+    } else {
+      h.appendChild(document.createTextNode('다른 사람과 궁합도 볼까요?'));
+    }
+    card.appendChild(h);
+    if(f) card.appendChild(el('p',{class:'inv-lead'},['그 기운을 가진 사람과는 서로 채워 주는 사이가 될 수 있어요. 누가 그런 사람인지 궁합으로 확인해 보세요.']));
+    var me = f ? charKeyForElementIdx(f.dayElem) : null;
+    var pair = el('div',{class:'inv-pair','aria-hidden':'true'});
+    pair.appendChild(el('div',{class:'inv-av'},[me ? buildCharSvg(me, 72) : el('div',{class:'inv-q'},['나']),
+      (nm || '나') + (f ? ' · ' + ELEM_PROFILE[f.dayElem].name : '')]));
+    pair.appendChild(el('div',{class:'inv-x'},['×']));
+    pair.appendChild(el('div',{class:'inv-av'},[el('div',{class:'inv-q' + (INVITE_NUDGE.pair ? '' : ' many')},[INVITE_NUDGE.pair ? '?' : '?·?·?']),
+      INVITE_NUDGE.pair ? '누구일까?' : '최대 ' + GC_MAX + '명']));
+    card.appendChild(pair);
+    if(f){
+      card.appendChild(el('div',{class:'inv-miss'}, f.list.map(function(i){
+        return el('span',{},[ELEM_ICON[i] + ' ' + ELEM_PROFILE[i].name + ' ' + f.counts[i] + '개']);
+      })));
+    }
+    var seg = el('div',{class:'inv-seg', role:'group', 'aria-label':'몇 명이서 볼까요'});
+    [[true,'둘이서'],[false,'여럿이서']].forEach(function(o){
+      seg.appendChild(el('button',{type:'button','aria-pressed': String(INVITE_NUDGE.pair === o[0]), onclick:function(){
+        INVITE_NUDGE.pair = o[0];
+        if(!o[0] && isPairOnlyRelation(INVITE_NUDGE.rel)) INVITE_NUDGE.rel = 'friend';
+        paint();
+      }},[o[1]]));
+    });
+    card.appendChild(seg);
+    card.appendChild(el('p',{class:'inv-cap'},['어떤 사이인가요?']));
+    var rels = INVITE_NUDGE.pair ? COMPAT_RELATIONS : groupRelations();
+    var relRow = el('div',{class:'inv-rel', role:'group', 'aria-label':'어떤 사이인가요', style:'grid-template-columns:repeat(' + rels.length + ',1fr);'});
+    rels.forEach(function(r){
+      relRow.appendChild(el('button',{type:'button','aria-pressed': String(INVITE_NUDGE.rel === r.key), onclick:function(){ INVITE_NUDGE.rel = r.key; paint(); }},[r.label]));
+    });
+    card.appendChild(relRow);
+    card.appendChild(el('button',{class:'btn btn-primary btn-block inv-send', type:'button', onclick:function(){
+      openInviteLinkModal(p, INVITE_NUDGE.rel, INVITE_NUDGE.pair);
+    }},['궁합 링크 보내기']));
+  }
+  paint();
+  return card;
+}
+
 function renderHome(){
   var main=$('#main'); main.innerHTML='';
   var p = activeProfile();
@@ -20859,7 +20958,7 @@ function renderReport(){
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('report', p, null); }},['리포트 요약 공유하기']));
   view.appendChild(copyAllButton(reviewButton('mbti_full', '내 성격유형 풀이, 어떠셨어요?')));   /* R84 — 화면 글 전체 복사 */
   /* R50 — 여기까지 본 사람에게 다른 서비스를 권한다. 두 서비스가 서로를 모르면 한쪽만 쓰고 끝난다. */
-  view.appendChild(crossSell('toCompat'));
+  view.appendChild(buildInviteNudge(p));
   view.appendChild(glossaryLinkButton());
   main.appendChild(autoTermify(view));
 }
@@ -21158,7 +21257,7 @@ function renderSaju(){
   view.appendChild(copyAllButton(reviewButton(sajuProductId(), '내 사주 풀이, 어떠셨어요?')));   /* R84 — 화면 글 전체 복사 */
   /* ★ R53 — 내 사주에도 궁합 권유를 넣는다(대표님 지적: MBTI에만 있었다).
      이 화면이 사주 쪽에서 가장 오래 머무는 자리인데 여기가 비어 있었다. */
-  view.appendChild(crossSell('toCompat'));
+  view.appendChild(buildInviteNudge(p));
   view.appendChild(glossaryLinkButton());
   main.appendChild(autoTermify(view));
 }
@@ -28566,7 +28665,7 @@ function openMoreSheet(){
    궁합 요약 화면의 결제 버튼("궁합 상세 열기 · 1,900원")은 .locked-cta 밖에 있어서
    이 회피 장치가 안 걸렸고, 떠 있는 단추가 그 버튼을 44x34px 덮어
    "1,900원"이 "1,90("으로 잘려 보였다(실측). 돈 받는 버튼을 가리는 건 가장 나쁜 겹침이다. */
-var FAB_AVOID = '#main .locked-cta, #main .pitch-card, #main .csb-verdict, #main .cross-sell';   /* ★ 2026-10-04 QA — 궁합 총평 문장 · 긴 풀이 권유 상자 */
+var FAB_AVOID = '#main .locked-cta, #main .pitch-card, #main .csb-verdict, #main .cross-sell, #main .inv-nudge';   /* ★ 2026-10-04 QA — 궁합 총평 문장 · 긴 풀이 권유 상자 */
 function updateFabAway(){
   var fab = document.getElementById('modeFab');
   if(!fab) return;
@@ -29656,7 +29755,7 @@ try{
       groupMyMemberIdx: groupMyMemberIdx, groupMyRowStale: groupMyRowStale,
       /* 2026-09-22 — 결제 취소 복귀 검사(checks-slow/pay_cancel.cjs)가 쓴다 */
       notePayPosition: notePayPosition, route: function(){ return ROUTE; }, goRoute: function(r){ setRoute(r); }, openPairDeep: function(ai, bi){ PAIR_DEEP = {ai:ai, bi:bi}; setRoute('pairDeep'); }, screenTextForCopy: screenTextForCopy, screenImagePages: screenImagePages, openScreenImages: openScreenImages, pgDraw: pgDraw, startService: startService, finishConsent: finishConsent, adGoPending: adGoPending, viewYear: function(){ return VIEW_YEAR; }, setViewYear: function(y){ VIEW_YEAR = y; render(); }, buildReport13: buildReport13, getSajuResult: getSajuResult, aiYearWords: aiYearWords, buildMonthlyFortune: buildMonthlyFortune, sectionsByTitle: sectionsByTitle, SajuEngine: SajuEngine, sajuPayload: function(y){ var pr=activeProfile(), s=getSajuResult(pr), v=VIEW_YEAR; VIEW_YEAR=y; var o=Interpreter.buildSajuPayload(pr,s); VIEW_YEAR=v; return o; }, parseSections: function(t, ti){ return Interpreter.parseSections(t, ti); }, setupFill: function(o){ for(var k in o) SETUP[k]=o[k]; if(SETUP.touched) Object.keys(SETUP.touched).forEach(function(k){ SETUP.touched[k]=true; }); gotoSetupStep(3); },
-      elemReadFacts: elemReadFacts, buildSajuHook: buildSajuHook, buildMbtiHook: buildMbtiHook, buildCompatWeave: buildCompatWeave,
+      elemReadFacts: elemReadFacts, ELEM_PROFILE: ELEM_PROFILE, buildSajuHook: buildSajuHook, buildMbtiHook: buildMbtiHook, buildCompatWeave: buildCompatWeave,
       buildCompatHook: buildCompatHook, compatWeaveFacts: compatWeaveFacts, buildElemReading: function(sj){ var b = buildElemReading(sj, false); return b ? b.innerText : ''; },
       Interpreter: Interpreter, pairDeep: function(){ return PAIR_DEEP; }, compatSub: function(){ return COMPAT_SUB; },
       reopenCompat: reopenCompatFromHistory,
