@@ -88,13 +88,21 @@ const wait = L.wait;
     R.note(lockBtn, '③ 결제 안 한(잠긴) 사주 풀이에도 [후기 남기기]가 있다 (2026-10-21)');
     const dated = await p.evaluate(function(){ var r = document.querySelector('#main .locked-block .rv-pub-row'); return r ? r.innerText : ''; });
     R.note(/10월 19일/.test(dated), '② 공개 후기에 날짜', dated);
-    /* 내 사주 화면 — 윗줄 [올해 월별 운세][내 사주 풀이 읽어보기] · 아래 [후기 남기기] */
+    /* 내 사주 화면 — ★ 2026-10-21 대표님 "아래꺼 괜찮네": 큰 단추 [내 사주 풀이 읽어보기] → 두 칸 [올해 월별 운세][요약 카드 저장하기]
+       → 글자 링크 줄(복사 · 이미지로 저장 · 후기 남기기). [후기 남기기]·[이미지로 저장]은 붉은 글씨. [다른 사람 사주 보기]는 없음. */
     await p.evaluate(function(){ window.__INYEON_TEST__.goRoute('saju'); }); await wait(1500);
     const sj = await p.evaluate(function(){
-      var row = [].slice.call(document.querySelectorAll('#main .btn-row')).filter(function(r){ return /월별 운세/.test(r.innerText) && /풀이 읽어보기/.test(r.innerText); })[0];
+      var btns = [].slice.call(document.querySelectorAll('#main button'));
+      var big = btns.filter(function(b){ return /^\s*내 사주 풀이 읽어보기\s*$/.test(b.textContent) && /btn-block/.test(b.className); })[0];
+      var row = [].slice.call(document.querySelectorAll('#main .btn-row')).filter(function(r){ return /월별 운세/.test(r.innerText) && /요약 카드 저장하기/.test(r.innerText); })[0];
       var rv = document.querySelector('#main .rv-open');
-      return {row: !!row, after: !!(row && rv && (row.compareDocumentPosition(rv) & Node.DOCUMENT_POSITION_FOLLOWING)), circle: /내 사주 풀이 읽어보기/.test([].slice.call(document.querySelectorAll('#main .circle-cta, #main .cta-circle')).map(function(x){return x.innerText;}).join(' ')), solo: [].slice.call(document.querySelectorAll('#main button')).some(function(b){ return /^\s*올해 월별 운세 보기\s*$/.test(b.textContent); })}; });
-    R.note(sj.row && sj.after && !sj.solo, '⑥ 내 사주 — 윗줄 두 칸 · 아래 [후기 남기기] · 옛 [올해 월별 운세 보기] 줄 없음', JSON.stringify(sj));
+      var red = 'rgb(180, 30, 48)';
+      var img = btns.filter(function(b){ return /^\s*이미지로 저장\s*$/.test(b.textContent); })[0];
+      return {big: !!big, row: !!row, order: !!(big && row && (big.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        inLinks: !!(rv && rv.closest('.copy-links')), rvRed: !!(rv && getComputedStyle(rv).color === red), imgRed: !!(img && getComputedStyle(img).color === red),
+        other: btns.some(function(b){ return /다른 사람 사주 보기/.test(b.textContent); }),
+        solo: btns.some(function(b){ return /^\s*올해 월별 운세 보기\s*$/.test(b.textContent); })}; });
+    R.note(sj.big && sj.row && sj.order && sj.inLinks && sj.rvRed && sj.imgRed && !sj.other && !sj.solo, '⑥ 내 사주 — 큰 단추 하나 · 두 칸 · 링크 줄의 붉은 [후기 남기기]·[이미지로 저장] · [다른 사람 사주 보기] 없음', JSON.stringify(sj));
     await p.close();
     /* 공개 후기가 없으면 아무것도 안 보인다 */
     p = await open(false);

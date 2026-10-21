@@ -633,6 +633,8 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + var(--tabbar-h) + env(safe-are
    글이 길어 한 줄에 안 들어가면 다음 줄로 넘어가 그 줄을 채운다. */
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;}
 .btn-row > .btn{flex:1 1 0;min-width:fit-content;}
+/* ★ 2026-10-21 — 두 칸이 늘 같은 너비여야 하는 줄(내 사주 [올해 월별 운세][요약 카드 저장하기]). 320 에서 글이 긴 쪽이 넓어지던 것. */
+.btn-row-even > .btn{min-width:0;padding-left:8px;padding-right:8px;}
 /* R22 — 작은 버튼도 44px 아래로 내려가지 않게 한다(모바일 20-30대 타겟). 글자 크기는 그대로. */
 .btn-sm{padding:11px 16px;font-size:.85rem;min-height:var(--tap);border-radius:var(--r-frame);}
 .btn[disabled]{opacity:.4;cursor:not-allowed;transform:none !important;}
@@ -1066,7 +1068,11 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + var(--tabbar-h) + env(safe-are
 .sit-chips{display:flex;flex-wrap:wrap;gap:6px;}
 .sit-chip{min-height:40px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel-3);font:inherit;font-size:.9rem;color:var(--ink);cursor:pointer;}
 .sit-chip.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700;}
-.copy-links{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px;}
+.copy-links{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 4px;margin-top:6px;}
+.copy-links .link-btn{padding:10px 8px;margin:4px 0 0;}
+@media (max-width:360px){ .copy-links{gap:2px 0;} .copy-links .link-btn{padding:10px 6px;font-size:.78rem;} }
+.link-btn.link-red{color:var(--brand);text-decoration-color:rgba(180,30,48,.35);}
+.link-btn.link-red:hover{color:var(--brand);}
 .pg-list{display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow:auto;}
 .pg-img{width:100%;height:auto;border-radius:10px;border:1px solid var(--line);display:block;}
 .screen-head .sh-seal{width:30px;height:30px;border-radius:999px;background:var(--brand);color:var(--void);
@@ -7936,7 +7942,8 @@ function buildReviewBox(product){
 function reviewButton(productId, label){
   var product = {id:productId};
   if(!reviewBase(product)) return null;
-  return el('button',{class:'btn btn-ghost btn-block rv-open', type:'button', onclick:function(){
+  /* ★ 2026-10-21 — 글자 링크(붉은 글씨)로. copyAllButton(extra) 줄에 함께 선다. */
+  return el('button',{class:'link-btn link-red rv-open', type:'button', onclick:function(){
     var box = buildReviewBox(product); box.__modal = true; paintReviewBox(box, reviewBase(product));
     openModal(label || '이 풀이, 어떠셨어요?', box, [{label:'닫기', cls:'btn-ghost', onclick:closeModal}]);
   }},['후기 남기기']);
@@ -20842,8 +20849,7 @@ function renderReport(){
 
   view.appendChild(circleCTA(CTA_ICON.arrow, '내 성격유형 풀이 읽어보기', function(){ ROUTE='mbtiReport'; render(); }));
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', style:'margin-top:4px;', onclick:function(){ openShareModal('report', p, null); }},['리포트 요약 공유하기']));
-  view.appendChild(reviewButton('mbti_full', '내 성격유형 풀이, 어떠셨어요?'));
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
+  view.appendChild(copyAllButton(reviewButton('mbti_full', '내 성격유형 풀이, 어떠셨어요?')));   /* R84 — 화면 글 전체 복사 */
   /* R50 — 여기까지 본 사람에게 다른 서비스를 권한다. 두 서비스가 서로를 모르면 한쪽만 쓰고 끝난다. */
   view.appendChild(crossSell('toCompat'));
   view.appendChild(glossaryLinkButton());
@@ -21134,18 +21140,14 @@ function renderSaju(){
   /* ★ 2026-10-21 대표님 지시 "윗줄 올해 월별 운세, 내 사주 풀이 읽어보기로 바꾸고 올해 월별 운세 보기는 리뷰 버튼으로 바꾸자" —
      원 단추를 빼고 윗줄 두 칸, 그 아래 한 줄은 [후기 남기기]. */
   /* ★ 2026-10-18 대표님 지시 "세운 지워라" — 10-16 에 넣었던 '해마다 바뀌는 흐름 · 세운' 띠를 뺐다. 되살리지 마십시오. */
-  view.appendChild(el('div',{class:'btn-row', style:'margin-top:14px;'},[
+  /* ★ 2026-10-21 대표님 지시 "아래꺼 괜찮네" (시안 비교) — 단추가 세 줄로 붙어 겹쳐 보였다. 큰 단추는 풀이 하나만,
+     그 아래 두 칸, [후기 남기기]는 글자 링크로 복사·이미지 줄에. [다른 사람 사주 보기]는 뺐다(홈 '다른 사람 사주 봐주기' 카드가 같은 길). */
+  view.appendChild(el('button',{class:'btn btn-primary btn-block', style:'margin-top:16px;', onclick:function(){ ROUTE='report13'; render(); }},['내 사주 풀이 읽어보기']));
+  view.appendChild(el('div',{class:'btn-row btn-row-even', style:'margin-top:10px;'},[
     el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ ROUTE='monthlyFortune'; render(); }},[(VIEW_YEAR === kstYearOf(Date.now()) ? '올해' : VIEW_YEAR+'년')+' 월별 운세']),
-    el('button',{class:'btn btn-primary btn-sm', onclick:function(){ ROUTE='report13'; render(); }},['내 사주 풀이 읽어보기'])
-  ]));
-  view.appendChild(reviewButton(sajuProductId(), '내 사주 풀이, 어떠셨어요?'));
-  /* ★ R92 — 친구 사주를 봐주는 길. 이 화면에서 가장 자주 그 생각이 든다(대표님 제보). */
-  /* ★ 2026-10-04 — 같은 모양 단추 넷이 세로로 쌓여 있었다. 곁가지 둘은 한 줄로 묶는다. */
-  view.appendChild(el('div',{class:'btn-row', style:'margin-top:4px;'},[
-    el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ startSetupWizard(null); render(); }},['다른 사람 사주 보기']),
     el('button',{class:'btn btn-ghost btn-sm', onclick:function(){ openShareModal('saju', p, saju); }},['요약 카드 저장하기'])
   ]));
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
+  view.appendChild(copyAllButton(reviewButton(sajuProductId(), '내 사주 풀이, 어떠셨어요?')));   /* R84 — 화면 글 전체 복사 */
   /* ★ R53 — 내 사주에도 궁합 권유를 넣는다(대표님 지적: MBTI에만 있었다).
      이 화면이 사주 쪽에서 가장 오래 머무는 자리인데 여기가 비어 있었다. */
   view.appendChild(crossSell('toCompat'));
@@ -21481,8 +21483,7 @@ function renderReport13(){
   view.appendChild(sumCard);
 
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ openShareModal('saju', p, saju); }},['이 풀이 요약 카드로 저장하기']));
-  view.appendChild(reviewButton(sajuProductId()));
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
+  view.appendChild(copyAllButton(reviewButton(sajuProductId())));   /* R84 — 화면 글 전체 복사 */
   view.appendChild(glossaryLinkButton());
   main.appendChild(autoTermify(view));
 }
@@ -21525,8 +21526,7 @@ function renderMbtiReport13(){
   /* ★ 2026-10-16 검수 — 맨 아래 '4지표 요약' 카드를 뺐다. 같은 네 지표가 내 성격유형 화면과 풀이 2장에 이미 있다(세 번째였다). */
 
   view.appendChild(el('button',{class:'btn btn-ghost btn-block', onclick:function(){ openShareModal('mbtiReport', p, null); }},['이 풀이 요약 카드로 저장하기']));
-  view.appendChild(reviewButton('mbti_full'));
-  view.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
+  view.appendChild(copyAllButton(reviewButton('mbti_full')));   /* R84 — 화면 글 전체 복사 */
   view.appendChild(buildNoteFold('이 글을 어떻게 봐야 하나요?',
     '성격유형은 사람을 가두는 틀이 아니라 자신을 이해하는 참고 자료예요. 여기 담긴 문구는 유형별 경향을 조합해 만든 콘텐츠라, 사람마다 실제 모습은 다를 수 있어요.'));
   main.appendChild(autoTermify(view));
@@ -22697,8 +22697,7 @@ function renderCompatSummary(p, draft){
     COMPAT_DRAFT=null; COMPAT_SUB=null; COMPAT_VIEW='pair'; setRoute('compat'); render(); scrollToTopNow();
   }},['다른 사람과도 궁합 보기']));
   box.appendChild(actions);
-  var rvb = reviewButton('compat_full', '이 궁합, 어떠셨어요?'); if(rvb){ rvb.style.marginTop = '8px'; box.appendChild(rvb); }
-  box.appendChild(copyAllButton());   /* R84 — 화면 글 전체 복사 */
+  box.appendChild(copyAllButton(reviewButton('compat_full', '이 궁합, 어떠셨어요?')));   /* R84 — 화면 글 전체 복사 */
   box.appendChild(compatDisclaimerFold());
   box.appendChild(crossSell('toSelf'));
   return box;
@@ -27864,15 +27863,15 @@ function copyScreenText(){
   copyText(head + '\n\n' + body + lockedNoteForCopy() + tail);
 }
 /* 결과 화면마다 붙이는 [전체 복사] 버튼. 공유 버튼 바로 옆(또는 아래)에 둔다. */
-function copyAllButton(){
+function copyAllButton(extra){
   /* ★ 2026-10-04 대표님 지시(UI 개선) — 화면 끝에 같은 모양 베이지 단추가 서너 개 쌓여 무엇이 중요한지 안 보였다.
        복사·용어 사전은 보조 길이라 글자 링크로 낮춘다(누르는 자리는 44px 그대로). */
   /* ★ 2026-10-19 대표님 "그냥 이미지를 싹다 떠 주면 안 되나" → "토큰 먹는 거 아니면 이미지가 나을 거 같다" —
        같은 줄에 [이미지로 저장]을 둔다. AI 를 다시 부르지 않는다(복사본 글을 폰에서 그림으로 그릴 뿐). */
   return el('div',{class:'copy-links'},[
     el('button',{class:'link-btn', type:'button', onclick:copyScreenText}, ['이 화면 글 전체 복사']),
-    el('button',{class:'link-btn', type:'button', onclick:openScreenImages}, ['이미지로 저장'])
-  ]);
+    el('button',{class:'link-btn link-red', type:'button', onclick:openScreenImages}, ['이미지로 저장'])   /* ★ 2026-10-21 대표님 "붉은 글씨로" */
+  ].concat(extra ? [extra] : []));
 }
 /* =====================================================================
    화면 글 → 세로 그림 여러 장 (2026-10-19)
@@ -28530,7 +28529,7 @@ function openMoreSheet(){
    궁합 요약 화면의 결제 버튼("궁합 상세 열기 · 1,900원")은 .locked-cta 밖에 있어서
    이 회피 장치가 안 걸렸고, 떠 있는 단추가 그 버튼을 44x34px 덮어
    "1,900원"이 "1,90("으로 잘려 보였다(실측). 돈 받는 버튼을 가리는 건 가장 나쁜 겹침이다. */
-var FAB_AVOID = '#main .locked-cta, #main .pitch-card, #main .csb-verdict';   /* ★ 2026-10-04 QA — 궁합 총평 문장 · 긴 풀이 권유 상자 */
+var FAB_AVOID = '#main .locked-cta, #main .pitch-card, #main .csb-verdict, #main .cross-sell';   /* ★ 2026-10-04 QA — 궁합 총평 문장 · 긴 풀이 권유 상자 */
 function updateFabAway(){
   var fab = document.getElementById('modeFab');
   if(!fab) return;
