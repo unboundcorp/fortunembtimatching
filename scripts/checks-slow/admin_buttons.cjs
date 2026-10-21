@@ -128,7 +128,10 @@ const SKIP = ['서비스 화면으로'];
   if(!exe || !pp){ console.error('크롬 또는 puppeteer-core 를 못 찾았습니다.'); process.exit(2); }
   const browser = await pp.launch({executablePath:exe, headless:'new', args:['--no-sandbox']});
 
-  for(const view of [{w:1280, h:1000, name:'PC'}, {w:390, h:844, name:'폰'}]){
+  /* ★ 2026-10-21 — 셋째 인자로 'PC' 또는 '폰'을 주면 그 화면만 돈다. 느린 층을 동시에 돌릴 때(run_parallel.cjs)
+     이 검사 하나가 7분을 붙들어 전체가 그만큼 걸렸다. 둘로 나눠 따로 돌린다. 인자가 없으면 예전처럼 둘 다. */
+  const ONLY = process.argv[3] || '';
+  for(const view of [{w:1280, h:1000, name:'PC'}, {w:390, h:844, name:'폰'}].filter(v => !ONLY || v.name === ONLY)){
     R.head('── ' + view.name + ' (' + view.w + 'px)');
     const page = await L.openPage(browser, {width:view.w, height:view.h, state:L.makeState()});
     await page.setRequestInterception(true);
@@ -188,7 +191,10 @@ const SKIP = ['서비스 화면으로'];
     }
 
     let total = 0, blocked = [], broke = [];
-    for(const key of Object.keys(LABEL)){
+    /* 넷째 인자 'i/n' — 화면 목록을 n 토막 낸 것 중 i 번째만 돈다(PC 가 혼자 5분 넘게 걸려 셋으로 나눔). */
+    const PART = (process.argv[4] || '1/1').split('/').map(Number);
+    const KEYS = Object.keys(LABEL).filter((k, idx) => idx % PART[1] === PART[0] - 1);
+    for(const key of KEYS){
       await open(key);
       const list = (await collect()).filter(b => SKIP.indexOf(b.label) < 0);
       /* 화면마다 눌릴 것이 하나도 없으면 그것부터가 이상하다 */
@@ -269,7 +275,7 @@ const SKIP = ['서비스 화면으로'];
       total += navs.length;
     }
 
-    R.note(total >= (view.w < 900 ? 30 : 40), '눌러 본 것이 충분히 많다', total + '개');
+    R.note(total >= Math.floor((view.w < 900 ? 30 : 40) * KEYS.length / Object.keys(LABEL).length), '눌러 본 것이 충분히 많다', total + '개');
     R.note(blocked.length === 0, '가려서 못 누르는 단추 0개',
            blocked.length ? blocked.slice(0,4).join(' | ') : '없음');
     R.note(broke.length === 0, '누르면 터지거나 화면이 죽는 단추 0개',

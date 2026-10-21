@@ -8,3 +8,4 @@ archive/db_wipe_backup_*.json
 
 # 새 캐릭터 원본을 받는 작업 폴더 — 결과물(char/*.webp)만 올린다 (2026-09-05)
 char/new/
+scripts/.parallel_times.json
