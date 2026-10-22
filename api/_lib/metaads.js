@@ -322,6 +322,13 @@ export async function fetchPixelStats({ since, until, fetchImpl, now } = {}) {
     const m = e && e.meta;
     if (m && (m.code === 10 || m.code === 100 || (m.code >= 200 && m.code < 300))) {
       out.reason = '토큰이 이 픽셀을 읽을 수 없어요. 메타 비즈니스 설정 → 사용자 → 시스템 사용자 → [자산 추가] → 데이터 세트(픽셀 ' + pid + ')를 배정해 주세요. (' + scrubMeta(m.message) + ')';
+      /* 2026-10-22 배정을 확인했는데도 막혀서 — 원인을 가르려고 토큰 주인 이름과 픽셀 기본 정보가 읽히는지를 함께 적는다(읽기만 · 이름은 비밀 아님) */
+      const diag = [];
+      try { const me = await getJson(BASE + '/me?fields=id,name&' + tk, f); diag.push('토큰 주인: ' + scrubMeta(me.name || me.id)); }
+      catch (e2) { diag.push('토큰 주인 확인 못 함 (' + scrubMeta(e2 && e2.meta && e2.meta.message) + ')'); }
+      try { const px = await getJson(BASE + '/' + pid + '?fields=id,name&' + tk, f); diag.push('픽셀 기본 정보는 읽힘(' + scrubMeta(px.name || px.id) + ')'); }
+      catch (e3) { diag.push('픽셀 기본 정보도 안 읽힘 (' + scrubMeta(e3 && e3.meta && e3.meta.message) + ')'); }
+      out.reason += ' · 진단: ' + diag.join(' · ');
     } else out.reason = failReason(e);
     console.warn('메타 픽셀 통계 조회 실패:', out.reason);
     out.totals = {}; out.daily = [];
