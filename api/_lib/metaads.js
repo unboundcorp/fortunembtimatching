@@ -328,6 +328,10 @@ export async function fetchPixelStats({ since, until, fetchImpl, now } = {}) {
       catch (e2) { diag.push('토큰 주인 확인 못 함 (' + scrubMeta(e2 && e2.meta && e2.meta.message) + ')'); }
       try { const px = await getJson(BASE + '/' + pid + '?fields=id,name&' + tk, f); diag.push('픽셀 기본 정보는 읽힘(' + scrubMeta(px.name || px.id) + ')'); }
       catch (e3) { diag.push('픽셀 기본 정보도 안 읽힘 (' + scrubMeta(e3 && e3.meta && e3.meta.message) + ')'); }
+      try { const pm = await getJson(BASE + '/me/permissions?' + tk, f); diag.push('토큰 권한: ' + (Array.isArray(pm.data) ? pm.data.filter((x) => x.status === 'granted').map((x) => x.permission).join(',') : '?')); }
+      catch (e4) { diag.push('토큰 권한 확인 못 함'); }
+      try { await getJson(BASE + '/' + pid + '/stats?aggregation=event&' + tk, f); diag.push('기간 없이 물으면 읽힘'); }
+      catch (e5) { diag.push('기간 없이도 막힘'); }
       out.reason += ' · 진단: ' + diag.join(' · ');
     } else out.reason = failReason(e);
     console.warn('메타 픽셀 통계 조회 실패:', out.reason);
