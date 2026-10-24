@@ -21,6 +21,7 @@ import { buildEntitlements } from './_lib/entitlements.js';
 import { decodePersonRow, describeProfile } from './_lib/person.js';
 import { lookupPaymentByOrder, cancelPayment } from './_lib/toss.js';
 import { fetchMetaAdSpend, fetchMetaAdDetail, fetchPixelStats } from './_lib/metaads.js';
+import { summarizeVisits } from './_lib/visits.js';
 
 /* AI 해석 1건당 대략 얼마가 나가는지 — 원가 감을 잡기 위한 값이다.
    Sonnet 5 기준 입력 $2 / 출력 $10 per MTok, 유료 10섹션 ≈ 7천 토큰으로 잡았다.
@@ -286,6 +287,39 @@ export default async function handler(req, res) {
       const [detail, pixel] = await Promise.all([fetchMetaAdDetail({ since, until, level }), fetchPixelStats({ since, until })]);
       detail.pixel = pixel;
       return json(res, 200, detail);
+    }
+
+    /* ★ 2026-10-24 [이용 기록] — 재방문 · 탭 조회 · 유입 (_lib/visits.js). 표가 없으면 ready:false 로 답한다. */
+    if (body.action === 'visits') {
+      const okDay = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+      let since = String(body.since || ''), until = String(body.until || '');
+      if (!okDay(since) || !okDay(until)) return json(res, 400, { error: 'bad_range', reason: '기간을 못 읽었어요.' });
+      if (since > until) { const t = since; since = until; until = t; }
+      let rows = [];
+      try {
+        /* '처음 온 날'을 알아야 해서 기간과 상관없이 전부 읽는다 (1,000줄씩) */
+        for (let off = 0; off < 200000; off += 1000) {
+          const page = await rest(`visit_log?select=day,session_id,kakao_id,what&order=id.asc&limit=1000&offset=${off}`);
+          rows = rows.concat(page || []);
+          if (!page || page.length < 1000) break;
+        }
+      } catch (e) {
+        if (/visit_log|42P01|does not exist|schema cache|HTTP 404/i.test(String(e && e.message))) return json(res, 200, { ready: false });
+        throw e;
+      }
+      const [links, orders, grants] = await Promise.all([
+        rest('kakao_links?select=kakao_id,session_id&limit=5000').catch(() => []),
+        rest('orders?select=session_id,amount,status,paid_at&status=eq.paid&limit=5000').catch(() => []),
+        rest('test_grants?select=session_id&limit=1000').catch(() => []),
+      ]);
+      /* 운영자·테스터 세션(대표님 확인용)은 뺀다 — 그 세션의 카카오 회원 줄도 함께 */
+      const staffS = new Set((grants || []).map((g) => g.session_id));
+      const staffK = new Set((links || []).filter((l) => staffS.has(l.session_id)).map((l) => String(l.kakao_id)));
+      rows.forEach((r) => { if (r.kakao_id && staffS.has(r.session_id)) staffK.add(String(r.kakao_id)); });
+      const keep = rows.filter((r) => !staffS.has(r.session_id) && !(r.kakao_id && staffK.has(String(r.kakao_id))));
+      const out = summarizeVisits(keep, links.filter((l) => !staffK.has(String(l.kakao_id))), orders, since, until);
+      out.staffDropped = rows.length - keep.length;
+      return json(res, 200, Object.assign({ ready: true }, out));
     }
 
     if (body.action === 'rows') {

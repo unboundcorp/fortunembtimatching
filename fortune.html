@@ -6056,6 +6056,63 @@ var KAKAO_BACK_KEY = 'inyeon.kakaoBack';
   }catch(e){ /* sessionStorage 를 못 쓰는 환경이면 예전과 같아질 뿐이다 */ }
 })();
 
+/* ★ 2026-10-24 이용 기록 — 재방문 · 탭 조회 · 유입 (대표님 "엉 붙일 수 있는 건 다 붙여")
+   우리 서버(/api/visit → visit_log 표)에만 보냅니다. 메타로 가지 않습니다.
+   · 'open'        — 그날 서비스를 연 것 (재방문율 · 재방문 주기)
+   · 'tab:<ROUTE>' — 그날 그 화면을 연 것 (동의·로그인 화면은 'tab:gate')
+   · 'in:pair' · 'in:group' · 'in:ad' — 그날 무엇을 들고 들어왔나
+   ★ 같은 날 같은 것은 한 번만 보냅니다(VISIT_KEY 쪽지). 그래서 하루 요청은 몇 번뿐입니다.
+   ★ 실패해도 아무 말 없이 넘어갑니다 — 손님 화면에 영향이 없어야 합니다.
+   ★ 이름·생년월일·사주를 싣지 마십시오. 글자는 서버 VISIT_WHAT 과 한 쌍입니다(api/_lib/visits.js).
+   ★ 주소의 초대·광고 흔적은 아래 줄들이 걷어 내기 **전에** 읽어야 합니다 — 그래서 여기 있습니다. */
+var VISIT_KEY = 'inyeon.visit';
+var VISIT = { q: [], timer: null, sent: null };
+function visitAllowed(){
+  if(window.__VISIT_TEST__) return true;
+  return /(^|\.)inyeonjeom\.kr$/.test(location.hostname);
+}
+function visitDay(){ return new Date(Date.now() + 9*3600*1000).toISOString().slice(0,10); }
+function visitSent(){
+  var d = visitDay();
+  if(VISIT.sent && VISIT.sent.day === d) return VISIT.sent;
+  var o = null;
+  try{ o = JSON.parse(localStorage.getItem(VISIT_KEY) || 'null'); }catch(e){}
+  VISIT.sent = (o && o.day === d && o.list && o.list.length != null) ? o : {day:d, list:[]};
+  return VISIT.sent;
+}
+function visitNote(what){
+  if(!visitAllowed() || !/^(open|tab:[A-Za-z0-9]{1,24}|in:(pair|group|ad))$/.test(what)) return;
+  var s = visitSent();
+  if(s.list.indexOf(what) >= 0 || VISIT.q.indexOf(what) >= 0 || s.list.length > 60) return;
+  VISIT.q.push(what);
+  if(!VISIT.timer) VISIT.timer = setTimeout(visitFlush, 1500);
+}
+function visitFlush(){
+  VISIT.timer = null;
+  if(!VISIT.q.length) return;
+  var items = VISIT.q.splice(0, 20), s = visitSent();
+  /* 보내기 전에 적어 둔다 — 실패하면 그날은 그것을 빠뜨릴 뿐, 같은 것을 여러 번 보내지 않는다 */
+  s.list = s.list.concat(items);
+  try{ localStorage.setItem(VISIT_KEY, JSON.stringify(s)); }catch(e){}
+  try{
+    fetch('/api/visit', {method:'POST', credentials:'same-origin', keepalive:true,
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify({items:items})}).catch(function(){});
+  }catch(e){}
+  if(VISIT.q.length) VISIT.timer = setTimeout(visitFlush, 1500);
+}
+/* 들고 온 것 — 둘이서 링크 / 모임 링크 / 광고 */
+var VISIT_IN = (function(){
+  try{
+    var h = location.hash || '', path = location.pathname || '', q = location.search || '';
+    if(/[#&]k=pair\b/.test(h) || /[#&](i1|invite|r)=/.test(h)) return 'in:pair';
+    if(/^\/(g|j)\//.test(path) || /[#&](g|gj|meet)=/.test(h)) return 'in:group';
+    if(/[?&](go|fbclid|utm_source|utm_medium|utm_campaign)=/.test(q)) return 'in:ad';
+  }catch(e){}
+  return null;
+})();
+visitNote('open');
+if(VISIT_IN) visitNote(VISIT_IN);
+
 /* ★ 2026-10-15 대표님 지시 — "광고를 누르면 로그인하고 정보 입력하고 2027년 화면으로 바로 가는 주소"
    광고 주소 `?go=2027` (연도 넷). 읽자마자 쪽지(localStorage · 2시간)에 적고 주소에서 걷어 낸다.
    ★ localStorage 인 이유: 카카오 로그인이 카카오톡 앱을 거쳐 다른 탭으로 돌아와도 남아야 한다.
@@ -8964,7 +9021,9 @@ function openPrivacyModal(){
     /* ★ R84 — 개선 의견 창구를 서비스 안에 만들면서 추가한 항목이다(2026-08-14).
        연락처는 답을 받고 싶은 분만 스스로 적는 값이고, 형식도 따지지 않는다.
        받는 것을 만들었으면 여기에도 반드시 적어야 한다 — 화면과 방침이 어긋나면 그게 문제다. */
-    '문의를 보내실 때 (연락처는 선택 · 안 적으셔도 접수됨) — 보내주신 내용과 어느 화면에서 겪으셨는지, 결제·환불 문의에서 적어주신 경우에 한해 주문번호, 그리고 적어주신 경우에 한해 연락처(카카오톡 아이디·메일주소·전화번호 중 적으신 것). 문의에 답을 드리는 데에만 씁니다. 접수한 문의의 처리 상태와 답변은 이용자가 서비스의 [내 문의 내역]에서 다시 보실 수 있도록 함께 보관합니다.'
+    '문의를 보내실 때 (연락처는 선택 · 안 적으셔도 접수됨) — 보내주신 내용과 어느 화면에서 겪으셨는지, 결제·환불 문의에서 적어주신 경우에 한해 주문번호, 그리고 적어주신 경우에 한해 연락처(카카오톡 아이디·메일주소·전화번호 중 적으신 것). 문의에 답을 드리는 데에만 씁니다. 접수한 문의의 처리 상태와 답변은 이용자가 서비스의 [내 문의 내역]에서 다시 보실 수 있도록 함께 보관합니다.',
+    /* ★ 2026-10-24 이용 기록(visit_log) — 받는 것을 만들었으니 여기에도 적는다(위 R84 와 같은 규칙) */
+    '서비스를 이용하실 때 자동으로 — 서비스를 연 날짜, 그날 연 화면의 이름, 궁합·모임 링크나 광고 주소로 들어왔는지 여부. 이용 쿠키의 무작위 값과(로그인하신 경우) 카카오 회원번호와 함께 회사 서버에 남기며, 다시 찾아오시는지와 어느 화면이 쓰이는지를 재어 서비스를 고치는 데에만 씁니다. 닉네임·생년월일·사주는 담지 않고 회사 밖으로 보내지 않습니다.'
   ]);
   p2('입력하신 정보는 이용자의 브라우저와, 카카오 계정에 연결된 회사 서버에 함께 저장됩니다(서비스 이용에 카카오 로그인이 필요합니다). 궁합 링크·모임·유료 AI 해석·결제를 이용하실 때에는 그 기능에 필요한 항목이 추가로 서버에 저장됩니다.');
 
@@ -8974,6 +9033,7 @@ function openPrivacyModal(){
     '궁합 링크 — ' + ROOM_TTL_TEXT,
     '모임 — ' + GROUP_TTL_TEXT + ' (관리용 PIN은 복원할 수 없는 형태로만 보관해 회사도 알 수 없습니다)',
     '유료 AI 해석 글과 이용 횟수 기록 — 1년. 삭제된 뒤 다시 여시면 새로 만들어 드리며 생성 횟수는 차감되지 않습니다.',
+    '이용 기록 (연 날짜·화면·들어온 길) — 1년. 1년이 지난 기록은 차례로 지웁니다.',
     '카카오 연결 (카카오 회원번호) — 이용자가 로그아웃하실 때까지. 설정 → 이용권 → "카카오 로그인"에서 언제든 로그아웃하실 수 있고, 그러면 즉시 지웁니다.',
     '카카오 로그인으로 저장된 프로필·기록 — 이용자가 로그아웃하실 때까지. 로그아웃하시면 서버에 올려둔 사본을 지웁니다. 이용자의 브라우저에 있는 것은 그대로 남습니다.',
     /* ★ R84 — 소비자 불만·분쟁 처리 기록은 법령상 3년 보관이라 아래 문단이 따로 정하고 있다.
@@ -9007,7 +9067,7 @@ function openPrivacyModal(){
     '보내지 않는 것 — 닉네임·생년월일·태어난 시각·성별·출생지·사주·성격유형·궁합 결과, 카카오 회원번호. 초대 링크나 영수증 번호가 주소에 담겨 있는 동안에는 아무것도 보내지 않습니다.',
     '국외 이전 — 받는 곳 Meta Platforms, Inc.(미국) · 서비스를 여는 때 정보통신망으로 전송 · 메타가 자기 데이터 정책에 따라 처리·보관합니다.',
     '거부하는 방법 — 설정 화면의 [맞춤 광고 정보 · 이 기기에서 보내지 않기]를 켜면 그 기기에서는 메타 스크립트를 불러오지 않고 아무것도 보내지 않습니다. 브라우저의 추적 방지·광고 차단 기능으로도 막을 수 있습니다. 거부해도 서비스 이용에는 아무 제한이 없습니다.',
-    '이 밖에 결제한 이용권을 알아보기 위한 쿠키 한 개를 씁니다. 이 쿠키는 이용자를 식별하는 무작위 값일 뿐 이용 행태를 수집하지 않습니다.'
+    '이 밖에 결제한 이용권을 알아보기 위한 쿠키 한 개를 씁니다. 이 쿠키는 무작위 값이며, 제1조의 이용 기록(연 날짜·화면)을 같은 분의 것으로 묶는 데에도 씁니다. 이 기록은 회사 서버에만 남고 메타로 가지 않습니다.'
   ]);
 
   h('제6조 (파기)');
@@ -18286,6 +18346,7 @@ var ADMIN_MENUS = [
   {group:'개요',   key:'dash',     label:'대시보드',    icon:'gauge'},
   {group:'사용자', key:'members',  label:'회원 관리',   icon:'users'},
   {group:'사용자', key:'tickets',  label:'문의 · CS',   icon:'chat'},
+  {group:'사용자', key:'visits',   label:'이용 기록',   icon:'pulse'},
   {group:'수익',   key:'payments', label:'결제',        icon:'card'},
   {group:'수익',   key:'ads',      label:'광고',        icon:'target'},
   {group:'콘텐츠', key:'compat',   label:'궁합 · 모임', icon:'link'},
@@ -18298,6 +18359,7 @@ var ADMIN_META = {
   dash:     {title:'대시보드',    sub:'운영 현황 한눈에 보기'},
   members:  {title:'회원 관리',   sub:'가입 · 사주 · 결제 이력 조회'},
   tickets:  {title:'문의 · CS',   sub:'손님 문의와 답변'},
+  visits:   {title:'이용 기록',   sub:'재방문 · 화면별 조회 · 들어온 길'},
   payments: {title:'결제',        sub:'주문 원장과 열람 여부'},
   ads:      {title:'광고',        sub:'메타 광고비 · 캠페인별 성과 (읽기만)'},
   compat:   {title:'궁합 · 모임', sub:'초대 링크와 모임 명단'},
@@ -18319,6 +18381,7 @@ function adminIcon(name, size){
     link:'M10 13.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1.2 1.2M14 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1.2-1.2',
     spark:'M12 3.5l1.9 4.9 4.9 1.9-4.9 1.9L12 17.1l-1.9-4.9L5.2 10.3l4.9-1.9zM18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z',
     mega:'M4 10v4h3l7 4V6l-7 4H4zM17.5 9.5a3.5 3.5 0 0 1 0 5',
+    pulse:'M3 12h4l2.5-6 5 12 2.5-6h4',
     target:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zM12 12.5v-1',
     star:'M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z',
     down:'M12 4v11m0 0l-4-4m4 4l4-4M4 19.5h16',
@@ -18643,7 +18706,7 @@ function adminPaintBody(node){
   var body = node || $('#adBody');
   if(!body) return;
   body.innerHTML = '';
-  var fn = {dash:adminDash, members:adminMembers, tickets:adminTickets, payments:adminPayments, ads:adminAds,
+  var fn = {dash:adminDash, members:adminMembers, tickets:adminTickets, visits:adminVisits, payments:adminPayments, ads:adminAds,
             compat:adminCompat, ai:adminAi, reviews:adminReviews, notices:adminNotices, export:adminExport}[ADMIN_SCREEN];
   (fn || adminDash)(body);
 }
@@ -18665,6 +18728,101 @@ function adminSubline(base){
       + so.rows.filter(function(o){ return o.status === 'paid'; }).length + '건';
   }
   return base;
+}
+
+/* ── [이용 기록] (2026-10-24 대표님 "엉 붙일 수 있는 건 다 붙여") ──
+   서버 /api/stats action:'visits' → visit_log 표 요약(api/_lib/visits.js summarizeVisits).
+   ★ '사람'은 카카오 회원 기준(로그인 전 세션도 나중에 로그인했으면 그분으로 묶음). 운영자·테스터 세션은 서버가 뺌.
+   ★ 화면 조회는 '그날 그 화면을 연 사람 수'다(하루 한 줄) — 몇 번 눌렀는지가 아니다.
+   ★ 기록은 이 기능을 올린 날부터만 있다. 그 전에 온 분도 기록상 '처음 온 날'은 그 뒤가 된다. */
+var VIS_RANGE = 'd30';
+var VIS_DETAIL = {key:null, loading:false, data:null, err:null};
+var VIS_TAB_NAME = {gate:'동의·로그인 화면', setup:'프로필 입력', home:'홈', today:'오늘', saju:'내 사주', report:'성격유형',
+  compat:'궁합', groupCompat:'모임 궁합', pairDeep:'모임 쌍 상세', report13:'사주 풀이', mbtiReport:'성격유형 풀이',
+  monthlyFortune:'월별 운세', history:'히스토리', glossary:'용어 사전', inviteAccept:'궁합 초대장', groupJoin:'모임 참여',
+  roomJoin:'궁합 방 참여', pricing:'상품과 가격', refund:'환불 정책', support:'문의하기', supportMine:'내 문의', faq:'FAQ'};
+var VIS_SRC_NAME = {pair:'둘이서 궁합 링크', group:'모임 링크', ad:'광고 주소', direct:'그 밖(직접·검색 등)'};
+function visWindow(){
+  var n = VIS_RANGE === 'd7' ? 7 : VIS_RANGE === 'd90' ? 90 : VIS_RANGE === 'today' ? 1 : 30;
+  return {from:adsKstDay(n - 1), to:adsKstDay(0)};
+}
+function loadVisits(force){
+  var w = visWindow(), key = w.from + '|' + w.to;
+  if(!force && VIS_DETAIL.key === key && (VIS_DETAIL.loading || VIS_DETAIL.data || VIS_DETAIL.err)) return;
+  VIS_DETAIL = {key:key, loading:true, data:null, err:null};
+  fetch('/api/stats',{method:'POST',headers:{'Content-Type':'application/json'}, credentials:'include',
+    body:JSON.stringify({action:'visits', since:w.from, until:w.to})})
+    .then(function(r){ return r.json().catch(function(){return null;}).then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(r){
+      if(VIS_DETAIL.key !== key) return;
+      if(!r.ok || !r.d) throw new Error((r.d && r.d.reason) || '불러오지 못했어요.');
+      VIS_DETAIL = {key:key, loading:false, data:r.d, err:null}; render();
+    })
+    .catch(function(e){ if(VIS_DETAIL.key !== key) return;
+      VIS_DETAIL = {key:key, loading:false, data:null, err:(e && e.message) || '불러오지 못했어요.'}; render(); });
+}
+function adminVisits(body){
+  var w = visWindow();
+  var bar = el('div',{class:'ad-bar'});
+  var seg = el('div',{class:'ad-seg'});
+  [['today','오늘'],['d7','7일'],['d30','30일'],['d90','90일']].forEach(function(pr){
+    seg.appendChild(el('button',{type:'button','aria-pressed':VIS_RANGE===pr[0]?'true':'false',
+      onclick:(function(k){ return function(){ VIS_RANGE = k; loadVisits(); render(); }; })(pr[0])},[pr[1]]));
+  });
+  bar.appendChild(seg);
+  bar.appendChild(el('span',{class:'ad-sub2'},[w.from + ' → ' + w.to]));
+  bar.appendChild(el('button',{class:'ad-btn', style:'margin-left:auto;',
+    onclick:function(){ loadVisits(true); render(); }},['새로고침']));
+  body.appendChild(bar);
+  loadVisits();
+  var st = VIS_DETAIL;
+  if(st.loading || (!st.data && !st.err)){ body.appendChild(adCard([adEmpty('불러오는 중이에요…')])); return; }
+  if(st.err){
+    body.appendChild(adCard([el('p',{class:'ad-empty', style:'color:var(--red-hi);'},[st.err]),
+      el('button',{class:'ad-btn', style:'margin:0 auto;', onclick:function(){ loadVisits(true); render(); }},['다시 시도'])]));
+    return;
+  }
+  var V = st.data;
+  if(!V.ready){
+    body.appendChild(adCard([adH('기록 표가 아직 없어요'),
+      el('p',{class:'ad-note'},['DB 에 visit_log 표를 만들면 그때부터 쌓여요. (SQL 은 api/_lib/visits.js 맨 위)'])]));
+    return;
+  }
+  var kpi = el('div',{class:'ad-grid ad-kpi'});
+  kpi.appendChild(adKpi({label:'방문한 사람', icon:'users', value:String(V.visitors),
+    note:'로그인한 회원 ' + V.members + '명 · 나머지는 로그인 전에 나간 분'}));
+  kpi.appendChild(adKpi({label:'처음 온 사람', icon:'pulse', value:String(V.newcomers),
+    note:'이 기간에 기록상 처음 온 분'}));
+  kpi.appendChild(adKpi({label:'재방문율', icon:'gauge', value:V.returnRate == null ? '—' : V.returnRate + '%',
+    note:'처음 온 분 중 다른 날 다시 온 분 ' + V.returned + '명'}));
+  kpi.appendChild(adKpi({label:'다시 오기까지', icon:'gauge', value:V.avgDaysToReturn == null ? '—' : V.avgDaysToReturn + '일',
+    note:'처음 온 날 → 두 번째 온 날 평균'}));
+  kpi.appendChild(adKpi({label:'재방문 주기', icon:'gauge', value:V.avgGap == null ? '—' : V.avgGap + '일',
+    note:'이 기간에 이틀 넘게 온 분(' + V.multiDay + '명)의 방문 사이 평균'}));
+  body.appendChild(kpi);
+
+  var srcRows = (V.sources || []).map(function(r){
+    return el('tr',{},[adTd([VIS_SRC_NAME[r.src] || r.src]), adTd([String(r.people)]), adTd([String(r.members)]),
+      adTd([String(r.buyers)]), adTd([r.people ? (Math.round(r.buyers / r.people * 1000) / 10) + '%' : '—']), adTd([formatWon(r.revenue)])]);
+  });
+  body.appendChild(adCard([adH('들어온 길 → 가입 → 결제'),
+    el('p',{class:'ad-note'},['이 기간에 처음 온 분을 그 첫날 들고 온 것으로 나눴어요. 결제는 그분이 지금까지 한 결제 전부예요.']),
+    srcRows.length ? adTable(['들어온 길','처음 온 분','로그인','결제한 분','결제율','매출'], srcRows, 560) : adEmpty('아직 기록이 없어요.')]));
+
+  var tabRows = (V.tabs || []).map(function(r){
+    return el('tr',{},[adTd([VIS_TAB_NAME[r.tab] || r.tab]), adTd([String(r.people)]),
+      adTd([V.visitors ? Math.round(r.people / V.visitors * 100) + '%' : '—']), adTd([String(r.days)])]);
+  });
+  body.appendChild(adCard([adH('화면별 조회'),
+    el('p',{class:'ad-note'},['그 화면을 연 사람 수예요(하루에 한 번만 셈). ‘사람 대비’는 이 기간 방문한 사람 중 그 화면까지 온 비율.']),
+    tabRows.length ? adTable(['화면','연 사람','사람 대비','연 날 수(합)'], tabRows, 460) : adEmpty('아직 기록이 없어요.')]));
+
+  var dayRows = (V.daily || []).slice().reverse().map(function(r){
+    return el('tr',{},[adTd([r.d]), adTd([String(r.visitors)]), adTd([String(r.fresh)]), adTd([String(r.back)])]);
+  });
+  body.appendChild(adCard([adH('날마다'),
+    dayRows.length ? adTable(['날짜 (KST)','방문한 사람','처음 온 분','다시 온 분'], dayRows, 420) : adEmpty('아직 기록이 없어요.')]));
+  body.appendChild(el('p',{class:'ad-note'},['기록은 ' + (V.firstLogged || '이 기능을 올린 날') + '부터예요. 그 전에 왔던 분도 기록상 처음 온 날은 그 뒤로 잡혀요. 운영자·테스터 세션은 뺐어요.']));
 }
 
 /* ── 1. 대시보드 ─────────────────────────────────────────────────── */
@@ -28957,6 +29115,16 @@ function render(){
   if(viewChanged && !POPPING) scrollToTopNow();
   /* 메타 픽셀 — 그리기가 끝나 주소의 초대·영수증 흔적이 걷힌 뒤에 보낸다(pixelUrlSafe) */
   trackTimeout(pixelFlush, 0);
+  /* 이용 기록 — 그날 이 화면을 열었다(위 VISIT 절). 관리자 화면은 안 적는다 */
+  /* ★ 부팅 직후 로그인 여부를 모르는 동안(기다림 화면)은 적지 않는다 — 적으면 모든 분이 '동의 화면'에 한 번씩 찍힌다 */
+  try{ if(!ADMIN_ROUTES[ROUTE]){
+    var vGate = loginGateBlocks();
+    if(!vGate) visitNote('tab:' + ROUTE);
+    /* 동의·로그인 화면은 1초 뒤에도 그 화면일 때만 — 잠깐 스치는 그리기(로그인 확인 직전)를 안 센다 */
+    else if(KAKAO.loaded && !CONSENT_WAIT) setTimeout(function(){
+      try{ if(loginGateBlocks() && KAKAO.loaded && !CONSENT_WAIT) visitNote('tab:gate'); }catch(e){}
+    }, 1000);
+  } }catch(e){}
   try{ watchHeadIcons(); decorateHeadIcons(document.getElementById('main')); }catch(e){}
   /* R25 — 그리기 전에 대표 오행 사본을 계산 결과에 맞춘다(위 syncAllProfileElements 주석 참고). */
   syncAllProfileElements();

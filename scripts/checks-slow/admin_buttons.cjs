@@ -73,6 +73,12 @@ function wire(page){
     if(u.indexOf('/api/stats') >= 0){
       let b = {}; try{ b = JSON.parse(r.postData() || '{}'); }catch(e){}
       if(b.action === 'rows') return r.respond(j({kind:b.kind, rows:ROWS[b.kind] || []}));
+      /* 2026-10-24 [이용 기록] */
+      if(b.action === 'visits') return r.respond(j({ready:true, since:b.since, until:b.until, firstLogged:'2026-10-24',
+        visitors:5, members:4, newcomers:3, returned:1, returnRate:33.3, avgDaysToReturn:2, avgGap:2, multiDay:1,
+        tabs:[{tab:'home', people:4, days:5},{tab:'gate', people:2, days:2}],
+        sources:[{src:'pair', people:1, members:1, buyers:1, revenue:1900},{src:'direct', people:2, members:1, buyers:0, revenue:0}],
+        daily:[{d:'2026-10-24', visitors:5, fresh:3, back:2}]}));
       /* 2026-10-20 [광고] 탭 — 캠페인 한 줄 · 날마다 한 줄 */
       if(b.action === 'ads') return r.respond(j({connected:true, level:b.level || 'campaign', since:b.since, until:b.until,
         accounts:[{id:'act_1', name:'인연점 광고', currency:'KRW', tz:'Asia/Seoul', included:true}],
@@ -116,7 +122,7 @@ function wire(page){
     r.continue();
   });
 }
-const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · CS', payments:'결제', ads:'광고',
+const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · CS', visits:'이용 기록', payments:'결제', ads:'광고',
                compat:'궁합 · 모임', ai:'AI 해석', notices:'공지 · 배너', export:'데이터 내보내기'};
 /* 눌러도 어드민을 벗어나는 것 — 여기서는 건너뛴다(벗어나는 것 자체는 따로 확인한다) */
 const SKIP = ['서비스 화면으로'];
