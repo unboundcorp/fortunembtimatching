@@ -23609,7 +23609,7 @@ function buildGroupCompatGraph(members, pairs, onSelect, opts){
   opts = opts || {};
   var n = members.length;
   var lay = gcPositions(n), spec = lay.spec, pos = lay.pos;
-  var wrap = el('div',{});
+  var wrap = el('div',{class:'copy-skip'});   /* 그림·누르기 안내·범례는 화면 장치라 복사·그림 저장에서 뺀다 (2026-10-30) */
   var stage = el('div',{class:'gc-stage',
     style:'--gc-av:'+spec.av+';--gc-fs:'+spec.fs+'px;--gc-tagfs:'+spec.tagfs+'px;--gc-max:'+spec.max+';'});
   var ns='http://www.w3.org/2000/svg';
@@ -24266,7 +24266,7 @@ function buildCompatWhyScores(total, vals, extraNote, ev, relationKey){
     tbl.appendChild(desc);
   });
   /* 안내는 표 위에 둔다 — 표를 다 훑고 나서야 "눌러도 된다"는 걸 알면 늦다. */
-  why.appendChild(el('p',{class:'biz-hint', style:'margin:2px 0 6px;'},['줄을 누르면 그 항목이 무슨 뜻인지 볼 수 있어요.']));
+  why.appendChild(el('p',{class:'biz-hint copy-skip', style:'margin:2px 0 6px;'},['줄을 누르면 그 항목이 무슨 뜻인지 볼 수 있어요.']));
   why.appendChild(tbl);
   /* 표를 한 문장으로 다시 말해 준다 — 숫자를 훑지 않는 사람도 어디가 끌고 어디가 깎았는지는 알아야 한다. */
   if(rows.length >= 2){
@@ -25684,7 +25684,7 @@ function buildGroupJoinCard(){
   if(!GROUP_VIEW) return null;
   /* ★ 2026-09-26 대표님 지시 "둘이서 보기인데 왜 사람 더 받기가 나와" — 둘이서 보낸 링크(두 분)에는 안 놓는다. */
   if(isPairGroup(savedGroups().filter(function(x){ return x && x.id === GROUP_VIEW.id; })[0])) return null;
-  var card = sectionCard(['사람 더 받기 (접수 주소)']);
+  var card = sectionCard(['사람 더 받기 (접수 주소)'], null, {class:'scroll-card copy-skip'});
   card.appendChild(el('p',{class:'biz-hint'},[
     '이 주소를 보내면 받은 분이 자기 정보를 직접 넣고 이 모임에 들어와요. 최대 '+GC_MAX+'명까지 받을 수 있어요.'
   ]));
@@ -26316,7 +26316,7 @@ function groupElemText(f, two, mbtiLine){
     + GROUP_ELEM_LACK[f.lack];
 }
 function buildGroupElemRow(f){
-  var row = el('div',{class:'gc-elem-row', 'aria-hidden':'true'});
+  var row = el('div',{class:'gc-elem-row copy-skip', 'aria-hidden':'true'});
   for(var i=0;i<5;i++){
     var lv = f.maxC ? Math.round(f.counts[i] / f.maxC * 5) : 0;
     if(f.counts[i] > 0 && lv < 1) lv = 1;
@@ -26477,7 +26477,7 @@ function renderGroupCompat(){
           '바꾸기');
       }},['바꾸기']));
     view.appendChild(relRowG);
-    view.appendChild(el('p',{class:'biz-hint', style:'text-align:center;'},[relationNote(GC_RELATION)]));
+    view.appendChild(el('p',{class:'biz-hint copy-skip', style:'text-align:center;'},[relationNote(GC_RELATION)]));
   }
 
   var members = gcMembers();
@@ -26576,7 +26576,7 @@ function renderGroupCompat(){
       ? (members.length <= 2 ? '캐릭터를 누르면 그 사람의 궁합이 아래에 나와요!' : '')
       : (members.length <= 2 ? '' : (nameOr(members[idx].name,'이 사람') + '님의 궁합만 아래에 보이고 있어요. 다시 누르면 총평으로 돌아와요.'));
   }
-  var filterNote = el('p',{class:'gc-filter-note', role:'status'},['']);
+  var filterNote = el('p',{class:'gc-filter-note copy-skip', role:'status'},['']);   /* 누르기 안내 — 복사·그림에서 뺌 */
   function updateFocus(idx){
     applyCardFilter(idx);
     if(idx==null){ focusBox.textContent = ''; return; }
@@ -26637,7 +26637,7 @@ function renderGroupCompat(){
        보관하고 싶은 것이 자연스럽고, 그때도 담긴 분들의 동의는 저장하는 사람의 몫이다
        (그 안내는 저장 화면에 적혀 있다).
   ===================================================================== */
-  var gsCard = el('div',{class:'scroll-card', style:'margin-top:16px;'});
+  var gsCard = el('div',{class:'scroll-card copy-skip', style:'margin-top:16px;'});   /* 주소·관리 안내 — 읽을 결과가 아니다 */
   if(GROUP_VIEW){
     gsCard.appendChild(el('h3',{},['이 모임 주소']));
     gsCard.appendChild(el('p',{class:'biz-hint'},['이 주소로 다시 열 수 있어요. '+GROUP_TTL_PHRASE+' 동안 보관돼요.']));
@@ -28018,7 +28018,9 @@ var COPY_SKIP_SEL = [
        접이식 안의 글은 남긴다(제목만 뺀다). */
   '.toc-nav', '.sec-no', '.interp-notice', '.page-eyebrow', '.pd-head', '.note-fold > summary',
   /* 2026-10-19 — 제목 옆 붉은 도장 한자('命')와 '👆 막대를 누르면…' 안내도 화면 장치다 */
-  '.sh-seal', '.ym-tap'
+  '.sh-seal', '.ym-tap',
+  /* 2026-10-30 대표님 "궁합이미지 엉망인데??" — 모임 쌍의 심층 풀이 권유 카드(유료 안내)는 읽을 결과가 아니다 */
+  '.deep-card'
 ].join(',');
 /* ★ 용어 풀이(autoTermify)는 문장 한가운데의 낱말을 <button>으로 감싼다 —
    '검사님의 사주팔자'의 '사주팔자'가 버튼이다. 그래서 버튼을 통째로 지우면
@@ -28088,13 +28090,21 @@ function copyPackRows(clone){
     if(desc && desc.classList && desc.classList.contains('gc-why-desc')){
       /* 설명은 span 네 개(한마디 · 무엇으로 쟀나 · 근거 · 그래서 어떻게)다.
          span끼리는 ' · '로 가르되, 한 span 안은 문장이므로 그대로 둔다. */
-      var parts = [];
-      for(var ci=0; ci<desc.children.length; ci++){ var pt = txt(desc.children[ci]); if(pt) parts.push(pt); }
-      d = parts.length ? parts.join(' · ') : txt(desc);
+      /* ★ 2026-10-30 대표님 사진 "궁합이미지 엉망인데??" — 넷을 괄호 하나에 몰아넣어 긴 덩어리가 됐다.
+         이제 첫 줄 = 이름 — 점수 · 한마디(.d1), 그 아래 = 이유(.d3 · .d4) 줄.
+         '무엇으로 쟀나'(.d2)는 항목 뜻풀이라 복사·그림에서는 뺀다(화면에서는 그대로). */
+      var d1 = pick(desc,'.d1');
+      var why = $all('.d3, .d4', desc).map(txt).filter(Boolean);
+      if(!d1 && !why.length) why = [txt(desc)];
+      d = {d1:d1, why:why};
       if(desc.parentNode) desc.parentNode.removeChild(desc);
     }
     var v = pick(n,'.v');
-    asLine(n, '· '+pick(n,'.k')+(v?' — '+v:'')+(d?' ('+d+')':''));
+    if(!n.parentNode) return;
+    var box = el('div',{});
+    box.appendChild(el('p',{},['· '+pick(n,'.k')+(v?' — '+v:'')+(d && d.d1?' · '+d.d1:'')]));
+    if(d) d.why.forEach(function(w){ box.appendChild(el('p',{},['  '+w])); });
+    n.parentNode.replaceChild(box, n);
   });
   /* ★ 종합 점수 — 큰 숫자와 단위가 따로 <b>/<span>이라 '73'과 '점 · 비화(같은 오행)'이
      두 줄로 갈라져 나왔다(2026-09-07 실측). 사이를 벌리지 않고 붙여서 한 줄로 만든다
@@ -28138,6 +28148,32 @@ function copyPackRows(clone){
     var c = n.querySelector('.dw-chip'), t = n.querySelector('.dw-txt');
     if(c && t) asLine(n, '['+txt(c)+'] '+txt(t));
   });
+  /* ★ 2026-10-30 — 모임 평균: '3명 · 전체 평균 궁합 지수' 와 도넛의 숫자가 두 줄로 갈렸다. 한 줄로. */
+  $all('.gauge-label', clone).forEach(function(n){
+    var g = n.nextElementSibling, num = g ? txt(g) : '';
+    if(!num && g){ var sv = g.querySelector('svg[aria-label]'); if(sv) num = sv.getAttribute('aria-label').replace(/^점수\s*/, ''); }
+    if(g && g.parentNode) g.parentNode.removeChild(g);
+    asLine(n, txt(n)+(num ? ' — '+num : ''));
+  });
+  /* 모임 쌍 머리 — '효대와의 궁합 / 강한 인연 / 78 / 점' 네 줄을 한 줄로 */
+  $all('.gc-pair-head', clone).forEach(function(n){
+    var sc = n.nextElementSibling, num = '';
+    if(sc && sc.classList && sc.classList.contains('gc-score')){ num = txt(sc).replace(/\s+/g,''); if(sc.parentNode) sc.parentNode.removeChild(sc); }
+    var tier = pick(n,'.badge'), nm = pick(n,'b');
+    if(!nm || !n.parentNode) return;
+    var h = el('h4',{},[nm+(num ? ' — '+num : '')+(tier ? ' ('+tier+')' : '')]);
+    n.parentNode.replaceChild(h, n);
+  });
+  /* '왜 N점인가요?' 여닫이 제목 — 그림에서 소제목 띠로 보이게 [ ] 로 감싼다 */
+  $all('details.gc-why > summary', clone).forEach(function(n){
+    var t = txt(n); if(t && n.parentNode) n.parentNode.replaceChild(el('p',{},['['+t+']']), n);
+  });
+  /* 전체 순위 — '1 권대겸 · 효대 강한 인연 78' → '1. 권대겸 · 효대 — 78점 (강한 인연)' */
+  $all('.gc-rank-row', clone).forEach(function(n){
+    var rk = pick(n,'.gr-rank'), who = pick(n,'.gr-who'), tier = pick(n,'.gr-tier'), val = pick(n,'.gr-val');
+    if(!who) return;
+    asLine(n, (rk ? rk+'. ' : '· ')+who+(val ? ' — '+val+'점' : '')+(tier ? ' ('+tier+')' : ''));
+  });
   /* 목록 — 가운뎃점을 붙인다. 안 붙이면 줄글과 구별이 안 된다. */
   $all('li', clone).forEach(function(n){
     var t = txt(n);
@@ -28146,6 +28182,8 @@ function copyPackRows(clone){
   /* 제목 — 어디서 덩이가 바뀌는지 보이게 */
   $all('h2, h3, h4', clone).forEach(function(n){
     var t = txt(n);
+    /* 제목 앞 아이콘이 글에 붙어 '📝모임 총평'이 됐다 — 한 칸 띄운다 */
+    t = t.replace(/^(\p{Extended_Pictographic}\uFE0F?)(?=\S)/u, '$1 ');
     if(t){ n.textContent = '■ '+t; n.style.display='block'; }
   });
 }
@@ -28256,7 +28294,7 @@ function pgBlocks(text){
   String(text).split('\n').forEach(function(raw){
     var t = raw.replace(/\s+$/,'');
     if(!t.trim()){ if(out.length && out[out.length-1].kind !== 'gap') out.push({kind:'gap'}); return; }
-    if(/^■ /.test(t)) out.push({kind:'h', text:t.replace(/^■ /,'').replace(/^([\u2600-\u27BF\uD83C-\uDBFF][\uDC00-\uDFFF]?\uFE0F?)(?=\S)/, '$1 ')});
+    if(/^■ /.test(t)) out.push({kind:'h', text:t.replace(/^■ /,'').replace(/^(\p{Extended_Pictographic}\uFE0F?)(?=\S)/u, '$1 ')});
     else if(/^\[[^\]]+\]$/.test(t)) out.push({kind:'s', text:t.slice(1,-1)});
     else if(/^· /.test(t)) out.push({kind:'b', text:t.replace(/^· /,'')});
     else out.push({kind:'p', text:t});
