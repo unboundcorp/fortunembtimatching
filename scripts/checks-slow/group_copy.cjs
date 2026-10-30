@@ -6,7 +6,7 @@
    '왜 N점인가요?' 줄마다 한마디·뜻풀이·이유를 괄호 하나에 몰아 긴 덩어리가 됐다.
    ① 화면 장치가 안 들어간다 ② 평균 점수 한 줄 ③ 순위 '1. A · B — 78점 (강한 인연)'
    ④ 왜 N점 줄은 '이름 — 점수 · 한마디' 한 줄 + 이유는 다음 줄 (뜻풀이 빠짐)
-   ⑤ 사람을 누르면 '■ ○○와의 궁합 — 78점 (등급)' · 유료 권유 없음 ⑥ 제목 아이콘 뒤 띄어쓰기 ⑦ JS 오류 0
+   ⑤ 사람을 누르면 '■ ○○와의 궁합 — 78점 (등급)' · 유료 권유 없음 ⑥ 제목 아이콘 뒤 띄어쓰기 ⑦ JS 오류 0 ⑧ 관계 그림이 맨 위
 ===================================================================== */
 const L = require('../_lib.cjs');
 (async () => {
@@ -40,6 +40,12 @@ const L = require('../_lib.cjs');
       "④ 왜 N점 줄 = '이름 — 점수 · 한마디' · 괄호 덩어리·뜻풀이 없음", (c0.match(/^· 성격유형.*$/m)||[''])[0].slice(0,80));
     R.note(/^\[왜 \d+점인가요\?\]$/m.test(c0), '④ 왜 N점인가요? 는 소제목 [ ] 줄');
     R.note(/^■ 🏆 전체 순위$/m.test(c0) && /^■ 📝 모임 총평$/m.test(c0), '⑥ 제목 아이콘 뒤에 한 칸');
+    /* ⑧ 2026-10-30 대표님 "관계도 이미지도 최상단에 넣어" — 그림 맨 위에 관계 그림 */
+    const fg = await q.evaluate(function(){ var m = window.__INYEON_TEST__.screenImagePages(), f = m && m.figure;
+      return f ? {nodes:f.nodes.length, imgs:f.nodes.filter(function(n){ return !!n.img; }).length, lines:f.lines.length, tags:f.tags.length,
+        firstY: m.lines[0].y, figBottom: 170 + f.height} : null; });
+    R.note(fg && fg.nodes === 3 && fg.imgs === 3 && fg.lines === 3 && fg.tags === 3, '⑧ 관계 그림(얼굴 3 · 선 3 · 이름표 3)이 그림에 들어간다', JSON.stringify(fg));
+    R.note(fg && fg.firstY > fg.figBottom - 40, '⑧ 관계 그림이 글보다 위(최상단)', JSON.stringify(fg));
     await q.evaluate(function(){ document.querySelectorAll('#main .gc-node')[1].click(); }); await L.wait(600);
     const c1 = await q.evaluate(function(){ return window.__INYEON_TEST__.screenTextForCopy(); });
     R.note(/^■ .+(와|과)의 궁합 — \d+점 \(.+인연\)$/m.test(c1), "⑤ 사람을 누르면 '■ ○○와의 궁합 — 78점 (등급)' 한 줄", (c1.match(/.*의 궁합.*/)||[''])[0]);

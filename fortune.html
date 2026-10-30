@@ -28324,13 +28324,14 @@ function pgFrame(ctx, title, H){
 }
 /* ★ 2026-10-19 대표님 "인스타 올릴 건 아닌 거 같다 / 결제한 사람 간직용으로 쭉 길게 이미지 한장만" —
    쪽으로 나누지 않고 세로로 쭉 이어 한 장에 쓴다. 줄의 y 와 전체 높이를 돌려준다. */
-function pgLayout(ctx, blocks){
-  var out = [], y = PG_TOP, maxW = PG_W - PG_X*2;
+function pgLayout(ctx, blocks, top){
+  var out = [], y = top || PG_TOP, maxW = PG_W - PG_X*2;
+  var y0 = y;
   blocks.forEach(function(b){
     if(b.kind === 'gap'){ y += 14; return; }
     var st = PG_STYLE[b.kind]; ctx.font = st.font + CARD_SANS;
     var lines = pgWrapLine(ctx, b.text, maxW - (st.indent || 0));
-    if(y !== PG_TOP) y += st.before;
+    if(y !== y0) y += st.before;
     lines.forEach(function(ln, li){ out.push({kind:b.kind, text:ln, y:y + st.lh*0.72, first: li === 0}); y += st.lh; });
     y += st.after;
   });
@@ -28346,6 +28347,7 @@ function pgDraw(canvas, made){
   var ctx = canvas.getContext('2d');
   ctx.setTransform(k, 0, 0, k, 0, 0);
   pgFrame(ctx, made.title, H);
+  if(made.figure) pgDrawFigure(ctx, made.figure, PG_TOP);
   made.lines.forEach(function(ln){
     var st = PG_STYLE[ln.kind], col = pgColor(st.color); ctx.font = st.font + CARD_SANS; ctx.fillStyle = col;
     var x = PG_X + (st.indent || 0);
@@ -28355,14 +28357,125 @@ function pgDraw(canvas, made){
   });
   return k;
 }
+/* =====================================================================
+   ★ 2026-10-30 대표님 "관계도 이미지도 최상단에 넣어" — 모임 화면의 관계 그림을 그림 맨 위에 옮겨 그린다.
+   화면을 찍지 않는다(위 주석과 같은 이유). 지금 화면에 그려진 그림(선·얼굴·이름·이름표)의
+   자리와 색을 재서 캔버스에 다시 그린다. 그래서 사람을 눌러 둔 상태면 그 사람 기준 그림이 들어간다.
+   얼굴은 화면에 이미 받아 둔 캐릭터 <img> 를 그대로 쓴다(새로 받지 않음 — 안 왔으면 빈 동그라미).
+===================================================================== */
+var PG_FIG_LEGEND = 64;
+function pgFigureOf(){
+  var stage = $('#main .gc-stage');
+  if(!stage || !stage.offsetParent) return null;
+  var sr = stage.getBoundingClientRect();
+  if(!sr.width || !sr.height) return null;
+  var svg = stage.querySelector('svg.gc-svg');
+  var ctm = svg && svg.getScreenCTM ? svg.getScreenCTM() : null;
+  function rel(r){ return {x:r.left - sr.left, y:r.top - sr.top, w:r.width, h:r.height}; }
+  var fig = {w:sr.width, h:sr.height, lines:[], nodes:[], tags:[]};
+  if(svg && ctm){
+    $all('line', svg).forEach(function(ln){
+      var p1 = svg.createSVGPoint(), p2 = svg.createSVGPoint();
+      p1.x = +ln.getAttribute('x1'); p1.y = +ln.getAttribute('y1');
+      p2.x = +ln.getAttribute('x2'); p2.y = +ln.getAttribute('y2');
+      p1 = p1.matrixTransform(ctm); p2 = p2.matrixTransform(ctm);
+      fig.lines.push({x1:p1.x - sr.left, y1:p1.y - sr.top, x2:p2.x - sr.left, y2:p2.y - sr.top,
+        color:ln.getAttribute('stroke') || '#1f1c17', width:+ln.getAttribute('stroke-width') || 1,
+        dash:!!ln.getAttribute('stroke-dasharray'), alpha:+(ln.getAttribute('opacity') || 1)});
+    });
+  }
+  $all('.gc-node', stage).forEach(function(b){
+    var av = b.querySelector('.gc-avatar'), lb = b.querySelector('.gc-label');
+    if(!av) return;
+    var cs = getComputedStyle(av), img = av.querySelector('img');
+    var node = {av:rel(av.getBoundingClientRect()), bg:cs.backgroundColor, border:cs.borderTopColor,
+      alpha:+cs.opacity || 1, img:(img && img.complete && img.naturalWidth) ? img : null,
+      letter:img ? '' : String(av.textContent || '').trim()};
+    if(lb && lb.textContent.trim()){
+      var ls = getComputedStyle(lb);
+      node.label = {r:rel(lb.getBoundingClientRect()), text:lb.textContent.trim(), color:ls.color, bg:ls.backgroundColor, fs:parseFloat(ls.fontSize) || 11};
+    }
+    fig.nodes.push(node);
+  });
+  $all('.gc-tag', stage).forEach(function(t){
+    var ts = getComputedStyle(t);
+    if(ts.visibility === 'hidden' || ts.display === 'none' || !t.textContent.trim()) return;
+    fig.tags.push({r:rel(t.getBoundingClientRect()), text:t.textContent.trim(), color:ts.color, bg:ts.backgroundColor, fs:parseFloat(ts.fontSize) || 10});
+  });
+  if(!fig.nodes.length) return null;
+  /* 그림 위아래의 빈 무대는 잘라 낸다 — 얼굴·이름·이름표가 있는 높이만 */
+  var ys = [];
+  fig.nodes.forEach(function(n){ ys.push(n.av.y, n.av.y + n.av.h); if(n.label) ys.push(n.label.r.y + n.label.r.h); });
+  fig.tags.forEach(function(t){ ys.push(t.r.y, t.r.y + t.r.h); });
+  fig.y0 = Math.max(0, Math.min.apply(null, ys) - 10);
+  fig.h = Math.min(fig.h, Math.max.apply(null, ys) + 10) - fig.y0;
+  /* 캔버스 폭에 맞춰 키운다. 너무 길면 높이로 묶는다. */
+  var maxW = PG_W - PG_X*2;
+  fig.k = Math.min(maxW / fig.w, 960 / fig.h);
+  fig.dw = fig.w * fig.k; fig.dh = fig.h * fig.k;
+  fig.height = fig.dh + PG_FIG_LEGEND + 30;
+  return fig;
+}
+function pgDrawFigure(ctx, fig, top){
+  var k = fig.k, ox = (PG_W - fig.dw) / 2, oy = top - 20;
+  function X(v){ return ox + v*k; } function Y(v){ return oy + (v - (fig.y0 || 0))*k; }
+  ctx.save();
+  ctx.lineCap = 'round';
+  fig.lines.forEach(function(l){
+    ctx.globalAlpha = l.alpha; ctx.strokeStyle = l.color; ctx.lineWidth = l.width * k;
+    ctx.setLineDash(l.dash ? [5*k, 4*k] : []);
+    ctx.beginPath(); ctx.moveTo(X(l.x1), Y(l.y1)); ctx.lineTo(X(l.x2), Y(l.y2)); ctx.stroke();
+  });
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  fig.nodes.forEach(function(n){
+    var cx = X(n.av.x + n.av.w/2), cy = Y(n.av.y + n.av.h/2), r = n.av.w*k/2;
+    ctx.globalAlpha = n.alpha;
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.closePath();
+    ctx.fillStyle = n.bg; ctx.fill(); ctx.clip();
+    if(n.img){ try{ ctx.drawImage(n.img, cx - r, cy - r, r*2, r*2); }catch(e){} }
+    else if(n.letter){ ctx.fillStyle = CARD_INK; ctx.font = '700 '+Math.round(r*0.8)+'px '+CARD_SANS; ctx.fillText(n.letter, cx, cy); }
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.lineWidth = 2*k; ctx.strokeStyle = n.border; ctx.stroke();
+    ctx.globalAlpha = 1;
+    if(n.label){
+      var L = n.label;
+      ctx.fillStyle = L.bg; sqRound(ctx, X(L.r.x), Y(L.r.y), L.r.w*k, L.r.h*k, 7*k); ctx.fill();
+      ctx.fillStyle = L.color; ctx.font = '600 '+Math.round(L.fs*k)+'px '+CARD_SANS;
+      ctx.fillText(L.text, X(L.r.x + L.r.w/2), Y(L.r.y + L.r.h/2), L.r.w*k);
+    }
+  });
+  fig.tags.forEach(function(t){
+    var x = X(t.r.x), y = Y(t.r.y), w = t.r.w*k, h = t.r.h*k;
+    ctx.fillStyle = t.bg; sqRound(ctx, x, y, w, h, h/2); ctx.fill();
+    ctx.lineWidth = 1*k; ctx.strokeStyle = t.color; ctx.stroke();
+    ctx.fillStyle = t.color; ctx.font = '600 '+Math.round(t.fs*k)+'px '+CARD_SANS;
+    ctx.fillText(t.text, x + w/2, y + h/2);
+  });
+  /* 범례 — 등급 다섯과 색 */
+  var ly = oy + fig.dh + PG_FIG_LEGEND/2 + 6;
+  ctx.font = '600 26px '+CARD_SANS; ctx.textAlign = 'left';
+  var items = GC_TIER_ORDER.map(function(t){ return {t:t, w:28 + ctx.measureText(t).width}; });
+  var gap = 26, total = items.reduce(function(a, it){ return a + it.w; }, 0) + gap*(items.length-1);
+  var x = (PG_W - total) / 2;
+  items.forEach(function(it){
+    ctx.fillStyle = gcTierColor(it.t); ctx.beginPath(); ctx.arc(x + 9, ly, 9, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = gcTierTextColor(it.t); ctx.fillText(it.t, x + 28, ly + 1);
+    x += it.w + gap;
+  });
+  ctx.restore();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+}
 function screenImagePages(){
   var text = screenTextForCopy();
   if(!text) return null;
   var lines = String(text).split('\n');
   var title = (lines.shift() || '').trim();
   var c = document.createElement('canvas'); c.width = PG_W; c.height = PG_H;
-  var lay = pgLayout(c.getContext('2d'), pgBlocks(lines.join('\n')));
-  return { title: title, lines: lay.lines, height: lay.height };
+  var fig = null;
+  try{ fig = pgFigureOf(); }catch(e){ fig = null; }   /* 그림을 못 재도 글은 그대로 나간다 */
+  var lay = pgLayout(c.getContext('2d'), pgBlocks(lines.join('\n')), PG_TOP + (fig ? fig.height : 0));
+  return { title: title, lines: lay.lines, height: lay.height, figure: fig };
 }
 function openScreenImages(){
   var made = null;
