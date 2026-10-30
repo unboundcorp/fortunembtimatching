@@ -1,30 +1,117 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/", "destination": "/fortune.html" },
-    { "source": "/pay", "destination": "/api/pay" },
-    { "source": "/g/:id", "destination": "/fortune.html" },
-    { "source": "/g/:id/:name", "destination": "/fortune.html" },
-    { "source": "/j/:id", "destination": "/fortune.html" },
-    { "source": "/j/:id/:name", "destination": "/fortune.html" }
+    {
+      "source": "/j/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(kakaotalk-scrap|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|WhatsApp|Yeti|Daumoa).*"
+        }
+      ],
+      "destination": "/api/preview?k=compat&path=/j/:id"
+    },
+    {
+      "source": "/j/:id/:name",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(kakaotalk-scrap|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|WhatsApp|Yeti|Daumoa).*"
+        }
+      ],
+      "destination": "/api/preview?k=compat&path=/j/:id"
+    },
+    {
+      "source": "/g/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(kakaotalk-scrap|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|WhatsApp|Yeti|Daumoa).*"
+        }
+      ],
+      "destination": "/api/preview?k=compat&path=/g/:id"
+    },
+    {
+      "source": "/g/:id/:name",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(kakaotalk-scrap|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|WhatsApp|Yeti|Daumoa).*"
+        }
+      ],
+      "destination": "/api/preview?k=compat&path=/g/:id"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(kakaotalk-scrap|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|WhatsApp|Yeti|Daumoa).*"
+        },
+        {
+          "type": "query",
+          "key": "go",
+          "value": "(?<go>\\d{4})"
+        }
+      ],
+      "destination": "/api/preview?k=newyear&go=:go"
+    },
+    {
+      "source": "/",
+      "destination": "/fortune.html"
+    },
+    {
+      "source": "/pay",
+      "destination": "/api/pay"
+    },
+    {
+      "source": "/g/:id",
+      "destination": "/fortune.html"
+    },
+    {
+      "source": "/g/:id/:name",
+      "destination": "/fortune.html"
+    },
+    {
+      "source": "/j/:id",
+      "destination": "/fortune.html"
+    },
+    {
+      "source": "/j/:id/:name",
+      "destination": "/fortune.html"
+    }
   ],
   "headers": [
     {
       "source": "/",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
       ]
     },
     {
       "source": "/fortune.html",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
       ]
     },
     {
       "source": "/fonts/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
       ]
     }
   ]
