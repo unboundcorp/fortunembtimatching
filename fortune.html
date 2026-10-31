@@ -10608,8 +10608,19 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
 
   function paint(){
     host.innerHTML = '';
-    host.appendChild(buildGatedToc(state.sections, product, tocLabel, state.locked));
-    if(!state.locked){ var inb = interpreterNotice(state, product); if(inb) host.appendChild(inb); }
+    /* ★ 2026-10-31 대표님 "1, 2 먼저 해라" (광고 손님 길 점검 ①) — 아직 안 연 풀이는 첫 화면이 자물쇠투성이였다
+       (목차 13개 중 11개 잠김 + '해석표 조합' 안내 → 무료 이야기는 첫 화면 밖). 잠긴 동안에는 목차를 접고
+       안내는 맨 아래로 내려, 들어오자마자 무료 이야기(오프닝)부터 읽히게 한다. 연 뒤에는 예전 그대로. */
+    var lockedView = !!state.locked || !hasAccess(product.id);
+    var tocNode = buildGatedToc(state.sections, product, tocLabel, state.locked);
+    if(lockedView){
+      var tocFold = el('details',{class:'note-fold toc-fold'});
+      tocFold.appendChild(el('summary',{},['전체 목차 보기 · '+state.sections.length+'장']));
+      tocFold.appendChild(tocNode);
+      host.appendChild(tocFold);
+    } else host.appendChild(tocNode);
+    var inb = !state.locked ? interpreterNotice(state, product) : null;
+    if(inb && !lockedView) host.appendChild(inb);
     /* ★ 2026-09-09 — 저장 열쇠가 안 맞아 **먼저 만들어 드린 글을 되찾아 온** 경우다.
        아무 말 없이 옛 글을 띄우면 "왜 지금 화면 점수랑 글이 다르지?"가 된다.
        서버가 알려줄 때만 적는다(state.recovered) — 우리가 짐작해서 적지 않는다. */
@@ -10626,6 +10637,7 @@ function paintReportInto(host, localSections, product, tocLabel, payloadFn, disp
       extras: extras || null,
       hook: hookHtml || ''
     });
+    if(inb && lockedView) host.appendChild(inb);   /* 2026-10-31 — 잠긴 동안에는 맨 아래로 */
     /* ★ 2026-10-19 대표님 "3) 후기 해라" — 풀이 맨 끝에 후기 칸.
        ★ 2026-10-21 대표님 "후기는 결제하지 않은 사람도 누구든 쓸 수 있게 하자" — 잠긴 풀이(무료 부분만 본 분)에도 둔다.
          결제한 분은 유료 본문을 다 받은 뒤에(쓰는 중·실패 중에는 안 둠). */
@@ -17078,9 +17090,16 @@ function renderOnboarding(){
      문장보다 먼저 알게 되는 자리이고, 여기에는 계산 근거·고지·결제가 없다.
      세 종만 쓰는 이유: 21종을 다 세우면 320px에서 줄이 네 겹이 되고 첫 화면이 시끄러워진다. */
   var invitedLead = !!(PENDING_GROUP_JOIN || PENDING_GROUP || PENDING_MEET || PENDING_ROOM || PENDING_INVITE);
+  /* ★ 2026-10-31 대표님 "1, 2 먼저 해라" (광고 손님 길 점검 ②) — ?go=2027 광고로 온 분이 '우리 인연은 몇 점?'과
+     궁합 그림을 봤다(광고와 다른 말 · 카카오 단추가 첫 화면 밖). 그 해 사주 광고로 온 분에게는 그 말부터 하고
+     궁합 그림·궁합 카드를 빼서 단추를 첫 화면 안으로 올린다. 초대받은 분이 이긴다(초대가 먼저). */
+  var adGoLead = !invitedLead ? adGoPending() : null;
   wrap.appendChild(el('p',{class:'onboard-lead'},[
-    invitedLead ? '궁합 초대를 받으셨어요' : '우리 인연은 몇 점?'
+    invitedLead ? '궁합 초대를 받으셨어요' : (adGoLead ? adGoLead.year+'년 내 사주, 미리 봐요' : '우리 인연은 몇 점?')
   ]));
+  if(adGoLead){
+    wrap.appendChild(el('p',{class:'onboard-sub'},['그 해 기운과 달마다 흐름부터', el('br'), '무료로 볼 수 있어요.']));
+  }
   /* ★ 2026-09-09 대표님 지시("고객이 실제 움직이는 플로우 고려해서 모순적인거 찾아서 고쳐라")
      ---------------------------------------------------------------------
      여기서 "생년월일만 넣으면"이라고 약속하는데, 바로 다음 화면인 프로필 마법사는
@@ -17107,7 +17126,9 @@ function renderOnboarding(){
   /* ★ 2026-10-07 — 그냥 오신 분에게는 캐릭터 줄 대신 결과 예시(관계 그림)를 보여 준다.
      그림 안에 캐릭터가 이미 서 있어 캐릭터 줄이 하던 일도 함께 한다. 초대받은 분은 고를 것이
      정해져 있으니 예전 캐릭터 줄 그대로. */
-  if(!invitedLead){
+  if(adGoLead){
+    /* 궁합 예시 그림은 뺀다 — 사주 광고와 다른 말이고, 단추를 첫 화면 밖으로 민다 */
+  } else if(!invitedLead){
     wrap.appendChild(buildOnboardSample());
   } else if(introRow.childNodes.length){
     wrap.appendChild(introRow);
@@ -17167,7 +17188,9 @@ function renderOnboarding(){
     svcCards.push(c);
     return c;
   }
-  if(!invited){
+  if(!invited && adGoLead){
+    wrap.appendChild(onbCard(adGoLead.year+'년 내 사주 풀이 보기', '한 해 흐름 · 달마다 운세 · 타고난 기질', 'self'));
+  } else if(!invited){
     /* ★ 2026-10-07 대표님 지시 "타인과 인연 점수 확인하기로 바꾸고 그걸 위로 올리자" —
        궁합 카드를 위로, 이름도 바꿨다(바로 위 예시 그림과 이어지는 순서). */
     wrap.appendChild(onbCard('타인과 인연 점수 확인하기',

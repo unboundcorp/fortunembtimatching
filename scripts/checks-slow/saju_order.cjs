@@ -28,8 +28,8 @@ const WANT = ['오프닝','한 해 흐름','금전운','사랑','일','타고난
       r.continue(); });
     await p.goto(site.url + '/fortune.html', {waitUntil:'domcontentloaded'}); await wait(1200);
     const look = () => p.evaluate(function(){ return {
-      toc: Array.prototype.map.call(document.querySelectorAll('.toc-nav a, .toc-nav button'), function(x){ return x.innerText.replace(/\s+/g,' ').trim(); }),
-      bars: document.querySelectorAll('.ym-bar').length, from: (document.querySelector('.toc-nav a.toc-locked')||{}).innerText || '',   /* 2026-10-31 '‘○○’부터 잠겨 있어요' 줄을 빼서 목차의 첫 자물쇠로 잰다 */
+      toc: Array.prototype.map.call(document.querySelectorAll('.toc-nav a, .toc-nav button'), function(x){ return x.textContent.replace(/\s+/g,' ').replace(/^잠김\s*/,'').trim(); }   /* 10-31 잠긴 동안 목차가 접혀 innerText 가 비므로 textContent */),
+      bars: document.querySelectorAll('.ym-bar').length, from: (document.querySelector('.toc-nav a.toc-locked')||{}).textContent || '',   /* 2026-10-31 '‘○○’부터 잠겨 있어요' 줄을 빼서 목차의 첫 자물쇠로 잰다 */
       ov: document.documentElement.scrollWidth > document.documentElement.clientWidth }; });
     await p.evaluate(function(y){ var T = window.__INYEON_TEST__; T.goRoute('report13'); T.setViewYear(y); }, Y); await wait(1300);
     let s = await look();
