@@ -6232,7 +6232,7 @@ var PRODUCTS = {
   /* ★ 2026-09-03 — 이 상품은 연도가 붙는다(YEARLY_PRODUCTS). 결제창 이름에는
      productDef()가 '· 2027년'을 붙여 주므로 여기 name에는 연도를 적지 않는다.
      ★ '올해'라고 쓰지 마라 — 고른 해가 올해가 아닐 수 있다. 사는 순간 그 해의 것이다. */
-  saju_full:    { id:'saju_full',    name:'사주 풀이 전체 해석', price:1900, kind:'once',
+  saju_full:    { id:'saju_full',    name:'사주 풀이 전체 해석', price:3500, kind:'once',
                   desc:'금전운 · 건강운 · 월별 운세\n인생 흐름(10년 대운)까지!',
                   opens:['사주 풀이 전체 — 성격·재물·직업·관계·건강',
                          '고른 해의 1월부터 12월까지 달마다의 흐름',
@@ -6255,7 +6255,7 @@ var PRODUCTS = {
      같은 상품을 여러 번 사면 그만큼 열린다(서버 hasAiAccess가 산 횟수를 센다).
      ★ 서버(api/_lib/products.js)의 같은 줄과 한 쌍이다. 한쪽만 고치면 화면에 적힌 값과
        실제 청구액이 갈린다 — 그건 표시광고 문제가 된다. */
-  compat_full:  { id:'compat_full',  name:'궁합 상세 (한 쌍)', price:990, kind:'once',
+  compat_full:  { id:'compat_full',  name:'궁합 상세 (한 쌍)', price:1900, kind:'once',
                   desc:'다툴 때 벌어지는 일 · 화해하는 법\n사주와 성격유형을 엮은 두 분만의 풀이까지!',
                   /* ★ R85-e (QA 지적 F-3) — '점수 다섯 항목이 각각 왜 그렇게 나왔는지'는
                      이미 무료 요약 화면에 다 있다(막대 다섯 개 + 접이식 근거 패널, 잠금 없음).
@@ -6274,7 +6274,7 @@ var PRODUCTS = {
        기간이 끝나면 못 보는 것처럼 읽혔다. 실제로는 만든 글은 영구다(R76).
        비싼 상품이 더 불리해 보이게 적혀 있던 셈이다 — 대표님도 그렇게 읽으셨다.
      ★ 서버(api/_lib/products.js)의 같은 줄과 한 쌍이다. 한쪽만 고치지 마라. */
-  premium_pass: { id:'premium_pass', name:'전체 이용권', price:3900, kind:'pass', days:PASS_DAYS,   /* ★ 2026-09-07 — 4,900 → 3,900 (궁합 990원과 함께 내림) */
+  premium_pass: { id:'premium_pass', name:'전체 이용권', price:5900, kind:'pass', days:PASS_DAYS,   /* ★ 2026-09-07 — 4,900 → 3,900 (궁합 990원과 함께 내림) */
                   desc:'사주 · 성격유형 · 궁합\n전체 해석이 한 번에 열려요!',
                   /* ★ '만든 글은 계속 보인다'는 말은 여기 두지 않는다.
                      결제창 아래 편수 줄이 이미 그 말을 한다 — 한 창에서 두 번 하지 않는다. */
@@ -6436,8 +6436,12 @@ function productIdFor(base, year){
    ★ 2026-10-22 대표님 "10월 31일까지로 고지 먼저 바꾸면?" → "그대로 해" — 끝을 12/31 → 10/31 로 당김.
      날짜 글자는 이 값에서 만든다(launchEndText · launchAfterText) — 손으로 적지 마십시오.
    ★ 끝난 뒤 '연장'하지 마십시오 — 가짜 마감이 됩니다. */
-var LAUNCH_PRICE_UNTIL = Date.UTC(2026, 9, 31, 15, 0, 0);   /* = KST 2026-11-01 00:00 */
-var AFTER_LAUNCH_PRICE = { saju_full:2900, mbti_full:2900, compat_full:1500, premium_pass:5900 };
+/* ★ 2026-10-31 대표님 "시점은 바로 지금부터 해라 그리고 고지도 싹다 바꿔" — 출시 기념가를 그 자리에서 끝내고 값을
+     사주 3,500 · 성격유형 1,900 · 궁합 1,900 · 이용권 5,900 으로 바꿨습니다(PRODUCTS.price). 장치는 꺼 둡니다(0 = 꺼짐).
+     ★ '원래 ○원인데 할인 중' 같은 판 적 없는 정가는 적지 않습니다(같은 날 대표님 요청을 표시광고법 때문에 안 함).
+     다시 기간 할인을 하려면: 끝나는 시각과 그 뒤 값을 여기와 서버에 함께 넣으면 '○월 ○일부터 ○원' 고지가 저절로 붙습니다. */
+var LAUNCH_PRICE_UNTIL = 0;   /* 꺼짐 */
+var AFTER_LAUNCH_PRICE = {};
 function launchPriceActive(now){ return (now == null ? Date.now() : now) < LAUNCH_PRICE_UNTIL; }
 function launchKstMD(ms){ var d = new Date(ms + 9*3600*1000); return (d.getUTCMonth()+1) + '월 ' + d.getUTCDate() + '일'; }
 function launchEndText(){ return launchKstMD(LAUNCH_PRICE_UNTIL - 1); }      /* '10월 31일' */

@@ -1,34 +1,36 @@
 /* =====================================================================
-   출시 기념가 → 2027-01-01 자동 값 바꿈 (빠른 층)
+   상품 값 — 화면·서버 한 쌍 (빠른 층)
    ---------------------------------------------------------------------
-   2026-10-08 대표님 지시 "12/31까지로 하고 그날 지나면 자동으로 값바꿔" · "A로 가자"
-   ① 화면과 서버의 끝나는 시각 · 바뀐 값이 같다(한 쌍)
-   ② 끝나는 시각은 한국 시각 2027-01-01 00:00 이다
-   ③ 서버 productOf 가 그 시각 전에는 기념가, 그 뒤에는 새 값을 준다(연도 상품 포함)
-   ④ 바뀐 값이 A안(2,900 · 2,900 · 1,500 · 5,900)이다
+   2026-10-31 대표님 "시점은 바로 지금부터 해라 그리고 고지도 싹다 바꿔"
+   — 출시 기념가를 그 자리에서 끝내고 사주 3,500 · 성격유형 1,900 · 궁합 1,900 · 이용권 5,900.
+   ① 상품 값이 화면·서버 같고 위 값이다
+   ② 기념가 장치가 양쪽 다 꺼져 있다(끝나는 시각 0 · 바뀔 값 없음)
+   ③ 서버 productOf 가 연도 상품까지 새 값을 준다(오늘 · 11/1 · 내년 모두)
 ===================================================================== */
 const fs = require('fs'), path = require('path');
 const { ROOT, reporter } = require('../_lib.cjs');
-const R = reporter('출시 기념가 자동 전환');
+const R = reporter('상품 값 (화면·서버)');
 (async () => {
   const src = fs.readFileSync(path.join(ROOT, 'fortune.html'), 'utf8');
-  const until = src.match(/var LAUNCH_PRICE_UNTIL = Date\.UTC\(([^)]*)\)/);
+  const until = src.match(/var LAUNCH_PRICE_UNTIL = ([^;]*);/);
   const after = src.match(/var AFTER_LAUNCH_PRICE = (\{[^}]*\})/);
-  const cliUntil = until ? eval('Date.UTC(' + until[1] + ')') : null;
+  const cliUntil = until ? eval(until[1]) : null;
   const cliAfter = after ? eval('(' + after[1] + ')') : null;
   const P = await import('file://' + path.join(ROOT, 'api/_lib/products.js'));
-  R.note(cliUntil === P.LAUNCH_PRICE_UNTIL, '① 끝나는 시각이 화면·서버 같다', cliUntil + ' / ' + P.LAUNCH_PRICE_UNTIL);
-  R.note(JSON.stringify(cliAfter) === JSON.stringify(P.AFTER_LAUNCH_PRICE), '① 바뀐 값이 화면·서버 같다', JSON.stringify(cliAfter));
-  R.note(new Date(P.LAUNCH_PRICE_UNTIL).toISOString() === '2026-10-31T15:00:00.000Z', '② 한국 시각 2026-11-01 00:00 (10-22 당김)', new Date(P.LAUNCH_PRICE_UNTIL).toISOString());
-  R.note(JSON.stringify(P.AFTER_LAUNCH_PRICE) === JSON.stringify({saju_full:2900, mbti_full:2900, compat_full:1500, premium_pass:5900}), '④ A안 값');
+  const WANT = {saju_full:3500, mbti_full:1900, compat_full:1900, premium_pass:5900};
+  Object.keys(WANT).forEach((k) => {
+    const m = new RegExp(k + ":\\s*\\{ id:'" + k + "',[^}]*?price:(\\d+)").exec(src);
+    const cli = m ? Number(m[1]) : null;
+    R.note(cli === WANT[k] && P.PRODUCTS[k].price === WANT[k], '① ' + k + ' — 화면·서버 모두 ' + WANT[k], cli + ' / ' + P.PRODUCTS[k].price);
+  });
+  R.note(cliUntil === 0 && P.LAUNCH_PRICE_UNTIL === 0, '② 기념가 끝나는 시각 — 양쪽 다 꺼짐(0)', cliUntil + ' / ' + P.LAUNCH_PRICE_UNTIL);
+  R.note(JSON.stringify(cliAfter) === '{}' && JSON.stringify(P.AFTER_LAUNCH_PRICE) === '{}', '② 바뀔 값 — 양쪽 다 없음');
   const realNow = Date.now;
   function at(ms, id){ Date.now = () => ms; try{ const p = P.productOf(id); return p && p.price; } finally { Date.now = realNow; } }
-  const before = P.LAUNCH_PRICE_UNTIL - 1000, aft = P.LAUNCH_PRICE_UNTIL;
-  const rows = [['saju_full:2026',1900,2900],['saju_full:2027',1900,2900],['mbti_full',1900,2900],['compat_full',990,1500],['premium_pass:2027',3900,5900]];
-  rows.forEach(([id, b, a]) => {
-    const pb = at(before, id), pa = at(aft, id);
-    R.note(pb === b && pa === a, '③ ' + id + ' — 10/31 23:59:59 ' + b + ' · 11/1 00:00 ' + a, pb + ' → ' + pa);
+  const times = [Date.now(), Date.UTC(2026, 9, 31, 15, 0, 5), Date.UTC(2027, 5, 1)];
+  [['saju_full:2026',3500],['saju_full:2027',3500],['mbti_full',1900],['compat_full',1900],['premium_pass:2027',5900]].forEach(([id, v]) => {
+    const got = times.map((t) => at(t, id));
+    R.note(got.every((x) => x === v), '③ ' + id + ' — 언제 물어도 ' + v, got.join(' · '));
   });
-  R.note(P.PRODUCTS.saju_full.price === 1900, '③ 상품표 자체(기념가)는 안 바뀐다 — 값은 productOf 가 그때그때');
   R.done();
 })().catch(e => { console.error(e); process.exit(2); });
