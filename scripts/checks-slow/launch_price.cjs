@@ -36,7 +36,7 @@ const wait = L.wait;
       R.note(!t.active && t.prices.join(',') === '4900,3900,2900,8900', label + ' — 값 4,900 · 3,900 · 2,900 · 8,900 · 기념가 꺼짐', JSON.stringify(t));
       await p.evaluate(function(){ window.__INYEON_TEST__.goRoute('mbtiReport'); }); await wait(1000);
       const lock = await p.evaluate(function(){ var b = document.querySelector('.locked-cta .btn-buy'); return b ? b.textContent : ''; });
-      R.note(/3,900원으로 열기/.test(lock) && NO_LAUNCH(lock), label + ' — 잠금 단추 3,900원 · 기념가 없음', lock);
+      R.note(/풀이 열기/.test(lock) && !/원/.test(lock) && NO_LAUNCH(lock), label + ' — 잠금 단추에 금액 없음(10-31 결제창에서 처음 보임)', lock);
       await p.evaluate(function(){ window.__INYEON_TEST__.openPaywall(window.__INYEON_TEST__.PRODUCTS.premium_pass); }); await wait(600);
       const pay = await p.evaluate(function(){ var m = document.querySelector('.modal-box'); return {launch: !!document.querySelector('.modal-box .pay-launch'), price: (document.querySelector('.modal-box .pay-price')||{}).textContent, txt: m ? m.innerText : ''}; });
       R.note(!pay.launch && pay.price === '8,900원' && /11,700원/.test(pay.txt) && NO_LAUNCH(pay.txt), label + ' — 이용권 결제창 8,900원 · 따로 구매하면 11,700원 · 기념가 줄 없음', JSON.stringify({launch:pay.launch, price:pay.price}));

@@ -620,6 +620,10 @@ main{flex:1;padding:28px var(--pad-x) calc(96px + var(--tabbar-h) + env(safe-are
 .btn-ghost:hover{background:var(--btn-soft-hi);border-color:transparent;}
 /* ★ 2026-10-08 대표님 지시 "구매를 유도하는 버튼은 너무 눈에띄게 하지 말아"(이음 사진 — 옅은 단추).
    결제로 들어가는 입구 단추는 먹색 대신 낙관색을 옅게 깐 면. 이용권은 글자 링크. 결제창 안의 [결제하기]는 그대로. */
+.pitch-box{background:#fff;border:1px solid var(--gold-line);border-radius:14px;padding:14px 8px;margin:14px 0 12px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.pitch-box .locked-title{margin-top:0;font-size:1.02rem;letter-spacing:-.02em;}
+.lock-reassure{font-size:.8rem;color:var(--ink-dim);line-height:1.6;margin:8px 0 0;text-align:center;word-break:keep-all;}
+.lock-reassure b{color:var(--ink);}
 .btn-buy{background:var(--gold-soft);color:var(--brand);border-color:transparent;font-weight:600;box-shadow:none;}
 .btn-buy:hover{background:rgba(175,43,37,.13);border-color:transparent;}
 .btn-buy .l2{color:var(--brand);opacity:.8;}
@@ -1621,7 +1625,6 @@ button.today-iljin:active{opacity:.7;}
 .locked-icon .lock-icon{width:1.6rem;height:1.6rem;margin-right:0;vertical-align:middle;}
 .locked-title{font-size:1.08rem;font-weight:700;color:var(--ink);margin-bottom:6px;word-break:keep-all;text-wrap:balance;}
 .locked-desc{font-size:.88rem;font-weight:600;color:var(--brand);margin-bottom:6px;line-height:1.6;}
-.locked-from{font-size:.78rem;color:var(--ink-faint);margin-bottom:12px;}
 /* ★ 2026-09-26 — 걸이 문장. 그 사람 계산에서 나온 말이라 눈에 먼저 들어와야 한다. */
 .locked-hook{font-size:.92rem;color:var(--ink);line-height:1.75;text-align:left;background:var(--panel-3);border-radius:10px;padding:12px 14px;margin:2px 0 14px;}
 .locked-hook b{color:var(--brand);font-weight:700;}
@@ -6286,7 +6289,7 @@ var PRODUCTS = {
                        사주 결제창의 "해마다 흐름이 달라서…"와 같은 자리입니다. */
                   opens:['사주 풀이 · 성격유형 풀이 · 궁합 상세',
                          '고른 해가 끝날 때까지 언제든 만들면 돼요',
-                         '사주 풀이는 고른 해의 것이에요 (성격유형 · 궁합은 해와 상관없어요)'] }
+                         '사주 풀이는 고른 해의 풀이를 해드려요 (성격유형 · 궁합은 해와 상관없어요)'] }
 };
 
 /* =====================================================================
@@ -8108,9 +8111,10 @@ function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles, hookHtml){
   /* ★ 2026-09-26 — 걸이(hook): 그 사람 계산에서 나온 한두 문장으로 "어 이거 난데?" 를 만든다.
      부르는 쪽이 계산된 사실로만 만든다(buildSajuHook 등) — 여기서 지어내지 않는다. */
   if(hookHtml) cta.appendChild(el('div',{class:'locked-hook', html:hookHtml}));
-  cta.appendChild(el('div',{class:'locked-title'},[productPitch(product)]));
-  cta.appendChild(el('div',{class:'locked-desc'}, descNodes(product.desc)));
-  if(sectionTitle) cta.appendChild(el('div',{class:'locked-from'},['‘'+sectionTitle+'’부터 잠겨 있어요']));
+  /* ★ 2026-10-31 대표님 — 권유 문구를 하얀 상자로 강조 · '‘○○’부터 잠겨 있어요' 줄은 뺌(목차의 자물쇠가 이미 말함) */
+  cta.appendChild(el('div',{class:'pitch-box'},[
+    el('div',{class:'locked-title'},[productPitch(product)]),
+    el('div',{class:'locked-desc'}, descNodes(product.desc))]));
 
   /* 잠긴 이야기의 제목을 그대로 늘어놓는다 — 목차에 이미 있는 제목이라 새로 여는 것이 아니다. */
   if(lockedTitles && lockedTitles.length){
@@ -8128,12 +8132,14 @@ function lockedBlock(product, teaserHtml, sectionTitle, lockedTitles, hookHtml){
   /* ★ 2026-10-19 — 운영자가 [공개]로 고른 후기만, 있을 때만 결제 단추 위에 */
   var rvPub = buildPublicReviews(product); if(rvPub) cta.appendChild(rvPub);
   var btn = el('button',{class:'btn btn-buy btn-block', onclick:function(){ openPaywall(product); }},
-    [btnLines(PRODUCTS[splitProductId(product.id).base].name, (product.year ? product.year+'년 · ' : '')+(launchPriceActive() ? '출시 기념가 ' : '')+formatWon(product.price)+'으로 열기')]);
+    [btnLines(PRODUCTS[splitProductId(product.id).base].name, product.year ? product.year+'년 풀이 열기' : '풀이 열기')]);
+  /* ★ 2026-10-31 대표님 "들어가서 누를 때 금액 결제가 뜨게" — 잠금 카드에는 금액을 안 적는다. 금액은 결제창에서 처음 크게 보인다
+     (결제 전에 금액이 보이므로 고지 문제 없음). 이용권 비교(따로 구매하면 → 이용권)도 이용권 결제창에 있다. 되살리지 마십시오. */
   cta.appendChild(btn);
-  /* 2026-10-08 — 아래 '따로 셋을 구매하면 …원 덜 들어요' 문장은 같은 말이라 링크 안의 취소선 값으로 합쳤다. */
-  var cmp = passCompareNodes(true);
+  cta.appendChild(el('p',{class:'lock-reassure'},['오늘 운세 · 내 사주 · 궁합 점수는 ', el('b',{},['무료']), '예요.', el('br'),
+    '결제한 풀이는 카카오 계정에 남아', el('br'), el('b',{},['언제든 다시']), ' 볼 수 있어요.']));   /* 390에서 '볼 / 수 있어요'로 접혀 뜻 단위로 끊음 */
   cta.appendChild(el('button',{class:'btn-buy-sub', type:'button', onclick:function(){ openPaywall(passProduct()); }},
-    cmp ? ['전체 이용권으로 열기', el('br')].concat(cmp) : ['전체 이용권으로 열기 · '+formatWon(PRODUCTS.premium_pass.price)]));   /* 320에서 '3,900원'만 떨어져서 뜻 단위로 끊음 */
+    ['전체 이용권으로 한 번에 열기']));
   wrap.appendChild(cta);
   return wrap;
 }
@@ -10912,7 +10918,7 @@ function paidContentNotice(state, onRetry, product){
     box.appendChild(el('span',{},['먼저 만드신 글은 그대로 열려요. '+one+'을 더 보시려면 아래에서 열어드릴게요.']));
     var buyP = (product.kind === 'pass') ? PRODUCTS.compat_full : product;
     box.appendChild(el('button',{class:'btn btn-buy btn-sm', onclick:function(){ openPaywall(buyP); }},
-      [one+' 더 열기 · '+formatWon(buyP.price)]));
+      [one+' 더 열기']));
     box.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:onRetry},['다시 시도']));
     return box;
   }
@@ -10927,7 +10933,7 @@ function paidContentNotice(state, onRetry, product){
       var buyN = (product.kind === 'pass') ? PRODUCTS.compat_full : product;
       box.appendChild(el('span',{},['지금 보는 풀이는 결제하면 바로 만들어져요. 먼저 만든 풀이가 있다면 그건 그대로 열려요.']));
       box.appendChild(el('button',{class:'btn btn-buy btn-sm', onclick:function(){ openPaywall(buyN); }},
-        ['결제하고 열기 · '+formatWon(buyN.price)]));
+        ['결제하고 열기']));
     }
     box.appendChild(el('button',{class:'btn btn-ghost btn-sm', onclick:function(){
       fetchEntitlements().then(function(){ render(); }, function(){ render(); });
@@ -11042,7 +11048,7 @@ function quotaLockBlock(product, code, remain){
     ? ('먼저 만든 풀이는 그대로 열려요. '+one+'을 더 결제하면 이 풀이를 바로 만들어 드려요.')
     : '먼저 만든 풀이가 있다면 그건 그대로 열려요.']));
   cta.appendChild(el('button',{class:'btn btn-buy btn-block', onclick:function(){ openPaywall(buy); }},
-    [btnLines(one+' 더 열기', formatWon(buy.price))]));
+    [one+' 더 열기']));
   wrap.appendChild(cta);
   return wrap;
 }
@@ -19137,7 +19143,8 @@ function adminDash(body){
   /* (a) 기간 줄 */
   var bar = el('div',{class:'ad-bar'});
   var seg = el('div',{class:'ad-seg'});
-  [['d7','7일'],['d30','30일'],['all','90일'],['custom','직접']].forEach(function(pr){
+  /* ★ 2026-10-31 대표님 "어드민에 1일도 넣어라" — d1 = 오늘 하루(KST). 앞 기간 비교는 어제 */
+  [['d1','1일'],['d7','7일'],['d30','30일'],['all','90일'],['custom','직접']].forEach(function(pr){
     seg.appendChild(el('button',{type:'button','aria-pressed':STATS_RANGE===pr[0]?'true':'false',
       onclick:(function(k){ return function(){
         STATS_RANGE=k;
@@ -24600,7 +24607,7 @@ function buildDeepCompatCard(pA, pB, res, unlocked, titleName, onOpen, va, vb){
     card.appendChild(el('div',{class:'locked-title', style:'text-align:left;margin-top:12px;'},[productPitch(PRODUCTS.compat_full)]));
     card.appendChild(el('div',{class:'locked-desc', style:'text-align:left;margin:6px 0 10px;'}, descNodes(PRODUCTS.compat_full.desc)));
     var buy = el('button',{class:'btn btn-buy btn-block', type:'button', onclick:function(){ openPaywall(PRODUCTS.compat_full); }},
-      [lockIcon('잠김 · 유료'), '심층 궁합 분석 열기 · '+formatWon(PRODUCTS.compat_full.price)]);
+      [lockIcon('잠김 · 유료'), '심층 궁합 분석 열기']);
     card.appendChild(buy);
     return card;
   }

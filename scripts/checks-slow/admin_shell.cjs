@@ -224,7 +224,7 @@ const LABEL = {dash:'대시보드', members:'회원 관리', tickets:'문의 · 
   R.note(/2,733원/.test(o.text), '남는 것 = 매출 − AI 비용', o.text.slice(0,0));
   R.note(/토큰 입력 12,000 · 출력 9,000/.test(o.text), '쓴 토큰이 그대로 보인다');
   R.note(dash.lines === 3, '활동 추이가 세 줄이다', dash.lines + '줄');
-  R.note(['7일','30일','90일','직접'].every(x => dash.segs.indexOf(x) >= 0), '기간이 넷이다', dash.segs.join(','));
+  R.note(['1일','7일','30일','90일','직접'].every(x => dash.segs.indexOf(x) >= 0), '기간이 다섯이다(1일 포함 · 10-31)', dash.segs.join(','));
   R.note(/2,890원/.test(o.text), '고른 기간의 매출이 더해진다');
   /* ★ 2026-10-19 회원 분포 — 표가 서고 값이 맞게 나뉘는가 */
   ['회원 분포','성별','연령대','성별 × 연령대','많은 성격유형','대표 기운'].forEach(function(w){ R.note(o.text.indexOf(w) >= 0, "'" + w + "' 칸이 있다"); });

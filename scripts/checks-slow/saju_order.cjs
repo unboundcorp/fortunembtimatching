@@ -29,12 +29,12 @@ const WANT = ['오프닝','한 해 흐름','금전운','사랑','일','타고난
     await p.goto(site.url + '/fortune.html', {waitUntil:'domcontentloaded'}); await wait(1200);
     const look = () => p.evaluate(function(){ return {
       toc: Array.prototype.map.call(document.querySelectorAll('.toc-nav a, .toc-nav button'), function(x){ return x.innerText.replace(/\s+/g,' ').trim(); }),
-      bars: document.querySelectorAll('.ym-bar').length, from: (document.querySelector('.locked-from')||{}).innerText || '',
+      bars: document.querySelectorAll('.ym-bar').length, from: (document.querySelector('.toc-nav a.toc-locked')||{}).innerText || '',   /* 2026-10-31 '‘○○’부터 잠겨 있어요' 줄을 빼서 목차의 첫 자물쇠로 잰다 */
       ov: document.documentElement.scrollWidth > document.documentElement.clientWidth }; });
     await p.evaluate(function(y){ var T = window.__INYEON_TEST__; T.goRoute('report13'); T.setViewYear(y); }, Y); await wait(1300);
     let s = await look();
     R.note(JSON.stringify(s.toc.slice(0,13)) === JSON.stringify(WANT), '① 목차 순서', s.toc.join(','));
-    R.note(/금전운/.test(s.from), '② 잠긴 해: 금전운부터 잠김(무료 두 장)', s.from);
+    R.note(/금전운/.test(s.from), '② 잠긴 해: 목차의 첫 자물쇠가 금전운(무료 두 장)', s.from);
     R.note(s.bars === 12, '③ 잠긴 해에도 2장 아래 막대 12개', String(s.bars));
     R.note(!s.ov, '가로 넘침 없음 (잠김)');
     await p.evaluate(function(y){ window.__INYEON_TEST__.setViewYear(y); }, Y+1); await wait(2500);
