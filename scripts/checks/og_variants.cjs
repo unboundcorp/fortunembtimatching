@@ -14,7 +14,13 @@ const R = reporter('링크 미리보기 갈래');
   });
   const v = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
   const bots = v.rewrites.filter(r => /^\/api\/preview/.test(r.destination));
-  R.note(bots.length === 5 && bots.every(r => (r.has || []).some(h => h.key === 'user-agent')), 'preview 로 가는 규칙은 다섯 개 모두 로봇 user-agent 조건이 있다', bots.length);
+  R.note(bots.length === 6 && bots.every(r => (r.has || []).some(h => h.key === 'user-agent')), 'preview 로 가는 규칙은 여섯 개 모두 로봇 user-agent 조건이 있다', bots.length);
+  /* 2026-10-31 대표님 "궁합 관련 링크는 전부 궁합 썸네일 · 2027 링크는 신년 썸네일" — ?go=compat 추가 */
+  const gc = bots.find(r => (r.has || []).some(h => h.key === 'go' && h.value === 'compat'));
+  const gy = bots.find(r => (r.has || []).some(h => h.key === 'go' && /\\d\{4\}/.test(h.value)));
+  R.note(!!gc && /k=compat/.test(gc.destination) && bots.indexOf(gc) < bots.indexOf(gy), '?go=compat → 궁합 그림 (연도 규칙보다 앞)', gc ? gc.destination : '없음');
+  R.note(!!gy && /k=newyear/.test(gy.destination), '?go=YYYY → 신년 그림', gy ? gy.destination : '없음');
+  R.note(bots.filter(r => /^\/(j|g)\//.test(r.source)).every(r => /k=compat/.test(r.destination)), '/j/ · /g/ 초대 링크 → 궁합 그림');
   const firstStatic = v.rewrites.findIndex(r => r.destination === '/fortune.html');
   R.note(v.rewrites.findIndex(r => /^\/api\/preview/.test(r.destination)) < firstStatic && bots.every(r => v.rewrites.indexOf(r) < firstStatic), '로봇 규칙이 fortune.html 규칙보다 앞에 있다');
   const re = new RegExp('^' + bots[0].has.find(h => h.key === 'user-agent').value + '$');

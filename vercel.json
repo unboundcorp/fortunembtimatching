@@ -56,6 +56,22 @@
         {
           "type": "query",
           "key": "go",
+          "value": "compat"
+        }
+      ],
+      "destination": "/api/preview?k=compat&path=/?go=compat"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(kakaotalk-scrap|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|Discordbot|LinkedInBot|WhatsApp|Yeti|Daumoa).*"
+        },
+        {
+          "type": "query",
+          "key": "go",
           "value": "(?<go>\\d{4})"
         }
       ],

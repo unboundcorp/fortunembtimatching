@@ -6131,6 +6131,8 @@ var AD_GO_KEY = 'inyeon.adGo';
     if(g === null) return;
     var y = /^(\d{4})$/.test(g) ? Number(g) : NaN;
     if(isFinite(y)) localStorage.setItem(AD_GO_KEY, JSON.stringify({year:y, at:Date.now()}));
+    /* ★ 2026-10-31 대표님 — 궁합 광고 주소 ?go=compat (로그인·정보 입력 뒤 궁합 링크 보내기 화면으로) */
+    else if(g === 'compat') localStorage.setItem(AD_GO_KEY, JSON.stringify({kind:'compat', at:Date.now()}));
     q.delete('go');
     var s = q.toString();
     history.replaceState(history.state, '', location.pathname + (s ? '?' + s : '') + location.hash);
@@ -6140,13 +6142,27 @@ function adGoPending(){
   try{
     var o = JSON.parse(localStorage.getItem(AD_GO_KEY) || 'null');
     if(!o || !o.at || Date.now() - o.at > 2*60*60*1000){ if(o) localStorage.removeItem(AD_GO_KEY); return null; }
+    if(o.kind === 'compat') return null;   /* 궁합 광고는 adCompatPending */
     var now = (new Date()).getFullYear();
     /* 연도 고르기 줄에 있는 해(올해·내년)만 받는다. 아니면 올해로 */
     var y = (o.year === now || o.year === now + 1) ? o.year : now;
     return {year:y};
   }catch(e){ return null; }
 }
+function adCompatPending(){
+  try{
+    var o = JSON.parse(localStorage.getItem(AD_GO_KEY) || 'null');
+    if(!o || o.kind !== 'compat' || !o.at) return false;
+    if(Date.now() - o.at > 2*60*60*1000){ localStorage.removeItem(AD_GO_KEY); return false; }
+    return true;
+  }catch(e){ return false; }
+}
 function adGoApply(){
+  if(adCompatPending()){
+    if(!activeProfile()) return false;
+    setMode('compat'); ROUTE = 'compat'; COMPAT_VIEW = 'pair';
+    return true;
+  }
   var g = adGoPending();
   if(!g || !activeProfile()) return false;
   setMode('self'); VIEW_YEAR = g.year; ROUTE = 'report13';
@@ -17094,8 +17110,9 @@ function renderOnboarding(){
      궁합 그림을 봤다(광고와 다른 말 · 카카오 단추가 첫 화면 밖). 그 해 사주 광고로 온 분에게는 그 말부터 하고
      궁합 그림·궁합 카드를 빼서 단추를 첫 화면 안으로 올린다. 초대받은 분이 이긴다(초대가 먼저). */
   var adGoLead = !invitedLead ? adGoPending() : null;
+  var adCompatLead = !invitedLead && !adGoLead && adCompatPending();
   wrap.appendChild(el('p',{class:'onboard-lead'},[
-    invitedLead ? '궁합 초대를 받으셨어요' : (adGoLead ? adGoLead.year+'년 내 사주, 미리 봐요' : '우리 인연은 몇 점?')
+    invitedLead ? '궁합 초대를 받으셨어요' : (adGoLead ? adGoLead.year+'년 내 사주, 미리 봐요' : (adCompatLead ? '우리 궁합, 몇 점일까요?' : '우리 인연은 몇 점?'))
   ]));
   if(adGoLead){
     wrap.appendChild(el('p',{class:'onboard-sub'},['그 해 기운과 달마다 흐름부터', el('br'), '무료로 볼 수 있어요.']));
@@ -17188,7 +17205,9 @@ function renderOnboarding(){
     svcCards.push(c);
     return c;
   }
-  if(!invited && adGoLead){
+  if(!invited && adCompatLead){
+    wrap.appendChild(onbCard('궁합 링크 보내고 점수 확인하기', '링크 하나로 1:1부터 '+GC_MAX+'명 모임까지', 'compat'));
+  } else if(!invited && adGoLead){
     wrap.appendChild(onbCard(adGoLead.year+'년 내 사주 풀이 보기', '한 해 흐름 · 달마다 운세 · 타고난 기질', 'self'));
   } else if(!invited){
     /* ★ 2026-10-07 대표님 지시 "타인과 인연 점수 확인하기로 바꾸고 그걸 위로 올리자" —
@@ -20778,6 +20797,7 @@ function finishConsent(mode){
      **홈**에 선다. 프로필이 없으면 예전대로 고른 쪽으로 가는 마법사(PENDING_SERVICE)다. */
   /* ★ 2026-10-15 — 광고 주소(?go=2027)로 오셨으면 어느 카드를 눌렀든 사주 풀이 쪽으로 간다. */
   if(adGoPending()) mode = 'self';
+  if(adCompatPending()) mode = 'compat';   /* 2026-10-31 ?go=compat */
   if(mode === 'self' || mode === 'compat'){
     if(!activeProfile()){ startService(mode); return; }
     if(adGoApply()){ render(); return; }
@@ -29443,7 +29463,7 @@ function render(){
   else if(ROUTE==='report13'){ adGoDone(); renderReport13(); }
   else if(ROUTE==='mbtiReport') renderMbtiReport13();
   else if(ROUTE==='report') renderReport();
-  else if(ROUTE==='compat') renderCompat();
+  else if(ROUTE==='compat'){ if(adCompatPending()) adGoDone(); renderCompat(); }
   else if(ROUTE==='chars') renderCharDex();
   else if(ROUTE==='glossary') renderGlossary();
   else if(ROUTE==='groupCompat') renderGroupCompat();
