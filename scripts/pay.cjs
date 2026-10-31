@@ -127,7 +127,7 @@ const WATCH = function(){
     if(chk.noHook){ R.skip('상품 이름 판정', '검사 통로가 안 열림'); }
     else {
       R.note(chk.name === '사주 풀이 전체 해석 · ' + YEAR + '년', '연도가 붙은 이름이 나온다', chk.name || '없음');
-      R.note(chk.price === 3500, '값을 제대로 찾는다', chk.price + '원');
+      R.note(chk.price === 4900, '값을 제대로 찾는다', chk.price + '원');
       R.note(chk.base === 'saju_full', '기본 이름을 갈라낸다', chk.base);
       R.note(chk.badYear === null, '연도가 안 붙는 상품에 연도를 붙이면 거절한다',
              chk.badYear ? '거절 못 함' : 'compat_full:' + YEAR + ' → 없는 상품');
