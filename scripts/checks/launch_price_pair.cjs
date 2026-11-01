@@ -17,7 +17,7 @@ const R = reporter('상품 값 (화면·서버)');
   const cliUntil = until ? eval(until[1]) : null;
   const cliAfter = after ? eval('(' + after[1] + ')') : null;
   const P = await import('file://' + path.join(ROOT, 'api/_lib/products.js'));
-  const WANT = {saju_full:4900, mbti_full:3900, compat_full:2900, premium_pass:8900};
+  const WANT = {saju_full:2900, mbti_full:1900, compat_full:1900, premium_pass:5900};
   Object.keys(WANT).forEach((k) => {
     const m = new RegExp(k + ":\\s*\\{ id:'" + k + "',[^}]*?price:(\\d+)").exec(src);
     const cli = m ? Number(m[1]) : null;
@@ -28,7 +28,7 @@ const R = reporter('상품 값 (화면·서버)');
   const realNow = Date.now;
   function at(ms, id){ Date.now = () => ms; try{ const p = P.productOf(id); return p && p.price; } finally { Date.now = realNow; } }
   const times = [Date.now(), Date.UTC(2026, 9, 31, 15, 0, 5), Date.UTC(2027, 5, 1)];
-  [['saju_full:2026',4900],['saju_full:2027',4900],['mbti_full',3900],['compat_full',2900],['premium_pass:2027',8900]].forEach(([id, v]) => {
+  [['saju_full:2026',2900],['saju_full:2027',2900],['mbti_full',1900],['compat_full',1900],['premium_pass:2027',5900]].forEach(([id, v]) => {
     const got = times.map((t) => at(t, id));
     R.note(got.every((x) => x === v), '③ ' + id + ' — 언제 물어도 ' + v, got.join(' · '));
   });
